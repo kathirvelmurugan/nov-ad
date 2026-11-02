@@ -3,6 +3,7 @@ import { PERSONAS } from '../data/personas';
 import { Persona, ClinicalCase } from '../types';
 import { 
   RefreshCw, 
+  RotateCcw,
   Zap, 
   ShieldCheck, 
   HeartPulse, 
@@ -19,6 +20,7 @@ interface Props {
   onSelectCase: (caseId: string) => void;
   cases: ClinicalCase[];
   onAutoFill: () => void;
+  onResetDemo?: () => void;
   lang: 'ar' | 'en';
   onToggleLang: () => void;
   theme: 'light' | 'dark';
@@ -33,6 +35,7 @@ export const TopProfileSwitcher: React.FC<Props> = ({
   onSelectCase,
   cases,
   onAutoFill,
+  onResetDemo,
   lang,
   onToggleLang,
   theme,
@@ -94,6 +97,18 @@ export const TopProfileSwitcher: React.FC<Props> = ({
             <Zap className="w-3.5 h-3.5 fill-white text-white" />
             <span>{isAr ? '⚡ تعبئة سريعة (Auto-Fill)' : '⚡ Auto-Fill Screen'}</span>
           </button>
+
+          {/* 1-Click Reset Demo Sandbox */}
+          {onResetDemo && (
+            <button
+              onClick={onResetDemo}
+              className="flex items-center gap-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 dark:hover:bg-rose-900/50 px-2.5 py-1 rounded-lg border border-rose-200 dark:border-rose-800 font-bold text-xs transition-all shadow-sm active:scale-95"
+              title={isAr ? 'إعادة ضبط الحالات إلى الوضع التجريبي الأصلي' : 'Reset all cases and local storage to initial demo state'}
+            >
+              <RotateCcw className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+              <span>{isAr ? 'إعادة ضبط' : 'Reset Demo'}</span>
+            </button>
+          )}
 
           {/* Theme Toggle (Light Clinical Calm / Dark Luminous) */}
           <button

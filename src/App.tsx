@@ -16,16 +16,98 @@ import { PartnerServicesView } from './components/screens/PartnerServicesView';
 import { FollowUpChatView } from './components/screens/FollowUpChatView';
 import { AdminSettingsView } from './components/screens/AdminSettingsView';
 
+const STORAGE_KEY = 'alo_cases_v2.4';
+const ACTIVE_CASE_KEY = 'alo_active_case_id_v2.4';
+const THEME_KEY = 'alo_theme_v2.4';
+const LANG_KEY = 'alo_lang_v2.4';
+
 export const App: React.FC = () => {
   const [activePersona, setActivePersona] = useState<Persona>(PERSONAS[0]);
-  const [cases, setCases] = useState<ClinicalCase[]>(SEED_CASES);
-  const [activeCaseId, setActiveCaseId] = useState<string>(SEED_CASES[0].id);
+  
+  // Persistent Cases state: isolated in user's browser sandbox
+  const [cases, setCases] = useState<ClinicalCase[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.warn('Failed to parse cases from localStorage:', e);
+    }
+    return SEED_CASES;
+  });
+
+  const [activeCaseId, setActiveCaseId] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem(ACTIVE_CASE_KEY);
+      if (saved) return saved;
+    } catch (e) {}
+    return SEED_CASES[0].id;
+  });
   
   // Pinterest "Clinical Calm" light mode as default
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    try {
+      const saved = localStorage.getItem(THEME_KEY);
+      if (saved === 'dark' || saved === 'light') return saved;
+    } catch (e) {}
+    return 'light';
+  });
+
   // Smart language default: Arabic for Saudi roles, English for Dr. Arjun
-  const [lang, setLang] = useState<'ar' | 'en'>('ar');
+  const [lang, setLang] = useState<'ar' | 'en'>(() => {
+    try {
+      const saved = localStorage.getItem(LANG_KEY);
+      if (saved === 'ar' || saved === 'en') return saved;
+    } catch (e) {}
+    return 'ar';
+  });
+
   const [isWhatsAppDrawerOpen, setIsWhatsAppDrawerOpen] = useState(false);
+
+  // Sync state modifications to localStorage for refresh-durability
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(cases));
+    } catch (e) {
+      console.warn('Failed to save cases to localStorage:', e);
+    }
+  }, [cases]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(ACTIVE_CASE_KEY, activeCaseId);
+    } catch (e) {}
+  }, [activeCaseId]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(THEME_KEY, theme);
+    } catch (e) {}
+  }, [theme]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(LANG_KEY, lang);
+    } catch (e) {}
+  }, [lang]);
+
+  // 1-Click Sandbox Reset
+  const handleResetDemo = () => {
+    const isAr = lang === 'ar';
+    const confirmMsg = isAr
+      ? 'هل أنت متأكد من رغبتك في إعادة ضبط جميع الحالات إلى حالتها الأصلية؟ سيتم مسح أي تعديلات محلية في المتصفح.'
+      : 'Are you sure you want to reset all 10 clinical cases to initial demo state? All local browser changes will be cleared.';
+    if (window.confirm(confirmMsg)) {
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(ACTIVE_CASE_KEY);
+      } catch (e) {}
+      setCases(SEED_CASES);
+      setActiveCaseId(SEED_CASES[0].id);
+    }
+  };
 
   const activeCase = cases.find((c) => c.id === activeCaseId) || cases[0];
 
@@ -222,6 +304,7 @@ export const App: React.FC = () => {
         onSelectCase={setActiveCaseId}
         cases={cases}
         onAutoFill={handleAutoFill}
+        onResetDemo={handleResetDemo}
         lang={lang}
         onToggleLang={handleToggleLang}
         theme={theme}
