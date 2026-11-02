@@ -15,6 +15,7 @@ import { OpinionTelehealthView } from './components/screens/OpinionTelehealthVie
 import { PartnerServicesView } from './components/screens/PartnerServicesView';
 import { FollowUpChatView } from './components/screens/FollowUpChatView';
 import { AdminSettingsView } from './components/screens/AdminSettingsView';
+import { GuideModal } from './components/GuideModal';
 
 const STORAGE_KEY = 'alo_cases_v2.4';
 const ACTIVE_CASE_KEY = 'alo_active_case_id_v2.4';
@@ -65,6 +66,7 @@ export const App: React.FC = () => {
   });
 
   const [isWhatsAppDrawerOpen, setIsWhatsAppDrawerOpen] = useState(false);
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
 
   // Sync state modifications to localStorage for refresh-durability
   useEffect(() => {
@@ -305,6 +307,7 @@ export const App: React.FC = () => {
         cases={cases}
         onAutoFill={handleAutoFill}
         onResetDemo={handleResetDemo}
+        onOpenGuide={() => setIsGuideOpen(true)}
         lang={lang}
         onToggleLang={handleToggleLang}
         theme={theme}
@@ -336,6 +339,18 @@ export const App: React.FC = () => {
         activeCase={activeCase}
         externalOpen={isWhatsAppDrawerOpen}
         onSetExternalOpen={setIsWhatsAppDrawerOpen}
+      />
+
+      {/* 6. Bilingual Platform Testing Guide Modal */}
+      <GuideModal
+        isOpen={isGuideOpen}
+        onClose={() => setIsGuideOpen(false)}
+        lang={lang}
+        onSelectStage={handleSetStage}
+        onSelectPersonaCode={(code) => {
+          const p = PERSONAS.find((x) => x.code === code);
+          if (p) handleSelectPersona(p);
+        }}
       />
     </div>
   );

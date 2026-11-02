@@ -9,7 +9,8 @@ import {
   HeartPulse, 
   Globe, 
   Sun, 
-  Moon 
+  Moon,
+  HelpCircle
 } from 'lucide-react';
 
 interface Props {
@@ -21,6 +22,7 @@ interface Props {
   cases: ClinicalCase[];
   onAutoFill: () => void;
   onResetDemo?: () => void;
+  onOpenGuide?: () => void;
   lang: 'ar' | 'en';
   onToggleLang: () => void;
   theme: 'light' | 'dark';
@@ -36,6 +38,7 @@ export const TopProfileSwitcher: React.FC<Props> = ({
   cases,
   onAutoFill,
   onResetDemo,
+  onOpenGuide,
   lang,
   onToggleLang,
   theme,
@@ -97,6 +100,18 @@ export const TopProfileSwitcher: React.FC<Props> = ({
             <Zap className="w-3.5 h-3.5 fill-white text-white" />
             <span>{isAr ? '⚡ تعبئة سريعة (Auto-Fill)' : '⚡ Auto-Fill Screen'}</span>
           </button>
+
+          {/* Interactive Platform Guide & Walkthrough */}
+          {onOpenGuide && (
+            <button
+              onClick={onOpenGuide}
+              className="flex items-center gap-1.5 bg-sky-50 hover:bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300 dark:hover:bg-sky-900/50 px-2.5 py-1 rounded-lg border border-sky-200 dark:border-sky-800 font-bold text-xs transition-all shadow-sm active:scale-95"
+              title={isAr ? 'دليل المنصة وخطوات التجربة السريرية' : 'Platform guide & step-by-step walkthrough'}
+            >
+              <HelpCircle className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
+              <span>{isAr ? 'دليل التجربة' : 'Guide'}</span>
+            </button>
+          )}
 
           {/* 1-Click Reset Demo Sandbox */}
           {onResetDemo && (
