@@ -33,7 +33,8 @@ jobs:
       - name: Run Alibaba AI Code Generation
         env:
           ALIBABA_API_KEY: ${{ secrets.ALIBABA_API_KEY }}
-          ALIBABA_AI_MODEL: ${{ vars.ALIBABA_AI_MODEL || 'qwen-plus' }}
+          ALIBABA_BASE_URL: ${{ secrets.ALIBABA_BASE_URL || 'https://token-plan.maas.qwencloudapi.com/compatible-mode/v1' }}
+          ALIBABA_AI_MODEL: ${{ secrets.ALIBABA_MODEL || 'qwen3.8-max' }}
           ISSUE_TITLE: ${{ github.event.issue.title }}
           ISSUE_BODY: ${{ github.event.issue.body }}
           COMMENT_BODY: ${{ github.event.comment.body }}

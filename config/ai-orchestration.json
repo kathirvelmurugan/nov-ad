@@ -4,7 +4,7 @@
   "orchestration": {
     "provider": "alibaba-qwen-cloud",
     "region": "ap-southeast-1",
-    "endpoint": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+    "endpoint": "https://token-plan.maas.qwencloudapi.com/compatible-mode/v1",
     "models": {
       "primary_flagship": "qwen3.8-max",
       "fast_interactive": "qwen3.8-flash",

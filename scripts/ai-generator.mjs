@@ -3,19 +3,20 @@ import path from 'path';
 
 /**
  * Alibaba Cloud Qwen AI Code & File Generator
- * Configured for qwen3.8-max in region ap-southeast-1
+ * Configured for qwen3.8-max using QwenCloud Token Plan
  */
 export async function generateCodeWithAlibaba({
   prompt,
   targetFilePath,
   apiKey = process.env.ALIBABA_API_KEY,
-  model = process.env.ALIBABA_AI_MODEL || 'qwen3.8-max'
+  model = process.env.ALIBABA_AI_MODEL || 'qwen3.8-max',
+  baseUrl = process.env.ALIBABA_BASE_URL || 'https://token-plan.maas.qwencloudapi.com/compatible-mode/v1'
 }) {
   if (!apiKey) {
     throw new Error('ALIBABA_API_KEY is not defined in environment variables or GitHub Secrets.');
   }
 
-  const endpoint = 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions';
+  const endpoint = `${baseUrl.replace(/\/+$/, '')}/chat/completions`;
 
   const systemPrompt = `You are the lead clinical software engineer for ALO DOCTOR (v2.4 Saudi Edition).
 Generate production-ready, clean TypeScript / React code adhering to:
