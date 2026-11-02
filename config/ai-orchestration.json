@@ -2,15 +2,21 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "project": "nov-ad",
   "orchestration": {
-    "engine": "alibaba-cloud-dashscope",
-    "primary_model": "qwen-plus",
-    "fallback_model": "qwen-turbo",
-    "vision_model": "qwen-vl-max",
+    "provider": "alibaba-qwen-cloud",
+    "region": "ap-southeast-1",
+    "endpoint": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+    "models": {
+      "primary_flagship": "qwen3.8-max",
+      "fast_interactive": "qwen3.8-flash",
+      "visual_understanding": "qwen3.8-max",
+      "realtime_audio": "qwen-audio-3.0-realtime-plus",
+      "speech_to_text": "qwen-audio-3.0-asr-flash",
+      "alternative_reasoning": "deepseek-v4.1-flash"
+    },
     "concurrency": {
       "plan_limit": 6,
       "max_parallel_sessions": 4,
       "safety_buffer_sessions": 2,
-      "queue_strategy": "priority-fifo",
       "retry_on_rate_limit": {
         "max_retries": 3,
         "backoff_ms": 1500
@@ -23,53 +29,7 @@
         "missing_mandatory_scan_override",
         "custom_pricing_or_vat_waiver",
         "sla_escalation_doctor_reassignment"
-      ],
-      "auto_proceed_with_best_practice_for": [
-        "de_identification_formatting",
-        "bilingual_translation_ar_en",
-        "vat_invoice_generation_15_percent",
-        "whatsapp_template_payload_rendering"
       ]
-    },
-    "execution_dag": {
-      "stage_1_intake": {
-        "parallel_allowed": true,
-        "depends_on": []
-      },
-      "stage_2_nurse_check": {
-        "parallel_allowed": false,
-        "depends_on": ["stage_1_intake"]
-      },
-      "stage_3_doctor_review": {
-        "parallel_allowed": false,
-        "depends_on": ["stage_2_nurse_check"]
-      },
-      "stage_4_awaiting_payment": {
-        "parallel_allowed": false,
-        "depends_on": ["stage_3_doctor_review"]
-      },
-      "stage_5_with_consultant": {
-        "parallel_allowed": false,
-        "depends_on": ["stage_4_awaiting_payment"]
-      },
-      "stage_6_opinion_and_report": {
-        "parallel_allowed": true,
-        "tasks": ["consultant_opinion_en", "certified_translation_ar", "bilingual_pdf_stamping"],
-        "depends_on": ["stage_5_with_consultant"]
-      },
-      "stage_7_partner_services": {
-        "parallel_allowed": true,
-        "tasks": ["lab_orders", "pharmacy_prescription", "physiotherapy_plan", "home_nursing_dispatch"],
-        "depends_on": ["stage_6_opinion_and_report"]
-      },
-      "stage_8_follow_up": {
-        "parallel_allowed": false,
-        "depends_on": ["stage_6_opinion_and_report"]
-      },
-      "stage_9_closed": {
-        "parallel_allowed": false,
-        "depends_on": ["stage_7_partner_services", "stage_8_follow_up"]
-      }
     }
   }
 }

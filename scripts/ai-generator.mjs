@@ -3,13 +3,13 @@ import path from 'path';
 
 /**
  * Alibaba Cloud Qwen AI Code & File Generator
- * Uses OpenAI-compatible DashScope endpoint for Qwen models
+ * Configured for qwen3.8-max in region ap-southeast-1
  */
 export async function generateCodeWithAlibaba({
   prompt,
   targetFilePath,
   apiKey = process.env.ALIBABA_API_KEY,
-  model = process.env.ALIBABA_AI_MODEL || 'qwen-plus'
+  model = process.env.ALIBABA_AI_MODEL || 'qwen3.8-max'
 }) {
   if (!apiKey) {
     throw new Error('ALIBABA_API_KEY is not defined in environment variables or GitHub Secrets.');
@@ -22,9 +22,10 @@ Generate production-ready, clean TypeScript / React code adhering to:
 - Native Cairo font Arabic RTL and English LTR
 - 11 persona profile switcher compatibility
 - Zero artificial gates, clean accessible state
+- Pinterest-teal color palette (#007B6E, #00C6AE, #E6FAF7, #25D366)
 Return ONLY raw code without markdown backticks unless specifically asked.`;
 
-  console.log(`[Alibaba AI] Calling model: ${model} for target: ${targetFilePath}`);
+  console.log(`[Qwen AI ap-southeast-1] Invoking model: ${model} for target: ${targetFilePath}`);
 
   const response = await fetch(endpoint, {
     method: 'POST',
@@ -50,23 +51,20 @@ Return ONLY raw code without markdown backticks unless specifically asked.`;
   const data = await response.json();
   const generatedCode = data.choices[0]?.message?.content || '';
 
-  // Clean markdown wrapping if present
   const cleanCode = generatedCode.replace(/^```[a-z]*\n/i, '').replace(/\n```$/, '');
 
-  // Ensure target directory exists and write file
   if (targetFilePath) {
     const dir = path.dirname(targetFilePath);
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
     fs.writeFileSync(targetFilePath, cleanCode, 'utf8');
-    console.log(`[Alibaba AI] Successfully created/updated file: ${targetFilePath}`);
+    console.log(`[Qwen AI] Successfully created/updated file: ${targetFilePath}`);
   }
 
   return cleanCode;
 }
 
-// CLI runner if invoked directly
 if (process.argv[1]?.endsWith('ai-generator.mjs')) {
   const [,, targetPath, ...promptParts] = process.argv;
   const prompt = promptParts.join(' ');
