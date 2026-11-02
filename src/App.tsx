@@ -131,6 +131,18 @@ export const App: React.FC = () => {
   const handleSelectPersona = (p: Persona) => {
     setActivePersona(p);
     setLang(p.lang);
+
+    // Contextually switch stage to match persona view
+    if (p.code === 'N') handleUpdateCase({ currentStage: 'NURSE_CHECK' });
+    else if (p.code === 'D') handleUpdateCase({ currentStage: 'DOCTOR_REVIEW' });
+    else if (p.code === 'K') handleUpdateCase({ currentStage: 'WITH_CONSULTANT' });
+    else if (p.code === 'L' || p.code === 'H' || p.code === 'T' || p.code === 'V') handleUpdateCase({ currentStage: 'PARTNER_SERVICES' });
+    else if (p.code === 'AD' || p.code === 'HA') handleUpdateCase({ currentStage: 'CLOSED' });
+    else if (p.code === 'P' || p.code === 'F') {
+      if (activeCase.currentStage === 'CLOSED' || activeCase.currentStage === 'PARTNER_SERVICES') {
+        handleUpdateCase({ currentStage: 'INTAKE_RECEIVED' });
+      }
+    }
   };
 
   // 1-Click Universal Language Toggle
@@ -185,6 +197,36 @@ export const App: React.FC = () => {
   // Set explicit stage from progress bar
   const handleSetStage = (stage: ClinicalStage) => {
     handleUpdateCase({ currentStage: stage });
+
+    // Sync persona to match stage
+    if (stage === 'INTAKE_RECEIVED') {
+      const p = PERSONAS.find((x) => x.code === 'P');
+      if (p) { setActivePersona(p); setLang(p.lang); }
+    } else if (stage === 'NURSE_CHECK') {
+      const p = PERSONAS.find((x) => x.code === 'N');
+      if (p) { setActivePersona(p); setLang(p.lang); }
+    } else if (stage === 'DOCTOR_REVIEW') {
+      const p = PERSONAS.find((x) => x.code === 'D');
+      if (p) { setActivePersona(p); setLang(p.lang); }
+    } else if (stage === 'AWAITING_PAYMENT') {
+      const p = PERSONAS.find((x) => x.code === 'P');
+      if (p) { setActivePersona(p); setLang(p.lang); }
+    } else if (stage === 'WITH_CONSULTANT') {
+      const p = PERSONAS.find((x) => x.code === 'K');
+      if (p) { setActivePersona(p); setLang(p.lang); }
+    } else if (stage === 'OPINION_READY') {
+      const p = PERSONAS.find((x) => x.code === 'P');
+      if (p) { setActivePersona(p); setLang(p.lang); }
+    } else if (stage === 'PARTNER_SERVICES') {
+      const p = PERSONAS.find((x) => x.code === 'L');
+      if (p) { setActivePersona(p); setLang(p.lang); }
+    } else if (stage === 'FOLLOW_UP_21_DAYS') {
+      const p = PERSONAS.find((x) => x.code === 'P');
+      if (p) { setActivePersona(p); setLang(p.lang); }
+    } else if (stage === 'CLOSED') {
+      const p = PERSONAS.find((x) => x.code === 'AD');
+      if (p) { setActivePersona(p); setLang(p.lang); }
+    }
   };
 
   // Magic 1-click Auto-Fill: populates realistic data for the current screen
@@ -207,6 +249,17 @@ export const App: React.FC = () => {
     if (activePersona.code === 'K') {
       return (
         <ConsultantMobileView
+          activeCase={activeCase}
+          onAdvanceStage={handleAdvanceStage}
+          onUpdateCase={handleUpdateCase}
+        />
+      );
+    }
+
+    // If Partner Roles (Lab, Home Nursing, Travel, Insurance), render Partner Services
+    if (['L', 'H', 'T', 'V'].includes(activePersona.code)) {
+      return (
+        <PartnerServicesView
           activeCase={activeCase}
           onAdvanceStage={handleAdvanceStage}
           onUpdateCase={handleUpdateCase}
