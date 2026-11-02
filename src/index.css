@@ -4,25 +4,46 @@
 
 @layer base {
   body {
-    @apply bg-slate-950 text-slate-100;
+    @apply bg-alo-canvas text-slate-800 antialiased transition-colors duration-200;
+  }
+
+  .dark body {
+    @apply bg-alo-darkCanvas text-slate-100;
   }
 }
 
-/* Custom scrollbar for clinical triage inboxes */
+/* Pinterest Floating Card Classes */
+.card-clinical {
+  @apply bg-white border border-slate-200/90 shadow-[0_2px_8px_rgba(15,35,60,0.04)] rounded-2xl transition-all;
+}
+
+.dark .card-clinical {
+  @apply bg-alo-darkCard border-alo-darkBorder shadow-none;
+}
+
+/* Medical Data / Latin Term BiDi Isolation */
+.medical-term {
+  unicode-bidi: isolate;
+  direction: ltr;
+  display: inline-block;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* Custom Scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0f172a;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #334155;
-  border-radius: 3px;
+  background: #cbd5e1;
+  border-radius: 9999px;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+.dark ::-webkit-scrollbar-thumb {
+  background: #1e433e;
 }

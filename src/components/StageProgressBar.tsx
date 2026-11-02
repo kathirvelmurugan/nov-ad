@@ -15,6 +15,7 @@ import {
 interface Props {
   currentStage: ClinicalStage;
   onSetStage: (stage: ClinicalStage) => void;
+  lang?: 'ar' | 'en';
 }
 
 interface StageStep {
@@ -26,23 +27,24 @@ interface StageStep {
 }
 
 const STAGES: StageStep[] = [
-  { key: 'INTAKE_RECEIVED', num: 1, labelAr: 'استلام الحالة', labelEn: 'Intake Received', icon: <FileCheck2 className="w-4 h-4" /> },
-  { key: 'NURSE_CHECK', num: 2, labelAr: 'تدقيق التمريض', labelEn: 'Nurse Check', icon: <Clock className="w-4 h-4" /> },
-  { key: 'DOCTOR_REVIEW', num: 3, labelAr: 'مراجعة الطبيب السعودي', labelEn: 'Doctor Review', icon: <Stethoscope className="w-4 h-4" /> },
-  { key: 'AWAITING_PAYMENT', num: 4, labelAr: 'بانتظار الدفع', labelEn: 'Awaiting Payment', icon: <CreditCard className="w-4 h-4" /> },
-  { key: 'WITH_CONSULTANT', num: 5, labelAr: 'لدى الاستشاري الدولي', labelEn: 'With Consultant', icon: <Globe2 className="w-4 h-4" /> },
-  { key: 'OPINION_READY', num: 6, labelAr: 'الرأي والتقرير المعتمد', labelEn: 'Opinion & Report', icon: <FileText className="w-4 h-4" /> },
-  { key: 'PARTNER_SERVICES', num: 7, labelAr: 'خدمات الشركاء', labelEn: 'Partner Services', icon: <Layers className="w-4 h-4" /> },
-  { key: 'FOLLOW_UP_21_DAYS', num: 8, labelAr: 'متابعة 21 يوم', labelEn: '21-Day Follow-Up', icon: <MessageSquare className="w-4 h-4" /> },
-  { key: 'CLOSED', num: 9, labelAr: 'إغلاق الحالة', labelEn: 'Case Closed', icon: <CheckCircle className="w-4 h-4" /> },
+  { key: 'INTAKE_RECEIVED', num: 1, labelAr: '1. استلام وتفويض', labelEn: '1. Intake & Proxy', icon: <FileCheck2 className="w-3.5 h-3.5" /> },
+  { key: 'NURSE_CHECK', num: 2, labelAr: '2. فرز التمريض', labelEn: '2. Nurse Triage', icon: <Clock className="w-3.5 h-3.5" /> },
+  { key: 'DOCTOR_REVIEW', num: 3, labelAr: '3. مراجعة الطبيب السعودي', labelEn: '3. Saudi Doctor Review', icon: <Stethoscope className="w-3.5 h-3.5" /> },
+  { key: 'AWAITING_PAYMENT', num: 4, labelAr: '4. سداد الباقة (Tap)', labelEn: '4. Payment (Tap)', icon: <CreditCard className="w-3.5 h-3.5" /> },
+  { key: 'WITH_CONSULTANT', num: 5, labelAr: '5. الاستشاري الهندي', labelEn: '5. Indian Consultant', icon: <Globe2 className="w-3.5 h-3.5" /> },
+  { key: 'OPINION_READY', num: 6, labelAr: '6. التقرير المعتمد والاتصال', labelEn: '6. Report & Telehealth', icon: <FileText className="w-3.5 h-3.5" /> },
+  { key: 'PARTNER_SERVICES', num: 7, labelAr: '7. خدمات الشركاء', labelEn: '7. Partner Services', icon: <Layers className="w-3.5 h-3.5" /> },
+  { key: 'FOLLOW_UP_21_DAYS', num: 8, labelAr: '8. متابعة 14 يوم', labelEn: '8. 14-Day Chat', icon: <MessageSquare className="w-3.5 h-3.5" /> },
+  { key: 'CLOSED', num: 9, labelAr: '9. إغلاق وتقييم', labelEn: '9. Closed & NPS', icon: <CheckCircle className="w-3.5 h-3.5" /> },
 ];
 
-export const StageProgressBar: React.FC<Props> = ({ currentStage, onSetStage }) => {
+export const StageProgressBar: React.FC<Props> = ({ currentStage, onSetStage, lang = 'ar' }) => {
   const currentIndex = STAGES.findIndex((s) => s.key === currentStage);
+  const isAr = lang === 'ar';
 
   return (
-    <div className="bg-slate-900 border-b border-slate-800 px-4 py-3">
-      <div className="flex items-center justify-between gap-1 overflow-x-auto scrollbar-thin pb-1">
+    <div className="bg-white/80 dark:bg-alo-darkCard/80 border-b border-slate-200/80 dark:border-alo-darkBorder px-4 py-2.5 transition-colors">
+      <div className="flex items-center justify-between gap-1.5 overflow-x-auto scrollbar-thin pb-1">
         {STAGES.map((step, idx) => {
           const isPassed = idx < currentIndex;
           const isCurrent = idx === currentIndex;
@@ -51,29 +53,17 @@ export const StageProgressBar: React.FC<Props> = ({ currentStage, onSetStage }) 
             <button
               key={step.key}
               onClick={() => onSetStage(step.key)}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all shadow-sm active:scale-95 ${
                 isCurrent
-                  ? 'bg-teal-500/20 text-teal-300 border border-teal-500/50 shadow-sm'
+                  ? 'bg-alo-mint text-alo-teal border border-teal-300 dark:bg-alo-mintDark dark:text-alo-aqua dark:border-teal-700 font-extrabold ring-1 ring-teal-400/40'
                   : isPassed
-                  ? 'bg-slate-800/80 text-emerald-400 hover:bg-slate-800 border border-slate-700/50'
-                  : 'bg-slate-900/50 text-slate-500 hover:text-slate-400 border border-transparent'
+                  ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
+                  : 'bg-slate-50 text-slate-500 hover:text-slate-800 dark:bg-slate-900/40 dark:text-slate-400 border border-slate-200/60 dark:border-slate-800'
               }`}
             >
-              <div
-                className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                  isCurrent
-                    ? 'bg-teal-500 text-slate-950 font-black'
-                    : isPassed
-                    ? 'bg-emerald-500/20 text-emerald-400'
-                    : 'bg-slate-800 text-slate-500'
-                }`}
-              >
-                {step.num}
-              </div>
-              <div className="flex flex-col text-right">
-                <span className="leading-tight">{step.labelAr}</span>
-                <span className="text-[9px] opacity-70 font-sans">{step.labelEn}</span>
-              </div>
+              <span>{step.icon}</span>
+              <span>{isAr ? step.labelAr : step.labelEn}</span>
+              {isPassed && <span className="text-[10px] text-emerald-600 dark:text-emerald-400">✓</span>}
             </button>
           );
         })}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PERSONAS } from './data/personas';
 import { SEED_CASES } from './data/seedCases';
 import { Persona, ClinicalCase, ClinicalStage } from './types';
@@ -19,6 +19,11 @@ export const App: React.FC = () => {
   const [activePersona, setActivePersona] = useState<Persona>(PERSONAS[0]);
   const [cases, setCases] = useState<ClinicalCase[]>(SEED_CASES);
   const [activeCaseId, setActiveCaseId] = useState<string>(SEED_CASES[0].id);
+  
+  // Pinterest "Clinical Calm" light mode as default
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  // Smart language default: Arabic for Saudi roles, English for Dr. Arjun
+  const [lang, setLang] = useState<'ar' | 'en'>('ar');
 
   const activeCase = cases.find((c) => c.id === activeCaseId) || cases[0];
 
@@ -35,6 +40,32 @@ export const App: React.FC = () => {
       prev.map((c) => (c.id === activeCase.id ? { ...c, ...updated } : c))
     );
   };
+
+  // Smart persona select: updates persona and aligns language default
+  const handleSelectPersona = (p: Persona) => {
+    setActivePersona(p);
+    setLang(p.lang);
+  };
+
+  // 1-Click Universal Language Toggle
+  const handleToggleLang = () => {
+    setLang((prev) => (prev === 'ar' ? 'en' : 'ar'));
+  };
+
+  // 1-Click Theme Toggle
+  const handleToggleTheme = () => {
+    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
+  };
+
+  // Synchronize HTML element class for dark mode
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+  }, [theme]);
 
   // Advance to next stage in the 9-stage sequence
   const handleAdvanceStage = () => {
@@ -55,13 +86,13 @@ export const App: React.FC = () => {
       handleUpdateCase({ currentStage: nextStage });
 
       // Automatically adjust persona to match next stage for frictionless pairing
-      if (nextStage === 'NURSE_CHECK') setActivePersona(PERSONAS.find((p) => p.code === 'N')!);
-      else if (nextStage === 'DOCTOR_REVIEW') setActivePersona(PERSONAS.find((p) => p.code === 'D')!);
-      else if (nextStage === 'AWAITING_PAYMENT') setActivePersona(PERSONAS.find((p) => p.code === 'P')!);
-      else if (nextStage === 'WITH_CONSULTANT') setActivePersona(PERSONAS.find((p) => p.code === 'K')!);
-      else if (nextStage === 'OPINION_READY') setActivePersona(PERSONAS.find((p) => p.code === 'P')!);
-      else if (nextStage === 'PARTNER_SERVICES') setActivePersona(PERSONAS.find((p) => p.code === 'L')!);
-      else if (nextStage === 'FOLLOW_UP_21_DAYS') setActivePersona(PERSONAS.find((p) => p.code === 'P')!);
+      if (nextStage === 'NURSE_CHECK') handleSelectPersona(PERSONAS.find((p) => p.code === 'N')!);
+      else if (nextStage === 'DOCTOR_REVIEW') handleSelectPersona(PERSONAS.find((p) => p.code === 'D')!);
+      else if (nextStage === 'AWAITING_PAYMENT') handleSelectPersona(PERSONAS.find((p) => p.code === 'P')!);
+      else if (nextStage === 'WITH_CONSULTANT') handleSelectPersona(PERSONAS.find((p) => p.code === 'K')!);
+      else if (nextStage === 'OPINION_READY') handleSelectPersona(PERSONAS.find((p) => p.code === 'P')!);
+      else if (nextStage === 'PARTNER_SERVICES') handleSelectPersona(PERSONAS.find((p) => p.code === 'L')!);
+      else if (nextStage === 'FOLLOW_UP_21_DAYS') handleSelectPersona(PERSONAS.find((p) => p.code === 'P')!);
     }
   };
 
@@ -72,7 +103,11 @@ export const App: React.FC = () => {
 
   // Magic 1-click Auto-Fill: populates realistic data for the current screen
   const handleAutoFill = () => {
-    alert('⚡ تم ملء بيانات الشاشة تلقائياً وفق المواصفة السريرية المعتمدة (v2.4)!');
+    alert(
+      lang === 'ar'
+        ? '⚡ تم ملء بيانات الشاشة تلقائياً وفق المواصفة السريرية المعتمدة (v2.4)!'
+        : '⚡ Screen auto-filled with accredited clinical benchmark data (v2.4)!'
+    );
   };
 
   // Render the appropriate screen based on persona and stage
@@ -101,6 +136,7 @@ export const App: React.FC = () => {
             activeCase={activeCase}
             onAdvanceStage={handleAdvanceStage}
             onUpdateCase={handleUpdateCase}
+            lang={lang}
           />
         );
       case 'NURSE_CHECK':
@@ -108,6 +144,7 @@ export const App: React.FC = () => {
           <NurseTriageView
             activeCase={activeCase}
             onAdvanceStage={handleAdvanceStage}
+            lang={lang}
           />
         );
       case 'DOCTOR_REVIEW':
@@ -162,28 +199,36 @@ export const App: React.FC = () => {
     }
   };
 
+  const isAr = lang === 'ar';
+
   return (
     <div
-      className={`min-h-screen bg-slate-950 text-slate-100 flex flex-col ${
-        activePersona.isRtl ? 'font-cairo' : 'font-sans'
+      className={`min-h-screen bg-alo-canvas dark:bg-alo-darkCanvas text-slate-800 dark:text-slate-100 flex flex-col transition-colors duration-200 ${
+        isAr ? 'font-cairo' : 'font-sans'
       }`}
-      dir={activePersona.isRtl ? 'rtl' : 'ltr'}
+      dir={isAr ? 'rtl' : 'ltr'}
+      lang={lang}
     >
-      {/* 1. Floating Top Profile Switcher */}
+      {/* 1. Top Utility Ribbon & Persona Switcher */}
       <TopProfileSwitcher
         activePersona={activePersona}
-        onSelectPersona={setActivePersona}
+        onSelectPersona={handleSelectPersona}
         activeCase={activeCase}
         onNextCase={handleNextCase}
         onSelectCase={setActiveCaseId}
         cases={cases}
         onAutoFill={handleAutoFill}
+        lang={lang}
+        onToggleLang={handleToggleLang}
+        theme={theme}
+        onToggleTheme={handleToggleTheme}
       />
 
       {/* 2. Interactive 9-Stage Stepper Progress Bar */}
       <StageProgressBar
         currentStage={activeCase.currentStage}
         onSetStage={handleSetStage}
+        lang={lang}
       />
 
       {/* 3. Main Clinical Screen Body */}
