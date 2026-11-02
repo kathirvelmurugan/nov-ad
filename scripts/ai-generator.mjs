@@ -41,6 +41,7 @@ Return ONLY raw code without markdown backticks unless specifically asked.`;
         { role: 'user', content: prompt }
       ],
       temperature: 0.2,
+      enable_thinking: false,
       stream: true
     })
   });
@@ -53,14 +54,19 @@ Return ONLY raw code without markdown backticks unless specifically asked.`;
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let generatedCode = '';
+  let isDone = false;
 
-  while (true) {
+  while (!isDone) {
     const { done, value } = await reader.read();
     if (done) break;
-    const chunk = decoder.decode(value);
+    const chunk = decoder.decode(value, { stream: true });
     const lines = chunk.split('\n');
     for (const line of lines) {
-      if (line.startsWith('data: ') && !line.includes('[DONE]')) {
+      if (line.includes('[DONE]')) {
+        isDone = true;
+        break;
+      }
+      if (line.startsWith('data: ')) {
         try {
           const parsed = JSON.parse(line.slice(6));
           const delta = parsed.choices?.[0]?.delta?.content || '';
