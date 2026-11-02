@@ -4,10 +4,14 @@ import { ClinicalCase } from '../types';
 
 interface Props {
   activeCase: ClinicalCase;
+  externalOpen?: boolean;
+  onSetExternalOpen?: (open: boolean) => void;
 }
 
-export const WhatsAppDrawer: React.FC<Props> = ({ activeCase }) => {
-  const [isOpen, setIsOpen] = useState(false);
+export const WhatsAppDrawer: React.FC<Props> = ({ activeCase, externalOpen, onSetExternalOpen }) => {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isOpen = externalOpen !== undefined ? externalOpen : internalOpen;
+  const setIsOpen = onSetExternalOpen || setInternalOpen;
 
   // Derive relevant WhatsApp template based on current stage
   const getTemplate = () => {

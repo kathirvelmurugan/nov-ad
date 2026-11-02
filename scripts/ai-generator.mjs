@@ -40,7 +40,8 @@ Return ONLY raw code without markdown backticks unless specifically asked.`;
         { role: 'system', content: systemPrompt },
         { role: 'user', content: prompt }
       ],
-      temperature: 0.2
+      temperature: 0.2,
+      stream: true
     })
   });
 
@@ -49,8 +50,27 @@ Return ONLY raw code without markdown backticks unless specifically asked.`;
     throw new Error(`Alibaba API error (${response.status}): ${errorText}`);
   }
 
-  const data = await response.json();
-  const generatedCode = data.choices[0]?.message?.content || '';
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let generatedCode = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    const chunk = decoder.decode(value);
+    const lines = chunk.split('\n');
+    for (const line of lines) {
+      if (line.startsWith('data: ') && !line.includes('[DONE]')) {
+        try {
+          const parsed = JSON.parse(line.slice(6));
+          const delta = parsed.choices?.[0]?.delta?.content || '';
+          generatedCode += delta;
+        } catch (e) {
+          // Ignore SSE heartbeat or incomplete chunks
+        }
+      }
+    }
+  }
 
   const cleanCode = generatedCode.replace(/^```[a-z]*\n/i, '').replace(/\n```$/, '');
 

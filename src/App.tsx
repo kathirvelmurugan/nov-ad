@@ -5,6 +5,7 @@ import { Persona, ClinicalCase, ClinicalStage } from './types';
 import { TopProfileSwitcher } from './components/TopProfileSwitcher';
 import { StageProgressBar } from './components/StageProgressBar';
 import { WhatsAppDrawer } from './components/WhatsAppDrawer';
+import { WhatsAppToast } from './components/WhatsAppToast';
 import { PatientIntakeView } from './components/screens/PatientIntakeView';
 import { NurseTriageView } from './components/screens/NurseTriageView';
 import { DoctorReviewView } from './components/screens/DoctorReviewView';
@@ -24,6 +25,7 @@ export const App: React.FC = () => {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   // Smart language default: Arabic for Saudi roles, English for Dr. Arjun
   const [lang, setLang] = useState<'ar' | 'en'>('ar');
+  const [isWhatsAppDrawerOpen, setIsWhatsAppDrawerOpen] = useState(false);
 
   const activeCase = cases.find((c) => c.id === activeCaseId) || cases[0];
 
@@ -238,8 +240,20 @@ export const App: React.FC = () => {
         {renderScreen()}
       </main>
 
-      {/* 4. WhatsApp Meta-Approved Templates Drawer */}
-      <WhatsAppDrawer activeCase={activeCase} />
+      {/* 4. WhatsApp Real-Time Stage Transition Toast */}
+      <WhatsAppToast
+        activeCase={activeCase}
+        onAdvanceStage={handleAdvanceStage}
+        onOpenDrawer={() => setIsWhatsAppDrawerOpen(true)}
+        lang={lang}
+      />
+
+      {/* 5. WhatsApp Meta-Approved Templates Drawer */}
+      <WhatsAppDrawer
+        activeCase={activeCase}
+        externalOpen={isWhatsAppDrawerOpen}
+        onSetExternalOpen={setIsWhatsAppDrawerOpen}
+      />
     </div>
   );
 };
