@@ -56,13 +56,23 @@ export interface ClinicalCase {
   id: string;
   caseNumber: string;
   patientName: string;
+  patientNameAr?: string;
+  patientNameEn?: string;
   nationalIdMasked: string;
   age: number;
   gender: 'M' | 'F';
   city: string;
+  cityAr?: string;
+  cityEn?: string;
   specialty: string;
+  specialtyAr?: string;
+  specialtyEn?: string;
   diagnosis: string;
+  diagnosisAr?: string;
+  diagnosisEn?: string;
   symptoms: string;
+  symptomsAr?: string;
+  symptomsEn?: string;
   caregiver?: CaregiverProxy;
   consultationType: 'written' | 'video' | 'voice';
   currentStage: ClinicalStage;
@@ -71,6 +81,7 @@ export interface ClinicalCase {
     hospital: string;
     city: string;
     focusQuestions: [string, string, string]; // PDF Spec mandates 3 focus questions
+    focusQuestionsEn?: [string, string, string];
   };
   consultant: {
     name: string;

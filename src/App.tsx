@@ -153,6 +153,7 @@ export const App: React.FC = () => {
             activeCase={activeCase}
             onAdvanceStage={handleAdvanceStage}
             onUpdateCase={handleUpdateCase}
+            lang={lang}
           />
         );
       case 'AWAITING_PAYMENT':
@@ -161,6 +162,7 @@ export const App: React.FC = () => {
             activeCase={activeCase}
             onAdvanceStage={handleAdvanceStage}
             onUpdateCase={handleUpdateCase}
+            lang={lang}
           />
         );
       case 'WITH_CONSULTANT':

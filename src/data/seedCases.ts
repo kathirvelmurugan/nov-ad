@@ -5,6 +5,16 @@ export const SEED_CASES: ClinicalCase[] = [
     id: 'case-001',
     caseNumber: 'ALO-2026-0001',
     patientName: 'سالم بن عبد العزيز العامري',
+    patientNameAr: 'سالم بن عبد العزيز العامري',
+    patientNameEn: 'Salem Abdulaziz Al-Ameri',
+    cityAr: 'الرياض، المملكة العربية السعودية',
+    cityEn: 'Riyadh, Saudi Arabia',
+    specialtyAr: 'أمراض القلب وجراحة الصمامات',
+    specialtyEn: 'Cardiology & Valvular Heart Disease',
+    diagnosisAr: 'تضيق الصمام الأبهري الشديد والتكلس التاجي',
+    diagnosisEn: 'Severe Calcific Aortic Stenosis & Annular Calcification',
+    symptomsAr: 'ضيق تنفس تدريجي عند بذل الجهد (NYHA Class III) مع نوبات دوخة وألم ضاغط في الصدر ونوبة إغماء حديثة.',
+    symptomsEn: 'Progressive exertional dyspnea (NYHA Class III), exertional angina, fatigue, and a recent syncopal episode 2 weeks ago.',
     nationalIdMasked: '1089****10',
     age: 58,
     gender: 'M',
@@ -28,8 +38,13 @@ export const SEED_CASES: ClinicalCase[] = [
       city: 'الرياض',
       focusQuestions: [
         'هل توصي بإجراء استبدال الصمام عبر القسطرة (TAVR) أم الجراحة المفتوحة (SAVR) في ضوء درجة التكلس العالية ومعدل الخطورة؟',
-        'ما هو البروتوكول الدوائي الموصى به لمضادات التخثر ومثبطات الصفيحات بعد الإجراء؟',
+        'ما هو التقييم الدقيق للشريان التاجي الأيسر المتفرع وهل يستدعي تداخلاً جراحياً مصاحباً (CABG)؟',
         'ما هي الخطة الإضافية المقترحة للمتابعة والتأهيل السريري لتقليل احتمالات الانتكاس؟'
+      ],
+      focusQuestionsEn: [
+        'Do you recommend Transcatheter Aortic Valve Replacement (TAVR) or open Surgical Replacement (SAVR) in light of severe calcification and low STS score of 2.1%?',
+        'What is your evaluation of the non-obstructive LAD coronary plaque, and does it warrant concurrent bypass grafting (CABG)?',
+        'What post-procedural antithrombotic and anticoagulant regimen is optimal for long-term valve longevity and stroke prevention?'
       ]
     },
     consultant: {

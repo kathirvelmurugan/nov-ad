@@ -48,10 +48,10 @@ export const PatientIntakeView: React.FC<Props> = ({
             <span>{isAr ? 'طلب استشارة رأي طبي ثانٍ معتمد · ألو دكتور' : 'Accredited Second Opinion · ALO DOCTOR'}</span>
           </div>
           <h2 className="text-2xl font-black tracking-tight">
-            {isAr ? activeCase.patientName : 'Salem Al-Otaibi'}
+            {isAr ? (activeCase.patientNameAr || activeCase.patientName) : (activeCase.patientNameEn || activeCase.patientName)}
           </h2>
           <p className="text-slate-300 text-xs mt-1">
-            {isAr ? 'الهوية الوطنية / الإقامة:' : 'National ID:'} <span className="font-mono text-teal-300 font-bold">{activeCase.nationalIdMasked}</span> · {isAr ? 'العمر:' : 'Age:'} {activeCase.age} · {isAr ? 'الجنس: ذكر' : 'Gender: Male'} · {isAr ? activeCase.city : 'Riyadh, Saudi Arabia'}
+            {isAr ? 'الهوية الوطنية / الإقامة:' : 'National ID:'} <span className="font-mono text-teal-300 font-bold">{activeCase.nationalIdMasked}</span> · {isAr ? 'العمر:' : 'Age:'} {activeCase.age} · {isAr ? 'الجنس: ذكر' : 'Gender: Male'} · {isAr ? (activeCase.cityAr || activeCase.city) : (activeCase.cityEn || activeCase.city)}
           </p>
         </div>
 
@@ -155,7 +155,7 @@ export const PatientIntakeView: React.FC<Props> = ({
             </h3>
           </div>
           <span className="text-xs text-alo-teal font-bold bg-alo-mint px-3 py-1 rounded-lg border border-teal-200">
-            {activeCase.specialty}
+            {isAr ? (activeCase.specialtyAr || activeCase.specialty) : (activeCase.specialtyEn || activeCase.specialty)}
           </span>
         </div>
 
@@ -165,8 +165,8 @@ export const PatientIntakeView: React.FC<Props> = ({
           </label>
           <input
             type="text"
-            value={activeCase.diagnosis}
-            onChange={(e) => onUpdateCase({ diagnosis: e.target.value })}
+            value={isAr ? (activeCase.diagnosisAr || activeCase.diagnosis) : (activeCase.diagnosisEn || activeCase.diagnosis)}
+            onChange={(e) => onUpdateCase(isAr ? { diagnosisAr: e.target.value, diagnosis: e.target.value } : { diagnosisEn: e.target.value, diagnosis: e.target.value })}
             className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-alo-teal outline-none font-bold shadow-sm"
           />
         </div>
@@ -177,8 +177,8 @@ export const PatientIntakeView: React.FC<Props> = ({
           </label>
           <textarea
             rows={3}
-            value={activeCase.symptoms}
-            onChange={(e) => onUpdateCase({ symptoms: e.target.value })}
+            value={isAr ? (activeCase.symptomsAr || activeCase.symptoms) : (activeCase.symptomsEn || activeCase.symptoms)}
+            onChange={(e) => onUpdateCase(isAr ? { symptomsAr: e.target.value, symptoms: e.target.value } : { symptomsEn: e.target.value, symptoms: e.target.value })}
             className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl p-3 text-sm text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-alo-teal outline-none leading-relaxed shadow-sm font-medium"
           />
         </div>
