@@ -40,7 +40,7 @@ jobs:
           COMMENT_BODY: ${{ github.event.comment.body }}
         run: |
           echo "Executing Alibaba AI Code Generator for Issue #${{ github.event.issue.number }}..."
-          node scripts/ai-generator.mjs "src/generated/Issue-${{ github.event.issue.number }}.tsx" "Generate the React component matching issue: $ISSUE_TITLE. Requirements: $ISSUE_BODY $COMMENT_BODY"
+          node scripts/ai-generator.mjs "src/generated/Issue-${{ github.event.issue.number }}.tsx"
 
       - name: Commit and Push Generated Code
         run: |
@@ -51,7 +51,10 @@ jobs:
             echo "No changes generated."
           else
             git commit -m "feat(ai-agent): auto-generated code for Issue #${{ github.event.issue.number }} via Alibaba Qwen"
-            git push origin main
+            BRANCH_NAME="ai-issue-${{ github.event.issue.number }}"
+            git checkout -b "$BRANCH_NAME"
+            git push origin "$BRANCH_NAME" --force
+            echo "Successfully pushed to $BRANCH_NAME"
           fi
 
       - name: Comment on Issue
@@ -62,5 +65,5 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '🤖 **Alibaba AI Agent Report**: Successfully reviewed requirements, verified file structure, generated missing code, and pushed to `main` branch. 🚀'
+              body: `🤖 **Alibaba AI Agent Report**: Successfully generated component for Issue #${context.issue.number} using \`qwen3.8-max\` SSE stream. Pushed to branch \`ai-issue-${context.issue.number}\`. Ready for Orchestrator merge and deployment. 🚀`
             })

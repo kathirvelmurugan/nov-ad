@@ -88,9 +88,15 @@ Return ONLY raw code without markdown backticks unless specifically asked.`;
 
 if (process.argv[1]?.endsWith('ai-generator.mjs')) {
   const [,, targetPath, ...promptParts] = process.argv;
-  const prompt = promptParts.join(' ');
+  let prompt = promptParts.join(' ').trim();
+  if (!prompt) {
+    const title = process.env.ISSUE_TITLE || '';
+    const body = process.env.ISSUE_BODY || '';
+    const comment = process.env.COMMENT_BODY || '';
+    prompt = `Issue: ${title}\n\nRequirements:\n${body}\n\nContext:\n${comment}`.trim();
+  }
   if (!targetPath || !prompt) {
-    console.log('Usage: node scripts/ai-generator.mjs <targetFilePath> <prompt>');
+    console.log('Usage: node scripts/ai-generator.mjs <targetFilePath> [prompt]');
     process.exit(1);
   }
   generateCodeWithAlibaba({ targetFilePath: targetPath, prompt })
