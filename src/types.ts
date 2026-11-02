@@ -1,15 +1,15 @@
 export type RoleCode = 
-  | 'P'   // Patient
-  | 'D'   // Saudi Treating Doctor
-  | 'N'   // ALO Nurse
-  | 'C'   // ALO Coordinator
-  | 'K'   // Indian Consultant
-  | 'L'   // Lab Technician
-  | 'H'   // Pharmacist
-  | 'T'   // Physiotherapist
-  | 'V'   // Home Nursing
-  | 'HA'  // Medical Center Partner Admin
-  | 'AD'; // ALO Super Admin
+  | 'P'   // Patient (Salem A.)
+  | 'F'   // Relative / Caregiver Proxy (Fatima A.)
+  | 'N'   // ALO Nurse Triage (Sara N.)
+  | 'D'   // Treating Saudi Doctor (Dr. Abdullah)
+  | 'K'   // Indian Consultant (Dr. Arjun)
+  | 'L'   // Diagnostic Lab Partner (Alpha Labs)
+  | 'H'   // Home Healthcare Partner (Sanad Health)
+  | 'T'   // Travel & Medical Visa Partner (Al-Fursan)
+  | 'V'   // Insurance Approvals (Tawuniya / Bupa)
+  | 'HA'  // Medical Center Partner Admin (Riyadh Care)
+  | 'AD'; // ALO Platform Super Admin
 
 export interface Persona {
   code: RoleCode;
@@ -23,15 +23,24 @@ export interface Persona {
 }
 
 export type ClinicalStage = 
-  | 'INTAKE_RECEIVED'
-  | 'NURSE_CHECK'
-  | 'DOCTOR_REVIEW'
-  | 'AWAITING_PAYMENT'
-  | 'WITH_CONSULTANT'
-  | 'OPINION_READY'
-  | 'PARTNER_SERVICES'
-  | 'FOLLOW_UP_21_DAYS'
-  | 'CLOSED';
+  | 'INTAKE_RECEIVED'       // Stage 1: P01-P14
+  | 'NURSE_CHECK'           // Stage 2: N01-N07
+  | 'DOCTOR_REVIEW'         // Stage 3: D01-D10
+  | 'AWAITING_PAYMENT'      // Stage 4: P19-P21
+  | 'WITH_CONSULTANT'       // Stage 5: K01-K07
+  | 'OPINION_READY'          // Stage 6: K08, P23, P25
+  | 'PARTNER_SERVICES'      // Stage 7: L01, H01, T01, V01
+  | 'FOLLOW_UP_21_DAYS'     // Stage 8: P27-P29
+  | 'CLOSED';               // Stage 9: AD01-HA03
+
+export interface CaregiverProxy {
+  isProxy: boolean;
+  name: string;
+  relationship: string;
+  nationalId: string;
+  phone: string;
+  hasLegalConsent: boolean;
+}
 
 export interface DiagnosticAsset {
   id: string;
@@ -40,6 +49,7 @@ export interface DiagnosticAsset {
   size: string;
   verified: boolean;
   url: string;
+  metrics?: Record<string, string>;
 }
 
 export interface ClinicalCase {
@@ -53,13 +63,14 @@ export interface ClinicalCase {
   specialty: string;
   diagnosis: string;
   symptoms: string;
+  caregiver?: CaregiverProxy;
   consultationType: 'written' | 'video' | 'voice';
   currentStage: ClinicalStage;
   treatingDoctor: {
     name: string;
     hospital: string;
     city: string;
-    focusQuestions: [string, string];
+    focusQuestions: [string, string, string]; // PDF Spec mandates 3 focus questions
   };
   consultant: {
     name: string;
@@ -68,14 +79,19 @@ export interface ClinicalCase {
     opinionEnglish?: string;
     opinionArabic?: string;
     proposedSlot?: string;
+    audioBriefDurationSec?: number;
   };
   pricing: {
+    tier: 1 | 2 | 3;
+    tierName: string;
     baseSar: number;
     vatPercent: number;
     vatSar: number;
     totalSar: number;
     paid: boolean;
     invoiceNumber?: string;
+    tapChargeId?: string;
+    tabbyInstallmentSar?: number;
   };
   files: DiagnosticAsset[];
   partnerOrders: {

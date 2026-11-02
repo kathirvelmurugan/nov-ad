@@ -13,8 +13,8 @@ export const DoctorReviewView: React.FC<Props> = ({
   onAdvanceStage,
   onUpdateCase,
 }) => {
-  const handleQuestionChange = (index: 0 | 1, value: string) => {
-    const currentQuestions = [...activeCase.treatingDoctor.focusQuestions] as [string, string];
+  const handleQuestionChange = (index: 0 | 1 | 2, value: string) => {
+    const currentQuestions = [...activeCase.treatingDoctor.focusQuestions] as [string, string, string];
     currentQuestions[index] = value;
     onUpdateCase({
       treatingDoctor: {
@@ -105,6 +105,18 @@ export const DoctorReviewView: React.FC<Props> = ({
               rows={2}
               value={activeCase.treatingDoctor.focusQuestions[1]}
               onChange={(e) => handleQuestionChange(1, e.target.value)}
+              className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-200 focus:ring-1 focus:ring-teal-500 outline-none leading-relaxed"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-1">
+              السؤال الثالث (Question 3 - خطة المتابعة والتأهيل):
+            </label>
+            <textarea
+              rows={2}
+              value={activeCase.treatingDoctor.focusQuestions[2]}
+              onChange={(e) => handleQuestionChange(2, e.target.value)}
               className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-200 focus:ring-1 focus:ring-teal-500 outline-none leading-relaxed"
             />
           </div>

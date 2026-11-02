@@ -14,65 +14,65 @@ export const WhatsAppDrawer: React.FC<Props> = ({ activeCase }) => {
     switch (activeCase.currentStage) {
       case 'INTAKE_RECEIVED':
         return {
-          code: 'W02',
-          title: 'استلام الحالة (Case Received)',
-          body: `مرحباً بك في ألو دكتور. تم استلام ملفك الطبي ورقم الحالة هو ${activeCase.caseNumber}. جارٍ الآن تدقيق التقارير الطبية من قبل التمريض.`,
+          code: 'W01',
+          title: 'تأكيد استلام الطلب (Intake Confirmation)',
+          body: `مرحباً بك في ألو دكتور. تم استلام طلب الرأي الطبي الثاني بنجاح، ورقم ملفك الطبي هو ${activeCase.caseNumber}. جارٍ مراجعة وتدقيق المستندات بواسطة تمريض الفرز.`,
           button: 'تتبع مسار الحالة (Track Case)',
         };
       case 'NURSE_CHECK':
         return {
-          code: 'W03',
-          title: 'تدقيق المستندات (Files Audit)',
-          body: `أهلاً بك. ممرضة ألو دكتور تقوم بمطابقة الأشعة والتقارير لحالة ${activeCase.caseNumber}. في حال طلب مستند إضافي ستصلك رسالة فورية.`,
-          button: 'عرض المستندات المرفقة',
+          code: 'W04',
+          title: 'اكتمال التدقيق وحجب الهوية (De-identification Complete)',
+          body: `أهلاً بك. أتمت ممرضة ألو دكتور تدقيق كافة الفحوصات ومطابقتها للمعايير السريرية، وحجب الهوية لضمان الخصوصية. أحيل الملف للطبيب السعودي المعالج.`,
+          button: 'عرض حالة التدقيق',
         };
       case 'DOCTOR_REVIEW':
         return {
-          code: 'W01',
-          title: 'مراجعة الطبيب السعودي (Doctor Review)',
-          body: `يقوم الآن ${activeCase.treatingDoctor.name} في ${activeCase.treatingDoctor.hospital} بدراسة تقاريرك وتحديد الاستشاري الدولي الأنسب.`,
+          code: 'W05',
+          title: 'مراجعة الطبيب السعودي وصياغة الأسئلة (Doctor Review)',
+          body: `يقوم الآن ${activeCase.treatingDoctor.name} في ${activeCase.treatingDoctor.hospital} بصياغة الأسئلة السريرية التخصصية للاستشاري الدولي.`,
           button: 'متابعة الحالة',
         };
       case 'AWAITING_PAYMENT':
         return {
-          code: 'W05',
-          title: 'رابط سداد الرأي الطبي (Payment Link)',
-          body: `تم اعتماد خطة الاستشارة لحالة ${activeCase.caseNumber}. إجمالي المبلغ: ${activeCase.pricing.totalSar} ر.س شامل ضريبة القيمة المضافة 15%. يُرجى السداد للمتابعة.`,
-          button: 'ادفع بأمان عبر مدى / أبل باي (Pay Securely)',
+          code: 'W06',
+          title: 'رابط سداد باقة الرأي الطبي (Payment Link)',
+          body: `اعتمد طبيبك المعالج خطة الاستشارة لحالة ${activeCase.caseNumber}. إجمالي المبلغ: ${activeCase.pricing.totalSar} ر.س شامل ضريبة القيمة المضافة 15%. ادفع عبر مدى أو أبل باي أو قسّطها مع تابّي.`,
+          button: 'ادفع بأمان عبر Tap Payments (Mada / Apple Pay)',
         };
       case 'WITH_CONSULTANT':
         return {
-          code: 'W07',
-          title: 'بدء الاستشارة الدولية (Consultant Active)',
-          body: `تم استلام الحالة من قبل الاستشاري الدولي ${activeCase.consultant.name} في ${activeCase.consultant.center}. جارٍ تجهيز المواعيد المتاحة للاتصال المرئي.`,
+          code: 'W08',
+          title: 'إحالة الملف للاستشاري الدولي (Consultant Assigned)',
+          body: `تم تعيين ${activeCase.consultant.name} في ${activeCase.consultant.center} لدراسة ملفك وإعداد التقرير التخصصي.`,
           button: 'متابعة جدول المواعيد',
         };
       case 'OPINION_READY':
         return {
-          code: 'W10',
-          title: 'صدور الرأي والتقرير المعتمد (Opinion Ready)',
-          body: `صدر الرأي الطبي الثاني لحالة ${activeCase.caseNumber} معتمد ومترجم باللغتين العربية والإنجليزية، ومختوم رسمياً من ألو دكتور.`,
-          button: 'تحميل التقرير الطبي المعتمد (View Opinion)',
+          code: 'W14',
+          title: 'صدور التقرير الطبي الثاني المعتمد (Bilingual Report Ready)',
+          body: `صدر الرأي الطبي الثاني لحالة ${activeCase.caseNumber} معتمداً باللغتين العربية والإنجليزية ومختوماً رسمياً من ألو دكتور.`,
+          button: 'تحميل التقرير الطبي المعتمد (Download PDF)',
         };
       case 'PARTNER_SERVICES':
         return {
-          code: 'W11',
-          title: 'الخدمات الموصى بها (Partner Orders)',
-          body: `أضاف طبيبك المعالج توصيات طبية تكميلية تشمل تحاليل مخبرية وتمريضاً منزلياً. يمكنك تأكيد وتتبع المواعيد الآن.`,
-          button: 'حجز الخدمات الطبية',
+          code: 'W15',
+          title: 'تفعيل الخدمات العلاجية المساندة (Partner Dispatch)',
+          body: `تم إرسال توصيات الفحوصات المخبرية والتمريض المنزلي المرافقة لخطة الرأي الثاني إلى الشركاء المعتمدين لترتيب المواعيد.`,
+          button: 'حجز ومتابعة الخدمات الطبية',
         };
       case 'FOLLOW_UP_21_DAYS':
         return {
           code: 'W18',
-          title: 'متابعة الـ 21 يوماً (21-Day Direct Line)',
-          body: `نافذة التواصل المباشر مفتوحة لمدة 21 يوماً مع طبيبك المعالج وممرضة ألو دكتور لطرح أي استفسارات توضيحية.`,
-          button: 'فتح المحادثة الطبية',
+          title: 'نافذة المتابعة المباشرة (14-Day Clinical Chat)',
+          body: `نافذة التواصل المباشر مفتوحة لمدة 14 يوماً مع طبيبك المعالج وممرضة ألو دكتور لطرح أي استفسارات توضيحية حول التقرير.`,
+          button: 'فتح المحادثة السريرية المباشرة',
         };
       case 'CLOSED':
       default:
         return {
           code: 'W20',
-          title: 'إغلاق الحالة وتقييم التجربة (Case Closed & NPS)',
+          title: 'إغلاق الحالة وتقييم التجربة (Case Closed & NPS Survey)',
           body: `تم إغلاق ملف الاستشارة بنجاح. نأمل أن نكون قد قدمنا لك الاطمئنان والرأي الموثوق. يُرجى تقييم تجربتك معنا.`,
           button: 'تقييم الخدمة (5 نجوم)',
         };

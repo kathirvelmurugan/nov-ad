@@ -3,7 +3,7 @@ import { Persona } from '../types';
 export const PERSONAS: Persona[] = [
   {
     code: 'P',
-    name: 'سالم العامري',
+    name: 'سالم العتيبي',
     title: 'المريض (Patient: Salem A.)',
     badge: '👤 مريض',
     avatar: '👨‍💼',
@@ -12,19 +12,19 @@ export const PERSONAS: Persona[] = [
     lang: 'ar'
   },
   {
-    code: 'D',
-    name: 'د. عبدالله الشمري',
-    title: 'الطبيب السعودي المعالج (Riyadh Care)',
-    badge: '🩺 طبيب معالج',
-    avatar: '👨‍⚕️',
-    surface: 'portal-web',
+    code: 'F',
+    name: 'فاطمة العتيبي',
+    title: 'مقدم الطلب / المرافقة (Caregiver Proxy: Fatima A.)',
+    badge: '👩‍👧 مرافق مخول',
+    avatar: '👩‍💼',
+    surface: 'patient-mobile',
     isRtl: true,
     lang: 'ar'
   },
   {
     code: 'N',
-    name: 'نورة الدوسري',
-    title: 'ممرضة ألو (ALO Triage Nurse)',
+    name: 'سارة الدوسري',
+    title: 'ممرضة ألو للفرز السريري (Nurse Triage: Sara N.)',
     badge: '👩‍⚕️ تمريض فرز',
     avatar: '👩‍⚕️',
     surface: 'portal-web',
@@ -32,11 +32,11 @@ export const PERSONAS: Persona[] = [
     lang: 'ar'
   },
   {
-    code: 'C',
-    name: 'سارة القحطاني',
-    title: 'منسقة الحالة والترجمة المعتمدة (Coordinator)',
-    badge: '📋 منسقة ألو',
-    avatar: '👩‍💼',
+    code: 'D',
+    name: 'د. عبدالله الشمري',
+    title: 'الطبيب السعودي المعالج (Riyadh Care: Dr. Abdullah)',
+    badge: '🩺 طبيب معالج',
+    avatar: '👨‍⚕️',
     surface: 'portal-web',
     isRtl: true,
     lang: 'ar'
@@ -44,7 +44,7 @@ export const PERSONAS: Persona[] = [
   {
     code: 'K',
     name: 'Dr. Arjun Mehta',
-    title: 'Senior Cardiac Consultant (KIMS, Hyderabad)',
+    title: 'Senior Cardiac Consultant (KIMS Hyderabad: Dr. Arjun)',
     badge: '🌍 Consultant',
     avatar: '👨‍⚕️',
     surface: 'consultant-mobile',
@@ -53,8 +53,8 @@ export const PERSONAS: Persona[] = [
   },
   {
     code: 'L',
-    name: 'فهد المطيري',
-    title: 'أخصائي المختبر (Lab Tech - Riyadh Care)',
+    name: 'مختبرات ألفا الرياض',
+    title: 'شريك الفحوصات التشخيصية (Alpha Labs)',
     badge: '🧪 مختبر',
     avatar: '🔬',
     surface: 'partner-portal',
@@ -63,39 +63,39 @@ export const PERSONAS: Persona[] = [
   },
   {
     code: 'H',
-    name: 'د. خالد الزهراني',
-    title: 'صيدلي معتمد (Pharmacist - Partner)',
-    badge: '💊 صيدلي',
-    avatar: '💊',
-    surface: 'partner-portal',
-    isRtl: true,
-    lang: 'ar'
-  },
-  {
-    code: 'T',
-    name: 'أحمد العنزي',
-    title: 'أخصائي علاج طبيعي وتأهيل (Physiotherapist)',
-    badge: '🏃 علاج طبيعي',
-    avatar: '🏃',
-    surface: 'partner-portal',
-    isRtl: true,
-    lang: 'ar'
-  },
-  {
-    code: 'V',
-    name: 'مريم العتيبي',
-    title: 'أخصائية التمريض المنزلي (Home Nursing - Riyadh)',
-    badge: '🏡 تمريض منزلي',
+    name: 'سند للرعاية المنزلية',
+    title: 'شريك التمريض المنزلي (Sanad Home Health)',
+    badge: '🏡 رعاية منزلية',
     avatar: '🩺',
     surface: 'partner-portal',
     isRtl: true,
     lang: 'ar'
   },
   {
+    code: 'T',
+    name: 'الفرسان للسياحة الطبية',
+    title: 'شريك السفر والتأشيرة العلاجية (Al-Fursan Medical Travel)',
+    badge: '✈️ سفر وتأشيرات',
+    avatar: '🛫',
+    surface: 'partner-portal',
+    isRtl: true,
+    lang: 'ar'
+  },
+  {
+    code: 'V',
+    name: 'بوبا / التعاونية للتأمين',
+    title: 'الموافقات التأمينية والتغطية (Insurance Approvals)',
+    badge: '🛡️ تأمين',
+    avatar: '📋',
+    surface: 'partner-portal',
+    isRtl: true,
+    lang: 'ar'
+  },
+  {
     code: 'HA',
-    name: 'إدارة مستشفى رعاية الرياض',
-    title: 'مدير الشريك الطبي (Medical Center Partner Admin)',
-    badge: '🏥 إدارة شريك',
+    name: 'مستشفى رعاية الرياض',
+    title: 'إدارة المستشفى الشريك (Hospital Admin: Riyadh Care)',
+    badge: '🏥 إدارة مستشفى',
     avatar: '🏢',
     surface: 'admin-portal',
     isRtl: true,
@@ -103,8 +103,8 @@ export const PERSONAS: Persona[] = [
   },
   {
     code: 'AD',
-    name: 'مدير النظام التنفيذي',
-    title: 'مدير منصة ألو دكتور (ALO Super Admin)',
+    name: 'الإدارة العامة لمنصة ألو',
+    title: 'المشرف العام للمنصة (Platform Super Admin: ALO HQ)',
     badge: '⚙️ مشرف عام',
     avatar: '⚡',
     surface: 'admin-portal',

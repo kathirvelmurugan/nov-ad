@@ -12,6 +12,14 @@ export const SEED_CASES: ClinicalCase[] = [
     specialty: 'أمراض القلب والشرايين (Cardiology)',
     diagnosis: 'تضيق الصمام الأبهري الشديد والتكلس التاجي (Severe Calcific Aortic Stenosis)',
     symptoms: 'ضيق تنفس تدريجي عند بذل الجهد (NYHA Class III) مع نوبات دوخة وألم ضاغط في الصدر منذ 4 أشهر.',
+    caregiver: {
+      isProxy: true,
+      name: 'فاطمة العتيبي',
+      relationship: 'ابنة المريض (Daughter)',
+      nationalId: '1098452103',
+      phone: '+966 55 987 6543',
+      hasLegalConsent: true
+    },
     consultationType: 'video',
     currentStage: 'INTAKE_RECEIVED',
     treatingDoctor: {
@@ -20,7 +28,8 @@ export const SEED_CASES: ClinicalCase[] = [
       city: 'الرياض',
       focusQuestions: [
         'هل توصي بإجراء استبدال الصمام عبر القسطرة (TAVR) أم الجراحة المفتوحة (SAVR) في ضوء درجة التكلس العالية ومعدل الخطورة؟',
-        'ما هو البروتوكول الدوائي الموصى به لمضادات التخثر ومثبطات الصفيحات بعد الإجراء؟'
+        'ما هو البروتوكول الدوائي الموصى به لمضادات التخثر ومثبطات الصفيحات بعد الإجراء؟',
+        'ما هي الخطة الإضافية المقترحة للمتابعة والتأهيل السريري لتقليل احتمالات الانتكاس؟'
       ]
     },
     consultant: {
@@ -32,12 +41,16 @@ export const SEED_CASES: ClinicalCase[] = [
       proposedSlot: 'Tue 5:00 PM KSA / 7:30 PM IST'
     },
     pricing: {
-      baseSar: 1800,
+      tier: 2,
+      tierName: 'استشارة مكتوبة + جلسة مرئية عن بُعد (Tier 2 Video)',
+      baseSar: 2500,
       vatPercent: 15,
-      vatSar: 270,
-      totalSar: 2070,
+      vatSar: 375,
+      totalSar: 2875,
       paid: false,
-      invoiceNumber: 'INV-2026-0941'
+      invoiceNumber: 'INV-2026-0941',
+      tapChargeId: 'chg_tap_ksa_test_89214',
+      tabbyInstallmentSar: 718.75
     },
     files: [
       { id: 'f1', name: 'Clinical_Echo_Summary.pdf', type: 'pdf', size: '2.4 MB', verified: true, url: '#' },
@@ -70,7 +83,8 @@ export const SEED_CASES: ClinicalCase[] = [
       city: 'جدة',
       focusQuestions: [
         'Is complete revascularization via CABG mandatory over multi-vessel PCI with DES given syntax score 34?',
-        'Optimal timing for antiplatelet therapy discontinuation prior to intervention?'
+        'Optimal timing for antiplatelet therapy discontinuation prior to intervention?',
+        'ما هي الخطة الإضافية المقترحة للمتابعة والتأهيل السريري لتقليل احتمالات الانتكاس؟'
       ]
     },
     consultant: {
@@ -78,7 +92,18 @@ export const SEED_CASES: ClinicalCase[] = [
       center: 'Apollo Hospitals',
       city: 'Chennai, India'
     },
-    pricing: { baseSar: 1800, vatPercent: 15, vatSar: 270, totalSar: 2070, paid: false },
+    pricing: {
+      tier: 2,
+      tierName: 'استشارة مكتوبة + جلسة مرئية عن بُعد (Tier 2 Video)',
+      baseSar: 2500,
+      vatPercent: 15,
+      vatSar: 375,
+      totalSar: 2875,
+      paid: false,
+      invoiceNumber: 'INV-2026-0001',
+      tapChargeId: 'chg_tap_ksa_test_89214',
+      tabbyInstallmentSar: 718.75
+    },
     files: [
       { id: 'f4', name: 'Coronary_Angio_Report.pdf', type: 'pdf', size: '3.1 MB', verified: true, url: '#' },
       { id: 'f5', name: 'Cath_Lab_Runs.mp4', type: 'mp4', size: '42.0 MB', verified: true, url: '#' }
@@ -109,7 +134,8 @@ export const SEED_CASES: ClinicalCase[] = [
       city: 'الدمام',
       focusQuestions: [
         'Is endovascular coiling preferable over microsurgical clipping for this 7mm wide-neck aneurysm?',
-        'Risk assessment of secondary rupture during conservative observation window?'
+        'Risk assessment of secondary rupture during conservative observation window?',
+        'ما هي الخطة الإضافية المقترحة للمتابعة والتأهيل السريري لتقليل احتمالات الانتكاس؟'
       ]
     },
     consultant: {
@@ -117,7 +143,18 @@ export const SEED_CASES: ClinicalCase[] = [
       center: 'Fortis Memorial Research Institute',
       city: 'Delhi, India'
     },
-    pricing: { baseSar: 1500, vatPercent: 15, vatSar: 225, totalSar: 1725, paid: false },
+    pricing: {
+      tier: 2,
+      tierName: 'استشارة مكتوبة + جلسة مرئية عن بُعد (Tier 2 Video)',
+      baseSar: 2500,
+      vatPercent: 15,
+      vatSar: 375,
+      totalSar: 2875,
+      paid: false,
+      invoiceNumber: 'INV-2026-0001',
+      tapChargeId: 'chg_tap_ksa_test_89214',
+      tabbyInstallmentSar: 718.75
+    },
     files: [
       { id: 'f6', name: 'Brain_MRA_3D.dcm', type: 'dicom', size: '120 MB', verified: true, url: '#' },
       { id: 'f7', name: 'Neuro_Consultation_Note.pdf', type: 'pdf', size: '1.8 MB', verified: true, url: '#' }
@@ -148,7 +185,8 @@ export const SEED_CASES: ClinicalCase[] = [
       city: 'المدينة المنورة',
       focusQuestions: [
         'Candidate evaluation for stereotactic laser amygdalohippocampotomy vs anterior temporal lobectomy?',
-        'Relevance of responsive neurostimulation (RNS) given non-dominant hemisphere seizure onset?'
+        'Relevance of responsive neurostimulation (RNS) given non-dominant hemisphere seizure onset?',
+        'ما هي الخطة الإضافية المقترحة للمتابعة والتأهيل السريري لتقليل احتمالات الانتكاس؟'
       ]
     },
     consultant: {
@@ -156,7 +194,18 @@ export const SEED_CASES: ClinicalCase[] = [
       center: 'NIMHANS / Manipal',
       city: 'Bangalore, India'
     },
-    pricing: { baseSar: 1800, vatPercent: 15, vatSar: 270, totalSar: 2070, paid: false },
+    pricing: {
+      tier: 2,
+      tierName: 'استشارة مكتوبة + جلسة مرئية عن بُعد (Tier 2 Video)',
+      baseSar: 2500,
+      vatPercent: 15,
+      vatSar: 375,
+      totalSar: 2875,
+      paid: false,
+      invoiceNumber: 'INV-2026-0001',
+      tapChargeId: 'chg_tap_ksa_test_89214',
+      tabbyInstallmentSar: 718.75
+    },
     files: [
       { id: 'f8', name: 'Video_EEG_Monitoring_72h.pdf', type: 'pdf', size: '5.6 MB', verified: true, url: '#' },
       { id: 'f9', name: 'Epilepsy_Protocol_Brain_MRI.dcm', type: 'dicom', size: '95 MB', verified: true, url: '#' }
@@ -187,7 +236,8 @@ export const SEED_CASES: ClinicalCase[] = [
       city: 'الرياض',
       focusQuestions: [
         'Is adjuvant chemotherapy required prior to endocrine therapy given Oncotype DX recurrence score of 24?',
-        'Recommendation on CDK4/6 inhibitor inclusion in adjuvant setting?'
+        'Recommendation on CDK4/6 inhibitor inclusion in adjuvant setting?',
+        'ما هي الخطة الإضافية المقترحة للمتابعة والتأهيل السريري لتقليل احتمالات الانتكاس؟'
       ]
     },
     consultant: {
@@ -195,7 +245,18 @@ export const SEED_CASES: ClinicalCase[] = [
       center: 'Tata Memorial / Apollo Cancer Center',
       city: 'Mumbai, India'
     },
-    pricing: { baseSar: 1800, vatPercent: 15, vatSar: 270, totalSar: 2070, paid: true, invoiceNumber: 'INV-2026-0812' },
+    pricing: {
+      tier: 2,
+      tierName: 'استشارة مكتوبة + جلسة مرئية عن بُعد (Tier 2 Video)',
+      baseSar: 2500,
+      vatPercent: 15,
+      vatSar: 375,
+      totalSar: 2875,
+      paid: true,
+      invoiceNumber: 'INV-2026-0812',
+      tapChargeId: 'chg_tap_ksa_test_89214',
+      tabbyInstallmentSar: 718.75
+    },
     files: [
       { id: 'f10', name: 'Pathology_Biopsy_IHC.pdf', type: 'pdf', size: '3.4 MB', verified: true, url: '#' },
       { id: 'f11', name: 'Bilateral_Breast_MRI.dcm', type: 'dicom', size: '140 MB', verified: true, url: '#' }
@@ -226,7 +287,8 @@ export const SEED_CASES: ClinicalCase[] = [
       city: 'أبها',
       focusQuestions: [
         'Simultaneous vs staged resection of primary tumor and single segment IV liver metastasis?',
-        'First-line regimen: FOLFOXIRI + Bevacizumab vs FOLFIRI + Panitumumab (RAS wild-type confirmed)?'
+        'First-line regimen: FOLFOXIRI + Bevacizumab vs FOLFIRI + Panitumumab (RAS wild-type confirmed)?',
+        'ما هي الخطة الإضافية المقترحة للمتابعة والتأهيل السريري لتقليل احتمالات الانتكاس؟'
       ]
     },
     consultant: {
@@ -236,7 +298,18 @@ export const SEED_CASES: ClinicalCase[] = [
       opinionEnglish: 'Oligometastatic liver disease in segment IV is resectable with R0 margins. Recommend 4 cycles of induction FOLFOXIRI + Panitumumab, followed by restaging MRI. If stable or response observed, perform staged laparoscopic low anterior resection followed 6 weeks later by segment IV anatomic resection.',
       opinionArabic: 'الانبثاث الكبدي الوحيد في القطعة الرابعة قابل للاستئصال الجراحي التام. نوصي بـ 4 دورات علاج كيميائي حثي متبوعة بإعادة تصوير رنيني، ثم إجراء الاستئصال على مرحلتين لتحقيق أعلى معدلات الشفاء.'
     },
-    pricing: { baseSar: 1800, vatPercent: 15, vatSar: 270, totalSar: 2070, paid: true, invoiceNumber: 'INV-2026-0744' },
+    pricing: {
+      tier: 2,
+      tierName: 'استشارة مكتوبة + جلسة مرئية عن بُعد (Tier 2 Video)',
+      baseSar: 2500,
+      vatPercent: 15,
+      vatSar: 375,
+      totalSar: 2875,
+      paid: true,
+      invoiceNumber: 'INV-2026-0744',
+      tapChargeId: 'chg_tap_ksa_test_89214',
+      tabbyInstallmentSar: 718.75
+    },
     files: [
       { id: 'f12', name: 'Abdominal_Pelvic_CT_TriplePhase.dcm', type: 'dicom', size: '210 MB', verified: true, url: '#' },
       { id: 'f13', name: 'Colonoscopy_Biopsy_Report.pdf', type: 'pdf', size: '2.1 MB', verified: true, url: '#' }
@@ -267,7 +340,8 @@ export const SEED_CASES: ClinicalCase[] = [
       city: 'بريدة',
       focusQuestions: [
         'Component selection for revision: hinged constrained vs semi-constrained with metal augments?',
-        'Bone graft substitute choice for tibial metaphysical defect Anderson Type IIB?'
+        'Bone graft substitute choice for tibial metaphysical defect Anderson Type IIB?',
+        'ما هي الخطة الإضافية المقترحة للمتابعة والتأهيل السريري لتقليل احتمالات الانتكاس؟'
       ]
     },
     consultant: {
@@ -276,7 +350,18 @@ export const SEED_CASES: ClinicalCase[] = [
       city: 'Mumbai, India',
       opinionEnglish: 'Radiographs reveal extensive tibial lucency >2mm indicating aseptic mechanical loosening. Revision using modular rotating hinge prosthesis with porous titanium sleeves and tantalum cones for defect reconstruction is recommended.'
     },
-    pricing: { baseSar: 1500, vatPercent: 15, vatSar: 225, totalSar: 1725, paid: true, invoiceNumber: 'INV-2026-0610' },
+    pricing: {
+      tier: 2,
+      tierName: 'استشارة مكتوبة + جلسة مرئية عن بُعد (Tier 2 Video)',
+      baseSar: 2500,
+      vatPercent: 15,
+      vatSar: 375,
+      totalSar: 2875,
+      paid: true,
+      invoiceNumber: 'INV-2026-0610',
+      tapChargeId: 'chg_tap_ksa_test_89214',
+      tabbyInstallmentSar: 718.75
+    },
     files: [
       { id: 'f14', name: 'WeightBearing_Knee_XRay.pdf', type: 'pdf', size: '4.8 MB', verified: true, url: '#' },
       { id: 'f15', name: 'CT_Scan_Left_Knee_MetalSuppressed.dcm', type: 'dicom', size: '88 MB', verified: true, url: '#' }
@@ -307,7 +392,8 @@ export const SEED_CASES: ClinicalCase[] = [
       city: 'الخبر',
       focusQuestions: [
         'Minimally invasive TLIF vs open decompressive laminectomy with pedicle screw fixation?',
-        'Necessity of intraoperative neuro-monitoring during reduction of grade II slip?'
+        'Necessity of intraoperative neuro-monitoring during reduction of grade II slip?',
+        'ما هي الخطة الإضافية المقترحة للمتابعة والتأهيل السريري لتقليل احتمالات الانتكاس؟'
       ]
     },
     consultant: {
@@ -316,7 +402,18 @@ export const SEED_CASES: ClinicalCase[] = [
       city: 'Coimbatore, India',
       opinionEnglish: 'Grade II slip with severe canal stenosis requires stabilization. Minimally Invasive TLIF with expandable interbody cage provides excellent fusion rates with minimized paraspinal muscle damage.'
     },
-    pricing: { baseSar: 1800, vatPercent: 15, vatSar: 270, totalSar: 2070, paid: true, invoiceNumber: 'INV-2026-0504' },
+    pricing: {
+      tier: 2,
+      tierName: 'استشارة مكتوبة + جلسة مرئية عن بُعد (Tier 2 Video)',
+      baseSar: 2500,
+      vatPercent: 15,
+      vatSar: 375,
+      totalSar: 2875,
+      paid: true,
+      invoiceNumber: 'INV-2026-0504',
+      tapChargeId: 'chg_tap_ksa_test_89214',
+      tabbyInstallmentSar: 718.75
+    },
     files: [
       { id: 'f16', name: 'Lumbar_Spine_MRI_T2_Axial_Sag.dcm', type: 'dicom', size: '110 MB', verified: true, url: '#' }
     ],
@@ -346,7 +443,8 @@ export const SEED_CASES: ClinicalCase[] = [
       city: 'الطائف',
       focusQuestions: [
         'Transcatheter device closure vs surgical patch closure given proximity to aortic valve?',
-        'Reversibility of pulmonary vascular resistance index (PVRI) based on catheterization data?'
+        'Reversibility of pulmonary vascular resistance index (PVRI) based on catheterization data?',
+        'ما هي الخطة الإضافية المقترحة للمتابعة والتأهيل السريري لتقليل احتمالات الانتكاس؟'
       ]
     },
     consultant: {
@@ -354,7 +452,18 @@ export const SEED_CASES: ClinicalCase[] = [
       center: 'Narayana Institute of Cardiac Sciences',
       city: 'Bangalore, India'
     },
-    pricing: { baseSar: 1800, vatPercent: 15, vatSar: 270, totalSar: 2070, paid: false },
+    pricing: {
+      tier: 2,
+      tierName: 'استشارة مكتوبة + جلسة مرئية عن بُعد (Tier 2 Video)',
+      baseSar: 2500,
+      vatPercent: 15,
+      vatSar: 375,
+      totalSar: 2875,
+      paid: false,
+      invoiceNumber: 'INV-2026-0001',
+      tapChargeId: 'chg_tap_ksa_test_89214',
+      tabbyInstallmentSar: 718.75
+    },
     files: [
       { id: 'f17', name: 'Pediatric_Echo_Doppler_Series.mp4', type: 'mp4', size: '35 MB', verified: true, url: '#' }
     ],
@@ -384,7 +493,8 @@ export const SEED_CASES: ClinicalCase[] = [
       city: 'تبوك',
       focusQuestions: [
         'Role of focal Botulinum toxin injections for upper limb flexor spasticity prior to robotic gait training?',
-        'Optimal duration and frequency of constraint-induced movement therapy (CIMT)?'
+        'Optimal duration and frequency of constraint-induced movement therapy (CIMT)?',
+        'ما هي الخطة الإضافية المقترحة للمتابعة والتأهيل السريري لتقليل احتمالات الانتكاس؟'
       ]
     },
     consultant: {
@@ -393,7 +503,18 @@ export const SEED_CASES: ClinicalCase[] = [
       city: 'Kochi, India',
       opinionEnglish: 'Patient shows substantial neuro-plasticity potential. Recommended protocol: 300 units Botox for wrist/finger flexor tone reduction, followed 7 days later by high-intensity CIMT (3h/day for 3 weeks) and body-weight supported treadmill training.'
     },
-    pricing: { baseSar: 1800, vatPercent: 15, vatSar: 270, totalSar: 2070, paid: true, invoiceNumber: 'INV-2026-0391' },
+    pricing: {
+      tier: 2,
+      tierName: 'استشارة مكتوبة + جلسة مرئية عن بُعد (Tier 2 Video)',
+      baseSar: 2500,
+      vatPercent: 15,
+      vatSar: 375,
+      totalSar: 2875,
+      paid: true,
+      invoiceNumber: 'INV-2026-0391',
+      tapChargeId: 'chg_tap_ksa_test_89214',
+      tabbyInstallmentSar: 718.75
+    },
     files: [
       { id: 'f18', name: 'Brain_Diffusion_MRI_Subacute_Stroke.dcm', type: 'dicom', size: '78 MB', verified: true, url: '#' }
     ],

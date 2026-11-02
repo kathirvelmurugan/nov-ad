@@ -59,7 +59,7 @@ export const App: React.FC = () => {
       else if (nextStage === 'DOCTOR_REVIEW') setActivePersona(PERSONAS.find((p) => p.code === 'D')!);
       else if (nextStage === 'AWAITING_PAYMENT') setActivePersona(PERSONAS.find((p) => p.code === 'P')!);
       else if (nextStage === 'WITH_CONSULTANT') setActivePersona(PERSONAS.find((p) => p.code === 'K')!);
-      else if (nextStage === 'OPINION_READY') setActivePersona(PERSONAS.find((p) => p.code === 'C')!);
+      else if (nextStage === 'OPINION_READY') setActivePersona(PERSONAS.find((p) => p.code === 'P')!);
       else if (nextStage === 'PARTNER_SERVICES') setActivePersona(PERSONAS.find((p) => p.code === 'L')!);
       else if (nextStage === 'FOLLOW_UP_21_DAYS') setActivePersona(PERSONAS.find((p) => p.code === 'P')!);
     }
