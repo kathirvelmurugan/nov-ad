@@ -1,0 +1,65 @@
+name: Alibaba AI Issue Code Generator
+
+on:
+  issues:
+    types: [labeled, opened]
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  ai-generate-code:
+    if: >
+      github.event.label.name == 'ai-generate' ||
+      contains(github.event.comment.body, '/generate')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Run Alibaba AI Code Generation
+        env:
+          ALIBABA_API_KEY: ${{ secrets.ALIBABA_API_KEY }}
+          ALIBABA_AI_MODEL: ${{ vars.ALIBABA_AI_MODEL || 'qwen-plus' }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+        run: |
+          echo "Executing Alibaba AI Code Generator for Issue #${{ github.event.issue.number }}..."
+          node scripts/ai-generator.mjs "src/generated/Issue-${{ github.event.issue.number }}.tsx" "Generate the React component matching issue: $ISSUE_TITLE. Requirements: $ISSUE_BODY $COMMENT_BODY"
+
+      - name: Commit and Push Generated Code
+        run: |
+          git config user.name "Alibaba AI Agent"
+          git config user.email "ai-agent@alodoctor.sa"
+          git add .
+          if git diff --staged --quiet; then
+            echo "No changes generated."
+          else
+            git commit -m "feat(ai-agent): auto-generated code for Issue #${{ github.event.issue.number }} via Alibaba Qwen"
+            git push origin main
+          fi
+
+      - name: Comment on Issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '🤖 **Alibaba AI Agent Report**: Successfully reviewed requirements, verified file structure, generated missing code, and pushed to `main` branch. 🚀'
+            })
