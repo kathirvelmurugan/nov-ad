@@ -16,6 +16,7 @@ import { PartnerServicesView } from './components/screens/PartnerServicesView';
 import { FollowUpChatView } from './components/screens/FollowUpChatView';
 import { AdminSettingsView } from './components/screens/AdminSettingsView';
 import { GuideModal } from './components/GuideModal';
+import { StageHandoffModal } from './components/StageHandoffModal';
 
 const STORAGE_KEY = 'alo_cases_v2.4';
 const ACTIVE_CASE_KEY = 'alo_active_case_id_v2.4';
@@ -67,6 +68,11 @@ export const App: React.FC = () => {
 
   const [isWhatsAppDrawerOpen, setIsWhatsAppDrawerOpen] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
+  const [pendingHandoff, setPendingHandoff] = useState<{
+    fromStage: ClinicalStage;
+    toStage: ClinicalStage;
+    nextPersona: Persona;
+  } | null>(null);
 
   // Sync state modifications to localStorage for refresh-durability
   useEffect(() => {
@@ -127,10 +133,15 @@ export const App: React.FC = () => {
     );
   };
 
-  // Smart persona select: updates persona and aligns language default
+  // Smart persona select: updates persona while strictly preserving explicit user language lock
   const handleSelectPersona = (p: Persona) => {
     setActivePersona(p);
-    setLang(p.lang);
+    
+    // Check if user has explicitly locked their language
+    const lockedLang = localStorage.getItem(LANG_KEY);
+    if (!lockedLang) {
+      setLang(p.lang);
+    }
 
     // Contextually switch stage to match persona view
     if (p.code === 'N') handleUpdateCase({ currentStage: 'NURSE_CHECK' });
@@ -145,9 +156,13 @@ export const App: React.FC = () => {
     }
   };
 
-  // 1-Click Universal Language Toggle
+  // 1-Click Universal Language Toggle: locks reviewer preference
   const handleToggleLang = () => {
-    setLang((prev) => (prev === 'ar' ? 'en' : 'ar'));
+    const nextLang = lang === 'ar' ? 'en' : 'ar';
+    setLang(nextLang);
+    try {
+      localStorage.setItem(LANG_KEY, nextLang);
+    } catch (e) {}
   };
 
   // 1-Click Theme Toggle
@@ -165,7 +180,7 @@ export const App: React.FC = () => {
     }
   }, [theme]);
 
-  // Advance to next stage in the 9-stage sequence
+  // Advance to next stage: shows Clinical Handoff Interstitial Modal
   const handleAdvanceStage = () => {
     const stageOrder: ClinicalStage[] = [
       'INTAKE_RECEIVED',
@@ -181,51 +196,56 @@ export const App: React.FC = () => {
     const currentIndex = stageOrder.indexOf(activeCase.currentStage);
     if (currentIndex < stageOrder.length - 1) {
       const nextStage = stageOrder[currentIndex + 1];
-      handleUpdateCase({ currentStage: nextStage });
+      
+      let nextP = PERSONAS[0];
+      if (nextStage === 'NURSE_CHECK') nextP = PERSONAS.find((p) => p.code === 'N')!;
+      else if (nextStage === 'DOCTOR_REVIEW') nextP = PERSONAS.find((p) => p.code === 'D')!;
+      else if (nextStage === 'AWAITING_PAYMENT') nextP = PERSONAS.find((p) => p.code === 'P')!;
+      else if (nextStage === 'WITH_CONSULTANT') nextP = PERSONAS.find((p) => p.code === 'K')!;
+      else if (nextStage === 'OPINION_READY') nextP = PERSONAS.find((p) => p.code === 'P')!;
+      else if (nextStage === 'PARTNER_SERVICES') nextP = PERSONAS.find((p) => p.code === 'L')!;
+      else if (nextStage === 'FOLLOW_UP_21_DAYS') nextP = PERSONAS.find((p) => p.code === 'P')!;
+      else if (nextStage === 'CLOSED') nextP = PERSONAS.find((p) => p.code === 'AD')!;
 
-      // Automatically adjust persona to match next stage for frictionless pairing
-      if (nextStage === 'NURSE_CHECK') handleSelectPersona(PERSONAS.find((p) => p.code === 'N')!);
-      else if (nextStage === 'DOCTOR_REVIEW') handleSelectPersona(PERSONAS.find((p) => p.code === 'D')!);
-      else if (nextStage === 'AWAITING_PAYMENT') handleSelectPersona(PERSONAS.find((p) => p.code === 'P')!);
-      else if (nextStage === 'WITH_CONSULTANT') handleSelectPersona(PERSONAS.find((p) => p.code === 'K')!);
-      else if (nextStage === 'OPINION_READY') handleSelectPersona(PERSONAS.find((p) => p.code === 'P')!);
-      else if (nextStage === 'PARTNER_SERVICES') handleSelectPersona(PERSONAS.find((p) => p.code === 'L')!);
-      else if (nextStage === 'FOLLOW_UP_21_DAYS') handleSelectPersona(PERSONAS.find((p) => p.code === 'P')!);
+      setPendingHandoff({
+        fromStage: activeCase.currentStage,
+        toStage: nextStage,
+        nextPersona: nextP,
+      });
     }
+  };
+
+  // Confirm Stage Advance (executes clinical handoff)
+  const handleConfirmHandoff = () => {
+    if (!pendingHandoff) return;
+    const { toStage, nextPersona } = pendingHandoff;
+    handleUpdateCase({ currentStage: toStage });
+    handleSelectPersona(nextPersona);
+    setPendingHandoff(null);
   };
 
   // Set explicit stage from progress bar
   const handleSetStage = (stage: ClinicalStage) => {
     handleUpdateCase({ currentStage: stage });
 
-    // Sync persona to match stage
-    if (stage === 'INTAKE_RECEIVED') {
-      const p = PERSONAS.find((x) => x.code === 'P');
-      if (p) { setActivePersona(p); setLang(p.lang); }
-    } else if (stage === 'NURSE_CHECK') {
-      const p = PERSONAS.find((x) => x.code === 'N');
-      if (p) { setActivePersona(p); setLang(p.lang); }
-    } else if (stage === 'DOCTOR_REVIEW') {
-      const p = PERSONAS.find((x) => x.code === 'D');
-      if (p) { setActivePersona(p); setLang(p.lang); }
-    } else if (stage === 'AWAITING_PAYMENT') {
-      const p = PERSONAS.find((x) => x.code === 'P');
-      if (p) { setActivePersona(p); setLang(p.lang); }
-    } else if (stage === 'WITH_CONSULTANT') {
-      const p = PERSONAS.find((x) => x.code === 'K');
-      if (p) { setActivePersona(p); setLang(p.lang); }
-    } else if (stage === 'OPINION_READY') {
-      const p = PERSONAS.find((x) => x.code === 'P');
-      if (p) { setActivePersona(p); setLang(p.lang); }
-    } else if (stage === 'PARTNER_SERVICES') {
-      const p = PERSONAS.find((x) => x.code === 'L');
-      if (p) { setActivePersona(p); setLang(p.lang); }
-    } else if (stage === 'FOLLOW_UP_21_DAYS') {
-      const p = PERSONAS.find((x) => x.code === 'P');
-      if (p) { setActivePersona(p); setLang(p.lang); }
-    } else if (stage === 'CLOSED') {
-      const p = PERSONAS.find((x) => x.code === 'AD');
-      if (p) { setActivePersona(p); setLang(p.lang); }
+    // Sync persona to match stage without overriding language
+    let p = PERSONAS[0];
+    if (stage === 'INTAKE_RECEIVED') p = PERSONAS.find((x) => x.code === 'P')!;
+    else if (stage === 'NURSE_CHECK') p = PERSONAS.find((x) => x.code === 'N')!;
+    else if (stage === 'DOCTOR_REVIEW') p = PERSONAS.find((x) => x.code === 'D')!;
+    else if (stage === 'AWAITING_PAYMENT') p = PERSONAS.find((x) => x.code === 'P')!;
+    else if (stage === 'WITH_CONSULTANT') p = PERSONAS.find((x) => x.code === 'K')!;
+    else if (stage === 'OPINION_READY') p = PERSONAS.find((x) => x.code === 'P')!;
+    else if (stage === 'PARTNER_SERVICES') p = PERSONAS.find((x) => x.code === 'L')!;
+    else if (stage === 'FOLLOW_UP_21_DAYS') p = PERSONAS.find((x) => x.code === 'P')!;
+    else if (stage === 'CLOSED') p = PERSONAS.find((x) => x.code === 'AD')!;
+
+    if (p) {
+      setActivePersona(p);
+      const lockedLang = localStorage.getItem(LANG_KEY);
+      if (!lockedLang) {
+        setLang(p.lang);
+      }
     }
   };
 
@@ -405,6 +425,19 @@ export const App: React.FC = () => {
           if (p) handleSelectPersona(p);
         }}
       />
+
+      {/* 7. Clinical Stage Handoff Interstitial Modal */}
+      {pendingHandoff && (
+        <StageHandoffModal
+          isOpen={!!pendingHandoff}
+          fromStage={pendingHandoff.fromStage}
+          toStage={pendingHandoff.toStage}
+          nextPersona={pendingHandoff.nextPersona}
+          lang={lang}
+          onContinue={handleConfirmHandoff}
+          onClose={() => setPendingHandoff(null)}
+        />
+      )}
     </div>
   );
 };

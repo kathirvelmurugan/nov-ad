@@ -197,7 +197,7 @@ export const StageHandoffModal: React.FC<StageHandoffModalProps> = ({
   countdownSeconds = 5
 }) => {
   const [countdown, setCountdown] = useState<number>(countdownSeconds);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isAr = lang === 'ar';
   const dir = isAr ? 'rtl' : 'ltr';
 
