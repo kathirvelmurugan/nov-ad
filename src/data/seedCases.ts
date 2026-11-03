@@ -158,7 +158,7 @@ export const SEED_CASES: ClinicalCase[] = [
       vatSar: 19.57,
       totalSar: 150,
       paid: false,
-      invoiceNumber: 'INV-2026-0001',
+      invoiceNumber: 'INV-2026-0942',
       tapChargeId: 'chg_tap_ksa_test_89214',
       tabbyInstallmentSar: 37.5
     },
@@ -248,7 +248,7 @@ export const SEED_CASES: ClinicalCase[] = [
       vatSar: 9.78,
       totalSar: 75,
       paid: false,
-      invoiceNumber: 'INV-2026-0001',
+      invoiceNumber: 'INV-2026-0943',
       tapChargeId: 'chg_tap_ksa_test_89214',
       tabbyInstallmentSar: 18.75
     },
@@ -262,28 +262,28 @@ export const SEED_CASES: ClinicalCase[] = [
       homeNurse: { area: 'الدمام - حي الشاطئ', visits: 1, status: 'scheduled' },
       physio: { sessions: 0, status: 'planned' }
     },
-    consultantOpinion: "Lumbar MRI reveals severe central canal stenosis at L4-L5 with facet arthropathy. However, dynamic flexion-extension radiographs show no spondylolisthesis or mechanical instability. Therefore, minimally invasive bilateral decompression via unilateral laminotomy is indicated instead of aggressive 2-level fusion with instrumentation.",
-    finalClosureNote: "Endoscopic decompression successfully performed with preservation of lumbar stability. Patient reports complete relief of neurogenic claudication.",
-    coordinatorQuestions: "Focus: Decompression alone vs fusion instrumentation for L4-L5 spinal stenosis.",
+    consultantOpinion: "CTA and 3D MRA confirm a 7 mm wide-neck anterior communicating artery aneurysm. Given the wide neck and patient age, stent-assisted endovascular coiling is preferred over microsurgical clipping to reduce morbidity, with catheter angiographic follow-up at 6 months.",
+    finalClosureNote: "Stent-assisted coiling completed without complication; aneurysm fully occluded on 6-month angiographic follow-up.",
+    coordinatorQuestions: "Focus: endovascular coiling vs microsurgical clipping for wide-neck Acom aneurysm.",
     metadata: {
       "pdf1Released": true,
       "patientQuestions": [
-            "هل إزالة الضغط بالمنظار تمنع الحاجة إلى تثبيت الفقرات بالمسامير في المستقبل؟",
-            "متى يمكنني البدء في جلسات العلاج الطبيعي والتأهيل الحركي؟"
+            "هل القسطرة العلاجية (Coiling) تغني تماماً عن فتح الجمجمة؟",
+            "متى يمكنني العودة لعملي وممارسة الرياضة بعد القسطرة؟"
       ],
       "relayedQuestions": [
-            "Patient questioning future fusion necessity after endoscopic laminotomy and physical therapy start date."
+            "Patient asks whether endovascular coiling avoids open craniotomy and when normal activity can resume."
       ],
       "reportPdf1": {
-            "titleAr": "تقرير الرأي الطبي الثاني المعتمد - جراحة العمود الفقري والأعصاب",
-            "titleEn": "Certified Second Opinion Report - Minimally Invasive Spine Surgery",
-            "icd10": "M48.06 (Spinal Stenosis, Lumbar Region)",
-            "summaryAr": "التوصية بإجراء توسيع القناة العصبية بالتدخل المحدود دون الحاجة لدمج الفقرات أو تثبيت الشرائح والمسامير.",
-            "summaryEn": "Recommendation for minimally invasive decompression alone without fusion instrumentation."
+            "titleAr": "تقرير الرأي الطبي الثاني المعتمد - جراحة المخ والأعصاب (تمدد الأوعية الدماغية)",
+            "titleEn": "Certified Second Opinion Report - Cerebrovascular Neurosurgery",
+            "icd10": "I67.1 (Cerebral Aneurysm)",
+            "summaryAr": "التوصية بالقسطرة العلاجية (Coiling) مع دعامة بدلاً من الجراحة المفتوحة لتمدد الشريان الدماغي الأمامي.",
+            "summaryEn": "Recommendation for stent-assisted endovascular coiling over open microsurgical clipping for the Acom aneurysm."
       },
       "reportPdf2": {
-            "titleAr": "تقرير الإغلاق السريري النهائي - جراحة العمود الفقري",
-            "titleEn": "Final Clinical Closure Dossier - Spine Surgery",
+            "titleAr": "تقرير الإغلاق السريري النهائي - جراحة المخ والأعصاب",
+            "titleEn": "Final Clinical Closure Dossier - Cerebrovascular Neurosurgery",
             "status": "مغلق ومؤرشف"
       }
 }
@@ -326,7 +326,7 @@ export const SEED_CASES: ClinicalCase[] = [
       vatSar: 19.57,
       totalSar: 150,
       paid: false,
-      invoiceNumber: 'INV-2026-0001',
+      invoiceNumber: 'INV-2026-0944',
       tapChargeId: 'chg_tap_ksa_test_89214',
       tabbyInstallmentSar: 37.5
     },
@@ -340,10 +340,10 @@ export const SEED_CASES: ClinicalCase[] = [
       homeNurse: { area: 'المدينة المنورة - حي سلطانة', visits: 2, status: 'scheduled' },
       physio: { sessions: 4, status: 'planned' }
     },
-    consultantOpinion: "Right Heart Catheterization demonstrates mPAP 48 mmHg with normal wedge pressure, confirming Group 1 Pulmonary Arterial Hypertension (PAH). Upfront double oral combination therapy with Macitentan (10mg) and Tadalafil (40mg) is recommended, with close echocardiographic reassessment at 12 weeks before considering parenteral prostacyclins.",
+    consultantOpinion: "Video-EEG and epilepsy-protocol MRI confirm unilateral mesial temporal sclerosis with drug-resistant focal seizures. Anterior temporal lobectomy with amygdalohippocampectomy offers superior seizure-freedom over continued medical therapy; stereotactic laser amygdalohippocampotomy is a reasonable minimally invasive alternative.",
     proposedCallSlot: "Mon 15:30 AST / 18:00 IST",
-    finalClosureNote: "Patient commenced combination oral targeted therapy with marked improvement in 6-minute walk distance (+65m). Hemodynamics stable.",
-    coordinatorQuestions: "Focus: Dual oral targeted therapy vs triple therapy upfront in idiopathic PAH.",
+    finalClosureNote: "Anterior temporal lobectomy performed; patient seizure-free (Engel Class I) at 12 months with two anti-seizure medications withdrawn.",
+    coordinatorQuestions: "Focus: stereotactic laser amygdalohippocampotomy vs anterior temporal lobectomy in refractory temporal epilepsy.",
     metadata: {
       "proposedSlots": [
             {
@@ -358,22 +358,22 @@ export const SEED_CASES: ClinicalCase[] = [
       "confirmedSlotId": "slot_1",
       "pdf1Released": true,
       "patientQuestions": [
-            "هل يلزم فحص وظائف الكبد شهرياً مع علاج الماكتيتان والتادالافيل؟",
-            "هل الرياضات الهوائية الخفيفة آمنة في هذه المرحلة؟"
+            "هل سأحتاج للاستمرار على أدوية الصرع بعد الجراحة؟",
+            "متى يمكنني العودة للقيادة والعمل بعد استئصال الفص الصدغي؟"
       ],
       "relayedQuestions": [
-            "Liver enzyme monitoring frequency on Macitentan and low-impact exercise safety boundaries."
+            "Patient asks about anti-seizure medication taper and return to driving after temporal lobectomy."
       ],
       "reportPdf1": {
-            "titleAr": "تقرير الرأي الطبي الثاني المعتمد - ارتفاع ضغط الشريان الرئوي (PAH)",
-            "titleEn": "Certified Second Opinion Report - Pulmonary Arterial Hypertension",
-            "icd10": "I27.0 (Primary Pulmonary Hypertension)",
-            "summaryAr": "اعتماد خطة العلاج المزدوج الموجه بالفم مع متابعة القسطرة القلبية اليمنى بعد 3 أشهر لتقييم الاستجابة.",
-            "summaryEn": "Initiation of upfront dual oral pathway combination therapy with close quarterly hemodynamic monitoring."
+            "titleAr": "تقرير الرأي الطبي الثاني المعتمد - جراحة الصرع المقاوم للعلاج",
+            "titleEn": "Certified Second Opinion Report - Refractory Epilepsy Surgery",
+            "icd10": "G40.209 (Localization-related Epilepsy)",
+            "summaryAr": "التوصية باستئصال الفص الصدغي الأمامي مع اللوزة والحصين لتحقيق حرية من النوبات بدلاً من الاستمرار الدوائي.",
+            "summaryEn": "Recommendation for anterior temporal lobectomy with amygdalohippocampectomy for drug-resistant mesial temporal lobe epilepsy."
       },
       "reportPdf2": {
-            "titleAr": "تقرير المتابعة السريرية وإغلاق الحالة - الشريان الرئوي",
-            "titleEn": "Comprehensive Closure Dossier - PAH Specialty Care",
+            "titleAr": "تقرير المتابعة السريرية وإغلاق الحالة - جراحة الصرع",
+            "titleEn": "Comprehensive Closure Dossier - Epilepsy Surgery",
             "status": "مغلق ومعتمد"
       }
 }
@@ -430,10 +430,10 @@ export const SEED_CASES: ClinicalCase[] = [
       homeNurse: { area: 'الرياض - حي النخيل', visits: 3, status: 'scheduled' },
       physio: { sessions: 10, status: 'planned' }
     },
-    consultantOpinion: "Colonoscopy confirms severe pancolitis with mucosal friability refractory to anti-TNF therapy (Infliximab with antibodies). Rather than proceeding immediately to total proctocolectomy, switching to advanced anti-IL23 biologic (Ustekinumab or Risankizumab) or JAK inhibitor (Upadacitinib) is strongly recommended with repeat mucosal assessment in 8 weeks.",
+    consultantOpinion: "Invasive ductal carcinoma, ER+/PR+/HER2-, with Oncotype DX recurrence score 24. Adjuvant endocrine therapy is mandatory; the intermediate-high score supports adding adjuvant chemotherapy. CDK4/6 inhibition is not indicated in the early adjuvant setting outside a clinical trial.",
     proposedCallSlot: "Wed 16:30 AST / 19:00 IST",
-    finalClosureNote: "Clinical remission achieved on Upadacitinib 45mg induction. Fecal calprotectin dropped from 1,240 to 180 ug/g. Surgical resection averted.",
-    coordinatorQuestions: "Focus: Biologic class-switch to JAK inhibitor vs subtotal colectomy in refractory UC.",
+    finalClosureNote: "Completed adjuvant chemotherapy followed by endocrine therapy; no evidence of recurrence on 24-month surveillance imaging.",
+    coordinatorQuestions: "Focus: need for adjuvant chemotherapy before endocrine therapy given Oncotype DX recurrence score 24.",
     metadata: {
       "proposedSlots": [
             {
@@ -448,22 +448,22 @@ export const SEED_CASES: ClinicalCase[] = [
       "confirmedSlotId": "slot_1",
       "pdf1Released": true,
       "patientQuestions": [
-            "هل علاج أوباداسيتينيب يغني تماماً عن عملية استئصال القولون؟",
-            "ما هي الفحوصات الدورية المطلوبة للتأكد من عدم عودة الالتهاب؟"
+            "هل العلاج الكيماوي المساعد ضروري مع العلاج الهرموني في حالتي؟",
+            "ما هي خطة المتابعة والتصوير بعد انتهاء العلاج المساعد؟"
       ],
       "relayedQuestions": [
-            "Durability of JAK-inhibitor induced mucosal healing and long-term colectomy avoidance."
+            "Patient asks whether adjuvant chemotherapy is required alongside endocrine therapy and the surveillance plan."
       ],
       "reportPdf1": {
-            "titleAr": "تقرير الرأي الطبي الثاني المعتمد - أمراض الجهاز الهضمي والقولون التقرحي",
-            "titleEn": "Certified Second Opinion Report - Inflammatory Bowel Disease",
-            "icd10": "K51.00 (Ulcerative Pancolitis)",
-            "summaryAr": "التوصية بالتحويل إلى مثبطات جاك (Upadacitinib) كخط علاجي أخير قبل اللجوء للجراحة لتفادي استئصال القولون.",
-            "summaryEn": "Strong recommendation for advanced targeted small molecule (JAKi) trial to achieve mucosal healing and avoid colectomy."
+            "titleAr": "تقرير الرأي الطبي الثاني المعتمد - أورام الثدي",
+            "titleEn": "Certified Second Opinion Report - Breast Oncology",
+            "icd10": "C50.911 (Malignant Neoplasm of Breast)",
+            "summaryAr": "التوصية بالعلاج الهرموني المساعد مع إضافة العلاج الكيماوي نظراً لدرجة Oncotype DX المتوسطة-العالية (24).",
+            "summaryEn": "Recommendation for adjuvant endocrine therapy with added adjuvant chemotherapy given Oncotype DX recurrence score 24."
       },
       "reportPdf2": {
-            "titleAr": "الملف السريري الختامي - قسم أمراض الجهاز الهضمي",
-            "titleEn": "Final Closed Clinical Dossier - IBD Management",
+            "titleAr": "الملف السريري الختامي - قسم أورام الثدي",
+            "titleEn": "Final Closed Clinical Dossier - Breast Oncology",
             "status": "مغلق ومؤرشف"
       }
 }
@@ -522,10 +522,10 @@ export const SEED_CASES: ClinicalCase[] = [
       homeNurse: { area: 'أبها - حي الضباب', visits: 4, status: 'dispatched' },
       physio: { sessions: 6, status: 'in_progress' }
     },
-    consultantOpinion: "Histopathology and molecular sequencing confirm IDH-wildtype, MGMT promoter methylated Glioblastoma. Maximal safe surgical resection followed by the Stupp protocol (Concurrent Temozolomide + RT 60 Gy) plus Tumor Treating Fields (Optune TTFields) is strongly recommended to optimize overall survival.",
+    consultantOpinion: "Oligometastatic liver disease in segment IV is resectable with R0 margins. Recommend 4 cycles of induction FOLFOXIRI + Panitumumab followed by restaging MRI; if stable or responding, staged laparoscopic low anterior resection then segment IV anatomic resection.",
     proposedCallSlot: "Tue 13:00 AST / 15:30 IST",
-    finalClosureNote: "Radiotherapy with concurrent TMZ completed without grade 3/4 hematological toxicity. Optune array initiated.",
-    coordinatorQuestions: "Focus: Addition of Tumor Treating Fields (TTFields) to Stupp protocol for MGMT methylated GBM.",
+    finalClosureNote: "Completed induction FOLFOXIRI + Panitumumab with partial response; staged R0 resection achieved; surveillance CEA within normal limits.",
+    coordinatorQuestions: "Focus: simultaneous vs staged resection of primary and single segment IV liver metastasis; first-line FOLFOXIRI + Panitumumab.",
     metadata: {
       "proposedSlots": [
             {
@@ -540,22 +540,22 @@ export const SEED_CASES: ClinicalCase[] = [
       "confirmedSlotId": "slot_1",
       "pdf1Released": true,
       "patientQuestions": [
-            "كم ساعة يومياً يجب ارتداء جهاز المجالات الكهربائية (TTFields) لتحقيق الفائدة القصوى؟",
-            "ما هي الأعراض الجانبية المتوقعة من دمج العلاج الإشعاعي مع التيموزولوميد؟"
+            "هل يمكن استئصال الورم الكبدي بالمنظار على مرحلتين؟",
+            "ما هي مدة العلاج الكيماوي الحثي قبل إعادة التصوير بالرنين؟"
       ],
       "relayedQuestions": [
-            "Optune compliance minimum daily hours (>18h/day) and neuro-cognitive preservation protocols."
+            "Patient asks about staged laparoscopic liver resection and induction chemotherapy duration before restaging MRI."
       ],
       "reportPdf1": {
-            "titleAr": "تقرير الرأي الطبي الثاني المعتمد - أورام وجراحة المخ والأعصاب",
-            "titleEn": "Certified Second Opinion Report - Neuro-Oncology",
-            "icd10": "C71.9 (Malignant Neoplasm of Brain, GBM)",
-            "summaryAr": "اعتماد بروتوكول ستوب بالتزامن مع جهاز الحقول الكهربائية المعالجة للأورام (Optune) نظراً لوجود فرط مثيلة MGMT.",
-            "summaryEn": "Standard Stupp Protocol plus adjuvant Tumor Treating Fields (TTFields) indicated for MGMT-methylated GBM."
+            "titleAr": "تقرير الرأي الطبي الثاني المعتمد - أورام القولون والكبد",
+            "titleEn": "Certified Second Opinion Report - Colorectal & Liver Oncology",
+            "icd10": "C78.7 (Secondary Malignant Neoplasm of Liver)",
+            "summaryAr": "التوصية بالعلاج الكيماوي الحثي FOLFOXIRI مع Panitumumab ثم الاستئصال على مرحلتين لتحقيق هامش R0.",
+            "summaryEn": "Recommendation for induction FOLFOXIRI + Panitumumab followed by staged R0 resection of primary and segment IV liver metastasis."
       },
       "reportPdf2": {
-            "titleAr": "تقرير الإغلاق السريري وأرشيف أورام المخ",
-            "titleEn": "Final Neuro-Oncology Dossier & Case Archive",
+            "titleAr": "تقرير الإغلاق السريري وأرشيف أورام القولون والكبد",
+            "titleEn": "Final Colorectal & Liver Oncology Dossier & Case Archive",
             "status": "مغلق ومعتمد"
       }
 }
@@ -613,9 +613,9 @@ export const SEED_CASES: ClinicalCase[] = [
       homeNurse: { area: 'بريدة - حي الصفراء', visits: 6, status: 'dispatched' },
       physio: { sessions: 12, status: 'in_progress' }
     },
-    consultantOpinion: "Weight-bearing knee radiographs reveal severe tricompartmental osteoarthritis with bone-on-bone medial contact, fixed flexion deformity (15 deg), and varus malalignment. Conservative injections and arthroscopy are ineffective at this stage. Robotic-assisted Total Knee Arthroplasty (TKA) with kinematic alignment is recommended.",
-    finalClosureNote: "Robotic TKA successfully completed. Range of motion reached 0-110 degrees at week 3 post-op. Full weight-bearing achieved.",
-    coordinatorQuestions: "Focus: Robotic-assisted kinematic alignment TKA vs unicompartmental arthroplasty.",
+    consultantOpinion: "Radiographs and CT reveal extensive tibial lucency >2mm with periprosthetic bone loss indicating aseptic mechanical loosening of the left TKA. Infection ruled out by ESR/CRP and aspiration; revision using a modular rotating-hinge prosthesis with porous titanium sleeves and tantalum cones for defect reconstruction is recommended.",
+    finalClosureNote: "Revision with modular rotating-hinge prosthesis and tantalum cones completed; osseous integration confirmed at 12 months with full weight-bearing achieved.",
+    coordinatorQuestions: "Focus: hinged constrained vs semi-constrained revision components and bone-graft substitute for the tibial defect.",
     metadata: {
       "pdf1Released": true,
       "patientQuestions": [
@@ -626,15 +626,15 @@ export const SEED_CASES: ClinicalCase[] = [
             "Post-TKA high-flexion implant capability for kneeling during prayer and rehab protocol."
       ],
       "reportPdf1": {
-            "titleAr": "تقرير الرأي الطبي الثاني المعتمد - جراحة العظام وتبديل المفاصل بالروبوت",
-            "titleEn": "Certified Second Opinion Report - Robotic Total Knee Arthroplasty",
-            "icd10": "M17.11 (Unilateral Primary Osteoarthritis, Right Knee)",
-            "summaryAr": "التوصية باستبدال مفصل الركبة الكامل بالروبوت لتحقيق التوازن الحركي الدقيق وتفادي جراحات المناظير غير المجدية.",
-            "summaryEn": "Recommendation for robotic-assisted TKA with kinematic alignment for complete symptom resolution."
+            "titleAr": "تقرير الرأي الطبي الثاني المعتمد - جراحة العظام (مراجعة مفصل الركبة)",
+            "titleEn": "Certified Second Opinion Report - Revision Knee Arthroplasty",
+            "icd10": "T84.056 (Loosening of Internal Prosthetic Joint, Left Knee)",
+            "summaryAr": "التوصية بمراجعة الركبة الصناعية باستخدام مفصل محوري دوري مع أكمام تيتانيوم مخلفة لتعويض فقد العظم.",
+            "summaryEn": "Recommendation for revision TKA with modular rotating-hinge prosthesis and tantalum cones for periprosthetic bone loss."
       },
       "reportPdf2": {
-            "titleAr": "الملف الختامي وأرشيف جراحة العظام",
-            "titleEn": "Final Orthopedic Arthroplasty Dossier",
+            "titleAr": "الملف الختامي وأرشيف جراحة العظام (المراجعة)",
+            "titleEn": "Final Revision Arthroplasty Dossier",
             "status": "مغلق ومؤرشف"
       }
 }
@@ -691,10 +691,10 @@ export const SEED_CASES: ClinicalCase[] = [
       homeNurse: { area: 'الخبر - حي الحزام الذهبي', visits: 4, status: 'completed' },
       physio: { sessions: 8, status: 'completed' }
     },
-    consultantOpinion: "Staging CT and EUS confirm cT3N1M0 Gastric Adenocarcinoma of the antrum with HER2-negative status and MSS. Perioperative FLOT chemotherapy (4 cycles neoadjuvant followed by D2 Subtotal Gastrectomy, then 4 cycles adjuvant) is the international standard of care superior to upfront surgery.",
+    consultantOpinion: "Grade II L4-L5 spondylolisthesis with severe canal stenosis and neurogenic claudication at 150 m. Minimally invasive TLIF with an expandable interbody cage and pedicle screw fixation is indicated; intraoperative neuro-monitoring is recommended during reduction of the slip.",
     proposedCallSlot: "Mon 11:30 AST / 14:00 IST",
-    finalClosureNote: "Completed 4 cycles neoadjuvant FLOT with significant radiological regression of primary tumor and lymph nodes. D2 gastrectomy scheduled.",
-    coordinatorQuestions: "Focus: Neoadjuvant FLOT chemotherapy protocol vs upfront surgical resection.",
+    finalClosureNote: "MIS TLIF completed with solid interbody fusion at 12 months; resolution of claudication and return to full activity without residual deficit.",
+    coordinatorQuestions: "Focus: minimally invasive TLIF vs open decompressive laminectomy with pedicle screw fixation for grade II slip.",
     metadata: {
       "proposedSlots": [
             {
@@ -709,22 +709,22 @@ export const SEED_CASES: ClinicalCase[] = [
       "confirmedSlotId": "slot_1",
       "pdf1Released": true,
       "patientQuestions": [
-            "ما هي النصائح التغذوية لمنع فقدان الوزن أثناء جرعات علاج FLOT الكيماوي؟",
-            "هل يلزم فحص مسحي PET-CT بعد انتهاء الدورات الأربع قبل الجراحة؟"
+            "هل تثبيت الفقرات يمنعني من الانحناء والصلاة مستقبلاً؟",
+            "متى يمكنني العودة لعملي بعد عملية التثبيت القطني؟"
       ],
       "relayedQuestions": [
-            "Enteral nutritional support protocols during FLOT chemotherapy and restaging PET-CT timing."
+            "Patient asks about post-fusion bending and prayer capability and return-to-work timeline after lumbar fixation."
       ],
       "reportPdf1": {
-            "titleAr": "تقرير الرأي الطبي الثاني المعتمد - أورام الجهاز الهضمي وجراحة المعدة",
-            "titleEn": "Certified Second Opinion Report - Gastrointestinal Surgical Oncology",
-            "icd10": "C16.3 (Malignant Neoplasm of Gastric Antrum)",
-            "summaryAr": "التوصية ببروتوكول FLOT الكيماوي قبل الجراحة لتقليص الورم وتحسين فرص الشفاء التام قبل استئصال المعدة الجذري D2.",
-            "summaryEn": "Perioperative FLOT chemotherapy protocol indicated to downstage tumor prior to curative-intent D2 gastrectomy."
+            "titleAr": "تقرير الرأي الطبي الثاني المعتمد - جراحة العمود الفقري",
+            "titleEn": "Certified Second Opinion Report - Lumbar Spine Surgery",
+            "icd10": "M43.16 (Spondylolisthesis, Lumbar Region)",
+            "summaryAr": "التوصية بعملية دمج فقري قطني طفيف التوغل (TLIF) مع قفص قابل للتوسع ومسامير دعامة.",
+            "summaryEn": "Recommendation for minimally invasive TLIF with expandable interbody cage and pedicle screw fixation."
       },
       "reportPdf2": {
-            "titleAr": "تقرير الحالة الختامي - جراحة أورام المعدة",
-            "titleEn": "Final Gastric Oncology Dossier & Closure",
+            "titleAr": "تقرير الحالة الختامي - جراحة العمود الفقري",
+            "titleEn": "Final Spine Surgery Dossier & Closure",
             "status": "مغلق ومعتمد"
       }
 }
@@ -767,7 +767,7 @@ export const SEED_CASES: ClinicalCase[] = [
       vatSar: 19.57,
       totalSar: 150,
       paid: false,
-      invoiceNumber: 'INV-2026-0001',
+      invoiceNumber: 'INV-2026-0949',
       tapChargeId: 'chg_tap_ksa_test_89214',
       tabbyInstallmentSar: 37.5
     },
@@ -780,10 +780,10 @@ export const SEED_CASES: ClinicalCase[] = [
       homeNurse: { area: 'الطائف - حي الشفا', visits: 3, status: 'scheduled' },
       physio: { sessions: 0, status: 'planned' }
     },
-    consultantOpinion: "Clinical presentation with microangiopathic hemolytic anemia, thrombocytopenia, acute kidney injury, and normal ADAMTS13 activity confirms atypical Hemolytic Uremic Syndrome (aHUS). Urgent complement C5 inhibitor therapy (Eculizumab or Ravulizumab) is life-saving and mandatory to arrest renal microthrombi, alongside mandatory meningococcal vaccination.",
+    consultantOpinion: "Echocardiography and catheterization confirm a large perimembranous VSD with left-to-right shunt and elevated pulmonary vascular resistance. Transcatheter device closure is feasible given adequate rims from the aortic valve; otherwise surgical patch closure. Reassess PVRI reversibility and treat pulmonary hypertension before closure.",
     proposedCallSlot: "Wed 11:00 AST / 13:30 IST",
-    finalClosureNote: "Platelet count normalized to 240,000/uL and serum creatinine stabilized to 1.1 mg/dL on Ravulizumab maintenance. Renal replacement averted.",
-    coordinatorQuestions: "Focus: Immediate C5 complement inhibitor therapy vs ongoing plasma exchange for aHUS.",
+    finalClosureNote: "Transcatheter VSD device closure completed without residual shunt; pulmonary pressures normalized on follow-up echo and weight gain resumed.",
+    coordinatorQuestions: "Focus: transcatheter device closure vs surgical patch closure given proximity to the aortic valve; PVRI reversibility.",
     metadata: {
       "proposedSlots": [
             {
@@ -798,22 +798,22 @@ export const SEED_CASES: ClinicalCase[] = [
       "confirmedSlotId": "slot_1",
       "pdf1Released": true,
       "patientQuestions": [
-            "هل لقاح الحمى الشوكية يوفر الحماية الكافية طوال فترة أخذ علاج الإيكوليزوماب؟",
-            "كم من الوقت يستمر العلاج البيولوجي لحماية وظائف الكلى؟"
+            "هل إغلاق الثقب بالقسطرة يغني عن فتح القلب لدى طفلي؟",
+            "متى يعود طفلي لنشاطه الطبيعي وتغذيته بعد إغلاق الثقب؟"
       ],
       "relayedQuestions": [
-            "Meningococcal prophylaxis protocol with C5 inhibition and duration of complement blockade therapy."
+            "Parent asks whether transcatheter closure avoids open-heart surgery and the recovery timeline for the child."
       ],
       "reportPdf1": {
-            "titleAr": "تقرير الرأي الطبي الثاني المعتمد - أمراض الدم وأمراض الكلى النادرة",
-            "titleEn": "Certified Second Opinion Report - Hematology & Rare Renal Diseases",
-            "icd10": "D59.3 (Hemolytic-Uremic Syndrome)",
-            "summaryAr": "البدء الفوري بمثبطات المتممة C5 (Eculizumab/Ravulizumab) لإنقاذ وظائف الكلى ووقف التخثر المجهري في الأوعية الدموية.",
-            "summaryEn": "Immediate targeted C5 complement inhibitor initiation mandated for aHUS to avert irreversible renal failure."
+            "titleAr": "تقرير الرأي الطبي الثاني المعتمد - أمراض قلب الأطفال",
+            "titleEn": "Certified Second Opinion Report - Pediatric Cardiology",
+            "icd10": "Q21.0 (Ventricular Septal Defect)",
+            "summaryAr": "التوصية بإغلاق الثقب بالقسطرة (Device Closure) نظراً لوجود حواف كافية بعيداً عن الصمام الأبهري.",
+            "summaryEn": "Recommendation for transcatheter device closure given adequate rims from the aortic valve."
       },
       "reportPdf2": {
-            "titleAr": "تقرير الإغلاق السريري - أمراض الكلى وأمراض الدم",
-            "titleEn": "Final Clinical Dossier - aHUS Rare Disease Protocol",
+            "titleAr": "تقرير الإغلاق السريري - أمراض قلب الأطفال",
+            "titleEn": "Final Clinical Dossier - Pediatric Cardiology",
             "status": "مغلق ومؤرشف"
       }
 }
@@ -870,10 +870,10 @@ export const SEED_CASES: ClinicalCase[] = [
       homeNurse: { area: 'تبوك - حي المروج', visits: 8, status: 'completed' },
       physio: { sessions: 24, status: 'completed' }
     },
-    consultantOpinion: "Seropositive, erosive Rheumatoid Arthritis refractory to Methotrexate and first-line anti-TNF (Adalimumab). Given persistent high disease activity (DAS28-CRP 5.6) and rapid radiographic progression, switching to an IL-6 receptor antagonist (Tocilizumab) or T-cell costimulation modulator (Abatacept) is strongly recommended with monthly acute phase reactant audits.",
+    consultantOpinion: "Post-ischemic left hemiplegia with flexor spasticity and good neuro-plasticity potential. Focal botulinum toxin (300 units) to wrist/finger flexors followed 7 days later by high-intensity constraint-induced movement therapy (3 h/day for 3 weeks) and body-weight-supported treadmill training is recommended to maximize gait and hand recovery.",
     proposedCallSlot: "Fri 15:00 AST / 17:30 IST",
-    finalClosureNote: "DAS28-CRP decreased to 2.4 (Clinical Remission) at 12 weeks of Tocilizumab therapy. Morning stiffness completely resolved.",
-    coordinatorQuestions: "Focus: IL-6 receptor inhibitor (Tocilizumab) vs JAK inhibitor switch in seropositive refractory RA.",
+    finalClosureNote: "Completed CIMT and body-weight-supported treadmill program; regained independent ambulation with improved hand function (Fugl-Meyer +18).",
+    coordinatorQuestions: "Focus: focal botulinum toxin for upper-limb spasticity prior to robotic gait training; optimal CIMT dose.",
     metadata: {
       "proposedSlots": [
             {
@@ -888,22 +888,22 @@ export const SEED_CASES: ClinicalCase[] = [
       "confirmedSlotId": "slot_1",
       "pdf1Released": true,
       "patientQuestions": [
-            "متى يبدأ التحسن الفعلي في آلام وتورم مفاصل اليدين مع العلاج الجديد؟",
-            "هل يمكن تقليل جرعة الكورتيزون (البريدنيزولون) تدريجياً بعد بدء الحقن الشهرية؟"
+            "متى يبدأ التحسن الفعلي في المشي وحركة اليد بعد برنامج التأهيل؟",
+            "هل حقن البوتوكس للعضلات المتشنجة آمنة مع أدوية السيولة؟"
       ],
       "relayedQuestions": [
-            "Steroid tapering protocol and expected timeline for joint swelling reduction under IL-6 blockade."
+            "Patient asks about expected timeline for gait and hand recovery and botulinum toxin safety with antiplatelet therapy."
       ],
       "reportPdf1": {
-            "titleAr": "تقرير الرأي الطبي الثاني المعتمد - أمراض المفاصل والروماتيزم المناعي",
-            "titleEn": "Certified Second Opinion Report - Rheumatology & Autoimmune Diseases",
-            "icd10": "M05.79 (Rheumatoid Arthritis with Rheumatoid Factor)",
-            "summaryAr": "التوصية بالتحويل إلى مضادات مستقبلات الإنترلوكين-6 (Tocilizumab) مع خطة تخفيض تدريجي للكورتيزون لحماية المفاصل من التآكل.",
-            "summaryEn": "Switching to IL-6 receptor antagonist (Tocilizumab) indicated for refractory erosive seropositive RA."
+            "titleAr": "تقرير الرأي الطبي الثاني المعتمد - تأهيل السكتات الدماغية",
+            "titleEn": "Certified Second Opinion Report - Post-Stroke Neuro-Rehabilitation",
+            "icd10": "I69.354 (Hemiplegia following Cerebral Infarction)",
+            "summaryAr": "التوصية بحقن البوتوكس للتشنج ثم علاج الحركة المقيدة عالي الكثافة وتدريب المشي المدعوم.",
+            "summaryEn": "Recommendation for focal botulinum toxin followed by high-intensity CIMT and body-weight-supported treadmill training."
       },
       "reportPdf2": {
-            "titleAr": "تقرير المتابعة وأرشيف أمراض الروماتيزم",
-            "titleEn": "Final Rheumatology Dossier & Case Archive",
+            "titleAr": "تقرير المتابعة وأرشيف تأهيل السكتات الدماغية",
+            "titleEn": "Final Neuro-Rehabilitation Dossier & Case Archive",
             "status": "مغلق ومعتمد"
       }
 }
