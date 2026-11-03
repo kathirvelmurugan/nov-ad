@@ -68,8 +68,8 @@ export const WhatsAppDrawer: React.FC<Props> = ({ activeCase, externalOpen, onSe
       case 'FOLLOW_UP_21_DAYS':
         return {
           code: 'W18',
-          title: 'نافذة المتابعة المباشرة (14-Day Clinical Chat)',
-          body: `نافذة التواصل المباشر مفتوحة لمدة 14 يوماً مع طبيبك المعالج وممرضة ألو دكتور لطرح أي استفسارات توضيحية حول التقرير.`,
+          title: 'نافذة المتابعة المباشرة (Follow-up 21 days)',
+          body: `نافذة التواصل المباشر مفتوحة لمدة 21 يوماً مع طبيبك المعالج وممرضة ألو دكتور لطرح أي استفسارات توضيحية حول التقرير.`,
           button: 'فتح المحادثة السريرية المباشرة',
         };
       case 'CLOSED':

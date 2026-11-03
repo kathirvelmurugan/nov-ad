@@ -173,7 +173,7 @@ export const PartnerServicesView: React.FC<Props> = ({
           className="bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-500 hover:to-teal-400 text-white font-bold py-2.5 px-6 rounded-xl shadow-lg transition-all flex items-center gap-2 text-sm"
         >
           <CheckCircle2 className="w-4 h-4" />
-          <span>فتح نافذة المتابعة الطبية (21-Day Follow-Up)</span>
+          <span>فتح نافذة المتابعة الطبية (Follow-up 21 days)</span>
         </button>
       </div>
     </div>

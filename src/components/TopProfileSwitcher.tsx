@@ -36,25 +36,25 @@ const ROLE_METADATA: Record<string, { labelAr: string; labelEn: string; scopeAr:
   },
   N: {
     labelAr: 'ممرضة ألو (سارة)',
-    labelEn: 'ALO Nurse (Sara)',
+    labelEn: 'ALO nurse (Sara)',
     scopeAr: 'صندوق فرز الحالات، تدقيق الفحوصات ومقاطع الأشعة، وحجب البيانات الشخصية آلياً (SDAIA)',
     scopeEn: 'Clinical triage inbox, diagnostic scan audit, and automated PII de-identification'
   },
   D: {
     labelAr: 'الطبيب السعودي المعالج (د. عبدالله)',
-    labelEn: 'Saudi Treating Doctor (Dr. Abdullah)',
+    labelEn: 'Saudi treating doctor (Dr. Abdullah)',
     scopeAr: 'مراجعة التاريخ المرضي، تحديد الأسئلة الدقيقة للاستشاري، واختيار المستشار الدولي المناسب',
     scopeEn: 'Clinical dossier review, framing 3 focus questions, and picking target international consultant'
   },
   C: {
     labelAr: 'منسق رعاية ألو (عبدالرحمن)',
-    labelEn: 'ALO Coordinator (Abdulrahman)',
+    labelEn: 'ALO coordinator (Abdulrahman)',
     scopeAr: 'مراجعة وتأكيد الإحالة، إصدار الفواتير وروابط السداد للمريض، وتوجيه الملف للاستشاري',
     scopeEn: 'Referral verification, dispatching ZATCA payment links, and international case assignment'
   },
   K: {
     labelAr: 'الاستشاري الهندي',
-    labelEn: 'Indian Consultant',
+    labelEn: 'Indian consultant',
     scopeAr: 'مراجعة الأشعة ثلاثية الأبعاد، تحديد مواعيد المكالمة، وإصدار الرأي الطبي المعتمد',
     scopeEn: '3D DICOM review, proposing consultation slots, and issuing certified second opinion report'
   }
@@ -258,18 +258,18 @@ export const TopProfileSwitcher: React.FC<Props> = ({
             const consultantFirst = activeCase.consultant?.name
               ? activeCase.consultant.name.replace('Dr. ', '').split(' ')[0]
               : 'Arjun';
-            displayLabel = isAr ? `الاستشاري الهندي (د. ${consultantFirst})` : `Indian Consultant (Dr. ${consultantFirst})`;
+            displayLabel = isAr ? `الاستشاري الهندي (د. ${consultantFirst})` : `Indian consultant (Dr. ${consultantFirst})`;
           } else if (persona.code === 'D') {
             const saudiDoc = activeCase.treatingDoctor?.name
               ? activeCase.treatingDoctor.name.replace('د. ', '').split(' ')[0]
               : 'عبدالله';
-            displayLabel = isAr ? `الطبيب (د. ${saudiDoc})` : `Doctor (Dr. ${saudiDoc})`;
+            displayLabel = isAr ? `الطبيب السعودي المعالج (د. ${saudiDoc})` : `Saudi treating doctor (Dr. ${saudiDoc})`;
           } else if (persona.code === 'C') {
-            displayLabel = isAr ? 'منسق ألو (عبدالرحمن)' : 'ALO Coordinator';
+            displayLabel = isAr ? 'منسق ألو (عبدالرحمن)' : 'ALO coordinator';
           }
 
           const dynamicScope = persona.code === 'K'
-            ? `${isAr ? 'الاستشاري الهندي المعين للحالة:' : 'Assigned Indian Consultant:'} ${activeCase.consultant?.name || ''} (${activeCase.consultant?.center || ''})`
+            ? `${isAr ? 'الاستشاري الهندي المعين للحالة:' : 'Assigned Indian consultant:'} ${activeCase.consultant?.name || ''} (${activeCase.consultant?.center || ''})`
             : persona.code === 'P'
             ? `${isAr ? 'ملف المريض:' : 'Patient File:'} ${isAr ? activeCase.patientNameAr : activeCase.patientNameEn} (${activeCase.caseNumber})`
             : (isAr ? (meta?.scopeAr || '') : (meta?.scopeEn || ''));
@@ -313,11 +313,11 @@ export const TopProfileSwitcher: React.FC<Props> = ({
             : (activeCase.patientNameEn?.split(' ')[0] || fallback?.en || 'Patient');
           activeLabel = isAr ? `المريض (${firstName})` : `Patient (${firstName})`;
         } else if (activePersona.code === 'K') {
-          activeLabel = isAr ? `الاستشاري الهندي (${activeCase.consultant?.name || 'د. أرجون'})` : `Indian Consultant (${activeCase.consultant?.name || 'Dr. Arjun'})`;
+          activeLabel = isAr ? `الاستشاري الهندي (${activeCase.consultant?.name || 'د. أرجون'})` : `Indian consultant (${activeCase.consultant?.name || 'Dr. Arjun'})`;
         } else if (activePersona.code === 'D') {
-          activeLabel = isAr ? `الطبيب (${activeCase.treatingDoctor?.name || 'د. عبدالله'})` : `Doctor (${activeCase.treatingDoctor?.name || 'Dr. Abdullah'})`;
+          activeLabel = isAr ? `الطبيب السعودي المعالج (${activeCase.treatingDoctor?.name || 'د. عبدالله'})` : `Saudi treating doctor (${activeCase.treatingDoctor?.name || 'Dr. Abdullah'})`;
         } else if (activePersona.code === 'C') {
-          activeLabel = isAr ? 'منسق رعاية ألو (عبدالرحمن الشهري)' : 'ALO Care Coordinator (Abdulrahman)';
+          activeLabel = isAr ? 'منسق رعاية ألو (عبدالرحمن الشهري)' : 'ALO coordinator (Abdulrahman)';
         }
 
         const activeScope = activeMeta

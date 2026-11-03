@@ -59,8 +59,8 @@ export const GuideModal: React.FC<Props> = ({
     {
       stage: 'INTAKE_RECEIVED',
       num: 1,
-      titleAr: 'المرحلة 1: تسجيل الحالة والأعراض (Intake)',
-      titleEn: 'Stage 1: Patient Intake & Symptoms',
+      titleAr: 'المرحلة 1: استلام الحالة · P01–17',
+      titleEn: 'Intake received · P01–17',
       role: 'P (Patient / مريض)',
       descAr: 'يقوم المريض بتعبئة بيانات الشكوى الرئيسية، اختيار التخصص، ورفع التقارير الطبية وملفات الأشعة السابقة.',
       descEn: 'Patient submits chief complaint, selects medical specialty, and uploads previous lab reports and DICOM imaging.',
@@ -70,9 +70,9 @@ export const GuideModal: React.FC<Props> = ({
     {
       stage: 'NURSE_CHECK',
       num: 2,
-      titleAr: 'المرحلة 2: فرز التمريض والترميز الطبي (Triage)',
-      titleEn: 'Stage 2: Nurse Triage & De-Identification',
-      role: 'N (Nurse / ممرض الفرز)',
+      titleAr: 'المرحلة 2: فحص التمريض · N01–07',
+      titleEn: 'Nurse check · N01–07',
+      role: 'N (ALO nurse)',
       descAr: 'مراجعة العلامات الحيوية، التحقق من اكتمال التاريخ المرضي، وحجب البيانات الشخصية (De-Identification) لحماية الخصوصية.',
       descEn: 'Nurse reviews vitals, verifies clinical completeness, and applies HIPAA-compliant de-identification before specialist review.',
       keyPointsAr: ['شاشات N01 إلى N07', 'إخفاء الاسم ورقم الهوية آلياً', 'فحص جاهزية صور الأشعة'],
@@ -81,9 +81,9 @@ export const GuideModal: React.FC<Props> = ({
     {
       stage: 'DOCTOR_REVIEW',
       num: 3,
-      titleAr: 'المرحلة 3: مراجعة الطبيب السعودي (Treating Doctor)',
-      titleEn: 'Stage 3: Saudi Treating Doctor Review',
-      role: 'D (Doctor / طبيب سعودي)',
+      titleAr: 'المرحلة 3: مراجعة الطبيب · D02–06',
+      titleEn: 'Doctor review · D02–06',
+      role: 'D (Saudi treating doctor)',
       descAr: 'يقوم الاستشاري السعودي بمراجعة الحالة، تحديد الأسئلة الدقيقة للاستشاري الهندي، وتأكيد الحاجة للرأي الثاني.',
       descEn: 'Saudi treating physician validates clinical history, frames targeted questions for the Indian specialist, and confirms eligibility.',
       keyPointsAr: ['شاشات D01 إلى D10', 'تحديد أولوية الحالة والبروتوكول', 'اعتماد ملف الإحالة الدولية'],
@@ -92,30 +92,30 @@ export const GuideModal: React.FC<Props> = ({
     {
       stage: 'AWAITING_PAYMENT',
       num: 4,
-      titleAr: 'المرحلة 4: الدفع الإلكتروني والفاتورة الضريبية (Payment)',
-      titleEn: 'Stage 4: Tap Payments & ZATCA Invoice',
+      titleAr: 'المرحلة 4: بانتظار السداد · P19–21',
+      titleEn: 'Awaiting payment · C01–06 · P19–21',
       role: 'P (Patient / مريض)',
-      descAr: 'سداد رسوم الاستشارة (950 ر.س) عبر بوابة Tap (مدى، فيزا، ماستركارد)، أو تقسيط تابي على 4 دفعات، مع فاتورة ZATCA الإلكترونية.',
-      descEn: 'Patient pays consultation fee (950 SAR) via Tap Payments (Mada, Visa, Apple Pay) or Tabby 4x split, with ZATCA Phase-2 QR invoice.',
+      descAr: 'سداد رسوم الاستشارة (2,875 ر.س - الفئة 2) عبر بوابة Tap (مدى، فيزا، ماستركارد)، أو تقسيط تابي على 4 دفعات، مع فاتورة ZATCA الإلكترونية.',
+      descEn: 'Patient pays consultation fee (2,875 SAR, Tier 2) via Tap Payments (Mada, Visa, Apple Pay) or Tabby 4x split, with ZATCA Phase-2 QR invoice.',
       keyPointsAr: ['شاشات P19 إلى P21', 'رمز الاستجابة السريع ZATCA Phase-2', 'خيار التقسيط تابي 4 دفعات'],
       keyPointsEn: ['Screens P19 to P21', 'ZATCA Phase-2 compliant QR code', 'Tabby 4-installment interest-free split']
     },
     {
       stage: 'WITH_CONSULTANT',
       num: 5,
-      titleAr: 'المرحلة 5: مراجعة الاستشاري الهندي (Specialist Review)',
-      titleEn: 'Stage 5: Indian Consultant Mobile Review',
-      role: 'K (Dr. Arjun / استشاري هندي)',
-      descAr: 'مراجعة متخصصة من كبار أطباء الهند (Fortis / Apollo)، فحص الأشعة عبر عارض DICOM، وتسجيل ملخص صوتي مدته 90 ثانية.',
-      descEn: 'Senior Indian specialist reviews de-identified records, inspects DICOM scans in 3D multi-planar viewer, and records a 90-sec audio summary.',
-      keyPointsAr: ['شاشات K01 إلى K07', 'عارض أشعة DICOM تفاعلي', 'تسجيل ملخص صوتي طبي 90 ثانية'],
-      keyPointsEn: ['Screens K01 to K07', 'Interactive DICOM viewer with slice controls', '90-second voice briefing synthesis']
+      titleAr: 'المرحلة 5: لدى الاستشاري · K01–04',
+      titleEn: 'With consultant · K01–04',
+      role: 'K (Indian consultant)',
+      descAr: 'مراجعة متخصصة من الاستشاري الهندي، فحص الأشعة عبر عارض DICOM، وإصدار رأي مكتوب · مواعيد المكالمة.',
+      descEn: 'Indian consultant reviews de-identified records, inspects DICOM scans, and issues written opinion · call slots.',
+      keyPointsAr: ['شاشات K01 إلى K07', 'عارض أشعة DICOM تفاعلي', 'رأي مكتوب · مواعيد المكالمة'],
+      keyPointsEn: ['Screens K01 to K07', 'Interactive DICOM viewer with slice controls', 'Written opinion · call slots'],
     },
     {
       stage: 'OPINION_READY',
       num: 6,
-      titleAr: 'المرحلة 6: الاستشارة المرئية والتقرير المعتمد (Telehealth)',
-      titleEn: 'Stage 6: Telehealth Video & Signed Opinion',
+      titleAr: 'المرحلة 6: الرأي جاهز · C08 · P25–26',
+      titleEn: 'Opinion ready · C08 · P25–26',
       role: 'K + P (Consultant & Patient)',
       descAr: 'جلسة اتصال مرئي WebRTC مباشرة بين المريض والاستشاريين مع ترجمة فورية، وإصدار التقرير الطبي المعتمد ثنائي اللغة.',
       descEn: 'Live WebRTC encrypted video consultation with bilingual clinical translation, followed by download of the digitally stamped PDF report.',
@@ -125,8 +125,8 @@ export const GuideModal: React.FC<Props> = ({
     {
       stage: 'PARTNER_SERVICES',
       num: 7,
-      titleAr: 'المرحلة 7: خدمات الرعاية السعودية الشريكة (Partners)',
-      titleEn: 'Stage 7: Saudi Partner Care Orders',
+      titleAr: 'المرحلة 7: خدمات الشركاء · L01–V01',
+      titleEn: 'Partner services · L01 · T01 · H01 · V01',
       role: 'L / H / T / V (Partners / شركاء الرعاية)',
       descAr: 'تنسيق الخدمات الموصى بها في التقرير: تحاليل منزلية عبر مختبرات ألفا، تمريض منزلي سند، وتنسيق سفر وعلاج خارجي الفرسان.',
       descEn: 'Fulfillment of post-opinion recommendations: Alpha Labs at-home blood draws, Sanad home nursing visits, and Al-Fursan medical travel logistics.',
@@ -136,19 +136,19 @@ export const GuideModal: React.FC<Props> = ({
     {
       stage: 'FOLLOW_UP_21_DAYS',
       num: 8,
-      titleAr: 'المرحلة 8: المتابعة غير المتزامنة 14 يوماً (Follow-Up)',
-      titleEn: 'Stage 8: 14-Day Asynchronous Follow-Up Chat',
-      role: 'P + D (Patient & Saudi Doctor)',
-      descAr: 'قناة محادثة سريرية آمنة ومفتوحة لمدة 14 يوماً لطرح أي استفسارات لاحقة ومشاركة نتائج التحاليل الإضافية.',
-      descEn: 'Secure 14-day asynchronous clinical chat window for patient inquiries and supplemental lab result follow-ups.',
+      titleAr: 'المرحلة 8: متابعة 21 يوماً · C09–10 · P27–29',
+      titleEn: 'Follow-up 21 days · C09–10 · P27–29',
+      role: 'P + D (Patient & Saudi treating doctor)',
+      descAr: 'قناة محادثة سريرية آمنة ومفتوحة لمدة 21 يوماً لطرح أي استفسارات لاحقة ومشاركة نتائج التحاليل الإضافية.',
+      descEn: 'Secure 21-day asynchronous clinical chat window for patient inquiries and supplemental lab result follow-ups.',
       keyPointsAr: ['شاشات P27 إلى P28', 'إشعارات واتساب عند رد الطبيب', 'تبادل المرفقات الطبية الآمنة'],
       keyPointsEn: ['Screens P27 to P28', 'WhatsApp push on doctor reply', 'Encrypted file and photo sharing']
     },
     {
       stage: 'CLOSED',
       num: 9,
-      titleAr: 'المرحلة 9: إغلاق الملف وتقييم الخدمة (Closure & NPS)',
-      titleEn: 'Stage 9: Case Closure & Outcome NPS',
+      titleAr: 'المرحلة 9: مغلقة · P29',
+      titleEn: 'Closed · P29',
       role: 'P + AD (Patient & Admin)',
       descAr: 'اعتماد الخطة العلاجية النهائية، قياس رضا المريض (NPS)، وإرشفة السجل الطبي وفق متطلبات هيئة الصحة السعودية.',
       descEn: 'Final treatment sign-off, patient Net Promoter Score (NPS) submission, and permanent archival per Saudi health data retention policies.',
@@ -288,7 +288,7 @@ export const GuideModal: React.FC<Props> = ({
                   <p className="text-xs text-slate-500 dark:text-slate-400">
                     {isAr
                       ? 'يمكنك التبديل بنقرة واحدة بين المريض، الممرض، الطبيب السعودي، الاستشاري الهندي، ومختبرات ألفا.'
-                      : 'Switch instantly between Patient, Nurse, Saudi Doctor, Indian Consultant, and partner roles.'}
+                      : 'Switch instantly between Patient, ALO nurse, Saudi treating doctor, Indian consultant, and partner roles.'}
                   </p>
                 </div>
 
@@ -301,8 +301,8 @@ export const GuideModal: React.FC<Props> = ({
                   </h4>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
                     {isAr
-                      ? 'من التسجيل الأولي وحتى مكالمة الفيديو، التقرير المختوم، محادثة المتابعة 14 يوماً، وإغلاق الملف.'
-                      : 'From initial intake to WebRTC video call, stamped bilingual PDF, 14-day chat, and final closure.'}
+                      ? 'من التسجيل الأولي وحتى مكالمة الفيديو، التقرير المختوم، محادثة المتابعة 21 يوماً، وإغلاق الملف.'
+                      : 'From initial intake to WebRTC video call, stamped bilingual PDF, 21-day chat, and final closure.'}
                   </p>
                 </div>
               </div>

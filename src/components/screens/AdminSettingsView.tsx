@@ -6,9 +6,9 @@ export const AdminSettingsView: React.FC = () => {
 
   // Dynamic Staff state
   const [staffList, setStaffList] = useState([
-    { id: '1', name: 'د. عبدالله الشمري', role: 'Saudi Doctor', specialty: 'Cardiology', license: 'SCFHS-2018-9941', hospital: 'Riyadh Care' },
-    { id: '2', name: 'Dr. Arjun Mehta', role: 'Indian Consultant', specialty: 'Cardiac Surgery', license: 'MCI-99421', hospital: 'KIMS Hyderabad' },
-    { id: '3', name: 'نورة الدوسري', role: 'ALO Triage Nurse', specialty: 'Triage & Interpretation', license: 'SCFHS-2021-4412', hospital: 'ALO Hub' },
+    { id: '1', name: 'د. عبدالله الشمري', role: 'Saudi treating doctor', specialty: 'Cardiology', license: 'SCFHS-2018-9941', hospital: 'Riyadh Care' },
+    { id: '2', name: 'Dr. Arjun Mehta', role: 'Indian consultant', specialty: 'Cardiac Surgery', license: 'MCI-99421', hospital: 'KIMS Hyderabad' },
+    { id: '3', name: 'نورة الدوسري', role: 'ALO nurse', specialty: 'Triage & Interpretation', license: 'SCFHS-2021-4412', hospital: 'ALO Hub' },
   ]);
 
   // Dynamic Specialties state
@@ -34,7 +34,7 @@ export const AdminSettingsView: React.FC = () => {
   ]);
 
   // Form input states for adding items dynamically
-  const [newStaff, setNewStaff] = useState({ name: '', role: 'Saudi Doctor', specialty: '', license: '', hospital: '' });
+  const [newStaff, setNewStaff] = useState({ name: '', role: 'Saudi treating doctor', specialty: '', license: '', hospital: '' });
   const [newSpecialty, setNewSpecialty] = useState({ nameAr: '', nameEn: '' });
   const [newLabTest, setNewLabTest] = useState({ name: '', category: 'Blood Chemistry', hours: 4, priceSar: 200 });
   const [newDrug, setNewDrug] = useState({ generic: '', brand: '', dosage: '', subAllowed: true });
@@ -43,7 +43,7 @@ export const AdminSettingsView: React.FC = () => {
     e.preventDefault();
     if (!newStaff.name || !newStaff.specialty) return;
     setStaffList([...staffList, { ...newStaff, id: Date.now().toString() }]);
-    setNewStaff({ name: '', role: 'Saudi Doctor', specialty: '', license: '', hospital: '' });
+    setNewStaff({ name: '', role: 'Saudi treating doctor', specialty: '', license: '', hospital: '' });
     alert('تمت إضافة الطبيب / العضو إلى قاعدة البيانات بنجاح!');
   };
 
@@ -141,9 +141,9 @@ export const AdminSettingsView: React.FC = () => {
                   onChange={(e) => setNewStaff({ ...newStaff, role: e.target.value })}
                   className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-slate-100 outline-none focus:ring-1 focus:ring-teal-500"
                 >
-                  <option value="Saudi Doctor">طبيب سعودي معالج (Saudi Doctor)</option>
-                  <option value="Indian Consultant">استشاري دولي (Consultant)</option>
-                  <option value="ALO Nurse">ممرضة ألو (ALO Nurse)</option>
+                  <option value="Saudi treating doctor">طبيب سعودي معالج (Saudi treating doctor)</option>
+                  <option value="Indian consultant">استشاري هندي (Indian consultant)</option>
+                  <option value="ALO nurse">ممرضة ألو (ALO nurse)</option>
                   <option value="Pharmacist">صيدلي (Pharmacist)</option>
                   <option value="Lab Tech">أخصائي مختبر (Lab Tech)</option>
                 </select>

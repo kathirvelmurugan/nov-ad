@@ -62,7 +62,7 @@ const OpinionTelehealthView: React.FC<Props> = ({ activeCase, onAdvanceStage, on
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
         <div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 700, margin: 0, color: colors.primary }}>
-            {isRtl ? 'جلسة الرأي الطبي المتعدد التخصصات' : 'Multi-Disciplinary Telehealth Session'}
+            {isRtl ? 'جلسة الرأي الطبي المتعدد التخصصات' : 'Video / voice call'}
           </h1>
           <p style={{ fontSize: '0.875rem', margin: '0.25rem 0 0 0', opacity: 0.8 }}>
             {isRtl ? `حالة المريض: ${patientDisplayName} (${activeCase.diagnosisAr || activeCase.diagnosis})` : `Patient Case: ${patientDisplayName} (${activeCase.diagnosis})`}
@@ -101,7 +101,7 @@ const OpinionTelehealthView: React.FC<Props> = ({ activeCase, onAdvanceStage, on
         {/* Tile 1: Indian Consultant */}
         <VideoTile
           name="Dr. Arjun Mehta"
-          role={isRtl ? 'استشاري هندي' : 'Indian Consultant'}
+          role={isRtl ? 'استشاري هندي' : 'Indian consultant'}
           isActive={activeSpeaker === 'consultant'}
           isDarkMode={isDarkMode}
           colors={colors}
@@ -135,7 +135,7 @@ const OpinionTelehealthView: React.FC<Props> = ({ activeCase, onAdvanceStage, on
         {/* Tile 2: Saudi Treating Doctor */}
         <VideoTile
           name="Dr. Abdullah Al-Shammari"
-          role={isRtl ? 'الطبيب المعالج' : 'Saudi Treating Doctor'}
+          role={isRtl ? 'الطبيب المعالج' : 'Saudi treating doctor'}
           isActive={activeSpeaker === 'treating'}
           isDarkMode={isDarkMode}
           colors={colors}
@@ -182,7 +182,7 @@ const OpinionTelehealthView: React.FC<Props> = ({ activeCase, onAdvanceStage, on
 
           <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, textAlign: 'center' }}>Sara Al-Dosari</h3>
           <p style={{ margin: '0.25rem 0', fontSize: '0.75rem', opacity: 0.8, textAlign: 'center' }}>
-            {isRtl ? 'ممرضة ألو' : 'ALO Nurse'}
+            {isRtl ? 'ممرضة ألو' : 'ALO nurse'}
           </p>
 
           {/* Interpreter Badge */}

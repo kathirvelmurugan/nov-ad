@@ -1,9 +1,9 @@
 export type RoleCode = 
   | 'P'   // Patient (Salem / Fatima / etc.)
-  | 'N'   // ALO Nurse Triage (Sara N.)
-  | 'D'   // Saudi Treating Doctor (Dr. Abdullah)
-  | 'C'   // ALO Care Coordinator (Abdulrahman)
-  | 'K'   // International Consultant (Dr. Arjun / Dr. Alok)
+  | 'N'   // ALO nurse (Sara N.)
+  | 'D'   // Saudi treating doctor (Dr. Abdullah)
+  | 'C'   // ALO coordinator (Abdulrahman)
+  | 'K'   // Indian consultant (Dr. Arjun / Dr. Alok)
   | 'L'   // Diagnostic Lab Partner (Alpha Labs)
   | 'H'   // Home Healthcare Partner (Sanad Health)
   | 'T'   // Travel & Medical Visa Partner (Al-Fursan)

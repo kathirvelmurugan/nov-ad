@@ -14,8 +14,8 @@ export const PERSONAS: Persona[] = [
   {
     code: 'N',
     name: 'سارة الدوسري',
-    title: 'ممرضة ألو للفرز السريري (ALO Nurse: Sara N.)',
-    badge: '🩺 ALO Nurse',
+    title: 'ممرضة ألو للفرز السريري (ALO nurse: Sara N.)',
+    badge: '🩺 ALO nurse',
     avatar: '👩‍⚕️',
     surface: 'portal-web',
     isRtl: true,
@@ -24,8 +24,8 @@ export const PERSONAS: Persona[] = [
   {
     code: 'D',
     name: 'د. عبدالله الشمري',
-    title: 'الطبيب السعودي المعالج (Saudi Treating Doctor: Dr. Abdullah)',
-    badge: '👨‍⚕️ Saudi Doctor',
+    title: 'الطبيب السعودي المعالج (Saudi treating doctor: Dr. Abdullah)',
+    badge: '👨‍⚕️ Saudi treating doctor',
     avatar: '👨‍⚕️',
     surface: 'portal-web',
     isRtl: true,
@@ -34,8 +34,8 @@ export const PERSONAS: Persona[] = [
   {
     code: 'C',
     name: 'عبدالرحمن الشهري',
-    title: 'منسق رعاية ألو (ALO Care Coordinator: Abdulrahman)',
-    badge: '👔 ALO Coordinator',
+    title: 'منسق رعاية ألو (ALO coordinator: Abdulrahman)',
+    badge: '👔 ALO coordinator',
     avatar: '👔',
     surface: 'portal-web',
     isRtl: true,
@@ -44,8 +44,8 @@ export const PERSONAS: Persona[] = [
   {
     code: 'K',
     name: 'Dr. Arjun Mehta',
-    title: 'الاستشاري الهندي (Indian Consultant: Dr. Arjun)',
-    badge: '🇮🇳 Indian Consultant',
+    title: 'الاستشاري الهندي (Indian consultant: Dr. Arjun)',
+    badge: '🇮🇳 Indian consultant',
     avatar: '👨‍⚕️',
     surface: 'consultant-mobile',
     isRtl: false,

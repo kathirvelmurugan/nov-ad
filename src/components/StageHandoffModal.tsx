@@ -27,84 +27,84 @@ interface StageHandoffInfo {
 
 const HANDOFF_MAP: Record<string, StageHandoffInfo> = {
   'INTAKE_RECEIVED->NURSE_CHECK': {
-    completedTitleAr: 'المرحلة 1: تسجيل الحالة والأعراض (Intake P01-P14)',
-    completedTitleEn: 'Stage 1: Patient Intake & Diagnostics (P01-P14)',
+    completedTitleAr: 'المرحلة 1: تسجيل الحالة والأعراض · P01–17',
+    completedTitleEn: 'Intake received · P01–17',
     completedSummaryAr: 'تم تسجيل الشكوى الرئيسية، التحقق من الهوية الوطنية، ورفع التقارير الطبية وفحوصات الأشعة السابقة.',
     completedSummaryEn: 'Chief complaint registered, Saudi National ID verified, and diagnostic lab reports/imaging uploaded.',
-    nextTitleAr: 'المرحلة 2: فرز التمريض وحجب الهوية (Nurse Triage N01-N07)',
-    nextTitleEn: 'Stage 2: Nurse Triage & De-Identification (N01-N07)',
+    nextTitleAr: 'المرحلة 2: فرز التمريض وحجب الهوية · N01–07',
+    nextTitleEn: 'Nurse check · N01–07',
     nextObjectiveAr: 'مراجعة العلامات الحيوية، تحديد مستوى الأولوية (24h SLA)، وتطبيق الحجب الآلي للبيانات الشخصية لحماية الخصوصية.',
-    nextObjectiveEn: 'Review vital signs, assign triage priority (24h SLA), and apply automated de-identification masking patient PII.'
+    nextObjectiveEn: 'ALO nurse: check file · hide identity · nurse line.'
   },
   'NURSE_CHECK->DOCTOR_REVIEW': {
-    completedTitleAr: 'المرحلة 2: فرز التمريض وحجب الهوية (Nurse Triage N01-N07)',
-    completedTitleEn: 'Stage 2: Nurse Triage & De-Identification (N01-N07)',
+    completedTitleAr: 'المرحلة 2: فرز التمريض وحجب الهوية · N01–07',
+    completedTitleEn: 'Nurse check · N01–07',
     completedSummaryAr: 'اكتمل الفرز السريري، وتم حجب الاسم ورقم الهوية آلياً، وتأكيد جاهزية مقاطع الأشعة DICOM.',
     completedSummaryEn: 'Clinical triage completed, patient PII masked, and DICOM imaging readiness verified.',
-    nextTitleAr: 'المرحلة 3: مراجعة الطبيب السعودي المعالج (Doctor Review D01-D10)',
-    nextTitleEn: 'Stage 3: Saudi Treating Doctor Review (D01-D10)',
-    nextObjectiveAr: 'مراجعة التاريخ المرضي وتحديد سؤالين سريريين دقيقين للاستشاري الدولي واعتماد ملف الإحالة.',
-    nextObjectiveEn: 'Review clinical history, formulate 2 focused questions for the international specialist, and sign off referral pack.'
+    nextTitleAr: 'المرحلة 3: مراجعة الطبيب السعودي المعالج · D02–06',
+    nextTitleEn: 'Doctor review · D02–06',
+    nextObjectiveAr: 'مراجعة التاريخ المرضي وتحديد 3 أسئلة سريرية دقيقة للاستشاري الهندي واعتماد ملف الإحالة.',
+    nextObjectiveEn: 'Saudi treating doctor: review patient file, then pick consultant · questions · call type (3 focus questions).'
   },
   'DOCTOR_REVIEW->AWAITING_PAYMENT': {
-    completedTitleAr: 'المرحلة 3: مراجعة الطبيب السعودي (Doctor Review D01-D10)',
-    completedTitleEn: 'Stage 3: Saudi Treating Doctor Review (D01-D10)',
+    completedTitleAr: 'المرحلة 3: مراجعة الطبيب السعودي · D02–06',
+    completedTitleEn: 'Doctor review · D02–06',
     completedSummaryAr: 'اعتمد الطبيب المعالج ملف الإحالة وصاغ الأسئلة السريرية التخصصية للاستشاري الهندي.',
     completedSummaryEn: 'Treating physician approved referral pack and formulated targeted questions for specialist review.',
-    nextTitleAr: 'المرحلة 4: سداد الرسوم والفاتورة الإلكترونية (Tap Payment P19-P21)',
-    nextTitleEn: 'Stage 4: Tap Payment Checkout & ZATCA Invoice (P19-P21)',
+    nextTitleAr: 'المرحلة 4: سداد الرسوم والفاتورة الإلكترونية · P19–21',
+    nextTitleEn: 'Awaiting payment · C01–06 · P19–21',
     nextObjectiveAr: 'سداد رسوم الاستشارة عبر بوابة Tap (مدى، فيزا، أبل باي) وإصدار الفاتورة الضريبية ZATCA Phase-2 QR.',
-    nextObjectiveEn: 'Complete consultation checkout via Tap Payments (Mada, Visa, Apple Pay) and generate compliant ZATCA Phase-2 invoice.'
+    nextObjectiveEn: 'ALO coordinator: confirm · price · payment link; Patient: pay · receipt.'
   },
   'AWAITING_PAYMENT->WITH_CONSULTANT': {
-    completedTitleAr: 'المرحلة 4: سداد الرسوم والفاتورة (Tap Payment P19-P21)',
-    completedTitleEn: 'Stage 4: Tap Payment & ZATCA Invoice (P19-P21)',
+    completedTitleAr: 'المرحلة 4: سداد الرسوم والفاتورة · P19–21',
+    completedTitleEn: 'Awaiting payment · P19–21 · C05–06',
     completedSummaryAr: 'تم تأكيد عملية الدفع بنجاح وإصدار إيصال السداد الضريبي المعتمد.',
     completedSummaryEn: 'Payment confirmed successfully via Tap Payments and official ZATCA tax receipt generated.',
-    nextTitleAr: 'المرحلة 5: مراجعة الاستشاري الدولي (Consultant Review K01-K07)',
-    nextTitleEn: 'Stage 5: Indian Specialist Review (K01-K07)',
-    nextObjectiveAr: 'فحص الأشعة عبر عارض DICOM ثلاثي الأبعاد، تسجيل ملخص صوتي 90 ثانية، والإجابة عن أسئلة الطبيب المعالج.',
-    nextObjectiveEn: 'Inspect scans in 3D multi-slice DICOM viewer, synthesize 90-sec audio briefing, and answer clinical questions.'
+    nextTitleAr: 'المرحلة 5: مراجعة الاستشاري الدولي · K01–04',
+    nextTitleEn: 'With consultant · K01–04',
+    nextObjectiveAr: 'فحص الأشعة عبر عارض DICOM، وإصدار رأي مكتوب · مواعيد المكالمة، والإجابة عن أسئلة الطبيب المعالج.',
+    nextObjectiveEn: 'Indian consultant: accept case · 48h starts.'
   },
   'WITH_CONSULTANT->OPINION_READY': {
-    completedTitleAr: 'المرحلة 5: مراجعة الاستشاري الدولي (Consultant Review K01-K07)',
-    completedTitleEn: 'Stage 5: Indian Specialist Review (K01-K07)',
+    completedTitleAr: 'المرحلة 5: مراجعة الاستشاري الدولي · K01–04',
+    completedTitleEn: 'With consultant · K01–04',
     completedSummaryAr: 'أنجز الاستشاري الدولي فحص الأشعة وسجل الملخص الصوتي واعتمد الرأي الطبي الثاني.',
-    completedSummaryEn: 'International specialist completed scan review, voice briefing synthesis, and drafted clinical opinion.',
-    nextTitleAr: 'المرحلة 6: الاستشارة المرئية والتقرير المختوم (Telehealth & Opinion K08/P25)',
-    nextTitleEn: 'Stage 6: Telehealth Video & Stamped Report (K08/P25)',
+    completedSummaryEn: 'Indian consultant: written opinion · call slots; video / voice call with ALO nurse interpret on call.',
+    nextTitleAr: 'المرحلة 6: الاستشارة المرئية والتقرير المختوم · C08 · P25–26',
+    nextTitleEn: 'Opinion ready · C08 · P25–26',
     nextObjectiveAr: 'عقد جلسة اتصال مرئي WebRTC مشفرة بين المريض والاستشاريين وتحميل التقرير الطبي المعتمد ثنائي اللغة.',
-    nextObjectiveEn: 'Hold encrypted WebRTC video consultation with bilingual translation and download signed medical report PDF.'
+    nextObjectiveEn: 'ALO coordinator: release report PDF 1; Patient: report · book partners.'
   },
   'OPINION_READY->PARTNER_SERVICES': {
-    completedTitleAr: 'المرحلة 6: الاستشارة المرئية والتقرير المختوم (Telehealth & Opinion K08/P25)',
-    completedTitleEn: 'Stage 6: Telehealth Video & Stamped Report (K08/P25)',
+    completedTitleAr: 'المرحلة 6: الاستشارة المرئية والتقرير المختوم · C08 · P25–26',
+    completedTitleEn: 'Opinion ready · C08 · P25–26',
     completedSummaryAr: 'اكتملت الاستشارة المرئية وتم تسليم التقرير الطبي الثاني المعتمد باللغتين العربية والإنجليزية.',
-    completedSummaryEn: 'Telehealth video consultation concluded and bilingual stamped second-opinion PDF delivered to patient.',
-    nextTitleAr: 'المرحلة 7: خدمات الرعاية السعودية الشريكة (Saudi Partner Care L01, H01, T01)',
-    nextTitleEn: 'Stage 7: Saudi Partner Care Orders (L01, H01, T01, V01)',
+    completedSummaryEn: 'Report PDF 1 released to Patient and Saudi treating doctor.',
+    nextTitleAr: 'المرحلة 7: خدمات الرعاية السعودية الشريكة · L01 · T01 · H01 · V01',
+    nextTitleEn: 'Partner services · L01 · T01 · H01 · V01',
     nextObjectiveAr: 'تنسيق الخدمات الميدانية الموصى بها: سحب عينات منزلي (مختبرات ألفا)، تمريض منزلي (سند)، وتأشيرات وسفر (الفرسان).',
-    nextObjectiveEn: 'Coordinate recommended fulfillment: at-home blood draw (Alpha Labs), home nursing (Sanad), and medical travel (Al-Fursan).'
+    nextObjectiveEn: 'Orders · bookings · insurance or cash.'
   },
   'PARTNER_SERVICES->FOLLOW_UP_21_DAYS': {
-    completedTitleAr: 'المرحلة 7: خدمات الرعاية السعودية الشريكة (Partner Care)',
-    completedTitleEn: 'Stage 7: Saudi Partner Care Orders (L01, H01, T01)',
+    completedTitleAr: 'المرحلة 7: خدمات الرعاية السعودية الشريكة · L01–V01',
+    completedTitleEn: 'Partner services · L01–V01',
     completedSummaryAr: 'تم تفعيل أوامر التحاليل المخبرية والرعاية المنزلية وجدولة المواعيد مع الشركاء المعتمدين.',
-    completedSummaryEn: 'Partner care orders dispatched for lab collection, home nursing visits, and medical logistics.',
-    nextTitleAr: 'المرحلة 8: المتابعة غير المتزامنة 14 يوماً (14-Day Follow-Up P27-P28)',
-    nextTitleEn: 'Stage 8: 14-Day Asynchronous Follow-Up Chat (P27-P28)',
-    nextObjectiveAr: 'فتح قناة محادثة سريرية آمنة لمدة 14 يوماً بين المريض والطبيب المعالج للإجابة عن الاستفسارات اللاحقة.',
-    nextObjectiveEn: 'Open secure 14-day asynchronous clinical messaging window between patient and physician for ongoing inquiries.'
+    completedSummaryEn: 'Partner orders · bookings placed.',
+    nextTitleAr: 'المرحلة 8: المتابعة غير المتزامنة 21 يوماً · C09–10 · P27–29',
+    nextTitleEn: 'Follow-up 21 days · C09–10 · P27–29',
+    nextObjectiveAr: 'فتح قناة محادثة سريرية آمنة لمدة 21 يوماً بين المريض والطبيب المعالج للإجابة عن الاستفسارات اللاحقة.',
+    nextObjectiveEn: 'ALO coordinator: relay follow-up · close case; Indian consultant: answer · final comment; Patient: follow-up · PDF 2 · rating.'
   },
   'FOLLOW_UP_21_DAYS->CLOSED': {
-    completedTitleAr: 'المرحلة 8: المتابعة غير المتزامنة (14-Day Follow-Up P27-P28)',
-    completedTitleEn: 'Stage 8: 14-Day Asynchronous Follow-Up Chat (P27-P28)',
+    completedTitleAr: 'المرحلة 8: المتابعة غير المتزامنة · C09–10 · P27–29',
+    completedTitleEn: 'Follow-up 21 days · C09–10 · P27–29',
     completedSummaryAr: 'انتهت فترة المتابعة السريرية واستقرت الخطة العلاجية وتمت الإجابة عن كافة الاستفسارات.',
-    completedSummaryEn: 'Clinical follow-up period completed, inquiries answered, and long-term care plan finalized.',
-    nextTitleAr: 'المرحلة 9: إغلاق الملف وتقييم الخدمة (Case Closure & NPS P29)',
-    nextTitleEn: 'Stage 9: Case Closure & Outcome NPS (P29)',
+    completedSummaryEn: 'Follow-up relayed and answered within 21 days.',
+    nextTitleAr: 'المرحلة 9: إغلاق الملف وتقييم الخدمة · P29',
+    nextTitleEn: 'Closed · P29',
     nextObjectiveAr: 'اعتماد الإغلاق النهائي للملف الطبي، تسجيل تقييم رضا المريض (NPS)، والأرشفة وفق متطلبات هيئة الصحة.',
-    nextObjectiveEn: 'Final medical case sign-off, patient Net Promoter Score (NPS) submission, and regulatory archival.'
+    nextObjectiveEn: 'Case closed; Patient: rating.'
   }
 };
 

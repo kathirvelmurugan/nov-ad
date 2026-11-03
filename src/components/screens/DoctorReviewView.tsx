@@ -39,7 +39,7 @@ export const DoctorReviewView: React.FC<Props> = ({
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="bg-alo-mint text-alo-teal font-mono text-[10px] px-2 py-0.5 rounded font-bold border border-teal-200">
-              D01 · {isAr ? 'الطبيب المعالج' : 'Treating Physician'}
+              D01 · {isAr ? 'الطبيب المعالج' : 'Saudi treating doctor'}
             </span>
             <span className="text-xs font-bold text-slate-500">
               {isAr ? 'المستشفى الشريك:' : 'Partner Hospital:'} {activeCase.treatingDoctor.hospital}

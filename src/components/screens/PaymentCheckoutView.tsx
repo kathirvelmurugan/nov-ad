@@ -46,7 +46,7 @@ const TIERS: TierConfig[] = [
     totalSar: 2875,
     featuresEn: [
       '30-Min WebRTC Video Call',
-      'ALO Nurse Sara Live Medical Translation',
+      'ALO nurse Sara live medical translation',
       'Dual-Signed PDF Report',
       '21-Day Post-Call Q&A Relay',
     ],

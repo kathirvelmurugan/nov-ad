@@ -13,6 +13,12 @@ lerna-debug.log*
 *.mp4
 extracted_en_summary.txt
 
+# Local PDF text cache (confidential workflow reference extraction)
+.pdfcache/
+
+# Rendered per-page screenshots + context of the confidential workflow PDF
+pdf_image/
+
 # Runtime data
 pids
 *.pid

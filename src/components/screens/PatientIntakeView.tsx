@@ -147,11 +147,11 @@ export const PatientIntakeView: React.FC<Props> = ({
         <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
           <div className="flex items-center gap-2">
             <span className="bg-alo-mint text-alo-teal px-2 py-0.5 rounded text-[10px] font-mono font-bold border border-teal-200">
-              P04-B · {isAr ? 'الطبيب المعالج' : 'Saudi Treating Doctor'}
+              P04-B · {isAr ? 'الطبيب المعالج' : 'Saudi treating doctor'}
             </span>
             <Stethoscope className="w-4 h-4 text-alo-teal" />
             <h3 className="text-sm font-extrabold text-alo-navy dark:text-slate-100">
-              {isAr ? 'اختيار الطبيب السعودي المعالج المشرف على الحالة بالمملكة' : 'Select Saudi Treating Physician within KSA'}
+              {isAr ? 'اختيار الطبيب السعودي المعالج المشرف على الحالة بالمملكة' : 'Select the Saudi treating doctor within KSA'}
             </h3>
           </div>
           <span className="text-[11px] text-slate-500 font-medium">
@@ -206,7 +206,7 @@ export const PatientIntakeView: React.FC<Props> = ({
           <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-normal">
             {isAr
               ? '💡 وفقاً لدليل المسار السريري (Master Map 1/2): بعد اعتماد التمريض، ستتم إحالة الملف إلى هذا الطبيب لدراسة التاريخ المرضي وتحديد الأسئلة التوجيهية واختيار الاستشاري الدولي.'
-              : '💡 Per Master Map 1/2: Once ALO Nurse completes triage audit, this physician reviews the dossier, writes 3 focus questions, and selects the international consultant.'}
+              : '💡 Per Master map 1/2: once the ALO nurse completes nurse check, the Saudi treating doctor reviews the file, writes 3 focus questions, and picks the Indian consultant.'}
           </p>
         </div>
       </div>
@@ -413,7 +413,7 @@ export const PatientIntakeView: React.FC<Props> = ({
             disabled={!privacyAgreed}
             className="w-full sm:w-auto bg-gradient-to-r from-alo-teal to-teal-700 hover:from-teal-700 hover:to-teal-800 disabled:opacity-50 text-white font-extrabold py-3 px-8 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-sm active:scale-95 cursor-pointer"
           >
-            <span>P14 · {isAr ? 'إرسال الملف إلى تمريض الفرز (Submit Case)' : 'Submit Case to ALO Nurse Triage'}</span>
+            <span>P14 · {isAr ? 'إرسال الملف إلى تمريض الفرز (Submit Case)' : 'Submit case to ALO nurse'}</span>
             <span>{isAr ? '←' : '→'}</span>
           </button>
         </div>

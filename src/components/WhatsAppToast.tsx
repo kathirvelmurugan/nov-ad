@@ -54,7 +54,7 @@ export const WhatsAppToast: React.FC<Props> = ({
         payload = {
           code: 'W05',
           titleAr: 'مراجعة الطبيب السعودي وصياغة الأسئلة',
-          titleEn: 'Saudi Doctor Review Active',
+          titleEn: 'Doctor review',
           bodyAr: `يقوم ${activeCase.treatingDoctor.name} بدراسة الملف وصياغة 3 أسئلة توجيهية.`,
           bodyEn: `${activeCase.treatingDoctor.name} is reviewing and formulating 3 focus questions.`,
         };
@@ -98,10 +98,10 @@ export const WhatsAppToast: React.FC<Props> = ({
       case 'FOLLOW_UP_21_DAYS':
         payload = {
           code: 'W18',
-          titleAr: 'فتح نافذة المتابعة المباشرة (14 يوماً)',
-          titleEn: '14-Day Clinical Follow-Up Open',
+          titleAr: 'فتح نافذة المتابعة المباشرة (21 يوماً)',
+          titleEn: 'Follow-up 21 days',
           bodyAr: `نافذة التواصل السريري المباشر مفتوحة مع الطبيب المعالج وممرضة الفرز.`,
-          bodyEn: `Direct clinical chat channel open with treating team for 14 days.`,
+          bodyEn: `Direct clinical chat channel open with treating team for 21 days.`,
         };
         break;
       case 'CLOSED':
