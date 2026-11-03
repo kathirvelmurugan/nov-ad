@@ -40,18 +40,22 @@
    - Refunds for cancellations or SLA breaches must execute via Tap Refund API (`POST /v2/refunds`) tied to the original `charge_id`.
 
 6. **Strict In-App Service Scope (Phase 1):**
-   - **Collected in-app:** ALO DOCTOR medical second opinion service fees (Tiers 1, 2, 3) + 15% ZATCA VAT.
+   - **Collected in-app:** ALO DOCTOR medical second opinion service fees (Tiers 1, 2) + 15% ZATCA VAT.
    - **NOT collected in-app:** Any subsequent hospital admissions, surgical interventions, physical therapy, or partner clinic visits. All hospital and surgical fees are paid directly at the treating hospital facility in Saudi Arabia or India.
 
 ---
 
-## 3. Tier Pricing & ZATCA 15% VAT Matrix (Phase 1)
+## 3. Service Pricing & ZATCA 15% VAT Matrix (Phase 1)
 
-| Tier | Service Description | Base Fee (SAR) | 15% ZATCA VAT (SAR) | Total Invoiced (SAR) | Tabby 4x Split (SAR/mo) |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **Tier 1** | Written Second Opinion Report | SAR 1,200 | SAR 180 | **SAR 1,380** | SAR 345.00 / month |
-| **Tier 2** | Written Report + 30-min Video Telehealth *(Most Popular)* | SAR 2,500 | SAR 375 | **SAR 2,875** | SAR 718.75 / month |
-| **Tier 3** | Multidisciplinary Tumor Board / Complex Surgical Panel | SAR 4,500 | SAR 675 | **SAR 5,175** | SAR 1,293.75 / month |
+Two service options only. Totals are VAT-inclusive; Base/VAT are itemized for ZATCA.
+
+| Package | Service Description | Base Fee (SAR) | 15% ZATCA VAT (SAR) | Total (SAR, VAT-incl.) |
+| :--- | :--- | :--- | :--- | :--- |
+| **Tier 1** | Written opinion only | SAR 65.22 | SAR 9.78 | **SAR 75.00** |
+| **Tier 2** | Video + written opinion *(Most Popular)* | SAR 130.43 | SAR 19.57 | **SAR 150.00** |
+
+- **Not offered in Phase 1:** Multidisciplinary Tumor Board / Complex Surgical Panel (former Tier 3).
+- **Tabby split payments:** not displayed in Phase 1 (reserved for a later phase).
 
 ---
 

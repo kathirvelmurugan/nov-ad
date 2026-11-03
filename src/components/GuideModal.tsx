@@ -95,10 +95,10 @@ export const GuideModal: React.FC<Props> = ({
       titleAr: 'المرحلة 4: بانتظار السداد · P19–21',
       titleEn: 'Awaiting payment · C01–06 · P19–21',
       role: 'P (Patient / مريض)',
-      descAr: 'سداد رسوم الاستشارة (2,875 ر.س - الفئة 2) عبر بوابة Tap (مدى، فيزا، ماستركارد)، أو تقسيط تابي على 4 دفعات، مع فاتورة ZATCA الإلكترونية.',
-      descEn: 'Patient pays consultation fee (2,875 SAR, Tier 2) via Tap Payments (Mada, Visa, Apple Pay) or Tabby 4x split, with ZATCA Phase-2 QR invoice.',
-      keyPointsAr: ['شاشات P19 إلى P21', 'رمز الاستجابة السريع ZATCA Phase-2', 'خيار التقسيط تابي 4 دفعات'],
-      keyPointsEn: ['Screens P19 to P21', 'ZATCA Phase-2 compliant QR code', 'Tabby 4-installment interest-free split']
+      descAr: 'سداد رسوم الاستشارة (150 ر.س للمرئي + المكتوب، 75 ر.س للمكتوب فقط) عبر بوابة Tap (مدى، Apple Pay، STC Pay، البطاقات)، مع فاتورة ZATCA الإلكترونية.',
+      descEn: 'Patient pays the consultation fee (150 SAR for video + written, 75 SAR for written only) via Tap Payments (mada, Apple Pay, STC Pay, cards), with ZATCA Phase-2 QR invoice.',
+      keyPointsAr: ['شاشات P19 إلى P21', 'رمز الاستجابة السريع ZATCA Phase-2', 'Tap: مدى · Apple Pay · STC Pay · البطاقات'],
+      keyPointsEn: ['Screens P19 to P21', 'ZATCA Phase-2 compliant QR code', 'Tap: mada · Apple Pay · STC Pay · cards'],
     },
     {
       stage: 'WITH_CONSULTANT',

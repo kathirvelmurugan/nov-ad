@@ -57,15 +57,15 @@ export const SEED_CASES: ClinicalCase[] = [
     },
     pricing: {
       tier: 2,
-      tierName: 'استشارة مكتوبة + جلسة مرئية عن بُعد (Tier 2 Video)',
-      baseSar: 2500,
+      tierName: 'مرئي + رأي مكتوب (Tier 2)',
+      baseSar: 130.43,
       vatPercent: 15,
-      vatSar: 375,
-      totalSar: 2875,
+      vatSar: 19.57,
+      totalSar: 150,
       paid: false,
       invoiceNumber: 'INV-2026-0941',
       tapChargeId: 'chg_tap_ksa_test_89214',
-      tabbyInstallmentSar: 718.75
+      tabbyInstallmentSar: 37.5
     },
     files: [
       { id: 'f1', name: 'Clinical_Echo_Summary.pdf', type: 'pdf', size: '2.4 MB', verified: true, url: '#' },
@@ -152,15 +152,15 @@ export const SEED_CASES: ClinicalCase[] = [
     },
     pricing: {
       tier: 2,
-      tierName: 'استشارة مكتوبة + جلسة مرئية عن بُعد (Tier 2 Video)',
-      baseSar: 2500,
+      tierName: 'مرئي + رأي مكتوب (Tier 2)',
+      baseSar: 130.43,
       vatPercent: 15,
-      vatSar: 375,
-      totalSar: 2875,
+      vatSar: 19.57,
+      totalSar: 150,
       paid: false,
       invoiceNumber: 'INV-2026-0001',
       tapChargeId: 'chg_tap_ksa_test_89214',
-      tabbyInstallmentSar: 718.75
+      tabbyInstallmentSar: 37.5
     },
     files: [
       { id: 'f4', name: 'Coronary_Angio_Report.pdf', type: 'pdf', size: '3.1 MB', verified: true, url: '#' },
@@ -241,16 +241,16 @@ export const SEED_CASES: ClinicalCase[] = [
       city: 'Delhi, India'
     },
     pricing: {
-      tier: 2,
-      tierName: 'استشارة مكتوبة + جلسة مرئية عن بُعد (Tier 2 Video)',
-      baseSar: 2500,
+      tier: 1,
+      tierName: 'رأي مكتوب فقط (Tier 1)',
+      baseSar: 65.22,
       vatPercent: 15,
-      vatSar: 375,
-      totalSar: 2875,
+      vatSar: 9.78,
+      totalSar: 75,
       paid: false,
       invoiceNumber: 'INV-2026-0001',
       tapChargeId: 'chg_tap_ksa_test_89214',
-      tabbyInstallmentSar: 718.75
+      tabbyInstallmentSar: 18.75
     },
     files: [
       { id: 'f6', name: 'Brain_MRA_3D.dcm', type: 'dicom', size: '120 MB', verified: true, url: '#' },
@@ -263,21 +263,9 @@ export const SEED_CASES: ClinicalCase[] = [
       physio: { sessions: 0, status: 'planned' }
     },
     consultantOpinion: "Lumbar MRI reveals severe central canal stenosis at L4-L5 with facet arthropathy. However, dynamic flexion-extension radiographs show no spondylolisthesis or mechanical instability. Therefore, minimally invasive bilateral decompression via unilateral laminotomy is indicated instead of aggressive 2-level fusion with instrumentation.",
-    proposedCallSlot: "Thu 11:00 AST / 13:30 IST",
     finalClosureNote: "Endoscopic decompression successfully performed with preservation of lumbar stability. Patient reports complete relief of neurogenic claudication.",
     coordinatorQuestions: "Focus: Decompression alone vs fusion instrumentation for L4-L5 spinal stenosis.",
     metadata: {
-      "proposedSlots": [
-            {
-                  "id": "slot_1",
-                  "time": "Thursday 11:00 AST (13:30 IST)"
-            },
-            {
-                  "id": "slot_2",
-                  "time": "Friday 16:30 AST (19:00 IST)"
-            }
-      ],
-      "confirmedSlotId": "slot_1",
       "pdf1Released": true,
       "patientQuestions": [
             "هل إزالة الضغط بالمنظار تمنع الحاجة إلى تثبيت الفقرات بالمسامير في المستقبل؟",
@@ -332,15 +320,15 @@ export const SEED_CASES: ClinicalCase[] = [
     },
     pricing: {
       tier: 2,
-      tierName: 'استشارة مكتوبة + جلسة مرئية عن بُعد (Tier 2 Video)',
-      baseSar: 2500,
+      tierName: 'مرئي + رأي مكتوب (Tier 2)',
+      baseSar: 130.43,
       vatPercent: 15,
-      vatSar: 375,
-      totalSar: 2875,
+      vatSar: 19.57,
+      totalSar: 150,
       paid: false,
       invoiceNumber: 'INV-2026-0001',
       tapChargeId: 'chg_tap_ksa_test_89214',
-      tabbyInstallmentSar: 718.75
+      tabbyInstallmentSar: 37.5
     },
     files: [
       { id: 'f8', name: 'Video_EEG_Monitoring_72h.pdf', type: 'pdf', size: '5.6 MB', verified: true, url: '#' },
@@ -422,15 +410,15 @@ export const SEED_CASES: ClinicalCase[] = [
     },
     pricing: {
       tier: 2,
-      tierName: 'استشارة مكتوبة + جلسة مرئية عن بُعد (Tier 2 Video)',
-      baseSar: 2500,
+      tierName: 'مرئي + رأي مكتوب (Tier 2)',
+      baseSar: 130.43,
       vatPercent: 15,
-      vatSar: 375,
-      totalSar: 2875,
+      vatSar: 19.57,
+      totalSar: 150,
       paid: true,
       invoiceNumber: 'INV-2026-0812',
       tapChargeId: 'chg_tap_ksa_test_89214',
-      tabbyInstallmentSar: 718.75
+      tabbyInstallmentSar: 37.5
     },
     files: [
       { id: 'f10', name: 'Pathology_Biopsy_IHC.pdf', type: 'pdf', size: '3.4 MB', verified: true, url: '#' },
@@ -514,15 +502,15 @@ export const SEED_CASES: ClinicalCase[] = [
     },
     pricing: {
       tier: 2,
-      tierName: 'استشارة مكتوبة + جلسة مرئية عن بُعد (Tier 2 Video)',
-      baseSar: 2500,
+      tierName: 'مرئي + رأي مكتوب (Tier 2)',
+      baseSar: 130.43,
       vatPercent: 15,
-      vatSar: 375,
-      totalSar: 2875,
+      vatSar: 19.57,
+      totalSar: 150,
       paid: true,
       invoiceNumber: 'INV-2026-0744',
       tapChargeId: 'chg_tap_ksa_test_89214',
-      tabbyInstallmentSar: 718.75
+      tabbyInstallmentSar: 37.5
     },
     files: [
       { id: 'f12', name: 'Abdominal_Pelvic_CT_TriplePhase.dcm', type: 'dicom', size: '210 MB', verified: true, url: '#' },
@@ -604,16 +592,16 @@ export const SEED_CASES: ClinicalCase[] = [
       opinionEnglish: 'Radiographs reveal extensive tibial lucency >2mm indicating aseptic mechanical loosening. Revision using modular rotating hinge prosthesis with porous titanium sleeves and tantalum cones for defect reconstruction is recommended.'
     },
     pricing: {
-      tier: 2,
-      tierName: 'استشارة مكتوبة + جلسة مرئية عن بُعد (Tier 2 Video)',
-      baseSar: 2500,
+      tier: 1,
+      tierName: 'رأي مكتوب فقط (Tier 1)',
+      baseSar: 65.22,
       vatPercent: 15,
-      vatSar: 375,
-      totalSar: 2875,
+      vatSar: 9.78,
+      totalSar: 75,
       paid: true,
       invoiceNumber: 'INV-2026-0610',
       tapChargeId: 'chg_tap_ksa_test_89214',
-      tabbyInstallmentSar: 718.75
+      tabbyInstallmentSar: 18.75
     },
     files: [
       { id: 'f14', name: 'WeightBearing_Knee_XRay.pdf', type: 'pdf', size: '4.8 MB', verified: true, url: '#' },
@@ -626,21 +614,9 @@ export const SEED_CASES: ClinicalCase[] = [
       physio: { sessions: 12, status: 'in_progress' }
     },
     consultantOpinion: "Weight-bearing knee radiographs reveal severe tricompartmental osteoarthritis with bone-on-bone medial contact, fixed flexion deformity (15 deg), and varus malalignment. Conservative injections and arthroscopy are ineffective at this stage. Robotic-assisted Total Knee Arthroplasty (TKA) with kinematic alignment is recommended.",
-    proposedCallSlot: "Thu 16:00 AST / 18:30 IST",
     finalClosureNote: "Robotic TKA successfully completed. Range of motion reached 0-110 degrees at week 3 post-op. Full weight-bearing achieved.",
     coordinatorQuestions: "Focus: Robotic-assisted kinematic alignment TKA vs unicompartmental arthroplasty.",
     metadata: {
-      "proposedSlots": [
-            {
-                  "id": "slot_1",
-                  "time": "Thursday 16:00 AST (18:30 IST)"
-            },
-            {
-                  "id": "slot_2",
-                  "time": "Friday 11:30 AST (14:00 IST)"
-            }
-      ],
-      "confirmedSlotId": "slot_1",
       "pdf1Released": true,
       "patientQuestions": [
             "هل الركبة الاصطناعية تتيح لي السجود في الصلاة وممارسة رياضة السباحة؟",
@@ -696,15 +672,15 @@ export const SEED_CASES: ClinicalCase[] = [
     },
     pricing: {
       tier: 2,
-      tierName: 'استشارة مكتوبة + جلسة مرئية عن بُعد (Tier 2 Video)',
-      baseSar: 2500,
+      tierName: 'مرئي + رأي مكتوب (Tier 2)',
+      baseSar: 130.43,
       vatPercent: 15,
-      vatSar: 375,
-      totalSar: 2875,
+      vatSar: 19.57,
+      totalSar: 150,
       paid: true,
       invoiceNumber: 'INV-2026-0504',
       tapChargeId: 'chg_tap_ksa_test_89214',
-      tabbyInstallmentSar: 718.75
+      tabbyInstallmentSar: 37.5
     },
     files: [
       { id: 'f16', name: 'Lumbar_Spine_MRI_T2_Axial_Sag.dcm', type: 'dicom', size: '110 MB', verified: true, url: '#' }
@@ -785,15 +761,15 @@ export const SEED_CASES: ClinicalCase[] = [
     },
     pricing: {
       tier: 2,
-      tierName: 'استشارة مكتوبة + جلسة مرئية عن بُعد (Tier 2 Video)',
-      baseSar: 2500,
+      tierName: 'مرئي + رأي مكتوب (Tier 2)',
+      baseSar: 130.43,
       vatPercent: 15,
-      vatSar: 375,
-      totalSar: 2875,
+      vatSar: 19.57,
+      totalSar: 150,
       paid: false,
       invoiceNumber: 'INV-2026-0001',
       tapChargeId: 'chg_tap_ksa_test_89214',
-      tabbyInstallmentSar: 718.75
+      tabbyInstallmentSar: 37.5
     },
     files: [
       { id: 'f17', name: 'Pediatric_Echo_Doppler_Series.mp4', type: 'mp4', size: '35 MB', verified: true, url: '#' }
@@ -875,15 +851,15 @@ export const SEED_CASES: ClinicalCase[] = [
     },
     pricing: {
       tier: 2,
-      tierName: 'استشارة مكتوبة + جلسة مرئية عن بُعد (Tier 2 Video)',
-      baseSar: 2500,
+      tierName: 'مرئي + رأي مكتوب (Tier 2)',
+      baseSar: 130.43,
       vatPercent: 15,
-      vatSar: 375,
-      totalSar: 2875,
+      vatSar: 19.57,
+      totalSar: 150,
       paid: true,
       invoiceNumber: 'INV-2026-0391',
       tapChargeId: 'chg_tap_ksa_test_89214',
-      tabbyInstallmentSar: 718.75
+      tabbyInstallmentSar: 37.5
     },
     files: [
       { id: 'f18', name: 'Brain_Diffusion_MRI_Subacute_Stroke.dcm', type: 'dicom', size: '78 MB', verified: true, url: '#' }

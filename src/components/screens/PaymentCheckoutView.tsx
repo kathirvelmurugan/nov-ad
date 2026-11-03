@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { ClinicalCase } from '../../types';
-import { CreditCard, CheckCircle2, ShieldCheck, Receipt, ArrowRight, Zap, QrCode, Sparkles, Video, FileText, Users } from 'lucide-react';
+import { CreditCard, CheckCircle2, ShieldCheck, Receipt, ArrowRight, Zap, QrCode, Sparkles, Video, FileText } from 'lucide-react';
 
 interface Props {
   activeCase: ClinicalCase;
@@ -27,59 +27,27 @@ interface TierConfig {
 const TIERS: TierConfig[] = [
   {
     id: 1,
-    tierNameEn: 'Written Second Opinion Report',
-    tierNameAr: 'تقرير الرأي الطبي الثاني المكتوب',
-    baseSar: 1200,
-    vatSar: 180,
-    totalSar: 1380,
-    featuresEn: ['Senior Consultant Review', '48-Hour SLA Delivery', 'Digital Stamped PDF'],
-    featuresAr: ['مراجعة استشاري أول', 'تسليم خلال 48 ساعة', 'ملف PDF رقمي مختوم'],
+    tierNameEn: 'Written opinion only',
+    tierNameAr: 'رأي مكتوب فقط',
+    baseSar: 65.22,
+    vatSar: 9.78,
+    totalSar: 75,
+    featuresEn: ['Written second opinion · report PDF 1', '48-hour delivery', 'Follow-up 21 days'],
+    featuresAr: ['رأي طبي ثانٍ مكتوب · تقرير PDF 1', 'تسليم خلال 48 ساعة', 'متابعة 21 يوماً'],
     icon: FileText,
     recommended: false,
   },
   {
     id: 2,
-    tierNameEn: 'Written Report + 30-min Video Telehealth',
-    tierNameAr: 'تقرير مكتوب + 30 دقيقة استشارة مرئية',
-    baseSar: 2500,
-    vatSar: 375,
-    totalSar: 2875,
-    featuresEn: [
-      '30-Min WebRTC Video Call',
-      'ALO nurse Sara live medical translation',
-      'Dual-Signed PDF Report',
-      '21-Day Post-Call Q&A Relay',
-    ],
-    featuresAr: [
-      'مكالمة فيديو WebRTC لمدة 30 دقيقة',
-      'ترجمة طبية مباشرة مع ممرضة آلو سارة',
-      'تقرير PDF مزدوج التوقيع',
-      'متابعة أسئلة وأجوبة لمدة 21 يوماً بعد المكالمة',
-    ],
+    tierNameEn: 'Video + written opinion',
+    tierNameAr: 'مرئي + رأي مكتوب',
+    baseSar: 130.43,
+    vatSar: 19.57,
+    totalSar: 150,
+    featuresEn: ['30-min video / voice call', 'ALO nurse interprets on call', 'Written opinion · report PDF 1', 'Follow-up 21 days'],
+    featuresAr: ['مكالمة مرئية / صوتية 30 دقيقة', 'ممرضة ألو تترجم خلال المكالمة', 'رأي مكتوب · تقرير PDF 1', 'متابعة 21 يوماً'],
     icon: Video,
     recommended: true,
-  },
-  {
-    id: 3,
-    tierNameEn: 'Multidisciplinary Tumor Board / Complex Surgical Panel',
-    tierNameAr: 'لجنة الأورام متعددة التخصصات / جراحة معقدة',
-    baseSar: 4500,
-    vatSar: 675,
-    totalSar: 5175,
-    featuresEn: [
-      '3 International Super-Specialists',
-      'Comprehensive Multi-Disciplinary Dossier',
-      'Complex Surgical Planning',
-      'Full Partner Care Logistics',
-    ],
-    featuresAr: [
-      '3 استشاريين دوليين فائقين التخصص',
-      'ملف شامل متعدد التخصصات',
-      'تخطيط جراحي معقد',
-      'خدمات لوجستية كاملة لرعاية الشريك',
-    ],
-    icon: Users,
-    recommended: false,
   },
 ];
 
@@ -87,13 +55,11 @@ const PAYMENT_METHODS = {
   en: [
     { id: 'mada' as PaymentMethod, label: 'mada', sublabel: 'Saudi Most Popular', icon: CreditCard },
     { id: 'applepay' as PaymentMethod, label: 'Apple Pay', sublabel: '1-Click', icon: Zap },
-    { id: 'tabby' as PaymentMethod, label: 'Tabby', sublabel: '4 Interest-Free Split', icon: Sparkles },
     { id: 'visa' as PaymentMethod, label: 'Visa / Mastercard', sublabel: 'Global Secure', icon: CreditCard },
   ],
   ar: [
     { id: 'mada' as PaymentMethod, label: 'مدى', sublabel: 'الأكثر شعبية في السعودية', icon: CreditCard },
     { id: 'applepay' as PaymentMethod, label: 'Apple Pay', sublabel: 'بنقرة واحدة', icon: Zap },
-    { id: 'tabby' as PaymentMethod, label: 'تابي', sublabel: 'قسّمها على 4 بدون فوائد', icon: Sparkles },
     { id: 'visa' as PaymentMethod, label: 'فيزا / ماستركارد', sublabel: 'دفع عالمي آمن', icon: CreditCard },
   ],
 };
@@ -156,7 +122,7 @@ export const PaymentCheckoutView: React.FC<Props> = ({
   const methods = PAYMENT_METHODS[lang];
 
   const [selectedTierId, setSelectedTierId] = useState<number>(
-    activeCase.pricing?.tier || 2
+    activeCase.consultationType === 'written' ? 1 : 2
   );
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('mada');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -238,13 +204,12 @@ export const PaymentCheckoutView: React.FC<Props> = ({
         </div>
 
         {/* 3-Tier Selection Matrix */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
           {TIERS.map((tier) => {
             const isSelected = selectedTierId === tier.id;
             const IconComponent = tier.icon;
             const tierName = isRTL ? tier.tierNameAr : tier.tierNameEn;
             const features = isRTL ? tier.featuresAr : tier.featuresEn;
-            const monthly = (tier.totalSar / 4).toFixed(2);
 
             return (
               <button
@@ -299,10 +264,6 @@ export const PaymentCheckoutView: React.FC<Props> = ({
                   <div className="flex justify-between items-center text-lg font-extrabold text-[#007B6E] pt-2">
                     <span>{t.total}</span>
                     <span>{formatCurrency(tier.totalSar)} {t.sar}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-xs font-medium text-[#00C6AE] pt-1">
-                    <Sparkles size={12} />
-                    <span>{t.tabbySplit} {monthly} {t.sar} {t.perMonth}</span>
                   </div>
                 </div>
               </button>

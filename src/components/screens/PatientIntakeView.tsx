@@ -375,10 +375,32 @@ export const PatientIntakeView: React.FC<Props> = ({
             <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
               P11 · {isAr ? 'صيغة الاستشارة المرغوبة:' : 'Consultation Format:'}
             </span>
-            <span className="bg-alo-mint border border-teal-300 text-alo-teal text-xs px-3 py-1 rounded-lg font-extrabold flex items-center gap-1.5 shadow-sm">
-              <Video className="w-3.5 h-3.5" />
-              <span>{isAr ? 'اتصال مرئي + تقرير مكتوب (Tier 2 Video)' : 'Video Telehealth + Written (Tier 2)'}</span>
-            </span>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => onUpdateCase({ consultationType: 'written' })}
+                className={`text-xs px-3 py-1 rounded-lg font-extrabold flex items-center gap-1.5 shadow-sm border transition-colors ${
+                  activeCase.consultationType === 'written'
+                    ? 'bg-alo-mint border-teal-300 text-alo-teal'
+                    : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400'
+                }`}
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>{isAr ? 'رأي مكتوب فقط' : 'Written opinion only'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onUpdateCase({ consultationType: 'video' })}
+                className={`text-xs px-3 py-1 rounded-lg font-extrabold flex items-center gap-1.5 shadow-sm border transition-colors ${
+                  activeCase.consultationType === 'video'
+                    ? 'bg-alo-mint border-teal-300 text-alo-teal'
+                    : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400'
+                }`}
+              >
+                <Video className="w-3.5 h-3.5" />
+                <span>{isAr ? 'مرئي + رأي مكتوب' : 'Video + written opinion'}</span>
+              </button>
+            </div>
           </div>
 
           <label className="flex items-start gap-2.5 cursor-pointer bg-slate-50 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
