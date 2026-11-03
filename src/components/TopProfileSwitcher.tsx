@@ -53,46 +53,10 @@ const ROLE_METADATA: Record<string, { labelAr: string; labelEn: string; scopeAr:
     scopeEn: 'Referral verification, dispatching ZATCA payment links, and international case assignment'
   },
   K: {
-    labelAr: 'الاستشاري الدولي',
-    labelEn: 'International Consultant',
-    scopeAr: 'مراجعة الأشعة ثلاثية الأبعاد، تسجيل الملخص الصوتي، وإصدار الرأي الطبي المعتمد',
-    scopeEn: '3D DICOM review, issuing certified second opinion report, and patient video briefing'
-  },
-  L: {
-    labelAr: 'مختبرات ألفا',
-    labelEn: 'Alpha Labs',
-    scopeAr: 'جدولة السحب المنزلي، تتبع عينات الدم، ورفع نتائج التحاليل المخبرية',
-    scopeEn: 'At-home phlebotomist dispatch, sample barcode tracking, and lab result upload'
-  },
-  H: {
-    labelAr: 'رعاية منزلية (سند)',
-    labelEn: 'Home Care (Sanad)',
-    scopeAr: 'زيارات التمريض المنزلي، متابعة التئام الجروح، وقياس المؤشرات الحيوية',
-    scopeEn: 'At-home skilled nursing visits, wound care dressings, and vital sign monitoring'
-  },
-  T: {
-    labelAr: 'سياحة طبية (الفرسان)',
-    labelEn: 'Medical Travel',
-    scopeAr: 'تنسيق التأشيرات العلاجية، حجوزات الطيران، والاستقبال الطبي في الهند',
-    scopeEn: 'International medical visa processing, flights, and hospital transfer logistics'
-  },
-  V: {
-    labelAr: 'التأمين (بوبا)',
-    labelEn: 'Insurance (Bupa)',
-    scopeAr: 'الموافقة المسبقة للتأمين الصحي، تدقيق التغطية، واعتماد خدمات الرأي الثاني',
-    scopeEn: 'CHI insurance pre-authorization, benefits check, and claim approvals'
-  },
-  HA: {
-    labelAr: 'إدارة المستشفى',
-    labelEn: 'Hospital Admin',
-    scopeAr: 'إدارة جداول الأطباء السعوديين، تسويات العمولات، وكشوف الحساب الشهرية',
-    scopeEn: 'Physician scheduling, referral tracking, and monthly hospital statement audits'
-  },
-  AD: {
-    labelAr: 'مدير النظام',
-    labelEn: 'Super Admin',
-    scopeAr: 'الرقابة الشاملة، إدارة شبكة الاستشاريين، مراقبة SLA، وسياسات الامتثال',
-    scopeEn: 'Platform governance, specialist network onboarding, SLA alerts, and compliance'
+    labelAr: 'الاستشاري الهندي',
+    labelEn: 'Indian Consultant',
+    scopeAr: 'مراجعة الأشعة ثلاثية الأبعاد، تحديد مواعيد المكالمة، وإصدار الرأي الطبي المعتمد',
+    scopeEn: '3D DICOM review, proposing consultation slots, and issuing certified second opinion report'
   }
 };
 
@@ -294,7 +258,7 @@ export const TopProfileSwitcher: React.FC<Props> = ({
             const consultantFirst = activeCase.consultant?.name
               ? activeCase.consultant.name.replace('Dr. ', '').split(' ')[0]
               : 'Arjun';
-            displayLabel = isAr ? `الاستشاري (د. ${consultantFirst})` : `Consultant (Dr. ${consultantFirst})`;
+            displayLabel = isAr ? `الاستشاري الهندي (د. ${consultantFirst})` : `Indian Consultant (Dr. ${consultantFirst})`;
           } else if (persona.code === 'D') {
             const saudiDoc = activeCase.treatingDoctor?.name
               ? activeCase.treatingDoctor.name.replace('د. ', '').split(' ')[0]
@@ -305,7 +269,7 @@ export const TopProfileSwitcher: React.FC<Props> = ({
           }
 
           const dynamicScope = persona.code === 'K'
-            ? `${isAr ? 'الاستشاري الدولي المعين للحالة:' : 'Assigned Specialist:'} ${activeCase.consultant?.name || ''} (${activeCase.consultant?.center || ''})`
+            ? `${isAr ? 'الاستشاري الهندي المعين للحالة:' : 'Assigned Indian Consultant:'} ${activeCase.consultant?.name || ''} (${activeCase.consultant?.center || ''})`
             : persona.code === 'P'
             ? `${isAr ? 'ملف المريض:' : 'Patient File:'} ${isAr ? activeCase.patientNameAr : activeCase.patientNameEn} (${activeCase.caseNumber})`
             : (isAr ? (meta?.scopeAr || '') : (meta?.scopeEn || ''));
@@ -349,7 +313,7 @@ export const TopProfileSwitcher: React.FC<Props> = ({
             : (activeCase.patientNameEn?.split(' ')[0] || fallback?.en || 'Patient');
           activeLabel = isAr ? `المريض (${firstName})` : `Patient (${firstName})`;
         } else if (activePersona.code === 'K') {
-          activeLabel = isAr ? `الاستشاري (${activeCase.consultant?.name || 'د. أرجون'})` : `Consultant (${activeCase.consultant?.name || 'Dr. Arjun'})`;
+          activeLabel = isAr ? `الاستشاري الهندي (${activeCase.consultant?.name || 'د. أرجون'})` : `Indian Consultant (${activeCase.consultant?.name || 'Dr. Arjun'})`;
         } else if (activePersona.code === 'D') {
           activeLabel = isAr ? `الطبيب (${activeCase.treatingDoctor?.name || 'د. عبدالله'})` : `Doctor (${activeCase.treatingDoctor?.name || 'Dr. Abdullah'})`;
         } else if (activePersona.code === 'C') {

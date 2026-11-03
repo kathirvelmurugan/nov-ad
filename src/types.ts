@@ -111,4 +111,10 @@ export interface ClinicalCase {
     homeNurse: { area: string; visits: number; status: 'scheduled' | 'dispatched' | 'completed' };
     physio: { sessions: number; status: 'planned' | 'in_progress' | 'completed' };
   };
+  consultantOpinion?: string;
+  proposedCallSlot?: string;
+  finalClosureNote?: string;
+  coordinatorQuestions?: string;
+  status?: string;
+  metadata?: Record<string, any>;
 }

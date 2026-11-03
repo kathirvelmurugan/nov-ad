@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ClinicalCase } from '../../types';
-import { Video, FileText, CheckCircle2, ShieldCheck, Download, Users, Mic, MicOff } from 'lucide-react';
 
 interface Props {
   activeCase: ClinicalCase;
@@ -8,247 +7,499 @@ interface Props {
   onUpdateCase: (updated: Partial<ClinicalCase>) => void;
 }
 
-export const OpinionTelehealthView: React.FC<Props> = ({
-  activeCase,
-  onAdvanceStage,
-}) => {
-  const [activeTab, setActiveTab] = useState<'report' | 'call'>('report');
+const OpinionTelehealthView: React.FC<Props> = ({ activeCase, onAdvanceStage, onUpdateCase }) => {
   const [isMuted, setIsMuted] = useState(false);
+  const [isVideoOff, setIsVideoOff] = useState(false);
+  const [isDicomActive, setIsDicomActive] = useState(false);
+  const [activeSpeaker, setActiveSpeaker] = useState<'consultant' | 'treating' | 'nurse' | 'patient'>('consultant');
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      setIsDarkMode(prefersDark);
+    }
+  }, []);
+
+  const patientNameAr = activeCase.patientNameAr || 'سالم';
+  const isRtl = typeof document !== 'undefined' ? document.dir === 'rtl' : true;
+
+  const colors = {
+    primary: '#007B6E',
+    secondary: '#00C6AE',
+    light: '#E6FAF7',
+    whatsapp: '#25D366',
+    darkBg: '#0f172a',
+    darkTile: '#1e293b',
+    darkText: '#f8fafc',
+    lightBg: '#f8fafc',
+    lightTile: '#ffffff',
+    lightText: '#0f172a',
+  };
+
+  const bg = isDarkMode ? colors.darkBg : colors.lightBg;
+  const tileBg = isDarkMode ? colors.darkTile : colors.lightTile;
+  const textColor = isDarkMode ? colors.darkText : colors.lightText;
+  const subtitleBg = isDarkMode ? 'rgba(15, 23, 42, 0.9)' : 'rgba(255, 255, 255, 0.95)';
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      {/* Header Tabs */}
-      <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex flex-wrap items-center justify-between gap-4">
+    <div
+      dir={isRtl ? 'rtl' : 'ltr'}
+      style={{
+        fontFamily: "'Cairo', sans-serif",
+        backgroundColor: bg,
+        color: textColor,
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        padding: '1rem',
+        transition: 'background-color 0.3s ease, color 0.3s ease',
+      }}
+    >
+      {/* Header */}
+      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
         <div>
-          <span className="text-xs font-bold text-teal-400 bg-teal-950/60 border border-teal-800 px-2.5 py-1 rounded-full">
-            📑 المرحلة 6: التقرير الطبي المعتمد والاتصال المرئي (Opinion & Report)
-          </span>
-          <h2 className="text-xl font-bold text-white mt-1">
-            ملف الرأي الطبي الثاني: <span className="font-mono text-teal-400">{activeCase.caseNumber}</span>
-          </h2>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 700, margin: 0, color: colors.primary }}>
+            {isRtl ? 'جلسة الرأي الطبي المتعدد التخصصات' : 'Multi-Disciplinary Telehealth Session'}
+          </h1>
+          <p style={{ fontSize: '0.875rem', margin: '0.25rem 0 0 0', opacity: 0.8 }}>
+            {isRtl ? `حالة المريض: ${patientNameAr}` : `Patient Case: ${patientNameAr}`}
+          </p>
+        </div>
+        <button
+          onClick={() => setIsDarkMode(!isDarkMode)}
+          aria-label="Toggle Dark Mode"
+          style={{
+            background: 'transparent',
+            border: `1px solid ${colors.secondary}`,
+            borderRadius: '9999px',
+            padding: '0.5rem 1rem',
+            cursor: 'pointer',
+            color: textColor,
+            fontFamily: "'Cairo', sans-serif",
+            fontWeight: 600,
+          }}
+        >
+          {isDarkMode ? (isRtl ? 'الوضع الفاتح' : 'Light Mode') : (isRtl ? 'الوضع الداكن' : 'Dark Mode')}
+        </button>
+      </header>
+
+      {/* Video Grid */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+          gap: '1rem',
+          flex: 1,
+          width: '100%',
+          maxWidth: '1200px',
+          margin: '0 auto',
+        }}
+      >
+        {/* Tile 1: Indian Consultant */}
+        <VideoTile
+          name="Dr. Arjun Mehta"
+          role={isRtl ? 'استشاري هندي' : 'Indian Consultant'}
+          isActive={activeSpeaker === 'consultant'}
+          isDarkMode={isDarkMode}
+          colors={colors}
+          isRtl={isRtl}
+        >
+          {isDicomActive && (
+            <div
+              style={{
+                position: 'absolute',
+                bottom: '0.5rem',
+                right: isRtl ? 'auto' : '0.5rem',
+                left: isRtl ? '0.5rem' : 'auto',
+                width: '80px',
+                height: '60px',
+                backgroundColor: '#000',
+                border: `2px solid ${colors.secondary}`,
+                borderRadius: '4px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '0.6rem',
+                color: '#fff',
+                fontWeight: 700,
+              }}
+            >
+              3D DICOM
+            </div>
+          )}
+        </VideoTile>
+
+        {/* Tile 2: Saudi Treating Doctor */}
+        <VideoTile
+          name="Dr. Abdullah Al-Shammari"
+          role={isRtl ? 'الطبيب المعالج' : 'Saudi Treating Doctor'}
+          isActive={activeSpeaker === 'treating'}
+          isDarkMode={isDarkMode}
+          colors={colors}
+          isRtl={isRtl}
+        />
+
+        {/* Tile 3: ALO Nurse (Sara) - Interpreter */}
+        <div
+          style={{
+            position: 'relative',
+            backgroundColor: tileBg,
+            borderRadius: '12px',
+            overflow: 'hidden',
+            border: activeSpeaker === 'nurse' ? `3px solid ${colors.whatsapp}` : `1px solid ${isDarkMode ? '#334155' : '#e2e8f0'}`,
+            boxShadow: activeSpeaker === 'nurse' ? `0 0 15px ${colors.whatsapp}40` : 'none',
+            transition: 'all 0.3s ease',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem',
+            minHeight: '220px',
+          }}
+        >
+          {/* Avatar Placeholder */}
+          <div
+            style={{
+              width: '64px',
+              height: '64px',
+              borderRadius: '50%',
+              backgroundColor: colors.light,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: '0.75rem',
+              border: `2px solid ${colors.primary}`,
+            }}
+          >
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={colors.primary} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+          </div>
+
+          <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, textAlign: 'center' }}>Sara Al-Dosari</h3>
+          <p style={{ margin: '0.25rem 0', fontSize: '0.75rem', opacity: 0.8, textAlign: 'center' }}>
+            {isRtl ? 'ممرضة ألو' : 'ALO Nurse'}
+          </p>
+
+          {/* Interpreter Badge */}
+          <div
+            style={{
+              marginTop: '0.5rem',
+              backgroundColor: `${colors.primary}20`,
+              color: colors.primary,
+              padding: '0.25rem 0.75rem',
+              borderRadius: '9999px',
+              fontSize: '0.65rem',
+              fontWeight: 700,
+              textAlign: 'center',
+              border: `1px solid ${colors.primary}40`,
+              lineHeight: 1.4,
+            }}
+          >
+            {isRtl ? 'مترجمة طبية معتمدة | Certified Medical Interpreter (EN ↔ AR)' : 'Certified Medical Interpreter (EN ↔ AR) | مترجمة طبية معتمدة'}
+          </div>
+
+          {/* Live Audio Translation Wave */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '3px', marginTop: '1rem', height: '20px' }}>
+            {[...Array(5)].map((_, i) => (
+              <div
+                key={i}
+                style={{
+                  width: '3px',
+                  backgroundColor: colors.whatsapp,
+                  borderRadius: '2px',
+                  animation: `wave 1s ease-in-out infinite`,
+                  animationDelay: `${i * 0.1}s`,
+                }}
+              />
+            ))}
+            <span style={{ fontSize: '0.65rem', marginLeft: isRtl ? 0 : '0.5rem', marginRight: isRtl ? '0.5rem' : 0, color: colors.whatsapp, fontWeight: 600 }}>
+              {isRtl ? 'ترجمة مباشرة' : 'Live Translating'}
+            </span>
+          </div>
+
+          {activeSpeaker === 'nurse' && (
+            <div style={{ position: 'absolute', top: '0.5rem', left: '0.5rem', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: colors.whatsapp }} />
+          )}
         </div>
 
-        <div className="flex items-center gap-2 bg-slate-950 p-1.5 rounded-xl border border-slate-800">
-          <button
-            onClick={() => setActiveTab('report')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-              activeTab === 'report'
-                ? 'bg-teal-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <FileText className="w-4 h-4" />
-            <span>التقرير المعتمد (Bilingual PDF)</span>
-          </button>
+        {/* Tile 4: Patient */}
+        <VideoTile
+          name={patientNameAr}
+          role={isRtl ? 'المريض' : 'Patient'}
+          isActive={activeSpeaker === 'patient'}
+          isDarkMode={isDarkMode}
+          colors={colors}
+          isRtl={isRtl}
+        />
+      </div>
 
-          <button
-            onClick={() => setActiveTab('call')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-              activeTab === 'call'
-                ? 'bg-teal-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Video className="w-4 h-4" />
-            <span>محاكي الاتصال المرئي الثلاثي (3-Party Call)</span>
-          </button>
+      {/* Real-Time Translation Subtitle Banner */}
+      <div
+        style={{
+          marginTop: '1.5rem',
+          backgroundColor: subtitleBg,
+          border: `1px solid ${isDarkMode ? '#334155' : '#e2e8f0'}`,
+          borderRadius: '12px',
+          padding: '1rem 1.5rem',
+          maxWidth: '1200px',
+          width: '100%',
+          margin: '1.5rem auto 0 auto',
+          backdropFilter: 'blur(8px)',
+        }}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: colors.primary, textTransform: 'uppercase' }}>
+              Dr. Arjun (EN):
+            </span>
+            <p style={{ margin: 0, fontSize: '0.9rem', fontStyle: 'italic', opacity: 0.9 }}>
+              "Based on the 3D DICOM reconstruction, I recommend we proceed with a minimally invasive approach for the cardiac intervention."
+            </p>
+          </div>
+          <div style={{ height: '1px', backgroundColor: isDarkMode ? '#334155' : '#e2e8f0', width: '100%' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: colors.whatsapp, textTransform: 'uppercase' }}>
+              Sara (AR):
+            </span>
+            <p style={{ margin: 0, fontSize: '1rem', fontWeight: 600, fontFamily: "'Cairo', sans-serif", direction: 'rtl' }}>
+              "بناءً على إعادة البناء ثلاثية الأبعاد لصور الدايكوم، أوصي بأن نمضي قدماً في نهج التدخل الجراحي المحدود للقلب."
+            </p>
+          </div>
         </div>
       </div>
 
-      {activeTab === 'call' ? (
-        /* 3-Party Telehealth Call Simulator */
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-            <div className="flex items-center gap-2 text-xs text-slate-300">
-              <Users className="w-4 h-4 text-teal-400" />
-              <span>الغرفة الافتراضية للاتصال الطبي المشترك (P23 - Telehealth Studio)</span>
-            </div>
-            <span className="bg-emerald-950 text-emerald-400 border border-emerald-800 px-2.5 py-0.5 rounded-full text-[10px] font-bold animate-pulse">
-              مباشر · Live Encrypted
-            </span>
-          </div>
+      {/* Call Action Bar */}
+      <div
+        style={{
+          marginTop: '1.5rem',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          gap: '1rem',
+          flexWrap: 'wrap',
+          padding: '1rem',
+          backgroundColor: tileBg,
+          borderRadius: '9999px',
+          maxWidth: '800px',
+          width: '100%',
+          margin: '1.5rem auto 0 auto',
+          boxShadow: isDarkMode ? '0 4px 6px -1px rgba(0, 0, 0, 0.5)' : '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+        }}
+      >
+        <ActionButton
+          onClick={() => setIsMuted(!isMuted)}
+          isActive={isMuted}
+          label={isMuted ? (isRtl ? 'إلغاء الكتم' : 'Unmute') : (isRtl ? 'كتم الصوت' : 'Mute')}
+          icon={
+            isMuted ? (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2c0 .76-.13 1.49-.35 2.17"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+            ) : (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+            )
+          }
+          colors={colors}
+          isDarkMode={isDarkMode}
+        />
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {/* 1. Indian Consultant */}
-            <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 flex flex-col items-center justify-center text-center aspect-video relative overflow-hidden group">
-              <div className="w-12 h-12 rounded-full bg-sky-900/60 border border-sky-500/50 flex items-center justify-center text-xl mb-1">
-                👨‍⚕️
-              </div>
-              <p className="text-xs font-bold text-white font-sans">{activeCase.consultant.name}</p>
-              <p className="text-[10px] text-sky-400 font-sans">Cardiac Consultant (India)</p>
-              <span className="absolute bottom-2 right-2 text-[9px] bg-slate-900/80 px-1.5 py-0.5 rounded text-slate-400">
-                English
-              </span>
-            </div>
+        <ActionButton
+          onClick={() => setIsVideoOff(!isVideoOff)}
+          isActive={isVideoOff}
+          label={isVideoOff ? (isRtl ? 'تشغيل الكاميرا' : 'Camera On') : (isRtl ? 'إيقاف الكاميرا' : 'Camera Off')}
+          icon={
+            isVideoOff ? (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 16v1a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2m5.66 0H14a2 2 0 0 1 2 2v3.34l1 1L23 7v10"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+            ) : (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+            )
+          }
+          colors={colors}
+          isDarkMode={isDarkMode}
+        />
 
-            {/* 2. Saudi Treating Doctor */}
-            <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 flex flex-col items-center justify-center text-center aspect-video relative overflow-hidden">
-              <div className="w-12 h-12 rounded-full bg-teal-900/60 border border-teal-500/50 flex items-center justify-center text-xl mb-1">
-                👨‍⚕️
-              </div>
-              <p className="text-xs font-bold text-white">{activeCase.treatingDoctor.name}</p>
-              <p className="text-[10px] text-teal-400">{activeCase.treatingDoctor.hospital}</p>
-              <span className="absolute bottom-2 right-2 text-[9px] bg-slate-900/80 px-1.5 py-0.5 rounded text-slate-400">
-                عربي / EN
-              </span>
-            </div>
+        <ActionButton
+          onClick={() => setIsDicomActive(!isDicomActive)}
+          isActive={isDicomActive}
+          label={isRtl ? 'عرض DICOM متعدد الشرائح' : 'DICOM Multi-Slice'}
+          icon={
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          }
+          colors={colors}
+          isDarkMode={isDarkMode}
+          accentColor={colors.secondary}
+        />
 
-            {/* 3. Patient */}
-            <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 flex flex-col items-center justify-center text-center aspect-video relative overflow-hidden">
-              <div className="w-12 h-12 rounded-full bg-amber-900/60 border border-amber-500/50 flex items-center justify-center text-xl mb-1">
-                👨‍💼
-              </div>
-              <p className="text-xs font-bold text-white">{activeCase.patientName}</p>
-              <p className="text-[10px] text-amber-400">المريض (الرياض)</p>
-              <span className="absolute bottom-2 right-2 text-[9px] bg-slate-900/80 px-1.5 py-0.5 rounded text-slate-400">
-                عربي
-              </span>
-            </div>
+        <button
+          onClick={onAdvanceStage}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            backgroundColor: '#ef4444',
+            color: '#ffffff',
+            border: 'none',
+            borderRadius: '9999px',
+            padding: '0.75rem 1.5rem',
+            fontSize: '0.875rem',
+            fontWeight: 700,
+            fontFamily: "'Cairo', sans-serif",
+            cursor: 'pointer',
+            transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+            boxShadow: '0 4px 6px -1px rgba(239, 68, 68, 0.3)',
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
+          onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+          aria-label={isRtl ? 'إنهاء الجلسة متعددة التخصصات' : 'Conclude Multi-Disciplinary Session'}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6Z"/></svg>
+          {isRtl ? 'إنهاء الجلسة' : 'Conclude Session'}
+        </button>
+      </div>
 
-            {/* 4. Nurse Noura (Live Interpreter) */}
-            <div className="bg-slate-950 border border-emerald-800/80 rounded-xl p-3 flex flex-col items-center justify-center text-center aspect-video relative overflow-hidden">
-              <div className="w-12 h-12 rounded-full bg-emerald-900/60 border border-emerald-500/50 flex items-center justify-center text-xl mb-1">
-                👩‍⚕️
-              </div>
-              <p className="text-xs font-bold text-white">نورة الدوسري</p>
-              <p className="text-[10px] text-emerald-400">مترجمة طبية حية (عربي ↔ إنجليزي)</p>
-              <span className="absolute bottom-2 right-2 text-[9px] bg-emerald-950 px-1.5 py-0.5 rounded text-emerald-300 font-bold">
-                ترجمة فورية
-              </span>
-            </div>
-          </div>
-
-          {/* Call Controls */}
-          <div className="flex items-center justify-center gap-3 pt-3">
-            <button
-              onClick={() => setIsMuted(!isMuted)}
-              className={`p-3 rounded-full border transition-colors ${
-                isMuted ? 'bg-red-950 text-red-400 border-red-800' : 'bg-slate-800 text-slate-200 border-slate-700'
-              }`}
-            >
-              {isMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-            </button>
-            <button
-              onClick={() => setActiveTab('report')}
-              className="bg-teal-600 hover:bg-teal-500 text-white font-bold px-5 py-2 rounded-xl text-xs"
-            >
-              الانتقال إلى التقرير المعتمد النهائي
-            </button>
-          </div>
-        </div>
-      ) : (
-        /* Official Stamped Bilingual PDF Report View */
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6">
-          <div className="bg-white text-slate-950 rounded-2xl p-6 sm:p-8 shadow-2xl border-4 border-slate-200 space-y-6">
-            {/* Letterhead */}
-            <div className="flex items-center justify-between border-b-2 border-slate-900 pb-4">
-              <div className="text-right">
-                <h1 className="text-2xl font-black tracking-tight text-teal-800">ألو دكتور · ALO DOCTOR</h1>
-                <p className="text-xs font-semibold text-slate-600">منصة الاستشارات الطبية الدولية المعتمدة · المملكة العربية السعودية</p>
-              </div>
-
-              <div className="text-center bg-slate-100 p-2 rounded-lg border border-slate-300">
-                <span className="text-[10px] text-slate-500 block font-mono">OFFICIAL SEAL</span>
-                <span className="text-xs font-bold text-teal-900 font-mono">ALO-SA-CERTIFIED</span>
-              </div>
-            </div>
-
-            {/* Case & Patient Meta Bar */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs">
-              <div>
-                <span className="text-slate-500 block text-[10px]">رقم الملف المعتمد:</span>
-                <strong className="font-mono text-teal-900">{activeCase.caseNumber}</strong>
-              </div>
-              <div>
-                <span className="text-slate-500 block text-[10px]">المريض:</span>
-                <strong className="text-slate-900">{activeCase.patientName} ({activeCase.age} سنة)</strong>
-              </div>
-              <div>
-                <span className="text-slate-500 block text-[10px]">الطبيب السعودي المعالج:</span>
-                <strong className="text-slate-900">{activeCase.treatingDoctor.name}</strong>
-              </div>
-              <div>
-                <span className="text-slate-500 block text-[10px]">الاستشاري الدولي:</span>
-                <strong className="text-slate-900 font-sans">{activeCase.consultant.name}</strong>
-              </div>
-            </div>
-
-            {/* Two Column Side-by-Side: Arabic Certified Translation & English Opinion */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-              {/* Arabic Translation Column (RTL) */}
-              <div className="space-y-3 text-right" dir="rtl">
-                <div className="flex items-center justify-between border-b border-slate-200 pb-1.5">
-                  <h4 className="text-xs font-black text-teal-900 uppercase">
-                    الرأي الطبي المعتمد (الترجمة العربية الرسمية)
-                  </h4>
-                  <span className="text-[10px] bg-teal-100 text-teal-900 px-2 py-0.5 rounded font-bold">
-                    ترجمة معتمدة ✓
-                  </span>
-                </div>
-                <p className="text-xs text-slate-800 leading-relaxed font-cairo">
-                  {activeCase.consultant.opinionArabic ||
-                    'بناءً على تخطيط صدى القلب والتصوير المقطعي، تأكد وجود تضيق أبهري كلسي شديد بمساحة صمام 0.7 سم² وتدرج ضغط متوسط 46 ملم زئبق. بالنظر لعمر المريض (58 سنة) ونسبة خطورة جراحية منخفضة (2.1%)، فإن الاستبدال الجراحي (SAVR) هو الخيار الأمثل مقارنة بالقسطرة لتحقيق كفاءة طويلة الأمد.'}
-                </p>
-              </div>
-
-              {/* English Consultant Opinion Column (LTR) */}
-              <div className="space-y-3 text-left font-sans" dir="ltr">
-                <div className="flex items-center justify-between border-b border-slate-200 pb-1.5">
-                  <h4 className="text-xs font-black text-sky-950 uppercase">
-                    Official Consultant Second Opinion (English Original)
-                  </h4>
-                  <span className="text-[10px] bg-sky-100 text-sky-900 px-2 py-0.5 rounded font-bold font-mono">
-                    KIMS HYDERABAD ✓
-                  </span>
-                </div>
-                <p className="text-xs text-slate-700 leading-relaxed font-sans">
-                  {activeCase.consultant.opinionEnglish ||
-                    'Based on high-resolution Echo and Cardiac CT, severe calcific aortic stenosis with valve area 0.7 cm² and mean gradient 46 mmHg is confirmed. Given patient age 58 and low surgical STS score of 2.1%, Surgical Aortic Valve Replacement (SAVR) with a mechanical or bioprosthetic valve provides superior long-term durability over TAVR.'}
-                </p>
-              </div>
-            </div>
-
-            {/* Bottom Signature & Stamp Area */}
-            <div className="pt-4 border-t-2 border-slate-900 flex items-center justify-between text-xs">
-              <div>
-                <p className="font-bold text-slate-900">اعتماد منسقة الحالة:</p>
-                <p className="text-[11px] text-slate-600">سارة القحطاني · قسم الترجمة والتقارير الطبية المعتمدة</p>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div className="w-16 h-16 border-2 border-teal-800 rounded-full flex flex-col items-center justify-center text-[8px] font-black text-teal-900 rotate-[-12deg] bg-teal-50/50">
-                  <span>ALO DOCTOR</span>
-                  <span>معتمد رسمياً</span>
-                  <span>OCT 2026</span>
-                </div>
-
-                <button
-                  onClick={() => alert(`جاري تصدير وتحميل ملف PDF المعتمد لحالة ${activeCase.caseNumber}`)}
-                  className="bg-slate-950 hover:bg-slate-800 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-1.5 text-xs shadow"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>تحميل التقرير PDF</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Advance Action to Partner Referrals */}
-          <div className="flex items-center justify-between pt-2">
-            <span className="text-xs text-slate-400">
-              صدر التقرير المعتمد وتم تسليمه للمريض. يمكن الآن إصدار الإحالات الطبية للشركاء (D10).
-            </span>
-
-            <button
-              onClick={onAdvanceStage}
-              className="bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-500 hover:to-teal-400 text-white font-bold py-2.5 px-6 rounded-xl shadow-lg transition-all flex items-center gap-2 text-sm"
-            >
-              <CheckCircle2 className="w-4 h-4" />
-              <span>إصدار أوامر الخدمات والشركاء (Partner Services)</span>
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Keyframes for translation wave */}
+      <style>{`
+        @keyframes wave {
+          0%, 100% { height: 4px; }
+          50% { height: 16px; }
+        }
+      `}</style>
     </div>
   );
 };
+
+interface VideoTileProps {
+  name: string;
+  role: string;
+  isActive: boolean;
+  isDarkMode: boolean;
+  colors: Record<string, string>;
+  isRtl: boolean;
+  children?: React.ReactNode;
+}
+
+const VideoTile: React.FC<VideoTileProps> = ({ name, role, isActive, isDarkMode, colors, isRtl, children }) => {
+  return (
+    <div
+      style={{
+        position: 'relative',
+        backgroundColor: isDarkMode ? colors.darkTile : colors.lightTile,
+        borderRadius: '12px',
+        overflow: 'hidden',
+        border: isActive ? `3px solid ${colors.primary}` : `1px solid ${isDarkMode ? '#334155' : '#e2e8f0'}`,
+        boxShadow: isActive ? `0 0 15px ${colors.primary}40` : 'none',
+        transition: 'all 0.3s ease',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '220px',
+      }}
+    >
+      {/* Simulated Video Background / Avatar */}
+      <div
+        style={{
+          width: '72px',
+          height: '72px',
+          borderRadius: '50%',
+          backgroundColor: `${colors.primary}20`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: '1rem',
+        }}
+      >
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke={colors.primary} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+          <circle cx="12" cy="7" r="4" />
+        </svg>
+      </div>
+
+      <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, textAlign: 'center', color: isDarkMode ? colors.darkText : colors.lightText }}>
+        {name}
+      </h3>
+      <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.8rem', opacity: 0.7, textAlign: 'center', color: isDarkMode ? colors.darkText : colors.lightText }}>
+        {role}
+      </p>
+
+      {/* Active Speaker Indicator */}
+      {isActive && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '0.75rem',
+            left: isRtl ? 'auto' : '0.75rem',
+            right: isRtl ? '0.75rem' : 'auto',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.25rem',
+            backgroundColor: `${colors.primary}E6`,
+            padding: '0.25rem 0.5rem',
+            borderRadius: '4px',
+          }}
+        >
+          <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#ffffff', animation: 'pulse 1.5s infinite' }} />
+          <span style={{ fontSize: '0.65rem', color: '#ffffff', fontWeight: 700, textTransform: 'uppercase' }}>
+            {isRtl ? 'متحدث' : 'Speaking'}
+          </span>
+        </div>
+      )}
+
+      {children}
+
+      <style>{`
+        @keyframes pulse {
+          0% { transform: scale(0.95); opacity: 0.5; }
+          50% { transform: scale(1.2); opacity: 1; }
+          100% { transform: scale(0.95); opacity: 0.5; }
+        }
+      `}</style>
+    </div>
+  );
+};
+
+interface ActionButtonProps {
+  onClick: () => void;
+  isActive: boolean;
+  label: string;
+  icon: React.ReactNode;
+  colors: Record<string, string>;
+  isDarkMode: boolean;
+  accentColor?: string;
+}
+
+const ActionButton: React.FC<ActionButtonProps> = ({ onClick, isActive, label, icon, colors, isDarkMode, accentColor }) => {
+  const baseColor = accentColor || colors.primary;
+  
+  return (
+    <button
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '0.25rem',
+        backgroundColor: isActive ? `${baseColor}20` : 'transparent',
+        color: isActive ? baseColor : (isDarkMode ? colors.darkText : colors.lightText),
+        border: 'none',
+        borderRadius: '12px',
+        padding: '0.5rem 1rem',
+        cursor: 'pointer',
+        transition: 'all 0.2s ease',
+        fontFamily: "'Cairo', sans-serif",
+        minWidth: '70px',
+      }}
+      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = `${baseColor}10`)}
+      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = isActive ? `${baseColor}20` : 'transparent')}
+    >
+      {icon}
+      <span style={{ fontSize: '0.65rem', fontWeight: 600 }}>{label}</span>
+    </button>
+  );
+};
+
+export default OpinionTelehealthView;export { OpinionTelehealthView };

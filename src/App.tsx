@@ -223,10 +223,10 @@ export const App: React.FC = () => {
       else if (nextStage === 'DOCTOR_REVIEW') nextP = PERSONAS.find((p) => p.code === 'D')!;
       else if (nextStage === 'AWAITING_PAYMENT') nextP = PERSONAS.find((p) => p.code === 'C') || PERSONAS[0];
       else if (nextStage === 'WITH_CONSULTANT') nextP = PERSONAS.find((p) => p.code === 'K')!;
-      else if (nextStage === 'OPINION_READY') nextP = PERSONAS.find((p) => p.code === 'P')!;
-      else if (nextStage === 'PARTNER_SERVICES') nextP = PERSONAS.find((p) => p.code === 'L')!;
+      else if (nextStage === 'OPINION_READY') nextP = PERSONAS.find((p) => p.code === 'D') || PERSONAS[0];
+      else if (nextStage === 'PARTNER_SERVICES') nextP = PERSONAS.find((p) => p.code === 'C') || PERSONAS[0];
       else if (nextStage === 'FOLLOW_UP_21_DAYS') nextP = PERSONAS.find((p) => p.code === 'P')!;
-      else if (nextStage === 'CLOSED') nextP = PERSONAS.find((p) => p.code === 'AD')!;
+      else if (nextStage === 'CLOSED') nextP = PERSONAS.find((p) => p.code === 'C') || PERSONAS[0];
 
       setPendingHandoff({
         fromStage: activeCase.currentStage,
@@ -264,10 +264,10 @@ export const App: React.FC = () => {
     else if (stage === 'DOCTOR_REVIEW') p = PERSONAS.find((x) => x.code === 'D')!;
     else if (stage === 'AWAITING_PAYMENT') p = PERSONAS.find((x) => x.code === 'C') || PERSONAS[0];
     else if (stage === 'WITH_CONSULTANT') p = PERSONAS.find((x) => x.code === 'K')!;
-    else if (stage === 'OPINION_READY') p = PERSONAS.find((x) => x.code === 'P')!;
-    else if (stage === 'PARTNER_SERVICES') p = PERSONAS.find((x) => x.code === 'L')!;
+    else if (stage === 'OPINION_READY') p = PERSONAS.find((x) => x.code === 'D') || PERSONAS[0];
+    else if (stage === 'PARTNER_SERVICES') p = PERSONAS.find((x) => x.code === 'C') || PERSONAS[0];
     else if (stage === 'FOLLOW_UP_21_DAYS') p = PERSONAS.find((x) => x.code === 'P')!;
-    else if (stage === 'CLOSED') p = PERSONAS.find((x) => x.code === 'AD')!;
+    else if (stage === 'CLOSED') p = PERSONAS.find((x) => x.code === 'C') || PERSONAS[0];
 
     if (p) {
       setActivePersona(p);

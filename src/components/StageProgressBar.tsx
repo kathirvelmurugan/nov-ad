@@ -32,10 +32,10 @@ const STAGES: StageStep[] = [
   { key: 'DOCTOR_REVIEW', num: 3, labelAr: '3. مراجعة الطبيب السعودي', labelEn: '3. Saudi Doctor Review', icon: <Stethoscope className="w-3.5 h-3.5" /> },
   { key: 'AWAITING_PAYMENT', num: 4, labelAr: '4. سداد الباقة (Tap)', labelEn: '4. Payment (Tap)', icon: <CreditCard className="w-3.5 h-3.5" /> },
   { key: 'WITH_CONSULTANT', num: 5, labelAr: '5. الاستشاري الهندي', labelEn: '5. Indian Consultant', icon: <Globe2 className="w-3.5 h-3.5" /> },
-  { key: 'OPINION_READY', num: 6, labelAr: '6. التقرير المعتمد والاتصال', labelEn: '6. Report & Telehealth', icon: <FileText className="w-3.5 h-3.5" /> },
-  { key: 'PARTNER_SERVICES', num: 7, labelAr: '7. خدمات الشركاء', labelEn: '7. Partner Services', icon: <Layers className="w-3.5 h-3.5" /> },
-  { key: 'FOLLOW_UP_21_DAYS', num: 8, labelAr: '8. متابعة 14 يوم', labelEn: '8. 14-Day Chat', icon: <MessageSquare className="w-3.5 h-3.5" /> },
-  { key: 'CLOSED', num: 9, labelAr: '9. إغلاق وتقييم', labelEn: '9. Closed & NPS', icon: <CheckCircle className="w-3.5 h-3.5" /> },
+  { key: 'OPINION_READY', num: 6, labelAr: '6. مكالمة الاستشارة والمترجمة', labelEn: '6. Telehealth & Interpreter', icon: <FileText className="w-3.5 h-3.5" /> },
+  { key: 'PARTNER_SERVICES', num: 7, labelAr: '7. إصدار التقرير (PDF 1)', labelEn: '7. Report PDF 1 Release', icon: <Layers className="w-3.5 h-3.5" /> },
+  { key: 'FOLLOW_UP_21_DAYS', num: 8, labelAr: '8. متابعة 21 يوماً', labelEn: '8. 21-Day Follow-Up', icon: <MessageSquare className="w-3.5 h-3.5" /> },
+  { key: 'CLOSED', num: 9, labelAr: '9. إغلاق والحفظ (PDF 2)', labelEn: '9. Closed & PDF 2', icon: <CheckCircle className="w-3.5 h-3.5" /> },
 ];
 
 export const StageProgressBar: React.FC<Props> = ({ currentStage, onSetStage, lang = 'ar' }) => {
