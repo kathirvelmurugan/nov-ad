@@ -10,8 +10,78 @@ import {
   Globe, 
   Sun, 
   Moon,
-  HelpCircle
+  HelpCircle,
+  Sparkles
 } from 'lucide-react';
+
+const ROLE_METADATA: Record<string, { labelAr: string; labelEn: string; scopeAr: string; scopeEn: string }> = {
+  P: {
+    labelAr: 'المريض (سالم)',
+    labelEn: 'Patient (Salem)',
+    scopeAr: 'تسجيل الأعراض، رفع التقارير، اختيار وسيلة الاستشارة، وسداد الرسوم',
+    scopeEn: 'Intake submission, medical reports, consultation preference, and payment'
+  },
+  F: {
+    labelAr: 'المرافقة (فاطمة)',
+    labelEn: 'Caregiver (Fatima)',
+    scopeAr: 'إدارة طلب الرأي الطبي نيابة عن المريض بموجب الموافقة النظامية',
+    scopeEn: 'Authorized caregiver managing second-opinion case on behalf of family member'
+  },
+  N: {
+    labelAr: 'ممرضة الفرز (سارة)',
+    labelEn: 'Nurse (Sara)',
+    scopeAr: 'صندوق فرز الحالات، تدقيق العلامات الحيوية، وحجب البيانات الشخصية آلياً',
+    scopeEn: 'Clinical triage inbox, vitals verification, and automated PII de-identification'
+  },
+  D: {
+    labelAr: 'الطبيب (د. عبدالله)',
+    labelEn: 'Doctor (Dr. Abdullah)',
+    scopeAr: 'مراجعة التاريخ المرضي، تحديد الأسئلة الدقيقة للاستشاري، واعتماد الإحالة',
+    scopeEn: 'Clinical dossier review, framing specialist focus questions, and referral sign-off'
+  },
+  K: {
+    labelAr: 'الاستشاري (د. أرجون)',
+    labelEn: 'Consultant (Dr. Arjun)',
+    scopeAr: 'مراجعة الأشعة ثلاثية الأبعاد، تسجيل الملخص الصوتي، وإصدار الرأي المعتمد',
+    scopeEn: '3D DICOM multi-slice review, voice briefing synthesis, and second opinion sign-off'
+  },
+  L: {
+    labelAr: 'مختبرات ألفا',
+    labelEn: 'Alpha Labs',
+    scopeAr: 'جدولة السحب المنزلي، تتبع عينات الدم، ورفع نتائج التحاليل المخبرية',
+    scopeEn: 'At-home phlebotomist dispatch, sample barcode tracking, and lab result upload'
+  },
+  H: {
+    labelAr: 'رعاية منزلية (سند)',
+    labelEn: 'Home Care (Sanad)',
+    scopeAr: 'زيارات التمريض المنزلي، متابعة التئام الجروح، وقياس المؤشرات الحيوية',
+    scopeEn: 'At-home skilled nursing visits, wound care dressings, and vital sign monitoring'
+  },
+  T: {
+    labelAr: 'سياحة طبية (الفرسان)',
+    labelEn: 'Medical Travel',
+    scopeAr: 'تنسيق التأشيرات العلاجية، حجوزات الطيران، والاستقبال الطبي في الهند',
+    scopeEn: 'International medical visa processing, flights, and hospital transfer logistics'
+  },
+  V: {
+    labelAr: 'التأمين (بوبا)',
+    labelEn: 'Insurance (Bupa)',
+    scopeAr: 'الموافقة المسبقة للتأمين الصحي، تدقيق التغطية، واعتماد خدمات الرأي الثاني',
+    scopeEn: 'CHI insurance pre-authorization, benefits check, and claim approvals'
+  },
+  HA: {
+    labelAr: 'إدارة المستشفى',
+    labelEn: 'Hospital Admin',
+    scopeAr: 'إدارة جداول الأطباء السعوديين، تسويات العمولات، وكشوف الحساب الشهرية',
+    scopeEn: 'Physician scheduling, referral tracking, and monthly hospital statement audits'
+  },
+  AD: {
+    labelAr: 'مدير النظام',
+    labelEn: 'Super Admin',
+    scopeAr: 'الرقابة الشاملة، إدارة شبكة الاستشاريين، مراقبة SLA، وسياسات الامتثال',
+    scopeEn: 'Platform governance, specialist network onboarding, SLA alerts, and compliance'
+  }
+};
 
 interface Props {
   activePersona: Persona;
@@ -160,10 +230,17 @@ export const TopProfileSwitcher: React.FC<Props> = ({
 
         {PERSONAS.map((persona) => {
           const isActive = activePersona.code === persona.code;
+          const meta = ROLE_METADATA[persona.code];
+          const displayLabel = meta 
+            ? (isAr ? meta.labelAr : meta.labelEn)
+            : (isAr ? persona.name.split(' ')[0] : persona.code);
+          const tooltip = `${persona.name} — ${persona.title}\n${isAr ? 'الدور:' : 'Role:'} ${persona.code}\n${isAr ? (meta?.scopeAr || '') : (meta?.scopeEn || '')}\n${isAr ? 'انقر للتحويل إلى هذا الدور' : 'Click to switch to this perspective'}`;
+
           return (
             <button
               key={persona.code}
               onClick={() => onSelectPersona(persona)}
+              title={tooltip}
               className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold whitespace-nowrap transition-all duration-150 ${
                 isActive
                   ? 'bg-alo-teal text-white shadow-md shadow-teal-700/20 ring-2 ring-alo-teal/30 scale-102 font-extrabold'
@@ -171,7 +248,7 @@ export const TopProfileSwitcher: React.FC<Props> = ({
               }`}
             >
               <span>{persona.avatar}</span>
-              <span>{isAr ? persona.name.split(' ')[0] : persona.code === 'K' ? 'Dr. Arjun' : persona.code}</span>
+              <span>{displayLabel}</span>
               <span className={`text-[10px] px-1.5 py-0.2 rounded font-semibold ${
                 isActive ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
               }`}>
@@ -181,6 +258,44 @@ export const TopProfileSwitcher: React.FC<Props> = ({
           );
         })}
       </div>
+
+      {/* Active Role Explainer Ribbon */}
+      {(() => {
+        const activeMeta = ROLE_METADATA[activePersona.code];
+        const activeLabel = activeMeta
+          ? (isAr ? activeMeta.labelAr : activeMeta.labelEn)
+          : activePersona.name;
+        const activeScope = activeMeta
+          ? (isAr ? activeMeta.scopeAr : activeMeta.scopeEn)
+          : activePersona.title;
+
+        return (
+          <div className="px-4 py-1.5 bg-gradient-to-r from-teal-50/90 via-emerald-50/70 to-teal-50/90 dark:from-teal-950/40 dark:via-slate-900/50 dark:to-teal-950/40 border-t border-slate-200/60 dark:border-alo-darkBorder/60 flex items-center justify-between gap-3 text-xs transition-all">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="inline-flex items-center gap-1 font-bold text-alo-teal dark:text-alo-aqua text-[11px] shrink-0">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-sm shadow-emerald-500/50" />
+                <span>{isAr ? 'الدور النشط:' : 'Active Role:'}</span>
+              </span>
+              <span className="font-extrabold text-slate-900 dark:text-white shrink-0">
+                {activePersona.avatar} {activeLabel}
+              </span>
+              <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">·</span>
+              <span className="text-[11px] text-slate-600 dark:text-slate-300 truncate hidden sm:inline">
+                {activeScope}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1.5 text-[10px] font-mono shrink-0">
+              <span className="text-slate-500 dark:text-slate-400 hidden md:inline">
+                {isAr ? 'شاشة العرض:' : 'Surface:'}
+              </span>
+              <span className="bg-white/80 dark:bg-slate-800 text-alo-teal dark:text-alo-aqua px-2 py-0.5 rounded border border-teal-200 dark:border-teal-800 font-bold uppercase tracking-wider">
+                {activePersona.surface}
+              </span>
+            </div>
+          </div>
+        );
+      })()}
     </header>
   );
 };
