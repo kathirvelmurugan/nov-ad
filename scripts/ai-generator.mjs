@@ -105,8 +105,25 @@ if (process.argv[1]?.endsWith('ai-generator.mjs')) {
     console.log('Usage: node scripts/ai-generator.mjs <targetFilePath> [prompt]');
     process.exit(1);
   }
-  generateCodeWithAlibaba({ targetFilePath: targetPath, prompt })
-    .then(() => process.exit(0))
+
+  // Detect explicit Target File from issue body if present
+  let resolvedTarget = targetPath;
+  const targetMatch = (process.env.ISSUE_BODY || '').match(/Target File:\s*`?([^\n`]+)`?/i);
+  if (targetMatch && targetMatch[1]) {
+    resolvedTarget = targetMatch[1].trim();
+    console.log(`[Qwen AI] Detected explicit target file from issue body: ${resolvedTarget}`);
+  }
+
+  generateCodeWithAlibaba({ targetFilePath: resolvedTarget, prompt })
+    .then((code) => {
+      // Also save to original targetPath if different (for backup/history)
+      if (resolvedTarget !== targetPath) {
+        const dir = path.dirname(targetPath);
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+        fs.writeFileSync(targetPath, code, 'utf8');
+      }
+      process.exit(0);
+    })
     .catch((err) => {
       console.error(err);
       process.exit(1);
