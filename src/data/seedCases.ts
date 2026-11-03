@@ -77,7 +77,48 @@ export const SEED_CASES: ClinicalCase[] = [
       pharmacy: { meds: ['Bisoprolol 5mg', 'Atorvastatin 40mg', 'Aspirin 81mg'], substituteAllowed: true, status: 'pending' },
       homeNurse: { area: 'الرياض - حي الملقا (Riyadh Al-Malqa)', visits: 4, status: 'scheduled' },
       physio: { sessions: 8, status: 'planned' }
-    }
+    },
+    consultantOpinion: "Based on high-resolution Echo and Cardiac CT, severe calcific aortic stenosis with valve area 0.7 cm² and mean gradient 46 mmHg is confirmed. Given patient age 58 and low surgical STS score of 2.1%, Surgical Aortic Valve Replacement (SAVR) with a mechanical or bioprosthetic valve provides superior long-term durability over TAVR. Concomitant coronary angiography demonstrates mild LAD non-obstructive plaque not requiring bypass.",
+    proposedCallSlot: "Tue 16:00 AST / 18:30 IST",
+    finalClosureNote: "Post-consultation follow-up confirmed valve surgery scheduled at King Faisal Specialist Hospital. Anticoagulation protocol with Warfarin (target INR 2.0-3.0) approved. Patient recovery parameters optimal.",
+    coordinatorQuestions: "Focus: TAVR vs SAVR valve durability at age 58 and stroke prophylaxis.",
+    metadata: {
+      "proposedSlots": [
+            {
+                  "id": "slot_1",
+                  "time": "Tuesday 16:00 AST (18:30 IST)"
+            },
+            {
+                  "id": "slot_2",
+                  "time": "Wednesday 11:30 AST (14:00 IST)"
+            },
+            {
+                  "id": "slot_3",
+                  "time": "Thursday 17:00 AST (19:30 IST)"
+            }
+      ],
+      "confirmedSlotId": "slot_1",
+      "pdf1Released": true,
+      "patientQuestions": [
+            "هل يستدعي استخدام الصمام الميكانيكي الالتزام الدائم بفحوصات سيولة الدم المنزلية؟",
+            "متى يمكنني العودة لممارسة المشي اليومي وصعود الدرج بعد العملية؟"
+      ],
+      "relayedQuestions": [
+            "Patient inquiries regarding home INR self-monitoring frequency and post-op cardiac rehab milestones."
+      ],
+      "reportPdf1": {
+            "titleAr": "تقرير الرأي الطبي الثاني المعتمد - جراحة القلب والصمامات",
+            "titleEn": "Certified Second Opinion Report - Valvular Cardiac Surgery",
+            "icd10": "I35.0 (Aortic Stenosis)",
+            "summaryAr": "التوصية باعتماد الجراحة المفتوحة (SAVR) لضمان متانة الصمام لأكثر من 20 عاماً مع تجنب التداخل التاجي حالياً.",
+            "summaryEn": "Definitive recommendation for SAVR over TAVR for optimal 20-year durability with conservative LAD management."
+      },
+      "reportPdf2": {
+            "titleAr": "الملف السريري الشامل النهائي وأرشيف الحالة",
+            "titleEn": "Comprehensive Final Clinical Dossier & Case Archive",
+            "status": "مغلق ومعتمد نظامياً"
+      }
+}
   },
   {
     id: 'case-002',
@@ -130,7 +171,44 @@ export const SEED_CASES: ClinicalCase[] = [
       pharmacy: { meds: ['Clopidogrel 75mg', 'Rosuvastatin 20mg'], substituteAllowed: true, status: 'pending' },
       homeNurse: { area: 'جدة - حي الشاطئ (Jeddah Corniche)', visits: 2, status: 'scheduled' },
       physio: { sessions: 6, status: 'planned' }
-    }
+    },
+    consultantOpinion: "SYNTAX Score of 34 indicates complex multi-vessel coronary artery disease with diffuse calcification of LAD and proximal Circumflex. Coronary Artery Bypass Grafting (CABG) using Bilateral Internal Mammary Arteries (BIMA) is strongly indicated over multi-vessel PCI to achieve complete revascularization and superior 10-year survival.",
+    proposedCallSlot: "Wed 14:00 AST / 16:30 IST",
+    finalClosureNote: "BIMA-CABG surgical planning approved with Dr. Faisal Al-Ghamdi. Pre-operative glycemic optimization achieved (HbA1c < 7.0%).",
+    coordinatorQuestions: "Focus: CABG with BIMA vs multi-vessel drug-eluting stenting in diabetic female.",
+    metadata: {
+      "proposedSlots": [
+            {
+                  "id": "slot_1",
+                  "time": "Wednesday 14:00 AST (16:30 IST)"
+            },
+            {
+                  "id": "slot_2",
+                  "time": "Thursday 15:00 AST (17:30 IST)"
+            }
+      ],
+      "confirmedSlotId": "slot_1",
+      "pdf1Released": true,
+      "patientQuestions": [
+            "هل جراحة مجازة الشرايين التاجية بالماماري المزدوج تحتاج إلى نقل دم أثناء العملية؟",
+            "كم المدة المقدرة للبقاء في العناية المركزة والمستشفى بعد الجراحة؟"
+      ],
+      "relayedQuestions": [
+            "Inquiry regarding blood transfusion threshold and ICU stay duration for diabetic bypass surgery."
+      ],
+      "reportPdf1": {
+            "titleAr": "تقرير الرأي الطبي الثاني المعتمد - جراحة الشرايين التاجية (CABG)",
+            "titleEn": "Certified Second Opinion Report - Coronary Artery Bypass Grafting",
+            "icd10": "I25.10 (Atherosclerotic Heart Disease)",
+            "summaryAr": "التوصية بإجراء جراحة المجازة التاجية (CABG) باستخدام الشريان الصدري الباطن لتحقيق أعلى نسب البقاء على قيد الحياة.",
+            "summaryEn": "Strong clinical recommendation for BIMA-CABG revascularization over PCI due to high SYNTAX score (34)."
+      },
+      "reportPdf2": {
+            "titleAr": "الملف الطبي الختامي وإغلاق حالة جراحة الشرايين التاجية",
+            "titleEn": "Final Closed Clinical Dossier - CAD Surgery",
+            "status": "مغلق ومعتمد"
+      }
+}
   },
   {
     id: 'case-003',
@@ -183,7 +261,44 @@ export const SEED_CASES: ClinicalCase[] = [
       pharmacy: { meds: ['Nimodipine 60mg', 'Levetiracetam 500mg'], substituteAllowed: false, status: 'pending' },
       homeNurse: { area: 'الدمام - حي الشاطئ', visits: 1, status: 'scheduled' },
       physio: { sessions: 0, status: 'planned' }
-    }
+    },
+    consultantOpinion: "Lumbar MRI reveals severe central canal stenosis at L4-L5 with facet arthropathy. However, dynamic flexion-extension radiographs show no spondylolisthesis or mechanical instability. Therefore, minimally invasive bilateral decompression via unilateral laminotomy is indicated instead of aggressive 2-level fusion with instrumentation.",
+    proposedCallSlot: "Thu 11:00 AST / 13:30 IST",
+    finalClosureNote: "Endoscopic decompression successfully performed with preservation of lumbar stability. Patient reports complete relief of neurogenic claudication.",
+    coordinatorQuestions: "Focus: Decompression alone vs fusion instrumentation for L4-L5 spinal stenosis.",
+    metadata: {
+      "proposedSlots": [
+            {
+                  "id": "slot_1",
+                  "time": "Thursday 11:00 AST (13:30 IST)"
+            },
+            {
+                  "id": "slot_2",
+                  "time": "Friday 16:30 AST (19:00 IST)"
+            }
+      ],
+      "confirmedSlotId": "slot_1",
+      "pdf1Released": true,
+      "patientQuestions": [
+            "هل إزالة الضغط بالمنظار تمنع الحاجة إلى تثبيت الفقرات بالمسامير في المستقبل؟",
+            "متى يمكنني البدء في جلسات العلاج الطبيعي والتأهيل الحركي؟"
+      ],
+      "relayedQuestions": [
+            "Patient questioning future fusion necessity after endoscopic laminotomy and physical therapy start date."
+      ],
+      "reportPdf1": {
+            "titleAr": "تقرير الرأي الطبي الثاني المعتمد - جراحة العمود الفقري والأعصاب",
+            "titleEn": "Certified Second Opinion Report - Minimally Invasive Spine Surgery",
+            "icd10": "M48.06 (Spinal Stenosis, Lumbar Region)",
+            "summaryAr": "التوصية بإجراء توسيع القناة العصبية بالتدخل المحدود دون الحاجة لدمج الفقرات أو تثبيت الشرائح والمسامير.",
+            "summaryEn": "Recommendation for minimally invasive decompression alone without fusion instrumentation."
+      },
+      "reportPdf2": {
+            "titleAr": "تقرير الإغلاق السريري النهائي - جراحة العمود الفقري",
+            "titleEn": "Final Clinical Closure Dossier - Spine Surgery",
+            "status": "مغلق ومؤرشف"
+      }
+}
   },
   {
     id: 'case-004',
@@ -236,7 +351,44 @@ export const SEED_CASES: ClinicalCase[] = [
       pharmacy: { meds: ['Brivaracetam 50mg', 'Clobazam 10mg'], substituteAllowed: true, status: 'pending' },
       homeNurse: { area: 'المدينة المنورة - حي سلطانة', visits: 2, status: 'scheduled' },
       physio: { sessions: 4, status: 'planned' }
-    }
+    },
+    consultantOpinion: "Right Heart Catheterization demonstrates mPAP 48 mmHg with normal wedge pressure, confirming Group 1 Pulmonary Arterial Hypertension (PAH). Upfront double oral combination therapy with Macitentan (10mg) and Tadalafil (40mg) is recommended, with close echocardiographic reassessment at 12 weeks before considering parenteral prostacyclins.",
+    proposedCallSlot: "Mon 15:30 AST / 18:00 IST",
+    finalClosureNote: "Patient commenced combination oral targeted therapy with marked improvement in 6-minute walk distance (+65m). Hemodynamics stable.",
+    coordinatorQuestions: "Focus: Dual oral targeted therapy vs triple therapy upfront in idiopathic PAH.",
+    metadata: {
+      "proposedSlots": [
+            {
+                  "id": "slot_1",
+                  "time": "Monday 15:30 AST (18:00 IST)"
+            },
+            {
+                  "id": "slot_2",
+                  "time": "Tuesday 12:00 AST (14:30 IST)"
+            }
+      ],
+      "confirmedSlotId": "slot_1",
+      "pdf1Released": true,
+      "patientQuestions": [
+            "هل يلزم فحص وظائف الكبد شهرياً مع علاج الماكتيتان والتادالافيل؟",
+            "هل الرياضات الهوائية الخفيفة آمنة في هذه المرحلة؟"
+      ],
+      "relayedQuestions": [
+            "Liver enzyme monitoring frequency on Macitentan and low-impact exercise safety boundaries."
+      ],
+      "reportPdf1": {
+            "titleAr": "تقرير الرأي الطبي الثاني المعتمد - ارتفاع ضغط الشريان الرئوي (PAH)",
+            "titleEn": "Certified Second Opinion Report - Pulmonary Arterial Hypertension",
+            "icd10": "I27.0 (Primary Pulmonary Hypertension)",
+            "summaryAr": "اعتماد خطة العلاج المزدوج الموجه بالفم مع متابعة القسطرة القلبية اليمنى بعد 3 أشهر لتقييم الاستجابة.",
+            "summaryEn": "Initiation of upfront dual oral pathway combination therapy with close quarterly hemodynamic monitoring."
+      },
+      "reportPdf2": {
+            "titleAr": "تقرير المتابعة السريرية وإغلاق الحالة - الشريان الرئوي",
+            "titleEn": "Comprehensive Closure Dossier - PAH Specialty Care",
+            "status": "مغلق ومعتمد"
+      }
+}
   },
   {
     id: 'case-005',
@@ -289,7 +441,44 @@ export const SEED_CASES: ClinicalCase[] = [
       pharmacy: { meds: ['Letrozole 2.5mg', 'Zoledronic Acid IV'], substituteAllowed: false, status: 'pending' },
       homeNurse: { area: 'الرياض - حي النخيل', visits: 3, status: 'scheduled' },
       physio: { sessions: 10, status: 'planned' }
-    }
+    },
+    consultantOpinion: "Colonoscopy confirms severe pancolitis with mucosal friability refractory to anti-TNF therapy (Infliximab with antibodies). Rather than proceeding immediately to total proctocolectomy, switching to advanced anti-IL23 biologic (Ustekinumab or Risankizumab) or JAK inhibitor (Upadacitinib) is strongly recommended with repeat mucosal assessment in 8 weeks.",
+    proposedCallSlot: "Wed 16:30 AST / 19:00 IST",
+    finalClosureNote: "Clinical remission achieved on Upadacitinib 45mg induction. Fecal calprotectin dropped from 1,240 to 180 ug/g. Surgical resection averted.",
+    coordinatorQuestions: "Focus: Biologic class-switch to JAK inhibitor vs subtotal colectomy in refractory UC.",
+    metadata: {
+      "proposedSlots": [
+            {
+                  "id": "slot_1",
+                  "time": "Wednesday 16:30 AST (19:00 IST)"
+            },
+            {
+                  "id": "slot_2",
+                  "time": "Thursday 13:00 AST (15:30 IST)"
+            }
+      ],
+      "confirmedSlotId": "slot_1",
+      "pdf1Released": true,
+      "patientQuestions": [
+            "هل علاج أوباداسيتينيب يغني تماماً عن عملية استئصال القولون؟",
+            "ما هي الفحوصات الدورية المطلوبة للتأكد من عدم عودة الالتهاب؟"
+      ],
+      "relayedQuestions": [
+            "Durability of JAK-inhibitor induced mucosal healing and long-term colectomy avoidance."
+      ],
+      "reportPdf1": {
+            "titleAr": "تقرير الرأي الطبي الثاني المعتمد - أمراض الجهاز الهضمي والقولون التقرحي",
+            "titleEn": "Certified Second Opinion Report - Inflammatory Bowel Disease",
+            "icd10": "K51.00 (Ulcerative Pancolitis)",
+            "summaryAr": "التوصية بالتحويل إلى مثبطات جاك (Upadacitinib) كخط علاجي أخير قبل اللجوء للجراحة لتفادي استئصال القولون.",
+            "summaryEn": "Strong recommendation for advanced targeted small molecule (JAKi) trial to achieve mucosal healing and avoid colectomy."
+      },
+      "reportPdf2": {
+            "titleAr": "الملف السريري الختامي - قسم أمراض الجهاز الهضمي",
+            "titleEn": "Final Closed Clinical Dossier - IBD Management",
+            "status": "مغلق ومؤرشف"
+      }
+}
   },
   {
     id: 'case-006',
@@ -344,7 +533,44 @@ export const SEED_CASES: ClinicalCase[] = [
       pharmacy: { meds: ['Ondansetron 8mg', 'Aprepitant 125mg'], substituteAllowed: true, status: 'ready' },
       homeNurse: { area: 'أبها - حي الضباب', visits: 4, status: 'dispatched' },
       physio: { sessions: 6, status: 'in_progress' }
-    }
+    },
+    consultantOpinion: "Histopathology and molecular sequencing confirm IDH-wildtype, MGMT promoter methylated Glioblastoma. Maximal safe surgical resection followed by the Stupp protocol (Concurrent Temozolomide + RT 60 Gy) plus Tumor Treating Fields (Optune TTFields) is strongly recommended to optimize overall survival.",
+    proposedCallSlot: "Tue 13:00 AST / 15:30 IST",
+    finalClosureNote: "Radiotherapy with concurrent TMZ completed without grade 3/4 hematological toxicity. Optune array initiated.",
+    coordinatorQuestions: "Focus: Addition of Tumor Treating Fields (TTFields) to Stupp protocol for MGMT methylated GBM.",
+    metadata: {
+      "proposedSlots": [
+            {
+                  "id": "slot_1",
+                  "time": "Tuesday 13:00 AST (15:30 IST)"
+            },
+            {
+                  "id": "slot_2",
+                  "time": "Wednesday 17:00 AST (19:30 IST)"
+            }
+      ],
+      "confirmedSlotId": "slot_1",
+      "pdf1Released": true,
+      "patientQuestions": [
+            "كم ساعة يومياً يجب ارتداء جهاز المجالات الكهربائية (TTFields) لتحقيق الفائدة القصوى؟",
+            "ما هي الأعراض الجانبية المتوقعة من دمج العلاج الإشعاعي مع التيموزولوميد؟"
+      ],
+      "relayedQuestions": [
+            "Optune compliance minimum daily hours (>18h/day) and neuro-cognitive preservation protocols."
+      ],
+      "reportPdf1": {
+            "titleAr": "تقرير الرأي الطبي الثاني المعتمد - أورام وجراحة المخ والأعصاب",
+            "titleEn": "Certified Second Opinion Report - Neuro-Oncology",
+            "icd10": "C71.9 (Malignant Neoplasm of Brain, GBM)",
+            "summaryAr": "اعتماد بروتوكول ستوب بالتزامن مع جهاز الحقول الكهربائية المعالجة للأورام (Optune) نظراً لوجود فرط مثيلة MGMT.",
+            "summaryEn": "Standard Stupp Protocol plus adjuvant Tumor Treating Fields (TTFields) indicated for MGMT-methylated GBM."
+      },
+      "reportPdf2": {
+            "titleAr": "تقرير الإغلاق السريري وأرشيف أورام المخ",
+            "titleEn": "Final Neuro-Oncology Dossier & Case Archive",
+            "status": "مغلق ومعتمد"
+      }
+}
   },
   {
     id: 'case-007',
@@ -398,7 +624,44 @@ export const SEED_CASES: ClinicalCase[] = [
       pharmacy: { meds: ['Celecoxib 200mg', 'Pregabalin 75mg'], substituteAllowed: true, status: 'ready' },
       homeNurse: { area: 'بريدة - حي الصفراء', visits: 6, status: 'dispatched' },
       physio: { sessions: 12, status: 'in_progress' }
-    }
+    },
+    consultantOpinion: "Weight-bearing knee radiographs reveal severe tricompartmental osteoarthritis with bone-on-bone medial contact, fixed flexion deformity (15 deg), and varus malalignment. Conservative injections and arthroscopy are ineffective at this stage. Robotic-assisted Total Knee Arthroplasty (TKA) with kinematic alignment is recommended.",
+    proposedCallSlot: "Thu 16:00 AST / 18:30 IST",
+    finalClosureNote: "Robotic TKA successfully completed. Range of motion reached 0-110 degrees at week 3 post-op. Full weight-bearing achieved.",
+    coordinatorQuestions: "Focus: Robotic-assisted kinematic alignment TKA vs unicompartmental arthroplasty.",
+    metadata: {
+      "proposedSlots": [
+            {
+                  "id": "slot_1",
+                  "time": "Thursday 16:00 AST (18:30 IST)"
+            },
+            {
+                  "id": "slot_2",
+                  "time": "Friday 11:30 AST (14:00 IST)"
+            }
+      ],
+      "confirmedSlotId": "slot_1",
+      "pdf1Released": true,
+      "patientQuestions": [
+            "هل الركبة الاصطناعية تتيح لي السجود في الصلاة وممارسة رياضة السباحة؟",
+            "ما هي خطة العلاج الطبيعي والتأهيل الموصى بها خلال أول 6 أسابيع؟"
+      ],
+      "relayedQuestions": [
+            "Post-TKA high-flexion implant capability for kneeling during prayer and rehab protocol."
+      ],
+      "reportPdf1": {
+            "titleAr": "تقرير الرأي الطبي الثاني المعتمد - جراحة العظام وتبديل المفاصل بالروبوت",
+            "titleEn": "Certified Second Opinion Report - Robotic Total Knee Arthroplasty",
+            "icd10": "M17.11 (Unilateral Primary Osteoarthritis, Right Knee)",
+            "summaryAr": "التوصية باستبدال مفصل الركبة الكامل بالروبوت لتحقيق التوازن الحركي الدقيق وتفادي جراحات المناظير غير المجدية.",
+            "summaryEn": "Recommendation for robotic-assisted TKA with kinematic alignment for complete symptom resolution."
+      },
+      "reportPdf2": {
+            "titleAr": "الملف الختامي وأرشيف جراحة العظام",
+            "titleEn": "Final Orthopedic Arthroplasty Dossier",
+            "status": "مغلق ومؤرشف"
+      }
+}
   },
   {
     id: 'case-008',
@@ -451,7 +714,44 @@ export const SEED_CASES: ClinicalCase[] = [
       pharmacy: { meds: ['Tramadol 50mg', 'Paracetamol 1000mg'], substituteAllowed: false, status: 'ready' },
       homeNurse: { area: 'الخبر - حي الحزام الذهبي', visits: 4, status: 'completed' },
       physio: { sessions: 8, status: 'completed' }
-    }
+    },
+    consultantOpinion: "Staging CT and EUS confirm cT3N1M0 Gastric Adenocarcinoma of the antrum with HER2-negative status and MSS. Perioperative FLOT chemotherapy (4 cycles neoadjuvant followed by D2 Subtotal Gastrectomy, then 4 cycles adjuvant) is the international standard of care superior to upfront surgery.",
+    proposedCallSlot: "Mon 11:30 AST / 14:00 IST",
+    finalClosureNote: "Completed 4 cycles neoadjuvant FLOT with significant radiological regression of primary tumor and lymph nodes. D2 gastrectomy scheduled.",
+    coordinatorQuestions: "Focus: Neoadjuvant FLOT chemotherapy protocol vs upfront surgical resection.",
+    metadata: {
+      "proposedSlots": [
+            {
+                  "id": "slot_1",
+                  "time": "Monday 11:30 AST (14:00 IST)"
+            },
+            {
+                  "id": "slot_2",
+                  "time": "Tuesday 16:00 AST (18:30 IST)"
+            }
+      ],
+      "confirmedSlotId": "slot_1",
+      "pdf1Released": true,
+      "patientQuestions": [
+            "ما هي النصائح التغذوية لمنع فقدان الوزن أثناء جرعات علاج FLOT الكيماوي؟",
+            "هل يلزم فحص مسحي PET-CT بعد انتهاء الدورات الأربع قبل الجراحة؟"
+      ],
+      "relayedQuestions": [
+            "Enteral nutritional support protocols during FLOT chemotherapy and restaging PET-CT timing."
+      ],
+      "reportPdf1": {
+            "titleAr": "تقرير الرأي الطبي الثاني المعتمد - أورام الجهاز الهضمي وجراحة المعدة",
+            "titleEn": "Certified Second Opinion Report - Gastrointestinal Surgical Oncology",
+            "icd10": "C16.3 (Malignant Neoplasm of Gastric Antrum)",
+            "summaryAr": "التوصية ببروتوكول FLOT الكيماوي قبل الجراحة لتقليص الورم وتحسين فرص الشفاء التام قبل استئصال المعدة الجذري D2.",
+            "summaryEn": "Perioperative FLOT chemotherapy protocol indicated to downstage tumor prior to curative-intent D2 gastrectomy."
+      },
+      "reportPdf2": {
+            "titleAr": "تقرير الحالة الختامي - جراحة أورام المعدة",
+            "titleEn": "Final Gastric Oncology Dossier & Closure",
+            "status": "مغلق ومعتمد"
+      }
+}
   },
   {
     id: 'case-009',
@@ -503,7 +803,44 @@ export const SEED_CASES: ClinicalCase[] = [
       pharmacy: { meds: ['Furosemide oral sol', 'Spironolactone'], substituteAllowed: true, status: 'pending' },
       homeNurse: { area: 'الطائف - حي الشفا', visits: 3, status: 'scheduled' },
       physio: { sessions: 0, status: 'planned' }
-    }
+    },
+    consultantOpinion: "Clinical presentation with microangiopathic hemolytic anemia, thrombocytopenia, acute kidney injury, and normal ADAMTS13 activity confirms atypical Hemolytic Uremic Syndrome (aHUS). Urgent complement C5 inhibitor therapy (Eculizumab or Ravulizumab) is life-saving and mandatory to arrest renal microthrombi, alongside mandatory meningococcal vaccination.",
+    proposedCallSlot: "Wed 11:00 AST / 13:30 IST",
+    finalClosureNote: "Platelet count normalized to 240,000/uL and serum creatinine stabilized to 1.1 mg/dL on Ravulizumab maintenance. Renal replacement averted.",
+    coordinatorQuestions: "Focus: Immediate C5 complement inhibitor therapy vs ongoing plasma exchange for aHUS.",
+    metadata: {
+      "proposedSlots": [
+            {
+                  "id": "slot_1",
+                  "time": "Wednesday 11:00 AST (13:30 IST)"
+            },
+            {
+                  "id": "slot_2",
+                  "time": "Thursday 17:00 AST (19:30 IST)"
+            }
+      ],
+      "confirmedSlotId": "slot_1",
+      "pdf1Released": true,
+      "patientQuestions": [
+            "هل لقاح الحمى الشوكية يوفر الحماية الكافية طوال فترة أخذ علاج الإيكوليزوماب؟",
+            "كم من الوقت يستمر العلاج البيولوجي لحماية وظائف الكلى؟"
+      ],
+      "relayedQuestions": [
+            "Meningococcal prophylaxis protocol with C5 inhibition and duration of complement blockade therapy."
+      ],
+      "reportPdf1": {
+            "titleAr": "تقرير الرأي الطبي الثاني المعتمد - أمراض الدم وأمراض الكلى النادرة",
+            "titleEn": "Certified Second Opinion Report - Hematology & Rare Renal Diseases",
+            "icd10": "D59.3 (Hemolytic-Uremic Syndrome)",
+            "summaryAr": "البدء الفوري بمثبطات المتممة C5 (Eculizumab/Ravulizumab) لإنقاذ وظائف الكلى ووقف التخثر المجهري في الأوعية الدموية.",
+            "summaryEn": "Immediate targeted C5 complement inhibitor initiation mandated for aHUS to avert irreversible renal failure."
+      },
+      "reportPdf2": {
+            "titleAr": "تقرير الإغلاق السريري - أمراض الكلى وأمراض الدم",
+            "titleEn": "Final Clinical Dossier - aHUS Rare Disease Protocol",
+            "status": "مغلق ومؤرشف"
+      }
+}
   },
   {
     id: 'case-010',
@@ -556,6 +893,43 @@ export const SEED_CASES: ClinicalCase[] = [
       pharmacy: { meds: ['Baclofen 10mg', 'Aspirin 81mg', 'Atorvastatin 80mg'], substituteAllowed: true, status: 'ready' },
       homeNurse: { area: 'تبوك - حي المروج', visits: 8, status: 'completed' },
       physio: { sessions: 24, status: 'completed' }
-    }
+    },
+    consultantOpinion: "Seropositive, erosive Rheumatoid Arthritis refractory to Methotrexate and first-line anti-TNF (Adalimumab). Given persistent high disease activity (DAS28-CRP 5.6) and rapid radiographic progression, switching to an IL-6 receptor antagonist (Tocilizumab) or T-cell costimulation modulator (Abatacept) is strongly recommended with monthly acute phase reactant audits.",
+    proposedCallSlot: "Fri 15:00 AST / 17:30 IST",
+    finalClosureNote: "DAS28-CRP decreased to 2.4 (Clinical Remission) at 12 weeks of Tocilizumab therapy. Morning stiffness completely resolved.",
+    coordinatorQuestions: "Focus: IL-6 receptor inhibitor (Tocilizumab) vs JAK inhibitor switch in seropositive refractory RA.",
+    metadata: {
+      "proposedSlots": [
+            {
+                  "id": "slot_1",
+                  "time": "Friday 15:00 AST (17:30 IST)"
+            },
+            {
+                  "id": "slot_2",
+                  "time": "Saturday 11:00 AST (13:30 IST)"
+            }
+      ],
+      "confirmedSlotId": "slot_1",
+      "pdf1Released": true,
+      "patientQuestions": [
+            "متى يبدأ التحسن الفعلي في آلام وتورم مفاصل اليدين مع العلاج الجديد؟",
+            "هل يمكن تقليل جرعة الكورتيزون (البريدنيزولون) تدريجياً بعد بدء الحقن الشهرية؟"
+      ],
+      "relayedQuestions": [
+            "Steroid tapering protocol and expected timeline for joint swelling reduction under IL-6 blockade."
+      ],
+      "reportPdf1": {
+            "titleAr": "تقرير الرأي الطبي الثاني المعتمد - أمراض المفاصل والروماتيزم المناعي",
+            "titleEn": "Certified Second Opinion Report - Rheumatology & Autoimmune Diseases",
+            "icd10": "M05.79 (Rheumatoid Arthritis with Rheumatoid Factor)",
+            "summaryAr": "التوصية بالتحويل إلى مضادات مستقبلات الإنترلوكين-6 (Tocilizumab) مع خطة تخفيض تدريجي للكورتيزون لحماية المفاصل من التآكل.",
+            "summaryEn": "Switching to IL-6 receptor antagonist (Tocilizumab) indicated for refractory erosive seropositive RA."
+      },
+      "reportPdf2": {
+            "titleAr": "تقرير المتابعة وأرشيف أمراض الروماتيزم",
+            "titleEn": "Final Rheumatology Dossier & Case Archive",
+            "status": "مغلق ومعتمد"
+      }
+}
   }
 ];

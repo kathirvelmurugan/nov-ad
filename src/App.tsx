@@ -48,6 +48,11 @@ export const App: React.FC = () => {
               specialtyEn: c.specialtyEn || seed.specialtyEn,
               diagnosisAr: c.diagnosisAr || seed.diagnosisAr,
               diagnosisEn: c.diagnosisEn || seed.diagnosisEn,
+              metadata: c.metadata || seed.metadata,
+              consultantOpinion: c.consultantOpinion || seed.consultantOpinion,
+              proposedCallSlot: c.proposedCallSlot || seed.proposedCallSlot,
+              finalClosureNote: c.finalClosureNote || seed.finalClosureNote,
+              coordinatorQuestions: c.coordinatorQuestions || seed.coordinatorQuestions,
             };
           });
         }
