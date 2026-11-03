@@ -142,6 +142,75 @@ export const PatientIntakeView: React.FC<Props> = ({
         )}
       </div>
 
+      {/* P04-B · Choose Saudi Treating Doctor */}
+      <div className="card-clinical p-5 space-y-3">
+        <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
+          <div className="flex items-center gap-2">
+            <span className="bg-alo-mint text-alo-teal px-2 py-0.5 rounded text-[10px] font-mono font-bold border border-teal-200">
+              P04-B · {isAr ? 'الطبيب المعالج' : 'Saudi Treating Doctor'}
+            </span>
+            <Stethoscope className="w-4 h-4 text-alo-teal" />
+            <h3 className="text-sm font-extrabold text-alo-navy dark:text-slate-100">
+              {isAr ? 'اختيار الطبيب السعودي المعالج المشرف على الحالة بالمملكة' : 'Select Saudi Treating Physician within KSA'}
+            </h3>
+          </div>
+          <span className="text-[11px] text-slate-500 font-medium">
+            {isAr ? 'مستشفى مرجعي شريك' : 'Accredited Partner Hospital'}
+          </span>
+        </div>
+
+        <div className="space-y-2">
+          <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+            {isAr ? 'الطبيب المعالج الذي ترغب بإحالة ملفك إليه بعد فرز التمريض:' : 'Saudi physician to review dossier post-triage:'}
+          </label>
+          <select
+            value={activeCase.treatingDoctor.name}
+            onChange={(e) => {
+              const selectedName = e.target.value;
+              let hospital = activeCase.treatingDoctor.hospital;
+              let city = activeCase.treatingDoctor.city;
+              if (selectedName.includes('عبدالله')) {
+                hospital = 'مستشفى رعاية الرياض (Riyadh Care)';
+                city = 'الرياض';
+              } else if (selectedName.includes('فيصل')) {
+                hospital = 'مستشفى الدكتور سليمان فقيه (Fakeeh Health)';
+                city = 'جدة';
+              } else if (selectedName.includes('عمر')) {
+                hospital = 'مستشفى بروكير رعاية (Procare Riaya)';
+                city = 'الخبر';
+              } else if (selectedName.includes('هند')) {
+                hospital = 'مركز الأمير سلطان لطب وجراحة القلب';
+                city = 'الطائف';
+              } else if (selectedName.includes('خالد')) {
+                hospital = 'مستشفى الموسى التخصصي';
+                city = 'الأحساء';
+              }
+              onUpdateCase({
+                treatingDoctor: {
+                  ...activeCase.treatingDoctor,
+                  name: selectedName,
+                  hospital,
+                  city
+                }
+              });
+            }}
+            className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-alo-teal outline-none font-bold shadow-sm cursor-pointer"
+          >
+            <option value="د. عبدالله الشمري">د. عبدالله الشمري — مستشفى رعاية الرياض (Riyadh Care Hospital) · أمراض وجراحة القلب</option>
+            <option value="د. فيصل الغامدي">د. فيصل الغامدي — مستشفى الدكتور سليمان فقيه (Fakeeh Health Jeddah) · قسطرة وتداخل جراحي</option>
+            <option value="د. عمر الملحم">د. عمر الملحم — مستشفى بروكير رعاية (Procare Riaya Khobar) · جراحة العظام والمفاصل</option>
+            <option value="د. هند الحازمي">د. هند الحازمي — مركز الأمير سلطان لطب وجراحة القلب (Taif) · أمراض قلب الأطفال</option>
+            <option value="د. خالد الدوسري">د. خالد الدوسري — مستشفى الموسى التخصصي (Al-Ahsa) · جراحة المخ والعمود الفقري</option>
+          </select>
+
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-normal">
+            {isAr
+              ? '💡 وفقاً لدليل المسار السريري (Master Map 1/2): بعد اعتماد التمريض، ستتم إحالة الملف إلى هذا الطبيب لدراسة التاريخ المرضي وتحديد الأسئلة التوجيهية واختيار الاستشاري الدولي.'
+              : '💡 Per Master Map 1/2: Once ALO Nurse completes triage audit, this physician reviews the dossier, writes 3 focus questions, and selects the international consultant.'}
+          </p>
+        </div>
+      </div>
+
       {/* P05 & P06: Clinical Symptoms & Condition */}
       <div className="card-clinical p-6 space-y-5">
         <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
@@ -344,7 +413,7 @@ export const PatientIntakeView: React.FC<Props> = ({
             disabled={!privacyAgreed}
             className="w-full sm:w-auto bg-gradient-to-r from-alo-teal to-teal-700 hover:from-teal-700 hover:to-teal-800 disabled:opacity-50 text-white font-extrabold py-3 px-8 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-sm active:scale-95 cursor-pointer"
           >
-            <span>P14 · {isAr ? 'إرسال الملف إلى تمريض الفرز (Submit Case)' : 'Submit Case to Nurse Triage'}</span>
+            <span>P14 · {isAr ? 'إرسال الملف إلى تمريض الفرز (Submit Case)' : 'Submit Case to ALO Nurse Triage'}</span>
             <span>{isAr ? '←' : '→'}</span>
           </button>
         </div>

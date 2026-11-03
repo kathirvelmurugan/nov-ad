@@ -29,34 +29,34 @@ const PATIENT_FIRST_NAMES: Record<string, { ar: string; en: string }> = {
 
 const ROLE_METADATA: Record<string, { labelAr: string; labelEn: string; scopeAr: string; scopeEn: string }> = {
   P: {
-    labelAr: 'المريض (سالم)',
-    labelEn: 'Patient (Salem)',
-    scopeAr: 'تسجيل الأعراض، رفع التقارير، اختيار وسيلة الاستشارة، وسداد الرسوم',
-    scopeEn: 'Intake submission, medical reports, consultation preference, and payment'
-  },
-  F: {
-    labelAr: 'المرافقة (فاطمة)',
-    labelEn: 'Caregiver (Fatima)',
-    scopeAr: 'إدارة طلب الرأي الطبي نيابة عن المريض بموجب الموافقة النظامية',
-    scopeEn: 'Authorized caregiver managing second-opinion case on behalf of family member'
+    labelAr: 'المريض',
+    labelEn: 'Patient',
+    scopeAr: 'تسجيل الأعراض، اختيار الطبيب السعودي المعالج، ورفع التقارير الطبية',
+    scopeEn: 'Intake submission, picking Saudi treating physician, and uploading diagnostic scans'
   },
   N: {
-    labelAr: 'ممرضة الفرز (سارة)',
-    labelEn: 'Nurse (Sara)',
-    scopeAr: 'صندوق فرز الحالات، تدقيق العلامات الحيوية، وحجب البيانات الشخصية آلياً',
-    scopeEn: 'Clinical triage inbox, vitals verification, and automated PII de-identification'
+    labelAr: 'ممرضة ألو (سارة)',
+    labelEn: 'ALO Nurse (Sara)',
+    scopeAr: 'صندوق فرز الحالات، تدقيق الفحوصات ومقاطع الأشعة، وحجب البيانات الشخصية آلياً (SDAIA)',
+    scopeEn: 'Clinical triage inbox, diagnostic scan audit, and automated PII de-identification'
   },
   D: {
-    labelAr: 'الطبيب (د. عبدالله)',
-    labelEn: 'Doctor (Dr. Abdullah)',
-    scopeAr: 'مراجعة التاريخ المرضي، تحديد الأسئلة الدقيقة للاستشاري، واعتماد الإحالة',
-    scopeEn: 'Clinical dossier review, framing specialist focus questions, and referral sign-off'
+    labelAr: 'الطبيب السعودي المعالج (د. عبدالله)',
+    labelEn: 'Saudi Treating Doctor (Dr. Abdullah)',
+    scopeAr: 'مراجعة التاريخ المرضي، تحديد الأسئلة الدقيقة للاستشاري، واختيار المستشار الدولي المناسب',
+    scopeEn: 'Clinical dossier review, framing 3 focus questions, and picking target international consultant'
+  },
+  C: {
+    labelAr: 'منسق رعاية ألو (عبدالرحمن)',
+    labelEn: 'ALO Coordinator (Abdulrahman)',
+    scopeAr: 'مراجعة وتأكيد الإحالة، إصدار الفواتير وروابط السداد للمريض، وتوجيه الملف للاستشاري',
+    scopeEn: 'Referral verification, dispatching ZATCA payment links, and international case assignment'
   },
   K: {
-    labelAr: 'الاستشاري (د. أرجون)',
-    labelEn: 'Consultant (Dr. Arjun)',
-    scopeAr: 'مراجعة الأشعة ثلاثية الأبعاد، تسجيل الملخص الصوتي، وإصدار الرأي المعتمد',
-    scopeEn: '3D DICOM multi-slice review, voice briefing synthesis, and second opinion sign-off'
+    labelAr: 'الاستشاري الدولي',
+    labelEn: 'International Consultant',
+    scopeAr: 'مراجعة الأشعة ثلاثية الأبعاد، تسجيل الملخص الصوتي، وإصدار الرأي الطبي المعتمد',
+    scopeEn: '3D DICOM review, issuing certified second opinion report, and patient video briefing'
   },
   L: {
     labelAr: 'مختبرات ألفا',
@@ -300,6 +300,8 @@ export const TopProfileSwitcher: React.FC<Props> = ({
               ? activeCase.treatingDoctor.name.replace('د. ', '').split(' ')[0]
               : 'عبدالله';
             displayLabel = isAr ? `الطبيب (د. ${saudiDoc})` : `Doctor (Dr. ${saudiDoc})`;
+          } else if (persona.code === 'C') {
+            displayLabel = isAr ? 'منسق ألو (عبدالرحمن)' : 'ALO Coordinator';
           }
 
           const dynamicScope = persona.code === 'K'
@@ -350,6 +352,8 @@ export const TopProfileSwitcher: React.FC<Props> = ({
           activeLabel = isAr ? `الاستشاري (${activeCase.consultant?.name || 'د. أرجون'})` : `Consultant (${activeCase.consultant?.name || 'Dr. Arjun'})`;
         } else if (activePersona.code === 'D') {
           activeLabel = isAr ? `الطبيب (${activeCase.treatingDoctor?.name || 'د. عبدالله'})` : `Doctor (${activeCase.treatingDoctor?.name || 'Dr. Abdullah'})`;
+        } else if (activePersona.code === 'C') {
+          activeLabel = isAr ? 'منسق رعاية ألو (عبدالرحمن الشهري)' : 'ALO Care Coordinator (Abdulrahman)';
         }
 
         const activeScope = activeMeta

@@ -3,20 +3,10 @@ import { Persona } from '../types';
 export const PERSONAS: Persona[] = [
   {
     code: 'P',
-    name: 'سالم العتيبي',
-    title: 'المريض (Patient: Salem A.)',
-    badge: '👤 مريض',
+    name: 'سالم بن عبد العزيز العامري',
+    title: 'المريض (Patient)',
+    badge: '👤 Patient',
     avatar: '👨‍💼',
-    surface: 'patient-mobile',
-    isRtl: true,
-    lang: 'ar'
-  },
-  {
-    code: 'F',
-    name: 'فاطمة العتيبي',
-    title: 'مقدم الطلب / المرافقة (Caregiver Proxy: Fatima A.)',
-    badge: '👩‍👧 مرافق مخول',
-    avatar: '👩‍💼',
     surface: 'patient-mobile',
     isRtl: true,
     lang: 'ar'
@@ -24,8 +14,8 @@ export const PERSONAS: Persona[] = [
   {
     code: 'N',
     name: 'سارة الدوسري',
-    title: 'ممرضة ألو للفرز السريري (Nurse Triage: Sara N.)',
-    badge: '👩‍⚕️ تمريض فرز',
+    title: 'ممرضة ألو للفرز السريري (ALO Nurse: Sara N.)',
+    badge: '🩺 ALO Nurse',
     avatar: '👩‍⚕️',
     surface: 'portal-web',
     isRtl: true,
@@ -34,9 +24,19 @@ export const PERSONAS: Persona[] = [
   {
     code: 'D',
     name: 'د. عبدالله الشمري',
-    title: 'الطبيب السعودي المعالج (Riyadh Care: Dr. Abdullah)',
-    badge: '🩺 طبيب معالج',
+    title: 'الطبيب السعودي المعالج (Saudi Treating Doctor: Dr. Abdullah)',
+    badge: '👨‍⚕️ Saudi Doctor',
     avatar: '👨‍⚕️',
+    surface: 'portal-web',
+    isRtl: true,
+    lang: 'ar'
+  },
+  {
+    code: 'C',
+    name: 'عبدالرحمن الشهري',
+    title: 'منسق رعاية ألو (ALO Care Coordinator: Abdulrahman)',
+    badge: '👔 ALO Coordinator',
+    avatar: '👔',
     surface: 'portal-web',
     isRtl: true,
     lang: 'ar'
@@ -44,7 +44,7 @@ export const PERSONAS: Persona[] = [
   {
     code: 'K',
     name: 'Dr. Arjun Mehta',
-    title: 'Senior Cardiac Consultant (KIMS Hyderabad: Dr. Arjun)',
+    title: 'الاستشاري الدولي (International Consultant: Dr. Arjun)',
     badge: '🌍 Consultant',
     avatar: '👨‍⚕️',
     surface: 'consultant-mobile',

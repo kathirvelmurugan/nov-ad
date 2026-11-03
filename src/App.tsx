@@ -15,6 +15,7 @@ import { OpinionTelehealthView } from './components/screens/OpinionTelehealthVie
 import { PartnerServicesView } from './components/screens/PartnerServicesView';
 import { FollowUpChatView } from './components/screens/FollowUpChatView';
 import { AdminSettingsView } from './components/screens/AdminSettingsView';
+import { CoordinatorPortalView } from './components/screens/CoordinatorPortalView';
 import { GuideModal } from './components/GuideModal';
 import { StageHandoffModal } from './components/StageHandoffModal';
 import { AutoDemoController } from './components/AutoDemoController';
@@ -165,6 +166,7 @@ export const App: React.FC = () => {
     // Contextually switch stage to match persona view
     if (p.code === 'N') handleUpdateCase({ currentStage: 'NURSE_CHECK' });
     else if (p.code === 'D') handleUpdateCase({ currentStage: 'DOCTOR_REVIEW' });
+    else if (p.code === 'C') handleUpdateCase({ currentStage: 'AWAITING_PAYMENT' });
     else if (p.code === 'K') handleUpdateCase({ currentStage: 'WITH_CONSULTANT' });
     else if (p.code === 'L' || p.code === 'H' || p.code === 'T' || p.code === 'V') handleUpdateCase({ currentStage: 'PARTNER_SERVICES' });
     else if (p.code === 'AD' || p.code === 'HA') handleUpdateCase({ currentStage: 'CLOSED' });
@@ -219,7 +221,7 @@ export const App: React.FC = () => {
       let nextP = PERSONAS[0];
       if (nextStage === 'NURSE_CHECK') nextP = PERSONAS.find((p) => p.code === 'N')!;
       else if (nextStage === 'DOCTOR_REVIEW') nextP = PERSONAS.find((p) => p.code === 'D')!;
-      else if (nextStage === 'AWAITING_PAYMENT') nextP = PERSONAS.find((p) => p.code === 'P')!;
+      else if (nextStage === 'AWAITING_PAYMENT') nextP = PERSONAS.find((p) => p.code === 'C') || PERSONAS[0];
       else if (nextStage === 'WITH_CONSULTANT') nextP = PERSONAS.find((p) => p.code === 'K')!;
       else if (nextStage === 'OPINION_READY') nextP = PERSONAS.find((p) => p.code === 'P')!;
       else if (nextStage === 'PARTNER_SERVICES') nextP = PERSONAS.find((p) => p.code === 'L')!;
@@ -260,7 +262,7 @@ export const App: React.FC = () => {
     if (stage === 'INTAKE_RECEIVED') p = PERSONAS.find((x) => x.code === 'P')!;
     else if (stage === 'NURSE_CHECK') p = PERSONAS.find((x) => x.code === 'N')!;
     else if (stage === 'DOCTOR_REVIEW') p = PERSONAS.find((x) => x.code === 'D')!;
-    else if (stage === 'AWAITING_PAYMENT') p = PERSONAS.find((x) => x.code === 'P')!;
+    else if (stage === 'AWAITING_PAYMENT') p = PERSONAS.find((x) => x.code === 'C') || PERSONAS[0];
     else if (stage === 'WITH_CONSULTANT') p = PERSONAS.find((x) => x.code === 'K')!;
     else if (stage === 'OPINION_READY') p = PERSONAS.find((x) => x.code === 'P')!;
     else if (stage === 'PARTNER_SERVICES') p = PERSONAS.find((x) => x.code === 'L')!;
@@ -325,6 +327,18 @@ export const App: React.FC = () => {
     // If Admin, render Admin Settings
     if (activePersona.code === 'AD' || activePersona.code === 'HA') {
       return <AdminSettingsView />;
+    }
+
+    // If ALO Coordinator, render Coordinator Portal
+    if (activePersona.code === 'C') {
+      return (
+        <CoordinatorPortalView
+          activeCase={activeCase}
+          onAdvanceStage={handleAdvanceStage}
+          onUpdateCase={handleUpdateCase}
+          lang={lang}
+        />
+      );
     }
 
     // If Consultant, render English Mobile App

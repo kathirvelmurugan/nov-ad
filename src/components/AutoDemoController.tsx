@@ -61,14 +61,14 @@ const STAGE_NARRATIONS: Record<ClinicalStage, StageNarration> = {
   },
   AWAITING_PAYMENT: {
     stageNum: 4,
-    stageNameAr: 'المرحلة 4: السداد الإلكتروني والفاتورة (Tap Payment)',
-    stageNameEn: 'Stage 4: Tap Payments & ZATCA QR Invoice',
-    roleAr: 'بوابة الدفع (Tap Payments / مدى)',
-    roleEn: 'Patient Checkout (Tap Payments / Mada)',
-    headlineAr: 'سداد الرسوم عبر مدى أو أبل باي مع فاتورة ZATCA ضريبية فورية',
-    headlineEn: 'Patient pays via Mada / Apple Pay & receives ZATCA Phase-2 QR invoice',
-    detailAr: 'دفع إلكتروني فوري آمن ومطابق لاشتراطات هيئة الزكاة والضريبة والجمارك.',
-    detailEn: 'Instant frictionless payment with cryptographic QR tax invoice and Tabby split options.'
+    stageNameAr: 'المرحلة 4: تنسيق الرعاية والسداد (ALO Coordinator & Payment)',
+    stageNameEn: 'Stage 4: ALO Coordinator Pricing & ZATCA Payment',
+    roleAr: 'منسق رعاية ألو (عبدالرحمن) · سداد تابي ومدى',
+    roleEn: 'ALO Coordinator (Abdulrahman) · Tabby Split & Mada',
+    headlineAr: 'منسق ألو يؤكد الإحالة والتسعير ويرسل رابط السداد الآمن للمريض',
+    headlineEn: 'ALO Coordinator confirms specialist referral fee and dispatches ZATCA payment link',
+    detailAr: 'إصدار رابط سداد معتمد ومطابق لـ ZATCA مع إمكانية التقسيط عبر تابي على 4 دفعات.',
+    detailEn: 'Compliant ZATCA invoice dispatch via WhatsApp with 4-month Tabby interest-free split.'
   },
   WITH_CONSULTANT: {
     stageNum: 5,
