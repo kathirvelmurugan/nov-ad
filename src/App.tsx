@@ -17,6 +17,7 @@ import { FollowUpChatView } from './components/screens/FollowUpChatView';
 import { AdminSettingsView } from './components/screens/AdminSettingsView';
 import { GuideModal } from './components/GuideModal';
 import { StageHandoffModal } from './components/StageHandoffModal';
+import { AutoDemoController } from './components/AutoDemoController';
 
 const STORAGE_KEY = 'alo_cases_v2.4';
 const ACTIVE_CASE_KEY = 'alo_active_case_id_v2.4';
@@ -73,6 +74,7 @@ export const App: React.FC = () => {
     toStage: ClinicalStage;
     nextPersona: Persona;
   } | null>(null);
+  const [isAutoDemoActive, setIsAutoDemoActive] = useState(false);
 
   // Sync state modifications to localStorage for refresh-durability
   useEffect(() => {
@@ -249,6 +251,41 @@ export const App: React.FC = () => {
     }
   };
 
+  // Executive Auto-Demo Navigation Handlers
+  const handleAutoDemoNextStage = () => {
+    const stageOrder: ClinicalStage[] = [
+      'INTAKE_RECEIVED',
+      'NURSE_CHECK',
+      'DOCTOR_REVIEW',
+      'AWAITING_PAYMENT',
+      'WITH_CONSULTANT',
+      'OPINION_READY',
+      'PARTNER_SERVICES',
+      'FOLLOW_UP_21_DAYS',
+      'CLOSED'
+    ];
+    const currentIndex = stageOrder.indexOf(activeCase.currentStage);
+    const nextIndex = (currentIndex + 1) % stageOrder.length;
+    handleSetStage(stageOrder[nextIndex]);
+  };
+
+  const handleAutoDemoPrevStage = () => {
+    const stageOrder: ClinicalStage[] = [
+      'INTAKE_RECEIVED',
+      'NURSE_CHECK',
+      'DOCTOR_REVIEW',
+      'AWAITING_PAYMENT',
+      'WITH_CONSULTANT',
+      'OPINION_READY',
+      'PARTNER_SERVICES',
+      'FOLLOW_UP_21_DAYS',
+      'CLOSED'
+    ];
+    const currentIndex = stageOrder.indexOf(activeCase.currentStage);
+    const prevIndex = (currentIndex - 1 + stageOrder.length) % stageOrder.length;
+    handleSetStage(stageOrder[prevIndex]);
+  };
+
   // Magic 1-click Auto-Fill: populates realistic data for the current screen
   const handleAutoFill = () => {
     alert(
@@ -381,6 +418,7 @@ export const App: React.FC = () => {
         onAutoFill={handleAutoFill}
         onResetDemo={handleResetDemo}
         onOpenGuide={() => setIsGuideOpen(true)}
+        onStartAutoDemo={() => setIsAutoDemoActive(true)}
         lang={lang}
         onToggleLang={handleToggleLang}
         theme={theme}
@@ -438,6 +476,19 @@ export const App: React.FC = () => {
           onClose={() => setPendingHandoff(null)}
         />
       )}
+
+      {/* 8. Executive Auto-Demo Presentation Controller */}
+      <AutoDemoController
+        isActive={isAutoDemoActive}
+        currentStage={activeCase.currentStage}
+        activePersona={activePersona}
+        lang={lang}
+        onNextStage={handleAutoDemoNextStage}
+        onPrevStage={handleAutoDemoPrevStage}
+        onSelectStage={handleSetStage}
+        onStop={() => setIsAutoDemoActive(false)}
+        activeCaseNumber={activeCase.caseNumber}
+      />
     </div>
   );
 };

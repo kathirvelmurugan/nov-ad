@@ -93,6 +93,7 @@ interface Props {
   onAutoFill: () => void;
   onResetDemo?: () => void;
   onOpenGuide?: () => void;
+  onStartAutoDemo?: () => void;
   lang: 'ar' | 'en';
   onToggleLang: () => void;
   theme: 'light' | 'dark';
@@ -109,6 +110,7 @@ export const TopProfileSwitcher: React.FC<Props> = ({
   onAutoFill,
   onResetDemo,
   onOpenGuide,
+  onStartAutoDemo,
   lang,
   onToggleLang,
   theme,
@@ -162,6 +164,18 @@ export const TopProfileSwitcher: React.FC<Props> = ({
 
         {/* Right Section: Auto-Fill + Theme Toggle + Universal Language Pill */}
         <div className="flex items-center gap-2.5">
+          {/* 1-Click Executive Auto-Demo Presentation Mode */}
+          {onStartAutoDemo && (
+            <button
+              onClick={onStartAutoDemo}
+              className="flex items-center gap-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold px-3 py-1 rounded-lg shadow-sm transition-all text-xs active:scale-95 animate-pulse"
+              title={isAr ? 'بدء جولة العرض التلقائي السريرية' : 'Start interactive auto-demo presentation walkthrough'}
+            >
+              <span>▶️</span>
+              <span>{isAr ? 'جولة تلقائية (Auto-Demo)' : '▶ Auto-Demo'}</span>
+            </button>
+          )}
+
           {/* Magic 1-Click Auto-Fill */}
           <button
             onClick={onAutoFill}
