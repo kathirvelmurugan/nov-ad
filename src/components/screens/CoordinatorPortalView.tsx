@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ClinicalCase } from '../../types';
 
 interface Props {
@@ -19,7 +19,19 @@ const CoordinatorPortalView: React.FC<Props> = ({
   onUpdateCase,
   lang,
 }) => {
-  const [activeTab, setActiveTab] = useState<'C07' | 'C08' | 'C09' | 'C10'>('C07');
+  const getInitialTab = (): 'C07' | 'C08' | 'C09' | 'C10' => {
+    if (activeCase.currentStage === 'PARTNER_SERVICES') return 'C08';
+    if (activeCase.currentStage === 'CLOSED') return 'C10';
+    if (activeCase.currentStage === 'FOLLOW_UP_21_DAYS') return 'C09';
+    return 'C07';
+  };
+
+  const [activeTab, setActiveTab] = useState<'C07' | 'C08' | 'C09' | 'C10'>(getInitialTab);
+
+  useEffect(() => {
+    setActiveTab(getInitialTab());
+  }, [activeCase.currentStage, activeCase.id]);
+
   const [isProcessing, setIsProcessing] = useState(false);
   const [relayMessage, setRelayMessage] = useState('');
 
