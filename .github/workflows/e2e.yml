@@ -1,0 +1,55 @@
+name: E2E Smoke (Puppeteer)
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+concurrency:
+  group: nov-ad-e2e
+  cancel-in-progress: false
+
+jobs:
+  e2e:
+    name: Browser E2E smoke against built app
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install project dependencies
+        run: npm ci
+
+      - name: Install Puppeteer (ad-hoc, not saved to package.json/lock)
+        run: npm install --no-save puppeteer
+
+      - name: Build production bundle
+        run: npm run build
+
+      - name: Serve build (vite preview) in background
+        run: |
+          nohup npx vite preview --port 4173 --strictPort > preview.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:4173 > /dev/null; then echo "preview server up on :4173"; break; fi
+            sleep 1
+          done
+
+      - name: Run E2E smoke test
+        run: node e2e/smoke.mjs
+        env:
+          E2E_BASE_URL: http://localhost:4173
+
+      - name: Upload E2E artifacts (screenshots)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-artifacts
+          path: e2e-artifacts/
+          if-no-files-found: ignore
