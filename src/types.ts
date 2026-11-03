@@ -93,7 +93,7 @@ export interface ClinicalCase {
     audioBriefDurationSec?: number;
   };
   pricing: {
-    tier: 1 | 2 | 3;
+    tier: number;
     tierName: string;
     baseSar: number;
     vatPercent: number;
@@ -115,6 +115,7 @@ export interface ClinicalCase {
   proposedCallSlot?: string;
   finalClosureNote?: string;
   coordinatorQuestions?: string;
+  paymentDetails?: any;
   status?: string;
   metadata?: Record<string, any>;
 }

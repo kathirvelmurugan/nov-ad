@@ -267,7 +267,7 @@ export const App: React.FC = () => {
     if (stage === 'INTAKE_RECEIVED') p = PERSONAS.find((x) => x.code === 'P')!;
     else if (stage === 'NURSE_CHECK') p = PERSONAS.find((x) => x.code === 'N')!;
     else if (stage === 'DOCTOR_REVIEW') p = PERSONAS.find((x) => x.code === 'D')!;
-    else if (stage === 'AWAITING_PAYMENT') p = PERSONAS.find((x) => x.code === 'C') || PERSONAS[0];
+    else if (stage === 'AWAITING_PAYMENT') p = PERSONAS.find((x) => x.code === 'P') || PERSONAS[0];
     else if (stage === 'WITH_CONSULTANT') p = PERSONAS.find((x) => x.code === 'K')!;
     else if (stage === 'OPINION_READY') p = PERSONAS.find((x) => x.code === 'D') || PERSONAS[0];
     else if (stage === 'PARTNER_SERVICES') p = PERSONAS.find((x) => x.code === 'C') || PERSONAS[0];
