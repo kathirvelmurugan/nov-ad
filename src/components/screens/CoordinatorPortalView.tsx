@@ -59,6 +59,11 @@ const CoordinatorPortalView: React.FC<Props> = ({
   };
 
   const handleConfirmSlot = (slotId: string) => {
+    const paid = !!activeCase.pricing?.paid || activeCase.paymentDetails?.status === 'completed';
+    if (!paid) {
+      alert(isAr ? 'لا يمكن تأكيد موعد المكالمة قبل تأكيد السداد.' : 'Call time can be confirmed only after payment.');
+      return;
+    }
     onUpdateCase({ 
       metadata: { 
         ...(activeCase.metadata || {}), 

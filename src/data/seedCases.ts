@@ -79,25 +79,9 @@ export const SEED_CASES: ClinicalCase[] = [
       physio: { sessions: 8, status: 'planned' }
     },
     consultantOpinion: "Based on high-resolution Echo and Cardiac CT, severe calcific aortic stenosis with valve area 0.7 cm² and mean gradient 46 mmHg is confirmed. Given patient age 58 and low surgical STS score of 2.1%, Surgical Aortic Valve Replacement (SAVR) with a mechanical or bioprosthetic valve provides superior long-term durability over TAVR. Concomitant coronary angiography demonstrates mild LAD non-obstructive plaque not requiring bypass.",
-    proposedCallSlot: "Tue 16:00 AST / 18:30 IST",
     finalClosureNote: "Post-consultation follow-up confirmed valve surgery scheduled at King Faisal Specialist Hospital. Anticoagulation protocol with Warfarin (target INR 2.0-3.0) approved. Patient recovery parameters optimal.",
     coordinatorQuestions: "Focus: TAVR vs SAVR valve durability at age 58 and stroke prophylaxis.",
     metadata: {
-      "proposedSlots": [
-            {
-                  "id": "slot_1",
-                  "time": "Tuesday 16:00 AST (18:30 IST)"
-            },
-            {
-                  "id": "slot_2",
-                  "time": "Wednesday 11:30 AST (14:00 IST)"
-            },
-            {
-                  "id": "slot_3",
-                  "time": "Thursday 17:00 AST (19:30 IST)"
-            }
-      ],
-      "confirmedSlotId": "slot_1",
       "pdf1Released": true,
       "patientQuestions": [
             "هل يستدعي استخدام الصمام الميكانيكي الالتزام الدائم بفحوصات سيولة الدم المنزلية؟",
@@ -173,21 +157,9 @@ export const SEED_CASES: ClinicalCase[] = [
       physio: { sessions: 6, status: 'planned' }
     },
     consultantOpinion: "SYNTAX Score of 34 indicates complex multi-vessel coronary artery disease with diffuse calcification of LAD and proximal Circumflex. Coronary Artery Bypass Grafting (CABG) using Bilateral Internal Mammary Arteries (BIMA) is strongly indicated over multi-vessel PCI to achieve complete revascularization and superior 10-year survival.",
-    proposedCallSlot: "Wed 14:00 AST / 16:30 IST",
     finalClosureNote: "BIMA-CABG surgical planning approved with Dr. Faisal Al-Ghamdi. Pre-operative glycemic optimization achieved (HbA1c < 7.0%).",
     coordinatorQuestions: "Focus: CABG with BIMA vs multi-vessel drug-eluting stenting in diabetic female.",
     metadata: {
-      "proposedSlots": [
-            {
-                  "id": "slot_1",
-                  "time": "Wednesday 14:00 AST (16:30 IST)"
-            },
-            {
-                  "id": "slot_2",
-                  "time": "Thursday 15:00 AST (17:30 IST)"
-            }
-      ],
-      "confirmedSlotId": "slot_1",
       "pdf1Released": true,
       "patientQuestions": [
             "هل جراحة مجازة الشرايين التاجية بالماماري المزدوج تحتاج إلى نقل دم أثناء العملية؟",
@@ -341,21 +313,9 @@ export const SEED_CASES: ClinicalCase[] = [
       physio: { sessions: 4, status: 'planned' }
     },
     consultantOpinion: "Video-EEG and epilepsy-protocol MRI confirm unilateral mesial temporal sclerosis with drug-resistant focal seizures. Anterior temporal lobectomy with amygdalohippocampectomy offers superior seizure-freedom over continued medical therapy; stereotactic laser amygdalohippocampotomy is a reasonable minimally invasive alternative.",
-    proposedCallSlot: "Mon 15:30 AST / 18:00 IST",
     finalClosureNote: "Anterior temporal lobectomy performed; patient seizure-free (Engel Class I) at 12 months with two anti-seizure medications withdrawn.",
     coordinatorQuestions: "Focus: stereotactic laser amygdalohippocampotomy vs anterior temporal lobectomy in refractory temporal epilepsy.",
     metadata: {
-      "proposedSlots": [
-            {
-                  "id": "slot_1",
-                  "time": "Monday 15:30 AST (18:00 IST)"
-            },
-            {
-                  "id": "slot_2",
-                  "time": "Tuesday 12:00 AST (14:30 IST)"
-            }
-      ],
-      "confirmedSlotId": "slot_1",
       "pdf1Released": true,
       "patientQuestions": [
             "هل سأحتاج للاستمرار على أدوية الصرع بعد الجراحة؟",
@@ -781,21 +741,9 @@ export const SEED_CASES: ClinicalCase[] = [
       physio: { sessions: 0, status: 'planned' }
     },
     consultantOpinion: "Echocardiography and catheterization confirm a large perimembranous VSD with left-to-right shunt and elevated pulmonary vascular resistance. Transcatheter device closure is feasible given adequate rims from the aortic valve; otherwise surgical patch closure. Reassess PVRI reversibility and treat pulmonary hypertension before closure.",
-    proposedCallSlot: "Wed 11:00 AST / 13:30 IST",
     finalClosureNote: "Transcatheter VSD device closure completed without residual shunt; pulmonary pressures normalized on follow-up echo and weight gain resumed.",
     coordinatorQuestions: "Focus: transcatheter device closure vs surgical patch closure given proximity to the aortic valve; PVRI reversibility.",
     metadata: {
-      "proposedSlots": [
-            {
-                  "id": "slot_1",
-                  "time": "Wednesday 11:00 AST (13:30 IST)"
-            },
-            {
-                  "id": "slot_2",
-                  "time": "Thursday 17:00 AST (19:30 IST)"
-            }
-      ],
-      "confirmedSlotId": "slot_1",
       "pdf1Released": true,
       "patientQuestions": [
             "هل إغلاق الثقب بالقسطرة يغني عن فتح القلب لدى طفلي؟",

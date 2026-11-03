@@ -144,6 +144,9 @@ export const App: React.FC = () => {
 
   const activeCase = cases.find((c) => c.id === activeCaseId) || cases[0];
 
+  // Flow gate: a case counts as paid once checkout completed or pricing.paid is set
+  const isCasePaid = (c: ClinicalCase) => !!c.pricing?.paid || c.paymentDetails?.status === 'completed';
+
   // Rotate to next case
   const handleNextCase = () => {
     const currentIndex = cases.findIndex((c) => c.id === activeCaseId);
@@ -172,7 +175,13 @@ export const App: React.FC = () => {
     if (p.code === 'N') handleUpdateCase({ currentStage: 'NURSE_CHECK' });
     else if (p.code === 'D') handleUpdateCase({ currentStage: 'DOCTOR_REVIEW' });
     else if (p.code === 'C') handleUpdateCase({ currentStage: 'AWAITING_PAYMENT' });
-    else if (p.code === 'K') handleUpdateCase({ currentStage: 'WITH_CONSULTANT' });
+    else if (p.code === 'K') {
+      if (!isCasePaid(activeCase) && !isAutoDemoActive) {
+        alert(lang === 'ar' ? 'لا يمكن فتح شاشة الاستشاري الهندي قبل تأكيد السداد.' : 'The Indian consultant screen opens only after payment is confirmed.');
+        return;
+      }
+      handleUpdateCase({ currentStage: 'WITH_CONSULTANT' });
+    }
     else if (p.code === 'L' || p.code === 'H' || p.code === 'T' || p.code === 'V') handleUpdateCase({ currentStage: 'PARTNER_SERVICES' });
     else if (p.code === 'AD' || p.code === 'HA') handleUpdateCase({ currentStage: 'CLOSED' });
     else if (p.code === 'P' || p.code === 'F') {
@@ -222,6 +231,11 @@ export const App: React.FC = () => {
     const currentIndex = stageOrder.indexOf(activeCase.currentStage);
     if (currentIndex < stageOrder.length - 1) {
       const nextStage = stageOrder[currentIndex + 1];
+
+      if (stageOrder.indexOf(nextStage) >= stageOrder.indexOf('WITH_CONSULTANT') && !isCasePaid(activeCase) && !isAutoDemoActive) {
+        alert(lang === 'ar' ? 'لا يمكن الانتقال إلى ما بعد السداد قبل تأكيد الدفع.' : 'Payment must be completed before moving past Awaiting payment.');
+        return;
+      }
       
       let nextP = PERSONAS[0];
       if (nextStage === 'NURSE_CHECK') nextP = PERSONAS.find((p) => p.code === 'N')!;
@@ -260,6 +274,11 @@ export const App: React.FC = () => {
 
   // Set explicit stage from progress bar
   const handleSetStage = (stage: ClinicalStage) => {
+    const gated: ClinicalStage[] = ['WITH_CONSULTANT', 'OPINION_READY', 'PARTNER_SERVICES', 'FOLLOW_UP_21_DAYS', 'CLOSED'];
+    if (gated.includes(stage) && !isCasePaid(activeCase) && !isAutoDemoActive) {
+      alert(lang === 'ar' ? 'لا يمكن الانتقال إلى ما بعد السداد قبل تأكيد الدفع.' : 'Payment must be completed before moving past Awaiting payment.');
+      return;
+    }
     handleUpdateCase({ currentStage: stage });
 
     // Sync persona to match stage without overriding language
