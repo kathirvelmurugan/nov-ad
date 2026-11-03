@@ -22,6 +22,9 @@ pdf_image/
 # E2E / smoke-test screenshots (local evidence, not source)
 e2e-artifacts/
 
+# Local temp helper scripts (never commit; may contain credentials)
+.tmp_*
+
 # Runtime data
 pids
 *.pid

@@ -51,10 +51,14 @@ fs.mkdirSync(ART, { recursive: true });
 
 const browser = await puppeteer.launch({
   headless: true,
+  protocolTimeout: 180000,
   args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
 });
 const page = await browser.newPage();
 await page.setViewport({ width: 1440, height: 900 });
+// The app uses window.alert() for flow gates (e.g. payment required before the
+// Indian consultant). Auto-dismiss dialogs so they never block the headless run.
+page.on('dialog', (d) => d.dismiss());
 
 const consoleErrors = [];
 page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text()); });
