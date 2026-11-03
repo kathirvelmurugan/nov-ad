@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ClinicalCase } from '../../types';
 import { 
   ShieldAlert, 
@@ -22,11 +22,18 @@ export const NurseTriageView: React.FC<Props> = ({ activeCase, onAdvanceStage, l
   const [urgencyLevel, setUrgencyLevel] = useState<'routine' | 'urgent' | 'stat'>('urgent');
   const isAr = lang === 'ar';
 
-  const [triageNotes, setTriageNotes] = useState<string>(
-    isAr 
-      ? 'المريض يعاني من تضيق أبهري شديد متكلس مع أعراض سريرية متقدمة (نوبة إغماء حديثة). الملف مكتمل تشخيصياً ويتضمن تقرير الإيكو وفحوصات القسطرة ومقاطع الرنين CINE. تم إخفاء الهوية الوطنية والاسم وفق الضوابط، وتصنيف الحالة بأولوية عاجلة (24 ساعة SLA).'
-      : 'Patient presents with severe calcific aortic stenosis with advanced symptoms (recent syncope). Diagnostic file complete with Echo (AVA 0.65 cm2, gradient 48 mmHg), Coronary Angiogram, and CINE MRI loops. PHI de-identified according to MOH standards; triaged as High Priority (24h SLA).'
-  );
+  const generateDefaultNotes = () => {
+    if (isAr) {
+      return `المريض يعاني من ${activeCase.diagnosisAr || activeCase.diagnosis} مع شكوى سريرية: (${activeCase.symptomsAr || activeCase.symptoms}). الملف مكتمل تشخيصياً ويتضمن الفحوصات والتقارير الطبية ومقاطع التصوير المعتمدة. تم إخفاء الهوية الوطنية والاسم وفق معايير سدايا وحماية البيانات، وتصنيف الحالة بأولوية عاجلة (24 ساعة SLA).`;
+    }
+    return `Patient presents with ${activeCase.diagnosis} with clinical complaint: (${activeCase.symptomsEn || activeCase.symptoms}). Diagnostic file is complete with laboratory panels, validated clinical reports, and medical imaging studies. PHI de-identified according to MOH & SDAIA standards; triaged as High Priority (24h SLA).`;
+  };
+
+  const [triageNotes, setTriageNotes] = useState<string>(generateDefaultNotes);
+
+  useEffect(() => {
+    setTriageNotes(generateDefaultNotes());
+  }, [activeCase.id, isAr]);
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">

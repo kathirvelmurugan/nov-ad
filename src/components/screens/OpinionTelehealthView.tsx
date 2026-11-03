@@ -21,8 +21,10 @@ const OpinionTelehealthView: React.FC<Props> = ({ activeCase, onAdvanceStage, on
     }
   }, []);
 
-  const patientNameAr = activeCase.patientNameAr || 'سالم';
+  const patientNameAr = activeCase.patientNameAr || activeCase.patientName || 'سالم';
+  const patientNameEn = activeCase.patientNameEn || activeCase.patientName || 'Salem';
   const isRtl = typeof document !== 'undefined' ? document.dir === 'rtl' : true;
+  const patientDisplayName = isRtl ? patientNameAr : patientNameEn;
 
   const colors = {
     primary: '#007B6E',
@@ -63,7 +65,7 @@ const OpinionTelehealthView: React.FC<Props> = ({ activeCase, onAdvanceStage, on
             {isRtl ? 'جلسة الرأي الطبي المتعدد التخصصات' : 'Multi-Disciplinary Telehealth Session'}
           </h1>
           <p style={{ fontSize: '0.875rem', margin: '0.25rem 0 0 0', opacity: 0.8 }}>
-            {isRtl ? `حالة المريض: ${patientNameAr}` : `Patient Case: ${patientNameAr}`}
+            {isRtl ? `حالة المريض: ${patientDisplayName} (${activeCase.diagnosisAr || activeCase.diagnosis})` : `Patient Case: ${patientDisplayName} (${activeCase.diagnosis})`}
           </p>
         </div>
         <button
@@ -256,7 +258,7 @@ const OpinionTelehealthView: React.FC<Props> = ({ activeCase, onAdvanceStage, on
               Dr. Arjun (EN):
             </span>
             <p style={{ margin: 0, fontSize: '0.9rem', fontStyle: 'italic', opacity: 0.9 }}>
-              "Based on the 3D DICOM reconstruction, I recommend we proceed with a minimally invasive approach for the cardiac intervention."
+              "{activeCase.consultant?.opinionEnglish || `Based on the 3D DICOM reconstruction for ${activeCase.diagnosis}, I recommend proceeding with the certified intervention plan.`}"
             </p>
           </div>
           <div style={{ height: '1px', backgroundColor: isDarkMode ? '#334155' : '#e2e8f0', width: '100%' }} />
@@ -265,7 +267,7 @@ const OpinionTelehealthView: React.FC<Props> = ({ activeCase, onAdvanceStage, on
               Sara (AR):
             </span>
             <p style={{ margin: 0, fontSize: '1rem', fontWeight: 600, fontFamily: "'Cairo', sans-serif", direction: 'rtl' }}>
-              "بناءً على إعادة البناء ثلاثية الأبعاد لصور الدايكوم، أوصي بأن نمضي قدماً في نهج التدخل الجراحي المحدود للقلب."
+              "{activeCase.consultant?.opinionArabic || `بناءً على إعادة البناء ثلاثية الأبعاد لـ ${activeCase.diagnosisAr || activeCase.diagnosis}، أوصي بالمضي قدماً وفق الخطة العلاجية المعتمدة.`}"
             </p>
           </div>
         </div>

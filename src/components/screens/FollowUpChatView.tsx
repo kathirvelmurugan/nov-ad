@@ -31,6 +31,31 @@ const FollowUpChatView: React.FC<Props> = ({ activeCase, onAdvanceStage }) => {
   const tags = isRTL ? FEEDBACK_TAGS_AR : FEEDBACK_TAGS_EN;
 
   useEffect(() => {
+    const initialPatientQuestion = isRTL
+      ? `السلام عليكم، أود التأكد بخصوص توصيات تقرير الرأي الطبي الأول الصادر اليوم بخصوص (${activeCase.diagnosisAr || activeCase.diagnosis})، ومتى يجب البدء في تنفيذ خطة العلاج؟`
+      : `Hello, I would like to clarify the recommendations in today's second opinion report regarding (${activeCase.diagnosis}), and when we should initiate the recommended protocol?`;
+
+    const initialCoordinatorReply = isRTL
+      ? `أهلاً بك أخي الكريم، تم استلام استفسارك وإدراجه في ملف المتابعة السريرية المباشرة. نافذة المتابعة متاحة لك لمدة 21 يوماً مجاناً مع إشراف الفريق الاستشاري للإجابة على كافة تساؤلاتك.`
+      : `Welcome. Your clinical follow-up question has been logged and shared with the medical board. Your 21-day complimentary follow-up window is active with continuous coordinator support.`;
+
+    setMessages([
+      {
+        id: 'msg-seed-1',
+        text: initialPatientQuestion,
+        sender: 'patient',
+        timestamp: new Date(Date.now() - 3600000 * 2)
+      },
+      {
+        id: 'msg-seed-2',
+        text: initialCoordinatorReply,
+        sender: 'coordinator',
+        timestamp: new Date(Date.now() - 3600000)
+      }
+    ]);
+  }, [activeCase.id, isRTL]);
+
+  useEffect(() => {
     const interval = setInterval(() => {
       setDaysRemaining((prev) => (prev > 0 ? prev - 1 : 0));
     }, 86400000);

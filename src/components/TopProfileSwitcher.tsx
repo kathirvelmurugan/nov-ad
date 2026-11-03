@@ -232,11 +232,11 @@ export const TopProfileSwitcher: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* Main Persona Switcher Bar: 11 Clickable Roles */}
+      {/* Main Persona Switcher Bar: Dynamic Clickable Roles */}
       <div className="px-3 py-2 flex items-center gap-1.5 overflow-x-auto scrollbar-thin">
         <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap px-1 flex items-center gap-1 shrink-0">
           <ShieldCheck className="w-3.5 h-3.5 text-alo-teal" />
-          <span>{isAr ? 'تبديل الدور (11):' : 'Switch Role (11):'}</span>
+          <span>{isAr ? `تبديل الدور (${PERSONAS.length}):` : `Switch Role (${PERSONAS.length}):`}</span>
         </span>
 
         {PERSONAS.map((persona) => {
