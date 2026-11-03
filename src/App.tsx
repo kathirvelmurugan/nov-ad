@@ -18,6 +18,7 @@ import { AdminSettingsView } from './components/screens/AdminSettingsView';
 import { GuideModal } from './components/GuideModal';
 import { StageHandoffModal } from './components/StageHandoffModal';
 import { AutoDemoController } from './components/AutoDemoController';
+import { PatientPipelineBoard } from './components/PatientPipelineBoard';
 
 const STORAGE_KEY = 'alo_cases_v2.4';
 const ACTIVE_CASE_KEY = 'alo_active_case_id_v2.4';
@@ -69,6 +70,7 @@ export const App: React.FC = () => {
 
   const [isWhatsAppDrawerOpen, setIsWhatsAppDrawerOpen] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
+  const [isPipelineBoardOpen, setIsPipelineBoardOpen] = useState(false);
   const [pendingHandoff, setPendingHandoff] = useState<{
     fromStage: ClinicalStage;
     toStage: ClinicalStage;
@@ -224,6 +226,14 @@ export const App: React.FC = () => {
     handleUpdateCase({ currentStage: toStage });
     handleSelectPersona(nextPersona);
     setPendingHandoff(null);
+  };
+
+  // Select case from 10-patient pipeline overview board with automatic hero activation
+  const handleSelectCaseFromPipeline = (selectedCase: ClinicalCase, heroPersonaCode: string) => {
+    setActiveCaseId(selectedCase.id);
+    const targetPersona = PERSONAS.find((p) => p.code === heroPersonaCode) || PERSONAS[0];
+    handleSelectPersona(targetPersona);
+    setIsPipelineBoardOpen(false);
   };
 
   // Set explicit stage from progress bar
@@ -419,6 +429,7 @@ export const App: React.FC = () => {
         onResetDemo={handleResetDemo}
         onOpenGuide={() => setIsGuideOpen(true)}
         onStartAutoDemo={() => setIsAutoDemoActive(true)}
+        onOpenPipelineBoard={() => setIsPipelineBoardOpen(true)}
         lang={lang}
         onToggleLang={handleToggleLang}
         theme={theme}
@@ -477,7 +488,17 @@ export const App: React.FC = () => {
         />
       )}
 
-      {/* 8. Executive Auto-Demo Presentation Controller */}
+      {/* 8. 10-Patient Live Clinical Pipeline Overview Board */}
+      <PatientPipelineBoard
+        isOpen={isPipelineBoardOpen}
+        onClose={() => setIsPipelineBoardOpen(false)}
+        cases={cases}
+        activeCaseId={activeCase.id}
+        onSelectCase={handleSelectCaseFromPipeline}
+        isAr={lang === 'ar'}
+      />
+
+      {/* 9. Executive Auto-Demo Presentation Controller */}
       <AutoDemoController
         isActive={isAutoDemoActive}
         currentStage={activeCase.currentStage}

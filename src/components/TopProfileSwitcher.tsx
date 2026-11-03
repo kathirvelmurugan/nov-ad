@@ -94,6 +94,7 @@ interface Props {
   onResetDemo?: () => void;
   onOpenGuide?: () => void;
   onStartAutoDemo?: () => void;
+  onOpenPipelineBoard?: () => void;
   lang: 'ar' | 'en';
   onToggleLang: () => void;
   theme: 'light' | 'dark';
@@ -111,6 +112,7 @@ export const TopProfileSwitcher: React.FC<Props> = ({
   onResetDemo,
   onOpenGuide,
   onStartAutoDemo,
+  onOpenPipelineBoard,
   lang,
   onToggleLang,
   theme,
@@ -164,6 +166,18 @@ export const TopProfileSwitcher: React.FC<Props> = ({
 
         {/* Right Section: Auto-Fill + Theme Toggle + Universal Language Pill */}
         <div className="flex items-center gap-2.5">
+          {/* 10 Live Clinical Patients Pipeline Board */}
+          {onOpenPipelineBoard && (
+            <button
+              onClick={onOpenPipelineBoard}
+              className="flex items-center gap-1.5 bg-gradient-to-r from-teal-700 to-[#007B6E] hover:from-teal-800 hover:to-teal-700 text-white font-extrabold px-3 py-1 rounded-lg shadow-sm transition-all text-xs active:scale-95 border border-teal-500/30"
+              title={isAr ? 'لوحة متابعة الحالات الحية (10 حالات سريرية عبر 9 مراحل)' : 'Executive Clinical Pipeline: 10 live patients across 9 stages'}
+            >
+              <span>🏥</span>
+              <span>{isAr ? 'متابعة الحالات (١٠)' : '10 Live Patients'}</span>
+            </button>
+          )}
+
           {/* 1-Click Executive Auto-Demo Presentation Mode */}
           {onStartAutoDemo && (
             <button
