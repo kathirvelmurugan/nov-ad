@@ -34,7 +34,22 @@ export const App: React.FC = () => {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map((c: ClinicalCase) => {
+            const seed = SEED_CASES.find((s) => s.id === c.id);
+            if (!seed) return c;
+            return {
+              ...seed,
+              ...c,
+              patientNameAr: c.patientNameAr || seed.patientNameAr,
+              patientNameEn: c.patientNameEn || seed.patientNameEn,
+              specialtyAr: c.specialtyAr || seed.specialtyAr,
+              specialtyEn: c.specialtyEn || seed.specialtyEn,
+              diagnosisAr: c.diagnosisAr || seed.diagnosisAr,
+              diagnosisEn: c.diagnosisEn || seed.diagnosisEn,
+            };
+          });
+        }
       }
     } catch (e) {
       console.warn('Failed to parse cases from localStorage:', e);

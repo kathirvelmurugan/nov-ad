@@ -14,6 +14,19 @@ import {
   Sparkles
 } from 'lucide-react';
 
+const PATIENT_FIRST_NAMES: Record<string, { ar: string; en: string }> = {
+  'case-001': { ar: 'سالم', en: 'Salem' },
+  'case-002': { ar: 'فاطمة', en: 'Fatima' },
+  'case-003': { ar: 'طارق', en: 'Tariq' },
+  'case-004': { ar: 'ريم', en: 'Reem' },
+  'case-005': { ar: 'نوف', en: 'Nouf' },
+  'case-006': { ar: 'خالد', en: 'Khalid' },
+  'case-007': { ar: 'عبدالله', en: 'Abdullah' },
+  'case-008': { ar: 'مشعل', en: 'Mishal' },
+  'case-009': { ar: 'زياد', en: 'Ziyad' },
+  'case-010': { ar: 'منى', en: 'Mona' },
+};
+
 const ROLE_METADATA: Record<string, { labelAr: string; labelEn: string; scopeAr: string; scopeEn: string }> = {
   P: {
     labelAr: 'المريض (سالم)',
@@ -272,9 +285,10 @@ export const TopProfileSwitcher: React.FC<Props> = ({
             : (isAr ? persona.name.split(' ')[0] : persona.code);
 
           if (persona.code === 'P') {
+            const fallback = PATIENT_FIRST_NAMES[activeCase.id];
             const firstName = isAr 
-              ? (activeCase.patientNameAr?.split(' ')[0] || activeCase.patientName?.split(' ')[0] || 'سالم')
-              : (activeCase.patientNameEn?.split(' ')[0] || 'Patient');
+              ? (activeCase.patientNameAr?.split(' ')[0] || activeCase.patientName?.split(' ')[0] || fallback?.ar || 'المريض')
+              : (activeCase.patientNameEn?.split(' ')[0] || fallback?.en || 'Patient');
             displayLabel = isAr ? `المريض (${firstName})` : `Patient (${firstName})`;
           } else if (persona.code === 'K') {
             const consultantFirst = activeCase.consultant?.name
@@ -327,9 +341,10 @@ export const TopProfileSwitcher: React.FC<Props> = ({
           : activePersona.name;
 
         if (activePersona.code === 'P') {
+          const fallback = PATIENT_FIRST_NAMES[activeCase.id];
           const firstName = isAr 
-            ? (activeCase.patientNameAr?.split(' ')[0] || activeCase.patientName?.split(' ')[0] || 'سالم')
-            : (activeCase.patientNameEn?.split(' ')[0] || 'Patient');
+            ? (activeCase.patientNameAr?.split(' ')[0] || activeCase.patientName?.split(' ')[0] || fallback?.ar || 'المريض')
+            : (activeCase.patientNameEn?.split(' ')[0] || fallback?.en || 'Patient');
           activeLabel = isAr ? `المريض (${firstName})` : `Patient (${firstName})`;
         } else if (activePersona.code === 'K') {
           activeLabel = isAr ? `الاستشاري (${activeCase.consultant?.name || 'د. أرجون'})` : `Consultant (${activeCase.consultant?.name || 'Dr. Arjun'})`;
@@ -353,7 +368,7 @@ export const TopProfileSwitcher: React.FC<Props> = ({
               </span>
               <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">·</span>
               <span className="bg-emerald-100/80 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-200 px-2 py-0.5 rounded font-mono font-bold text-[10px] border border-emerald-300 dark:border-emerald-800 shrink-0">
-                {activeCase.caseNumber} · {isAr ? activeCase.patientNameAr : (activeCase.patientNameEn || activeCase.patientName)}
+                {activeCase.caseNumber} · {isAr ? (activeCase.patientNameAr || activeCase.patientName) : (activeCase.patientNameEn || PATIENT_FIRST_NAMES[activeCase.id]?.en || activeCase.patientName)}
               </span>
               <span className="text-slate-300 dark:text-slate-700 hidden md:inline">·</span>
               <span className="text-[11px] text-slate-600 dark:text-slate-300 truncate hidden md:inline">
