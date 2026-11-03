@@ -146,11 +146,17 @@ export const TopProfileSwitcher: React.FC<Props> = ({
               onChange={(e) => onSelectCase(e.target.value)}
               className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 rounded-lg px-2.5 py-1 font-semibold focus:ring-2 focus:ring-alo-teal outline-none text-xs shadow-sm cursor-pointer"
             >
-              {cases.map((c, i) => (
-                <option key={c.id} value={c.id}>
-                  #{i + 1} {c.caseNumber} - {c.patientName} ({c.specialty.split('(')[0].trim()})
-                </option>
-              ))}
+              {cases.map((c, i) => {
+                const patientDisplay = isAr 
+                  ? (c.patientNameAr || c.patientName)
+                  : `${c.patientNameEn || c.patientName} (${c.patientNameAr || ''})`;
+                const specialtyDisplay = isAr ? (c.specialtyAr || c.specialty) : (c.specialtyEn || c.specialty);
+                return (
+                  <option key={c.id} value={c.id}>
+                    #{i + 1} {c.caseNumber} - {patientDisplay} ({specialtyDisplay.split('(')[0].trim()})
+                  </option>
+                );
+              })}
             </select>
 
             <button
@@ -259,10 +265,36 @@ export const TopProfileSwitcher: React.FC<Props> = ({
         {PERSONAS.map((persona) => {
           const isActive = activePersona.code === persona.code;
           const meta = ROLE_METADATA[persona.code];
-          const displayLabel = meta 
+          
+          // Fully dynamic persona labels bound to activeCase
+          let displayLabel = meta 
             ? (isAr ? meta.labelAr : meta.labelEn)
             : (isAr ? persona.name.split(' ')[0] : persona.code);
-          const tooltip = `${persona.name} — ${persona.title}\n${isAr ? 'الدور:' : 'Role:'} ${persona.code}\n${isAr ? (meta?.scopeAr || '') : (meta?.scopeEn || '')}\n${isAr ? 'انقر للتحويل إلى هذا الدور' : 'Click to switch to this perspective'}`;
+
+          if (persona.code === 'P') {
+            const firstName = isAr 
+              ? (activeCase.patientNameAr?.split(' ')[0] || activeCase.patientName?.split(' ')[0] || 'سالم')
+              : (activeCase.patientNameEn?.split(' ')[0] || 'Patient');
+            displayLabel = isAr ? `المريض (${firstName})` : `Patient (${firstName})`;
+          } else if (persona.code === 'K') {
+            const consultantFirst = activeCase.consultant?.name
+              ? activeCase.consultant.name.replace('Dr. ', '').split(' ')[0]
+              : 'Arjun';
+            displayLabel = isAr ? `الاستشاري (د. ${consultantFirst})` : `Consultant (Dr. ${consultantFirst})`;
+          } else if (persona.code === 'D') {
+            const saudiDoc = activeCase.treatingDoctor?.name
+              ? activeCase.treatingDoctor.name.replace('د. ', '').split(' ')[0]
+              : 'عبدالله';
+            displayLabel = isAr ? `الطبيب (د. ${saudiDoc})` : `Doctor (Dr. ${saudiDoc})`;
+          }
+
+          const dynamicScope = persona.code === 'K'
+            ? `${isAr ? 'الاستشاري الدولي المعين للحالة:' : 'Assigned Specialist:'} ${activeCase.consultant?.name || ''} (${activeCase.consultant?.center || ''})`
+            : persona.code === 'P'
+            ? `${isAr ? 'ملف المريض:' : 'Patient File:'} ${isAr ? activeCase.patientNameAr : activeCase.patientNameEn} (${activeCase.caseNumber})`
+            : (isAr ? (meta?.scopeAr || '') : (meta?.scopeEn || ''));
+
+          const tooltip = `${persona.name} — ${persona.title}\n${isAr ? 'الدور:' : 'Role:'} ${persona.code}\n${dynamicScope}\n${isAr ? 'انقر للتحويل إلى هذا الدور' : 'Click to switch to this perspective'}`;
 
           return (
             <button
@@ -290,9 +322,21 @@ export const TopProfileSwitcher: React.FC<Props> = ({
       {/* Active Role Explainer Ribbon */}
       {(() => {
         const activeMeta = ROLE_METADATA[activePersona.code];
-        const activeLabel = activeMeta
+        let activeLabel = activeMeta
           ? (isAr ? activeMeta.labelAr : activeMeta.labelEn)
           : activePersona.name;
+
+        if (activePersona.code === 'P') {
+          const firstName = isAr 
+            ? (activeCase.patientNameAr?.split(' ')[0] || activeCase.patientName?.split(' ')[0] || 'سالم')
+            : (activeCase.patientNameEn?.split(' ')[0] || 'Patient');
+          activeLabel = isAr ? `المريض (${firstName})` : `Patient (${firstName})`;
+        } else if (activePersona.code === 'K') {
+          activeLabel = isAr ? `الاستشاري (${activeCase.consultant?.name || 'د. أرجون'})` : `Consultant (${activeCase.consultant?.name || 'Dr. Arjun'})`;
+        } else if (activePersona.code === 'D') {
+          activeLabel = isAr ? `الطبيب (${activeCase.treatingDoctor?.name || 'د. عبدالله'})` : `Doctor (${activeCase.treatingDoctor?.name || 'Dr. Abdullah'})`;
+        }
+
         const activeScope = activeMeta
           ? (isAr ? activeMeta.scopeAr : activeMeta.scopeEn)
           : activePersona.title;
@@ -308,7 +352,11 @@ export const TopProfileSwitcher: React.FC<Props> = ({
                 {activePersona.avatar} {activeLabel}
               </span>
               <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">·</span>
-              <span className="text-[11px] text-slate-600 dark:text-slate-300 truncate hidden sm:inline">
+              <span className="bg-emerald-100/80 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-200 px-2 py-0.5 rounded font-mono font-bold text-[10px] border border-emerald-300 dark:border-emerald-800 shrink-0">
+                {activeCase.caseNumber} · {isAr ? activeCase.patientNameAr : (activeCase.patientNameEn || activeCase.patientName)}
+              </span>
+              <span className="text-slate-300 dark:text-slate-700 hidden md:inline">·</span>
+              <span className="text-[11px] text-slate-600 dark:text-slate-300 truncate hidden md:inline">
                 {activeScope}
               </span>
             </div>

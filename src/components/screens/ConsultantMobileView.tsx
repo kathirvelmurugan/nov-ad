@@ -59,8 +59,8 @@ export const ConsultantMobileView: React.FC<Props> = ({
           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
             Primary Clinical Findings:
           </h3>
-          <p className="bg-slate-950 p-3 rounded-xl border border-slate-800 text-sm text-slate-200 leading-relaxed font-cairo">
-            {activeCase.diagnosis}
+          <p className="bg-slate-950 p-3 rounded-xl border border-slate-800 text-sm text-slate-200 leading-relaxed font-sans">
+            {activeCase.diagnosisEn || activeCase.diagnosis}
           </p>
         </div>
 
@@ -74,11 +74,15 @@ export const ConsultantMobileView: React.FC<Props> = ({
           <div className="space-y-2 text-xs">
             <div className="bg-slate-950/80 p-2.5 rounded-lg border border-sky-900/40">
               <strong className="text-sky-300">Q1:</strong>{' '}
-              <span className="text-slate-200 font-cairo">{activeCase.treatingDoctor.focusQuestions[0]}</span>
+              <span className="text-slate-200 font-sans">
+                {(activeCase.treatingDoctor.focusQuestionsEn && activeCase.treatingDoctor.focusQuestionsEn[0]) || activeCase.treatingDoctor.focusQuestions[0]}
+              </span>
             </div>
             <div className="bg-slate-950/80 p-2.5 rounded-lg border border-sky-900/40">
               <strong className="text-sky-300">Q2:</strong>{' '}
-              <span className="text-slate-200 font-cairo">{activeCase.treatingDoctor.focusQuestions[1]}</span>
+              <span className="text-slate-200 font-sans">
+                {(activeCase.treatingDoctor.focusQuestionsEn && activeCase.treatingDoctor.focusQuestionsEn[1]) || activeCase.treatingDoctor.focusQuestions[1]}
+              </span>
             </div>
           </div>
         </div>

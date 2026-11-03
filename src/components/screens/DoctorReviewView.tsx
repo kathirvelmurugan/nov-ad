@@ -44,12 +44,16 @@ export const DoctorReviewView: React.FC<Props> = ({
             <span className="text-xs font-bold text-slate-500">
               {isAr ? 'المستشفى الشريك:' : 'Partner Hospital:'} {activeCase.treatingDoctor.hospital}
             </span>
+            <span className="text-slate-300 dark:text-slate-700">·</span>
+            <span className="text-xs font-mono font-bold text-alo-teal">
+              {activeCase.caseNumber}
+            </span>
           </div>
           <h2 className="text-2xl font-black text-alo-navy dark:text-slate-100 mt-1">
-            {isAr ? activeCase.treatingDoctor.name : 'Dr. Abdullah Al-Shammari, MD'}
+            {isAr ? activeCase.treatingDoctor.name : (activeCase.treatingDoctor.name || 'Treating Doctor, MD')}
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            {isAr ? (activeCase.specialtyAr || activeCase.specialty) : (activeCase.specialtyEn || activeCase.specialty)} · {activeCase.treatingDoctor.city}
+            <strong className="text-slate-700 dark:text-slate-200">{isAr ? activeCase.patientNameAr : (activeCase.patientNameEn || activeCase.patientName)}</strong> · {isAr ? (activeCase.specialtyAr || activeCase.specialty) : (activeCase.specialtyEn || activeCase.specialty)} · {activeCase.treatingDoctor.city}
           </p>
         </div>
 
@@ -116,7 +120,7 @@ export const DoctorReviewView: React.FC<Props> = ({
 
           <div>
             <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-              {isAr ? 'السؤال الأول (Question 1 - قرار التدخل TAVR أم SAVR):' : 'Question 1 (Intervention: TAVR vs. SAVR):'}
+              {isAr ? 'السؤال الأول (خطة التدخل الجراحي أو العلاجي التخصصي):' : 'Question 1 (Primary Surgical or Interventional Strategy):'}
             </label>
             <textarea
               rows={2}
@@ -128,7 +132,7 @@ export const DoctorReviewView: React.FC<Props> = ({
 
           <div>
             <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-              {isAr ? 'السؤال الثاني (Question 2 - تقييم الشريان التاجي والحاجة لتداخل):' : 'Question 2 (Coronary CAD & Revascularization):'}
+              {isAr ? 'السؤال الثاني (تقييم المخاطر والمضاعفات المحتملة):' : 'Question 2 (Risk Stratification & Complication Mitigation):'}
             </label>
             <textarea
               rows={2}
@@ -140,7 +144,7 @@ export const DoctorReviewView: React.FC<Props> = ({
 
           <div>
             <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-              {isAr ? 'السؤال الثالث (Question 3 - بروتوكول التخثر والتأهيل):' : 'Question 3 (Antithrombotic Protocol & Follow-Up):'}
+              {isAr ? 'السؤال الثالث (بروتوكول العلاج الدوائي والتأهيل والمتابعة):' : 'Question 3 (Post-Procedure Protocol & Long-term Rehabilitation):'}
             </label>
             <textarea
               rows={2}

@@ -8,22 +8,27 @@ interface Props {
 }
 
 export const FollowUpChatView: React.FC<Props> = ({ activeCase, onAdvanceStage }) => {
+  const patientDisplayName = activeCase.patientNameAr || activeCase.patientName;
+  const patientFirst = patientDisplayName.split(' ')[0];
+  const doctorName = activeCase.treatingDoctor?.name || 'د. عبدالله الشمري';
+  const consultantName = activeCase.consultant?.name || 'د. أرجون';
+
   const [messages, setMessages] = useState<Array<{ sender: string; text: string; time: string; role: string }>>([
     {
-      sender: 'المريض (سالم العامري)',
-      text: 'السلام عليكم يا دكتور، هل يمكنني الاستمرار على مسيل الدم قبل موعد العملية بأسبوع؟',
+      sender: `المريض (${patientDisplayName})`,
+      text: `السلام عليكم يا دكتور، استلمت تقرير الرأي الثاني من ${consultantName}. هل نبدأ في الخطة العلاجية الموصى بها لحالة [${activeCase.caseNumber}]؟`,
       time: '10:15 ص',
       role: 'patient',
     },
     {
-      sender: 'د. عبدالله الشمري (الطبيب المعالج)',
-      text: 'أهلاً بك أخي سالم. بناءً على توصية د. أرجون، سيتم إيقاف الأسبرين قبل الجراحة بـ 5 أيام واستبداله بحقن الهيبارين تحت إشراف التمريض المنزلي.',
+      sender: `${doctorName} (الطبيب المعالج)`,
+      text: `أهلاً بك أخي ${patientFirst}. بناءً على تقرير ${consultantName} وخطة العلاج المعتمدة، بدأنا التنسيق مع التمريض المنزلي وشركاء الرعاية الصحية.`,
       time: '10:22 ص',
       role: 'doctor',
     },
     {
-      sender: 'نورة الدوسري (ممرضة ألو)',
-      text: 'تم جدولة زيارة التمريض المنزلي لحي الملقا لتنفيذ الخطة ومتابعة العلامات الحيوية يوم الأحد بإذن الله.',
+      sender: 'سارة الدوسري (ممرضة ألو)',
+      text: `تم جدولة المتابعة السريرية لحالة [${activeCase.caseNumber}] لتنفيذ الخطة ومتابعة العلامات الحيوية بإذن الله.`,
       time: '10:30 ص',
       role: 'nurse',
     },
@@ -36,7 +41,7 @@ export const FollowUpChatView: React.FC<Props> = ({ activeCase, onAdvanceStage }
     setMessages([
       ...messages,
       {
-        sender: 'المريض (سالم العامري)',
+        sender: `المريض (${patientDisplayName})`,
         text: inputVal,
         time: 'الآن',
         role: 'patient',

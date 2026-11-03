@@ -42,7 +42,7 @@ export const NurseTriageView: React.FC<Props> = ({ activeCase, onAdvanceStage, l
             </span>
           </div>
           <h2 className="text-2xl font-black text-alo-navy dark:text-slate-100 mt-2">
-            {isAr ? 'تدقيق ملف الحالة:' : 'Case Review File:'} <span className="font-mono text-alo-teal font-extrabold">{activeCase.caseNumber}</span>
+            {isAr ? 'تدقيق ملف الحالة:' : 'Case Review File:'} <span className="font-mono text-alo-teal font-extrabold">{activeCase.caseNumber}</span> · <span className="text-slate-700 dark:text-slate-200 text-xl font-bold">{isAr ? activeCase.patientNameAr : (activeCase.patientNameEn || activeCase.patientName)}</span>
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             {isAr ? 'الممرضة المسؤولة عن الفرز:' : 'Triage Nurse:'} <strong className="text-slate-700 dark:text-slate-200">{isAr ? 'سارة الدوسري (Sara N.)' : 'Nurse Sara N.'}</strong> · {isAr ? 'المستشفى المرجعي:' : 'Reference Hospital:'} {activeCase.treatingDoctor.hospital}
@@ -97,8 +97,8 @@ export const NurseTriageView: React.FC<Props> = ({ activeCase, onAdvanceStage, l
           <div className="bg-slate-50 dark:bg-slate-900/40 p-3 rounded-xl border border-slate-200/80 text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
             <span className="font-bold text-slate-800 dark:text-slate-200">{isAr ? 'تقرير الممرضة سارة:' : 'Nurse Triage Audit:'}</span>{' '}
             {isAr 
-              ? 'تم التحقق من سلامة صور إيكو القلب (AVA 0.65 cm², Gradient 48 mmHg). كافة الصور مطابقة للمواصفات السريرية المعتمدة للاستشارة الدولية.'
-              : 'Echo loop series verified (AVA 0.65 cm2, gradient 48 mmHg). CINE sequences readable and clinically sufficient for international evaluation.'}
+              ? `تم التحقق من سلامة كافة الفحوصات الطبية ومقاطع الأشعة المرفوعة لحالة [${activeCase.caseNumber}] الخاصة بتخصص (${activeCase.specialtyAr || activeCase.specialty}). الملف مطابق للمعايير السريرية المعتمدة للاستشارة الدولية.`
+              : `Diagnostic series and clinical files verified for case [${activeCase.caseNumber}] (${activeCase.specialtyEn || activeCase.specialty}). Records verified and clinically sufficient for international specialist review.`}
           </div>
         </div>
 
@@ -135,7 +135,7 @@ export const NurseTriageView: React.FC<Props> = ({ activeCase, onAdvanceStage, l
             <div className="flex justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
               <span className="text-slate-500">{isAr ? 'العمر والجنس:' : 'Age & Gender:'}</span>
               <span className="text-slate-800 dark:text-slate-200 font-bold">
-                {activeCase.age} {isAr ? 'سنة · ذكر' : 'yo · Male'}
+                {activeCase.age} {isAr ? `سنة · ${activeCase.gender === 'M' ? 'ذكر' : 'أنثى'}` : `yo · ${activeCase.gender === 'M' ? 'Male' : 'Female'}`}
               </span>
             </div>
             <div className="flex justify-between pt-1">
