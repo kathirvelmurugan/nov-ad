@@ -8,6 +8,33 @@ import { SaudiDoctorDevice } from './SaudiDoctorDevice';
 import { CoordinatorDevice } from './CoordinatorDevice';
 import { IndianConsultantDevice } from './IndianConsultantDevice';
 
+const WHATSAPP_CUES: Record<number, { ar: string; en: string }> = {
+  1: {
+    ar: '💬 واتساب (المريض ➔ التمريض): تم إرسال طلب الرأي الثاني للحالة ALO-2026-LIVE وهو بانتظار فرز التمريض.',
+    en: '💬 WhatsApp (Patient ➔ Nurse): Second opinion request submitted for ALO-2026-LIVE awaiting nurse triage.',
+  },
+  2: {
+    ar: '💬 واتساب (التمريض ➔ الطبيب المعالج): اكتمل فرز التمريض مع تدقيق العلامات الحيوية وحجب الهوية بنظام سدايا.',
+    en: '💬 WhatsApp (Nurse ➔ Doctor): Triage complete with vitals and SDAIA PII masking. Ready for physician audit.',
+  },
+  3: {
+    ar: '💬 واتساب (الطبيب ➔ المنسق والمريض): اعتمد د. عبدالله الشمري الإحالة وصاغ 3 أسئلة استشارية. رابط الدفع متاح.',
+    en: '💬 WhatsApp (Doctor ➔ Coordinator): Referral approved by Dr. Al-Shammari with 3 focus questions. Payment link ready.',
+  },
+  4: {
+    ar: '💬 واتساب (المنسق ➔ المريض): تم سداد الفاتورة الضريبية 250 ر.س عبر مدى. تم توجيه الملف للاستشاري بالهند.',
+    en: '💬 WhatsApp (Coordinator ➔ Patient): Tax invoice 250 SAR paid via Mada. Dossier dispatched to Senior Consultant in India.',
+  },
+  5: {
+    ar: '💬 واتساب (الاستشاري ➔ المنسق): اعتمد د. براديب كومار الرأي الثاني بناءً على فحص الأشعة 3D DICOM.',
+    en: '💬 WhatsApp (Consultant ➔ Coordinator): Second opinion evaluated and signed based on 3D DICOM loop inspection.',
+  },
+  6: {
+    ar: '💬 واتساب (المنسق ➔ المريض والطبيب): تم إصدار وتسليم التقرير الطبي الدولي المعتمد ثنائي اللغة بنجاح.',
+    en: '💬 WhatsApp (Coordinator ➔ Patient & MD): Certified bilingual second opinion report released and delivered.',
+  },
+};
+
 export interface FiveDeviceCockpitProps {
   activeCase: ClinicalCase;
   onAdvanceStage: () => void;
@@ -135,6 +162,31 @@ export const FiveDeviceCockpitView: React.FC<FiveDeviceCockpitProps> = ({
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {onResetActiveCase && (
+            <button
+              onClick={onResetActiveCase}
+              style={{
+                backgroundColor: '#ffffff',
+                color: '#dc2626',
+                border: '1.5px solid #fecaca',
+                borderRadius: '8px',
+                padding: '8px 14px',
+                fontSize: '12px',
+                fontWeight: 800,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                transition: 'all 0.2s',
+              }}
+              title={isAr ? 'بدء جولة حية جديدة من المرحلة 1' : 'Start a fresh live run from Stage 1'}
+            >
+              <span>🔄</span>
+              <span>{isAr ? 'بدء جولة جديدة' : 'Fresh Live Run'}</span>
+            </button>
+          )}
+
           {onSwitchToWorkstation && (
             <button
               onClick={onSwitchToWorkstation}
@@ -192,6 +244,48 @@ export const FiveDeviceCockpitView: React.FC<FiveDeviceCockpitProps> = ({
           )}
         </div>
       </header>
+
+      {/* Live Handoff WhatsApp Simulation Pill */}
+      {WHATSAPP_CUES[stageNum] && (
+        <div
+          style={{
+            maxWidth: '1800px',
+            margin: '0 auto 20px auto',
+            backgroundColor: '#ffffff',
+            border: `1.5px solid ${WHATSAPP_GREEN}`,
+            borderRadius: '12px',
+            padding: '12px 18px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '12px',
+            boxShadow: '0 4px 12px rgba(37, 211, 102, 0.12)',
+            transition: 'all 0.3s ease',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <span style={{ fontSize: '22px' }}>💬</span>
+            <span style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a', lineHeight: 1.5 }}>
+              {isAr ? WHATSAPP_CUES[stageNum].ar : WHATSAPP_CUES[stageNum].en}
+            </span>
+          </div>
+          <span
+            style={{
+              backgroundColor: '#dcfce7',
+              color: '#166534',
+              padding: '4px 10px',
+              borderRadius: '6px',
+              fontSize: '11px',
+              fontWeight: 800,
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {isAr ? 'تنبيه واتساب مباشر' : 'LIVE META WEBHOOK'}
+          </span>
+        </div>
+      )}
 
       {/* Responsive Viewport Surface with Progressive Unveiling */}
       <div

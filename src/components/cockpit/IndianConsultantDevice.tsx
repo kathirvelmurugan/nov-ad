@@ -96,6 +96,40 @@ export const IndianConsultantDevice: React.FC<CockpitDeviceProps> = ({
             </div>
           </div>
 
+          {/* D07–D09: Treating Physician's 3 Focus Questions */}
+          <div style={{ ...cardInnerStyle, backgroundColor: '#f8fafc', borderColor: '#cbd5e1' }}>
+            <span style={labelStyle}>
+              D07–D09 · {isAr ? 'أسئلة الطبيب السعودي المعالج (د. الشمري)' : 'Treating Physician Focus Questions'}
+            </span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '6px' }}>
+              {(activeCase.focusQuestions && activeCase.focusQuestions.filter(Boolean).length > 0
+                ? activeCase.focusQuestions
+                : activeCase.treatingDoctor?.focusQuestions && activeCase.treatingDoctor.focusQuestions.filter(Boolean).length > 0
+                ? activeCase.treatingDoctor.focusQuestions
+                : [
+                    isAr ? '1. هل استبدال صمام الميترال مستعجل أم تحفظي؟' : '1. Is surgical intervention urgently indicated?',
+                    isAr ? '2. ما هو بروتوكول مضادات التخثر الأنسب؟' : '2. What anticoagulation regimen is recommended?',
+                    isAr ? '3. هل يوصى بإجراء تصوير إضافي عبر المريء؟' : '3. Is TEE or repeat 3D echo warranted before surgery?',
+                  ]
+              ).map((q, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    fontSize: '11px',
+                    color: '#1e293b',
+                    backgroundColor: '#ffffff',
+                    padding: '6px 10px',
+                    borderRadius: '6px',
+                    border: '1px solid #e2e8f0',
+                  }}
+                >
+                  <span style={{ fontWeight: 800, color: TEAL_PRIMARY }}>Q{idx + 1}: </span>
+                  <span>{q}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
           {/* K05: Base44 Tap-to-Choose Structured Verdicts */}
           <div style={cardInnerStyle}>
             <span style={labelStyle}>K05 · {isAr ? 'القرارات السريرية المنظمة (اختر المناسب)' : 'Structured Clinical Verdicts'}</span>
