@@ -6,7 +6,7 @@ services:
     environment:
       POSTGRES_DB: alodoctor
       POSTGRES_USER: alo_admin
-      POSTGRES_PASSWORD: AloDoctor2026Postgres!
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env (gitignored)}
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
       - /data/alodoctor/postgres_data:/var/lib/postgresql/data
@@ -27,7 +27,7 @@ services:
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: alo_storage_admin
-      MINIO_ROOT_PASSWORD: AloDoctor2026MinioStorage!
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD in .env (gitignored)}
     volumes:
       - /data/alodoctor/minio_data:/data
     ports:

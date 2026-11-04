@@ -3,6 +3,7 @@ import urllib.parse
 import re
 import http.cookiejar
 import sys
+import os
 
 cj = http.cookiejar.CookieJar()
 opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
@@ -24,12 +25,17 @@ csrf = token_match.group(1)
 print(f"CSRF token obtained: {csrf[:10]}...")
 
 # 2. POST /register
+admin_pw = os.environ.get('COOLIFY_ADMIN_PASSWORD')
+if not admin_pw:
+    print("Set COOLIFY_ADMIN_PASSWORD environment variable first (never hardcode secrets).")
+    sys.exit(1)
+
 payload = {
     '_token': csrf,
     'name': 'ALO Administrator',
     'email': 'admin@howtostart.in',
-    'password': '@Opinion007',
-    'password_confirmation': '@Opinion007'
+    'password': admin_pw,
+    'password_confirmation': admin_pw
 }
 
 data = urllib.parse.urlencode(payload).encode('utf-8')
