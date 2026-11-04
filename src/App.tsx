@@ -16,6 +16,8 @@ import { PartnerServicesView } from './components/screens/PartnerServicesView';
 import { FollowUpChatView } from './components/screens/FollowUpChatView';
 import { AdminSettingsView } from './components/screens/AdminSettingsView';
 import { CoordinatorPortalView } from './components/screens/CoordinatorPortalView';
+import { PatientStatusTimelineView } from './components/screens/PatientStatusTimelineView';
+import { NewCaseModal } from './components/NewCaseModal';
 import { GuideModal } from './components/GuideModal';
 import { StageHandoffModal } from './components/StageHandoffModal';
 import { AutoDemoController } from './components/AutoDemoController';
@@ -92,6 +94,7 @@ export const App: React.FC = () => {
   const [isWhatsAppDrawerOpen, setIsWhatsAppDrawerOpen] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [isPipelineBoardOpen, setIsPipelineBoardOpen] = useState(false);
+  const [isNewCaseModalOpen, setIsNewCaseModalOpen] = useState(false);
   const [pendingHandoff, setPendingHandoff] = useState<{
     fromStage: ClinicalStage;
     toStage: ClinicalStage;
@@ -140,6 +143,38 @@ export const App: React.FC = () => {
       setCases(SEED_CASES);
       setActiveCaseId(SEED_CASES[0].id);
     }
+  };
+
+  // Isolated Reset for Active Case Only (protects demo seed cases)
+  const handleResetActiveCase = () => {
+    const isAr = lang === 'ar';
+    const confirmMsg = isAr
+      ? `هل أنت متأكد من رغبتك في إعادة ضبط مسار هذه الحالة (${activeCase.id}) فقط إلى البداية؟ لن تتأثر الحالات الأخرى.`
+      : `Are you sure you want to reset this case (${activeCase.id}) only? Other cases and demo seeds will remain untouched.`;
+    if (window.confirm(confirmMsg)) {
+      handleUpdateCase({
+        currentStage: 'INTAKE_RECEIVED',
+        consultantOpinion: '',
+        proposedCallSlot: '',
+        finalClosureNote: '',
+        pricing: { ...activeCase.pricing, paid: false },
+        metadata: {
+          ...(activeCase.metadata || {}),
+          pdf1Released: false,
+          pdf2Released: false,
+          paymentVerified: false,
+          paymentLinkIssued: false,
+        },
+      });
+      setActivePersona(PERSONAS[0]); // Return to Patient at Stage 1
+    }
+  };
+
+  // Add new dynamic test patient (e.g. TEST-KSA-01)
+  const handleAddNewCase = (newCase: ClinicalCase) => {
+    setCases((prev) => [newCase, ...prev]);
+    setActiveCaseId(newCase.id);
+    setActivePersona(PERSONAS[0]); // Patient
   };
 
   const activeCase = cases.find((c) => c.id === activeCaseId) || cases[0];
@@ -376,6 +411,30 @@ export const App: React.FC = () => {
       );
     }
 
+    // If ALO Nurse (N), render Nurse Triage
+    if (activePersona.code === 'N') {
+      return (
+        <NurseTriageView
+          activeCase={activeCase}
+          onAdvanceStage={handleAdvanceStage}
+          onUpdateCase={handleUpdateCase}
+          lang={lang}
+        />
+      );
+    }
+
+    // If Saudi Treating Doctor (D), render Doctor Review
+    if (activePersona.code === 'D') {
+      return (
+        <DoctorReviewView
+          activeCase={activeCase}
+          onAdvanceStage={handleAdvanceStage}
+          onUpdateCase={handleUpdateCase}
+          lang={lang}
+        />
+      );
+    }
+
     // If Partner Roles (Lab, Home Nursing, Travel, Insurance), render Partner Services
     if (['L', 'H', 'T', 'V'].includes(activePersona.code)) {
       return (
@@ -387,9 +446,9 @@ export const App: React.FC = () => {
       );
     }
 
-    // Otherwise render based on the active case's stage
-    switch (activeCase.currentStage) {
-      case 'INTAKE_RECEIVED':
+    // If Patient Persona (P)
+    if (activePersona.code === 'P') {
+      if (activeCase.currentStage === 'INTAKE_RECEIVED') {
         return (
           <PatientIntakeView
             activeCase={activeCase}
@@ -398,60 +457,27 @@ export const App: React.FC = () => {
             lang={lang}
           />
         );
-      case 'NURSE_CHECK':
-        return (
-          <NurseTriageView
-            activeCase={activeCase}
-            onAdvanceStage={handleAdvanceStage}
-            onUpdateCase={handleUpdateCase}
-            lang={lang}
-          />
-        );
-      case 'DOCTOR_REVIEW':
-        return (
-          <DoctorReviewView
-            activeCase={activeCase}
-            onAdvanceStage={handleAdvanceStage}
-            onUpdateCase={handleUpdateCase}
-            lang={lang}
-          />
-        );
-      case 'AWAITING_PAYMENT':
+      }
+      if (activeCase.currentStage === 'AWAITING_PAYMENT') {
         return (
           <PaymentCheckoutView
             activeCase={activeCase}
-            onAdvanceStage={handleAdvanceStage}
+            onAdvanceStage={() => {
+              // Patient completed payment -> route to ALO Coordinator (C) to verify & push to Indian consultant
+              handleUpdateCase({
+                pricing: { ...activeCase.pricing, paid: true },
+                paymentDetails: { ...activeCase.paymentDetails, status: 'completed' },
+                metadata: { ...(activeCase.metadata || {}), paymentVerified: true },
+              });
+              const coord = PERSONAS.find((p) => p.code === 'C') || PERSONAS[0];
+              setActivePersona(coord);
+            }}
             onUpdateCase={handleUpdateCase}
             lang={lang}
           />
         );
-      case 'WITH_CONSULTANT':
-        return (
-          <ConsultantMobileView
-            activeCase={activeCase}
-            onAdvanceStage={handleAdvanceStage}
-            onUpdateCase={handleUpdateCase}
-          />
-        );
-      case 'OPINION_READY':
-        return (
-          <OpinionTelehealthView
-            activeCase={activeCase}
-            onAdvanceStage={handleAdvanceStage}
-            onUpdateCase={handleUpdateCase}
-          />
-        );
-      case 'PARTNER_SERVICES':
-        return (
-          <PartnerServicesView
-            activeCase={activeCase}
-            onAdvanceStage={handleAdvanceStage}
-            onUpdateCase={handleUpdateCase}
-          />
-        );
-      case 'FOLLOW_UP_21_DAYS':
-      case 'CLOSED':
-      default:
+      }
+      if (activeCase.currentStage === 'FOLLOW_UP_21_DAYS') {
         return (
           <FollowUpChatView
             activeCase={activeCase}
@@ -459,7 +485,38 @@ export const App: React.FC = () => {
             onUpdateCase={handleUpdateCase}
           />
         );
+      }
+      // For all intermediate clinical stages (NURSE_CHECK, DOCTOR_REVIEW, WITH_CONSULTANT, OPINION_READY, PARTNER_SERVICES, CLOSED):
+      // Render the dedicated, real-time Live Patient Journey Tracker!
+      return (
+        <PatientStatusTimelineView
+          activeCase={activeCase}
+          onAdvanceStage={handleAdvanceStage}
+          onUpdateCase={handleUpdateCase}
+          onResetActiveCase={handleResetActiveCase}
+          onSelectRole={(code) => {
+            const p = PERSONAS.find((x) => x.code === code);
+            if (p) handleSelectPersona(p);
+          }}
+          lang={lang}
+        />
+      );
     }
+
+    // Fallback: Default to Patient Status Timeline
+    return (
+      <PatientStatusTimelineView
+        activeCase={activeCase}
+        onAdvanceStage={handleAdvanceStage}
+        onUpdateCase={handleUpdateCase}
+        onResetActiveCase={handleResetActiveCase}
+        onSelectRole={(code) => {
+          const p = PERSONAS.find((x) => x.code === code);
+          if (p) handleSelectPersona(p);
+        }}
+        lang={lang}
+      />
+    );
   };
 
   const isAr = lang === 'ar';
@@ -482,6 +539,8 @@ export const App: React.FC = () => {
         cases={cases}
         onAutoFill={handleAutoFill}
         onResetDemo={handleResetDemo}
+        onOpenNewCaseModal={() => setIsNewCaseModalOpen(true)}
+        onResetCurrentCase={handleResetActiveCase}
         onOpenGuide={() => setIsGuideOpen(true)}
         onStartAutoDemo={() => setIsAutoDemoActive(true)}
         onOpenPipelineBoard={() => setIsPipelineBoardOpen(true)}
@@ -564,6 +623,15 @@ export const App: React.FC = () => {
         onSelectStage={handleSetStage}
         onStop={() => setIsAutoDemoActive(false)}
         activeCaseNumber={activeCase.caseNumber}
+      />
+
+      {/* 10. New Live Clinical Case Modal (TEST-KSA-01) */}
+      <NewCaseModal
+        isOpen={isNewCaseModalOpen}
+        onClose={() => setIsNewCaseModalOpen(false)}
+        onAddCase={handleAddNewCase}
+        existingCount={cases.filter((c) => c.id.startsWith('TEST-')).length}
+        lang={lang}
       />
     </div>
   );

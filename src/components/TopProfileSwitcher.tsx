@@ -11,7 +11,8 @@ import {
   Sun, 
   Moon,
   HelpCircle,
-  Sparkles
+  Sparkles,
+  UserPlus
 } from 'lucide-react';
 
 const PATIENT_FIRST_NAMES: Record<string, { ar: string; en: string }> = {
@@ -72,6 +73,8 @@ interface Props {
   onOpenGuide?: () => void;
   onStartAutoDemo?: () => void;
   onOpenPipelineBoard?: () => void;
+  onOpenNewCaseModal?: () => void;
+  onResetCurrentCase?: () => void;
   lang: 'ar' | 'en';
   onToggleLang: () => void;
   theme: 'light' | 'dark';
@@ -90,12 +93,15 @@ export const TopProfileSwitcher: React.FC<Props> = ({
   onOpenGuide,
   onStartAutoDemo,
   onOpenPipelineBoard,
+  onOpenNewCaseModal,
+  onResetCurrentCase,
   lang,
   onToggleLang,
   theme,
   onToggleTheme,
 }) => {
   const isAr = lang === 'ar';
+  const isCustom = activeCase.id.startsWith('TEST-') || activeCase.id.startsWith('REAL-');
 
   return (
     <header className="sticky top-0 z-50 bg-white/95 dark:bg-alo-darkCard/95 backdrop-blur-md border-b border-slate-200/80 dark:border-alo-darkBorder shadow-sm transition-colors">
@@ -144,6 +150,30 @@ export const TopProfileSwitcher: React.FC<Props> = ({
               <RefreshCw className="w-3 h-3 text-alo-teal" />
               <span>{isAr ? 'تدوير (Next)' : 'Next Case'}</span>
             </button>
+
+            {/* + Add New Test Case Button */}
+            {onOpenNewCaseModal && (
+              <button
+                onClick={onOpenNewCaseModal}
+                className="flex items-center gap-1 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 px-2.5 py-1 rounded-lg border border-emerald-300 dark:border-emerald-700 font-bold transition-all shadow-sm active:scale-95"
+                title={isAr ? 'إضافة مريض جديد للاختبار بمسار نظيف' : 'Add new patient test case with clean slate'}
+              >
+                <UserPlus className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>{isAr ? '+ مريض جديد' : '+ New Patient'}</span>
+              </button>
+            )}
+
+            {/* Isolated Reset for Active Case Only */}
+            {onResetCurrentCase && isCustom && (
+              <button
+                onClick={onResetCurrentCase}
+                className="flex items-center gap-1 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-300 px-2.5 py-1 rounded-lg border border-rose-300 dark:border-rose-700 font-bold transition-all shadow-sm active:scale-95"
+                title={isAr ? 'إعادة ضبط مسار هذا المريض التجريبي فقط' : 'Reset this test case only (keeps demo seeds)'}
+              >
+                <RotateCcw className="w-3 h-3 text-rose-600 dark:text-rose-400" />
+                <span>{isAr ? 'تصفير الحالة' : 'Reset Case'}</span>
+              </button>
+            )}
           </div>
         </div>
 

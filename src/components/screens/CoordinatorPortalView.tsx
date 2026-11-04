@@ -19,14 +19,16 @@ const CoordinatorPortalView: React.FC<Props> = ({
   onUpdateCase,
   lang,
 }) => {
-  const getInitialTab = (): 'C07' | 'C08' | 'C09' | 'C10' => {
+  const getInitialTab = (): 'C01' | 'C07' | 'C08' | 'C09' | 'C10' => {
+    if (activeCase.currentStage === 'AWAITING_PAYMENT') return 'C01';
     if (activeCase.currentStage === 'PARTNER_SERVICES') return 'C08';
     if (activeCase.currentStage === 'CLOSED') return 'C10';
     if (activeCase.currentStage === 'FOLLOW_UP_21_DAYS') return 'C09';
-    return 'C07';
+    if (activeCase.consultationType === 'video' && isPaid) return 'C07';
+    return 'C01';
   };
 
-  const [activeTab, setActiveTab] = useState<'C07' | 'C08' | 'C09' | 'C10'>(getInitialTab);
+  const [activeTab, setActiveTab] = useState<'C01' | 'C07' | 'C08' | 'C09' | 'C10'>(getInitialTab);
 
   useEffect(() => {
     setActiveTab(getInitialTab());
@@ -203,7 +205,7 @@ const CoordinatorPortalView: React.FC<Props> = ({
     flexWrap: 'wrap',
   };
 
-  const getTabStyle = (tab: 'C07' | 'C08' | 'C09' | 'C10'): React.CSSProperties => ({
+  const getTabStyle = (tab: 'C01' | 'C07' | 'C08' | 'C09' | 'C10'): React.CSSProperties => ({
     padding: '10px 20px',
     borderRadius: '8px',
     border: 'none',
@@ -316,9 +318,25 @@ const CoordinatorPortalView: React.FC<Props> = ({
       </div>
 
       <nav style={tabNavStyle} role="tablist" aria-label={isAr ? 'مراحل التنسيق' : 'Coordination Stages'}>
-        <button role="tab" aria-selected={activeTab === 'C07'} style={getTabStyle('C07')} onClick={() => setActiveTab('C07')}>
-          C07 - {isAr ? 'المكالمة' : 'Call'}
+        <button role="tab" aria-selected={activeTab === 'C01'} style={getTabStyle('C01')} onClick={() => setActiveTab('C01')}>
+          C01 - {isAr ? 'الإحالة والفاتورة' : 'Referral & Invoice'}
         </button>
+        {activeCase.consultationType === 'video' && (
+          <button 
+            role="tab" 
+            aria-selected={activeTab === 'C07'} 
+            style={{ ...getTabStyle('C07'), opacity: isPaid ? 1 : 0.6 }} 
+            onClick={() => {
+              if (!isPaid) {
+                alert(isAr ? 'تأكيد موعد المكالمة متاح فقط بعد سداد الفاتورة من قبل المريض.' : 'Call slot confirmation unlocks only after payment is confirmed.');
+                return;
+              }
+              setActiveTab('C07');
+            }}
+          >
+            C07 - {isAr ? (isPaid ? 'موعد المكالمة' : 'موعد المكالمة 🔒') : (isPaid ? 'Call Slot' : 'Call Slot 🔒')}
+          </button>
+        )}
         <button role="tab" aria-selected={activeTab === 'C08'} style={getTabStyle('C08')} onClick={() => setActiveTab('C08')}>
           C08 - PDF 1
         </button>
@@ -332,7 +350,74 @@ const CoordinatorPortalView: React.FC<Props> = ({
 
       <main style={cardStyle} role="tabpanel">
         
-        {/* SCREEN C07: Call Slot Confirmation */}
+        {/* SCREEN C01: Referral Review & Invoicing Gateway */}
+        {activeTab === 'C01' && (
+          <section aria-labelledby="c01-heading">
+            <h2 id="c01-heading" style={{ fontSize: '20px', color: TEAL_PRIMARY, marginBottom: '8px', fontFamily }}>
+              {isAr ? 'مراجعة ملف الإحالة وتنسيق الفاتورة · C01–C06' : 'Referral Review & Payment Invoicing · C01–C06'}
+            </h2>
+            <p style={{ fontSize: '14px', color: '#4A5568', marginBottom: '20px', fontFamily }}>
+              {isAr 
+                ? 'استلم منسق رعاية ألو ملف الإحالة من الطبيب السعودي المعالج (D10). يتم التحقق من بيانات الفاتورة ونمط الاستشارة قبل نقل الحالة للاستشاري الهندي.'
+                : 'ALO Care Coordinator received referral pack from Saudi Treating Doctor (D10). Verify invoice and modality before routing to Indian consultant.'}
+            </p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+              <div style={{ padding: '16px', borderRadius: '12px', border: '1px solid #E2E8F0', backgroundColor: '#F8FAFC' }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748B', display: 'block', marginBottom: '4px' }}>
+                  {isAr ? 'بيانات المريض والمستشفى المحيل:' : 'Patient & Referring Hospital:'}
+                </span>
+                <span style={{ fontSize: '14px', fontWeight: 700, color: '#1E293B' }}>
+                  {isAr ? activeCase.patientNameAr : activeCase.patientName} (10********)
+                </span>
+                <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#64748B' }}>
+                  {activeCase.treatingDoctor.hospital} · {activeCase.treatingDoctor.name}
+                </p>
+              </div>
+
+              <div style={{ padding: '16px', borderRadius: '12px', border: '1px solid #E2E8F0', backgroundColor: '#F8FAFC' }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748B', display: 'block', marginBottom: '4px' }}>
+                  {isAr ? 'باقة الاستشارة المختارة:' : 'Selected Consultation Tier:'}
+                </span>
+                <span style={{ fontSize: '14px', fontWeight: 700, color: TEAL_PRIMARY }}>
+                  {activeCase.consultationType === 'written' 
+                    ? (isAr ? 'الفئة 1: تقرير رأي طبي مكتوب (75 ر.س)' : 'Tier 1: Written Second Opinion Report (75 SAR)')
+                    : (isAr ? 'الفئة 2: مكالمة مرئية 30 دقيقة + تقرير مكتوب (150 ر.س)' : 'Tier 2: Video Call + Written Report (150 SAR)')}
+                </span>
+                <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#64748B' }}>
+                  {activeCase.consultationType === 'written' 
+                    ? (isAr ? 'لا يتطلب هذا النمط حجز مواعيد اتصال' : 'No call slot scheduling required')
+                    : (isAr ? 'يتطلب تأكيد موعد المكالمة في تبويب C07 بعد السداد' : 'Call slot confirmed in tab C07 after payment')}
+                </p>
+              </div>
+            </div>
+
+            {/* Payment & Next Action Card */}
+            <div style={{ padding: '20px', borderRadius: '12px', backgroundColor: isPaid ? `${TEAL_BG}` : '#FFFBEB', border: `1px solid ${isPaid ? TEAL_ACCENT : '#FDE68A'}`, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={badgeStyle(isPaid ? 'success' : 'warning')}>
+                    {isPaid 
+                      ? (isAr ? 'تم تأكيد السداد وإصدار فاتورة ZATCA ✓' : 'Payment Confirmed & ZATCA Invoiced ✓')
+                      : (isAr ? 'بانتظار سداد المريض للفاتورة' : 'Awaiting Patient Payment')}
+                  </span>
+                  <span style={{ fontSize: '12px', color: '#64748B', fontWeight: 600 }}>
+                    {isPaid ? (isAr ? 'الرسوم مسددة بالكامل' : 'Fee Settled in Full') : (isAr ? 'رابط الدفع نشط عبر Tap Payments' : 'Tap Payments checkout active')}
+                  </span>
+                </div>
+
+                {isPaid && (
+                  <button
+                    onClick={handleConfirmPaymentAndPush}
+                    style={{ ...primaryButtonStyle, padding: '10px 20px', width: 'auto' }}
+                  >
+                    {isAr ? 'C05–06 · نقل الملف للاستشاري الهندي (د. أرجون) ←' : 'C05–06 · Push Verified Case to Indian Consultant →'}
+                  </button>
+                )}
+              </div>
+            </div>
+          </section>
+        )}
         {activeTab === 'C07' && (
           <section aria-labelledby="c07-heading">
             <h2 id="c07-heading" style={{ fontSize: '20px', color: TEAL_PRIMARY, marginBottom: '8px', fontFamily }}>
