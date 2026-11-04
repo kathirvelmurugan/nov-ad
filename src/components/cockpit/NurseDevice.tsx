@@ -124,25 +124,39 @@ export const NurseDevice: React.FC<CockpitDeviceProps> = ({
             </div>
           </div>
 
-          {/* Completion Action */}
+          {/* Completion Action (Strict Button Lock) */}
           <button
+            type="button"
+            disabled={activeCase.triageComplete}
             onClick={() => {
               onUpdateCase({ triageComplete: true, currentStage: 'DOCTOR_REVIEW', stage: 3 });
               onAdvanceStage();
             }}
             style={{
-              backgroundColor: TEAL_PRIMARY,
-              color: '#ffffff',
-              border: 'none',
+              backgroundColor: activeCase.triageComplete ? '#e2e8f0' : TEAL_PRIMARY,
+              color: activeCase.triageComplete ? '#475569' : '#ffffff',
+              border: activeCase.triageComplete ? '1px solid #cbd5e1' : 'none',
               borderRadius: '8px',
               padding: '12px',
               fontWeight: 800,
-              fontSize: '12px',
-              cursor: 'pointer',
-              boxShadow: '0 4px 10px rgba(0, 123, 110, 0.25)',
+              fontSize: '11px',
+              cursor: activeCase.triageComplete ? 'not-allowed' : 'pointer',
+              opacity: activeCase.triageComplete ? 0.8 : 1,
+              boxShadow: activeCase.triageComplete ? 'none' : '0 4px 12px rgba(0, 123, 110, 0.3)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
             }}
           >
-            N04 · {isAr ? 'إكمال الفرز وتوجيه الملف للطبيب السعودي (D01)' : 'Complete Triage & Route to Saudi Doctor (D01)'}
+            {activeCase.triageComplete ? (
+              <>
+                <span>✓</span>
+                <span>{isAr ? 'N04 · تم إكمال الفرز والتحويل للطبيب' : 'N04 · Triage Completed & Routed'}</span>
+              </>
+            ) : (
+              <span>{isAr ? 'N04 · إكمال الفرز وتوجيه الملف للطبيب السعودي (D01)' : 'N04 · Complete Triage & Route to Saudi Doctor (D01)'}</span>
+            )}
           </button>
         </>
       )}

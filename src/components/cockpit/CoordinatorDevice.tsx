@@ -69,89 +69,119 @@ export const CoordinatorDevice: React.FC<CockpitDeviceProps> = ({
             </div>
           </div>
 
-          {/* C02–C04: Set Pricing & Issue Invoice */}
+          {/* C02–C04: Set Pricing & Issue Invoice (Coordinator Gate 1) */}
           <div style={cardInnerStyle}>
             <span style={labelStyle}>C02–C04 · {isAr ? 'التسعير وإصدار فاتورة ZATCA' : 'Pricing & ZATCA Invoice'}</span>
             <button
+              type="button"
+              disabled={isInvoiceIssued || !isReferralApproved}
               onClick={() =>
                 onUpdateCase({
                   invoiceIssued: true,
                   pricing: {
                     ...(activeCase.pricing || {
-                      baseSar: 250,
-                      totalSar: 250,
+                      baseSar: (activeCase.tier || 1) === 1 ? 250 : 450,
+                      totalSar: (activeCase.tier || 1) === 1 ? 250 : 450,
                       vatPercent: 15,
                       vatSar: 0,
-                      tierName: 'Standard',
+                      tierName: (activeCase.tier || 1) === 1 ? 'Written' : 'Video',
                       paid: false,
-                      tier: 1,
+                      tier: activeCase.tier || 1,
                     }),
                     invoiceNumber: 'INV-2026-001',
+                    paid: false,
                   },
                 })
               }
               style={{
                 width: '100%',
-                backgroundColor: isInvoiceIssued ? '#64748b' : TEAL_PRIMARY,
-                color: '#ffffff',
-                border: 'none',
+                backgroundColor: isInvoiceIssued ? '#e2e8f0' : TEAL_PRIMARY,
+                color: isInvoiceIssued ? '#475569' : '#ffffff',
+                border: isInvoiceIssued ? '1px solid #cbd5e1' : 'none',
                 borderRadius: '8px',
                 padding: '10px',
                 fontWeight: 800,
                 fontSize: '11px',
-                cursor: isInvoiceIssued ? 'default' : 'pointer',
+                cursor: isInvoiceIssued ? 'not-allowed' : (!isReferralApproved ? 'not-allowed' : 'pointer'),
                 marginTop: '6px',
+                opacity: (!isReferralApproved || isInvoiceIssued) ? 0.8 : 1,
+                boxShadow: (!isReferralApproved || isInvoiceIssued) ? 'none' : '0 4px 12px rgba(0, 123, 110, 0.3)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
               }}
-              disabled={isInvoiceIssued}
             >
-              {isInvoiceIssued
-                ? (isAr ? 'تم إصدار الفاتورة الضريبية (INV-2026-001)' : 'ZATCA Invoice Issued (INV-2026-001)')
-                : (isAr ? 'إصدار الفاتورة وتفعيل رابط السداد C02-C04' : 'Issue Invoice & Payment Link C02-C04')}
+              {isInvoiceIssued ? (
+                <>
+                  <span>✓</span>
+                  <span>{isAr ? 'C04 · تم إصدار فاتورة ZATCA وتفعيل الدفع للمريض' : 'C04 · Invoice Issued & Checkout Unlocked'}</span>
+                </>
+              ) : (
+                <span>{isAr ? 'C04 · اعتماد التسعير وإصدار الفاتورة الضريبية ZATCA' : 'C04 · Issue ZATCA Invoice & Send Payment Link'}</span>
+              )}
             </button>
           </div>
 
-          {/* C05–C06: Payment Verify & Push to India */}
+          {/* C05–C06: Payment Verify & Push to India (Coordinator Gate 2) */}
           <div style={cardInnerStyle}>
             <span style={labelStyle}>C05–C06 · {isAr ? 'تحقق السداد وتوجيه الملف للهند' : 'Verify Payment & Dispatch'}</span>
             <button
+              type="button"
+              disabled={isPaymentVerified || !activeCase.pricing?.paid}
               onClick={() =>
                 onUpdateCase({
                   paymentVerified: true,
                   currentStage: 'WITH_CONSULTANT',
                   stage: 5,
-                  pricing: {
-                    ...(activeCase.pricing || {
-                      baseSar: 250,
-                      totalSar: 250,
-                      vatPercent: 15,
-                      vatSar: 0,
-                      tierName: 'Standard',
-                      invoiceNumber: 'INV-2026-001',
-                      tier: 1,
-                    }),
-                    paid: true,
-                  },
                 })
               }
               style={{
                 width: '100%',
-                backgroundColor: isPaymentVerified ? WHATSAPP_GREEN : TEAL_PRIMARY,
-                color: '#ffffff',
-                border: 'none',
+                backgroundColor: isPaymentVerified ? '#e2e8f0' : (activeCase.pricing?.paid ? WHATSAPP_GREEN : '#f1f5f9'),
+                color: isPaymentVerified ? '#475569' : (activeCase.pricing?.paid ? '#ffffff' : '#94a3b8'),
+                border: isPaymentVerified ? '1px solid #cbd5e1' : 'none',
                 borderRadius: '8px',
                 padding: '10px',
                 fontWeight: 800,
                 fontSize: '11px',
-                cursor: (!isInvoiceIssued || isPaymentVerified) ? 'default' : 'pointer',
+                cursor: (isPaymentVerified || !activeCase.pricing?.paid) ? 'not-allowed' : 'pointer',
                 marginTop: '6px',
+                opacity: (isPaymentVerified || !activeCase.pricing?.paid) ? 0.8 : 1,
+                boxShadow: (isPaymentVerified || !activeCase.pricing?.paid) ? 'none' : '0 4px 12px rgba(37, 211, 102, 0.4)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
               }}
-              disabled={!isInvoiceIssued || isPaymentVerified}
             >
-              {isPaymentVerified
-                ? (isAr ? 'تم تأكيد السداد وإحالة الملف للهند' : 'Payment Confirmed & Dispatched')
-                : (isAr ? 'تأكيد السداد وتوجيه الملف للاستشاري C05' : 'Verify Payment & Push to Consultant C05')}
+              {isPaymentVerified ? (
+                <>
+                  <span>✓</span>
+                  <span>{isAr ? 'C06 · تم تأكيد السداد وإحالة الملف للهند بنجاح' : 'C06 · Payment Verified & Dispatched to India'}</span>
+                </>
+              ) : activeCase.pricing?.paid ? (
+                <span>{isAr ? `C06 · تم استلام سداد مدى (${activeCase.pricing?.totalSar || 250} ر.س) · توجيه الملف للهند` : `C06 · Verify Mada Payment (${activeCase.pricing?.totalSar || 250} SAR) & Dispatch`}</span>
+              ) : (
+                <span>{isAr ? 'C05 · بانتظار سداد المريض للفاتورة' : 'C05 · Awaiting Patient Payment'}</span>
+              )}
             </button>
           </div>
+
+          {/* Received Consultant Opinion Feedback Card */}
+          {activeCase.secondOpinionSubmitted && (
+            <div style={{ ...cardInnerStyle, backgroundColor: '#f0fdf4', borderColor: WHATSAPP_GREEN, borderWidth: '2px' }}>
+              <span style={{ ...labelStyle, color: '#166534' }}>
+                K06 · {isAr ? 'تم استلام الرأي الثاني من الهند (مستشفى أبولو)' : 'Second Opinion Received from India'}
+              </span>
+              <div style={{ fontSize: '11px', color: '#0f172a', fontWeight: 700, marginTop: '4px', lineHeight: 1.4 }}>
+                {activeCase.consultantOpinion || (isAr ? 'تأكيد التشخيص: ارتجاع الصمام التاجي. استمرار العلاج التحفظي وتكرار الإيكو بعد 6 أشهر.' : 'Diagnosis Confirmed: Moderate mitral regurgitation. Continue medical therapy.')}
+              </div>
+              <div style={{ fontSize: '10px', color: '#166534', marginTop: '4px', fontWeight: 700 }}>
+                ✓ {isAr ? 'جاهز للختم والمصادقة المعتمدة والإصدار بالتوازي' : 'Ready for Certified Bilingual Stamping & Parallel Release'}
+              </div>
+            </div>
+          )}
 
           {/* Video Call Slot Confirmation (Only applicable if Video is selected AND post-payment) */}
           {currentModality === 'Video' && isPaymentVerified && (
@@ -165,27 +195,39 @@ export const CoordinatorDevice: React.FC<CockpitDeviceProps> = ({
             </div>
           )}
 
-          {/* C08: Release Certified Report in Parallel */}
+          {/* C08: Release Certified Report in Parallel (Strict Button Lock) */}
           <button
+            type="button"
+            disabled={!activeCase.secondOpinionSubmitted || activeCase.reportReleased}
             onClick={() => {
-              onUpdateCase({ reportReleased: true, currentStage: 'OPINION_READY', stage: 6 });
+              onUpdateCase({ reportReleased: true, currentStage: 'CLOSED', stage: 7 });
               onAdvanceStage();
             }}
             style={{
-              backgroundColor: TEAL_PRIMARY,
-              color: '#ffffff',
-              border: 'none',
+              backgroundColor: activeCase.reportReleased ? '#e2e8f0' : (activeCase.secondOpinionSubmitted ? TEAL_PRIMARY : '#f1f5f9'),
+              color: activeCase.reportReleased ? '#475569' : (activeCase.secondOpinionSubmitted ? '#ffffff' : '#94a3b8'),
+              border: activeCase.reportReleased ? '1px solid #cbd5e1' : 'none',
               borderRadius: '8px',
               padding: '12px',
               fontWeight: 800,
-              fontSize: '12px',
-              cursor: isPaymentVerified ? 'pointer' : 'not-allowed',
-              opacity: isPaymentVerified ? 1 : 0.5,
-              boxShadow: '0 4px 10px rgba(0, 123, 110, 0.25)',
+              fontSize: '11px',
+              cursor: (!activeCase.secondOpinionSubmitted || activeCase.reportReleased) ? 'not-allowed' : 'pointer',
+              opacity: (!activeCase.secondOpinionSubmitted || activeCase.reportReleased) ? 0.8 : 1,
+              boxShadow: (!activeCase.secondOpinionSubmitted || activeCase.reportReleased) ? 'none' : '0 4px 12px rgba(0, 123, 110, 0.35)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
             }}
-            disabled={!isPaymentVerified}
           >
-            C08 · {isAr ? 'إصدار التقرير النهائي بالتوازي للطبيب والمريض' : 'Release Certified Report in Parallel to Doctor & Patient'}
+            {activeCase.reportReleased ? (
+              <>
+                <span>✓</span>
+                <span>{isAr ? 'C08 · تم إصدار التقرير الطبي المعتمد وتسليمه بالتوازي' : 'C08 · Report Released in Parallel'}</span>
+              </>
+            ) : (
+              <span>{isAr ? 'C08 · إصدار التقرير النهائي بالتوازي للطبيب والمريض' : 'C08 · Release Certified Report in Parallel to Doctor & Patient'}</span>
+            )}
           </button>
         </>
       )}

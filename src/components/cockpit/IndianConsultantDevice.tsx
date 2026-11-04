@@ -181,8 +181,10 @@ export const IndianConsultantDevice: React.FC<CockpitDeviceProps> = ({
             </div>
           </div>
 
-          {/* K06: Submit Second Opinion */}
+          {/* K06: Submit Second Opinion (Strict Button Lock) */}
           <button
+            type="button"
+            disabled={activeCase.secondOpinionSubmitted || selectedVerdicts.length === 0}
             onClick={() => {
               onUpdateCase({
                 secondOpinionSubmitted: true,
@@ -193,19 +195,30 @@ export const IndianConsultantDevice: React.FC<CockpitDeviceProps> = ({
               onAdvanceStage();
             }}
             style={{
-              backgroundColor: TEAL_PRIMARY,
-              color: '#ffffff',
-              border: 'none',
+              backgroundColor: activeCase.secondOpinionSubmitted ? '#e2e8f0' : TEAL_PRIMARY,
+              color: activeCase.secondOpinionSubmitted ? '#475569' : '#ffffff',
+              border: activeCase.secondOpinionSubmitted ? '1px solid #cbd5e1' : 'none',
               borderRadius: '8px',
               padding: '12px',
               fontWeight: 800,
-              fontSize: '12px',
-              cursor: selectedVerdicts.length > 0 ? 'pointer' : 'not-allowed',
-              opacity: selectedVerdicts.length > 0 ? 1 : 0.6,
-              boxShadow: '0 4px 10px rgba(0, 123, 110, 0.25)',
+              fontSize: '11px',
+              cursor: (activeCase.secondOpinionSubmitted || selectedVerdicts.length === 0) ? 'not-allowed' : 'pointer',
+              opacity: (activeCase.secondOpinionSubmitted || selectedVerdicts.length === 0) ? 0.8 : 1,
+              boxShadow: activeCase.secondOpinionSubmitted ? 'none' : '0 4px 12px rgba(0, 123, 110, 0.35)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
             }}
           >
-            K06 · {isAr ? 'إرسال الرأي الثاني المعتمد لمنسق ألو (C08)' : 'Submit Second Opinion to Coordinator (C08)'}
+            {activeCase.secondOpinionSubmitted ? (
+              <>
+                <span>✓</span>
+                <span>{isAr ? 'K06 · تم اعتماد الرأي الثاني وتوقيعه رقمياً' : 'K06 · Opinion Signed & Submitted'}</span>
+              </>
+            ) : (
+              <span>{isAr ? 'K06 · إرسال الرأي الثاني المعتمد لمنسق ألو (C08)' : 'K06 · Submit Second Opinion to Coordinator (C08)'}</span>
+            )}
           </button>
         </>
       )}

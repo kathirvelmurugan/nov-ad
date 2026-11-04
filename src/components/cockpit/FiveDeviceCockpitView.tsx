@@ -69,9 +69,64 @@ export const FiveDeviceCockpitView: React.FC<FiveDeviceCockpitProps> = ({
   };
 
   const baseStage = STAGE_NUM_MAP[activeCase.currentStage] || 1;
-  const stageNum = ((activeCase.pricing?.paid || activeCase.paymentVerified) && baseStage < 5)
+  const stageNum = (activeCase.paymentVerified && baseStage < 5)
     ? 5
     : (activeCase.stage && activeCase.stage > baseStage ? activeCase.stage : baseStage);
+
+  const currentCue = (() => {
+    if (stageNum === 1) {
+      return {
+        ar: '💬 واتساب (المريض ➔ التمريض): تم إرسال طلب الرأي الثاني للحالة ALO-2026-LIVE وهو بانتظار فرز التمريض.',
+        en: '💬 WhatsApp (Patient ➔ Nurse): Second opinion request submitted for ALO-2026-LIVE awaiting nurse triage.',
+      };
+    }
+    if (stageNum === 2) {
+      return {
+        ar: '💬 واتساب (التمريض ➔ الطبيب المعالج): اكتمل فرز التمريض مع تدقيق العلامات الحيوية وحجب الهوية بنظام سدايا.',
+        en: '💬 WhatsApp (Nurse ➔ Doctor): Triage complete with vitals and SDAIA PII masking. Ready for physician audit.',
+      };
+    }
+    if (stageNum === 3) {
+      return {
+        ar: '💬 واتساب (الطبيب ➔ منسق ألو): اعتمد د. عبدالله الشمري الإحالة وصاغ ٣ أسئلة استشارية. بانتظار مراجعة المنسق.',
+        en: '💬 WhatsApp (Doctor ➔ Coordinator): Referral approved by Dr. Al-Shammari with 3 focus questions. Pending invoice.',
+      };
+    }
+    if (stageNum === 4) {
+      if (!activeCase.invoiceIssued) {
+        return {
+          ar: '💬 واتساب (منسق ألو ➔ الحالة): يراجع المنسق خطة الإحالة ويصدر فاتورة ZATCA الضريبية (C02-C04)...',
+          en: '💬 WhatsApp (Coordinator ➔ Case): Alo Coordinator is issuing ZATCA tax invoice (C02-C04)...',
+        };
+      }
+      if (!activeCase.pricing?.paid) {
+        return {
+          ar: '💬 واتساب (منسق ألو ➔ المريض): تم إصدار الفاتورة الضريبية INV-2026-001 ورابط السداد بانتظار دفع المريض.',
+          en: '💬 WhatsApp (Coordinator ➔ Patient): Tax invoice INV-2026-001 issued. Payment checkout unlocked for patient.',
+        };
+      }
+      return {
+        ar: '💬 واتساب (المنسق ➔ المريض): تم استلام سداد مدى بنجاح. المنسق يتحقق ويوجه الملف للاستشاري في الهند (C06).',
+        en: '💬 WhatsApp (Coordinator ➔ Patient): Mada payment received. Coordinator verifying transaction to dispatch to India (C06).',
+      };
+    }
+    if (stageNum === 5) {
+      if (!activeCase.secondOpinionSubmitted) {
+        return {
+          ar: '💬 واتساب (منسق ألو ➔ استشاري الهند): تم تسليم الملف الكامل للأشعة 3D والأسئلة الثلاثة لدراسة د. براديب كومار.',
+          en: '💬 WhatsApp (Coordinator ➔ India): Full 3D DICOM dossier and focus questions delivered to Dr. Pradeep Kumar.',
+        };
+      }
+      return {
+        ar: '💬 واتساب (الاستشاري ➔ المنسق): اعتمد د. براديب كومار الرأي الثاني بناءً على فحص الأشعة 3D DICOM. جاهز للختم.',
+        en: '💬 WhatsApp (Consultant ➔ Coordinator): Second opinion evaluated and signed based on 3D DICOM. Ready for release.',
+      };
+    }
+    return {
+      ar: '💬 واتساب (المنسق ➔ المريض والطبيب): تم إصدار وتسليم التقرير الطبي الدولي المعتمد ثنائي اللغة بنجاح.',
+      en: '💬 WhatsApp (Coordinator ➔ Patient & MD): Certified bilingual second opinion report released and delivered in parallel.',
+    };
+  })();
 
   const handleToggleExpand = useCallback((role: CockpitRole) => {
     setExpandedDevice((prev) => (prev === role ? null : role));
@@ -112,20 +167,21 @@ export const FiveDeviceCockpitView: React.FC<FiveDeviceCockpitProps> = ({
         fontFamily: isAr ? "'Cairo', sans-serif" : "'Inter', sans-serif",
         backgroundColor: '#f0fdfa',
         minHeight: '100vh',
-        padding: '20px 24px 80px 24px',
+        padding: '12px 14px 60px 14px',
         color: '#0f172a',
       }}
     >
       {/* Cockpit Top Header */}
       <header
         style={{
-          maxWidth: '1800px',
-          margin: '0 auto 24px auto',
+          width: '100%',
+          maxWidth: '100%',
+          margin: '0 auto 12px auto',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           flexWrap: 'wrap',
-          gap: '12px',
+          gap: '10px',
         }}
       >
         <div>
@@ -266,7 +322,7 @@ export const FiveDeviceCockpitView: React.FC<FiveDeviceCockpitProps> = ({
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <span style={{ fontSize: '22px' }}>💬</span>
             <span style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a', lineHeight: 1.5 }}>
-              {isAr ? WHATSAPP_CUES[stageNum].ar : WHATSAPP_CUES[stageNum].en}
+              {isAr ? currentCue.ar : currentCue.en}
             </span>
           </div>
           <span
@@ -287,17 +343,21 @@ export const FiveDeviceCockpitView: React.FC<FiveDeviceCockpitProps> = ({
         </div>
       )}
 
-      {/* Responsive Viewport Surface with Progressive Unveiling */}
+      {/* Responsive Viewport Surface with Panoramic 5-Screen Horizontal Fit */}
       <div
         style={{
           display: 'flex',
-          flexWrap: 'wrap',
-          gap: '24px',
-          maxWidth: '1800px',
+          flexDirection: 'row',
+          flexWrap: 'nowrap',
+          gap: '10px',
+          width: '100%',
+          maxWidth: '100%',
           margin: '0 auto',
-          alignItems: 'start',
-          justifyContent: visibleDevices.length === 1 ? (isAr ? 'flex-end' : 'flex-start') : 'center',
+          alignItems: 'stretch',
+          justifyContent: visibleDevices.length === 1 ? (isAr ? 'flex-end' : 'flex-start') : 'space-between',
           transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          overflowX: 'auto',
+          boxSizing: 'border-box',
         }}
       >
         {visibleDevices.map(({ role, component }) => (

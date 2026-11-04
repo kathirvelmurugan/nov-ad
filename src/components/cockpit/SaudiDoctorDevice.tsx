@@ -98,30 +98,42 @@ export const SaudiDoctorDevice: React.FC<CockpitDeviceProps> = ({
             </div>
           </div>
 
-          {/* D05–D06: Modality Selection */}
+          {/* D05–D06: Modality Selection (Strictly 2 Choices) */}
           <div style={cardInnerStyle}>
             <span style={labelStyle}>D05–D06 · {isAr ? 'اختيار نمط الاستشارة الدولية' : 'Modality Selection'}</span>
             <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
-              {['Video', 'Audio', 'Chat'].map((m) => (
-                <button
-                  key={m}
-                  onClick={() => onUpdateCase({ modality: m, consultationType: m.toLowerCase() as any })}
-                  style={{
-                    flex: 1,
-                    padding: '8px',
-                    borderRadius: '8px',
-                    border: currentModality === m ? `2px solid ${TEAL_PRIMARY}` : '2px solid #e2e8f0',
-                    backgroundColor: currentModality === m ? TEAL_BG : '#ffffff',
-                    cursor: 'pointer',
-                    fontWeight: 800,
-                    fontSize: '11px',
-                    color: currentModality === m ? TEAL_PRIMARY : '#64748b',
-                    transition: 'all 0.15s',
-                  }}
-                >
-                  {m}
-                </button>
-              ))}
+              {[
+                { id: 'Written', labelAr: 'تقرير كتابي معتمد', labelEn: 'Written Opinion Only', tier: 1 },
+                { id: 'Video', labelAr: 'مكالمة فيديو + تقرير', labelEn: 'Video + Written', tier: 2 },
+              ].map((m) => {
+                const isSelected = (currentModality === 'Video' ? 'Video' : 'Written') === m.id;
+                return (
+                  <button
+                    key={m.id}
+                    type="button"
+                    disabled={activeCase.referralApproved}
+                    onClick={() => onUpdateCase({ modality: m.id, consultationType: m.id === 'Video' ? 'video' : 'written', tier: m.tier })}
+                    style={{
+                      flex: 1,
+                      padding: '8px 6px',
+                      borderRadius: '8px',
+                      border: isSelected ? `2px solid ${TEAL_PRIMARY}` : '2px solid #e2e8f0',
+                      backgroundColor: isSelected ? TEAL_BG : '#ffffff',
+                      cursor: activeCase.referralApproved ? 'default' : 'pointer',
+                      fontWeight: 800,
+                      fontSize: '10px',
+                      color: isSelected ? TEAL_PRIMARY : '#64748b',
+                      transition: 'all 0.15s',
+                      textAlign: 'center',
+                    }}
+                  >
+                    <div>{isAr ? m.labelAr : m.labelEn}</div>
+                    <div style={{ fontSize: '9px', fontWeight: 600, color: isSelected ? TEAL_SECONDARY : '#94a3b8', marginTop: '2px' }}>
+                      {m.tier === 1 ? 'Tier 1 (250 SAR)' : 'Tier 2 (450 SAR)'}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -168,25 +180,53 @@ export const SaudiDoctorDevice: React.FC<CockpitDeviceProps> = ({
             </div>
           </div>
 
-          {/* D10: Approve Referral */}
+          {/* D10: Approve Referral (Strict Single-Action Lock) */}
           <button
+            type="button"
+            disabled={activeCase.referralApproved}
             onClick={() => {
-              onUpdateCase({ referralApproved: true, currentStage: 'AWAITING_PAYMENT', stage: 4 });
+              onUpdateCase({
+                referralApproved: true,
+                currentStage: 'AWAITING_PAYMENT',
+                stage: 4,
+                invoiceIssued: false, // Enforce Alo Coordinator Gate 1!
+                treatingDoctor: {
+                  ...(activeCase.treatingDoctor || {
+                    name: 'د. عبدالله الشمري',
+                    hospital: 'مستشفى رعاية الرياض',
+                    city: 'الرياض',
+                  }),
+                  focusQuestions: [focusQs[0], focusQs[1], focusQs[2]],
+                },
+                focusQuestions: [focusQs[0], focusQs[1], focusQs[2]],
+              });
               onAdvanceStage();
             }}
             style={{
-              backgroundColor: TEAL_PRIMARY,
-              color: '#ffffff',
-              border: 'none',
+              backgroundColor: activeCase.referralApproved ? '#e2e8f0' : TEAL_PRIMARY,
+              color: activeCase.referralApproved ? '#475569' : '#ffffff',
+              border: activeCase.referralApproved ? '1px solid #cbd5e1' : 'none',
               borderRadius: '8px',
               padding: '12px',
               fontWeight: 800,
-              fontSize: '12px',
-              cursor: 'pointer',
-              boxShadow: '0 4px 10px rgba(0, 123, 110, 0.25)',
+              fontSize: '11px',
+              cursor: activeCase.referralApproved ? 'not-allowed' : 'pointer',
+              opacity: activeCase.referralApproved ? 0.8 : 1,
+              boxShadow: activeCase.referralApproved ? 'none' : '0 4px 12px rgba(0, 123, 110, 0.3)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
             }}
           >
-            D10 · {isAr ? 'اعتماد التحويل وتوجيه الملف لمنسق ألو (C01)' : 'Approve Referral & Route to Alo Coordinator (C01)'}
+            {activeCase.referralApproved ? (
+              <>
+                <span>✓</span>
+                <span>{isAr ? 'D10 · تم اعتماد التحويل وتوجيهه للمنسق' : 'D10 · Referral Approved & Routed'}</span>
+              </>
+            ) : (
+              <span>{isAr ? 'D10 · اعتماد التحويل وتوجيه الملف لمنسق ألو (C01)' : 'D10 · Approve Referral & Route to Alo Coordinator (C01)'}</span>
+            )}
           </button>
         </>
       )}
