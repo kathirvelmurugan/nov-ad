@@ -19,6 +19,16 @@ export const PatientDevice: React.FC<CockpitDeviceProps> = ({
   const [selectedDoctor, setSelectedDoctor] = useState(activeCase.treatingDoctor?.name || 'د. عبدالله الشمري (مستشفى رعاية الرياض)');
   const [hasScans, setHasScans] = useState((activeCase.files && activeCase.files.length > 0) || false);
 
+  // Synchronize local input state whenever the activeCase updates or resets
+  React.useEffect(() => {
+    setPatientName(activeCase.patientName || '');
+    setNationalId(activeCase.nationalIdMasked ? activeCase.nationalIdMasked : '');
+    setSpecialty(activeCase.specialtyAr || activeCase.specialty || '');
+    setSymptoms(activeCase.symptomsAr || activeCase.symptoms || '');
+    setSelectedDoctor(activeCase.treatingDoctor?.name || 'د. عبدالله الشمري (مستشفى رعاية الرياض)');
+    setHasScans((activeCase.files && activeCase.files.length > 0) || false);
+  }, [activeCase.id, activeCase.patientName, activeCase.nationalIdMasked, activeCase.symptoms, activeCase.stage]);
+
   // 1-Click Sample Pre-Seeder for rapid clinical testing
   const handleLoadSampleData = () => {
     setPatientName(isAr ? 'سالم بن عبد العزيز العامري' : 'Salem Abdulaziz Al-Ameri');

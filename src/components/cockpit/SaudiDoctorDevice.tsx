@@ -69,107 +69,123 @@ export const SaudiDoctorDevice: React.FC<CockpitDeviceProps> = ({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-      {/* D01: De-identified Dossier Review */}
-      <div style={cardInnerStyle}>
-        <span style={labelStyle}>D01 · {isAr ? 'مراجعة السجل المحجوب الهوية' : 'Record Inspection'}</span>
-        <div style={{ backgroundColor: '#f8fafc', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0', marginTop: '4px' }}>
-          <div style={{ fontSize: '11px', color: '#64748b' }}>{isAr ? 'معرف المريض المحجوب (SDAIA):' : 'De-identified Patient ID:'}</div>
-          <div style={{ fontSize: '15px', fontWeight: 800, color: TEAL_PRIMARY, letterSpacing: '1px', marginTop: '2px' }}>
-            {isPiiMasked ? '10********' : 'UNMASKED WARNING'}
+      {stageNum < 3 ? (
+        <div style={{ ...cardInnerStyle, backgroundColor: '#f8fafc', textAlign: 'center', padding: '36px 16px' }}>
+          <div style={{ fontSize: '32px', marginBottom: '10px' }}>🩺</div>
+          <div style={{ fontSize: '13px', fontWeight: 800, color: '#1e293b' }}>
+            {isAr ? 'عيادة الطبيب السعودي (D01) في الانتظار' : 'Saudi Physician Workstation (D01) Idle'}
+          </div>
+          <div style={{ fontSize: '11px', color: '#64748b', marginTop: '6px', lineHeight: 1.5 }}>
+            {isAr
+              ? 'في انتظار قيام ممرضة ألو بإكمال الفرز وتدقيق حجب الهوية (N04).'
+              : 'Waiting for Alo Nurse to complete triage & SDAIA masking (N04).'}
           </div>
         </div>
-      </div>
+      ) : (
+        <>
+          {/* D01: De-identified Dossier Review */}
+          <div style={cardInnerStyle}>
+            <span style={labelStyle}>D01 · {isAr ? 'مراجعة السجل المحجوب الهوية' : 'Record Inspection'}</span>
+            <div style={{ backgroundColor: '#f8fafc', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0', marginTop: '4px' }}>
+              <div style={{ fontSize: '11px', color: '#64748b' }}>{isAr ? 'معرف المريض المحجوب (SDAIA):' : 'De-identified Patient ID:'}</div>
+              <div style={{ fontSize: '15px', fontWeight: 800, color: TEAL_PRIMARY, letterSpacing: '1px', marginTop: '2px' }}>
+                {isPiiMasked ? '10********' : 'UNMASKED WARNING'}
+              </div>
+            </div>
+          </div>
 
-      {/* D05–D06: Modality Selection */}
-      <div style={cardInnerStyle}>
-        <span style={labelStyle}>D05–D06 · {isAr ? 'اختيار نمط الاستشارة الدولية' : 'Modality Selection'}</span>
-        <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
-          {['Video', 'Audio', 'Chat'].map((m) => (
-            <button
-              key={m}
-              onClick={() => onUpdateCase({ modality: m, consultationType: m.toLowerCase() as any })}
-              style={{
-                flex: 1,
-                padding: '8px',
-                borderRadius: '8px',
-                border: currentModality === m ? `2px solid ${TEAL_PRIMARY}` : '2px solid #e2e8f0',
-                backgroundColor: currentModality === m ? TEAL_BG : '#ffffff',
-                cursor: 'pointer',
-                fontWeight: 800,
-                fontSize: '11px',
-                color: currentModality === m ? TEAL_PRIMARY : '#64748b',
-                transition: 'all 0.15s',
-              }}
-            >
-              {m}
-            </button>
-          ))}
-        </div>
-      </div>
+          {/* D05–D06: Modality Selection */}
+          <div style={cardInnerStyle}>
+            <span style={labelStyle}>D05–D06 · {isAr ? 'اختيار نمط الاستشارة الدولية' : 'Modality Selection'}</span>
+            <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
+              {['Video', 'Audio', 'Chat'].map((m) => (
+                <button
+                  key={m}
+                  onClick={() => onUpdateCase({ modality: m, consultationType: m.toLowerCase() as any })}
+                  style={{
+                    flex: 1,
+                    padding: '8px',
+                    borderRadius: '8px',
+                    border: currentModality === m ? `2px solid ${TEAL_PRIMARY}` : '2px solid #e2e8f0',
+                    backgroundColor: currentModality === m ? TEAL_BG : '#ffffff',
+                    cursor: 'pointer',
+                    fontWeight: 800,
+                    fontSize: '11px',
+                    color: currentModality === m ? TEAL_PRIMARY : '#64748b',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  {m}
+                </button>
+              ))}
+            </div>
+          </div>
 
-      {/* D07–D09: 3 Focus Questions */}
-      <div style={cardInnerStyle}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-          <span style={labelStyle}>D07–D09 · {isAr ? '٣ أسئلة تركيز سريرية' : '3 Focus Questions'}</span>
+          {/* D07–D09: 3 Focus Questions */}
+          <div style={cardInnerStyle}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+              <span style={labelStyle}>D07–D09 · {isAr ? '٣ أسئلة تركيز سريرية' : '3 Focus Questions'}</span>
+              <button
+                type="button"
+                onClick={handleLoadSampleQuestions}
+                style={{
+                  backgroundColor: '#f0fdfa',
+                  color: TEAL_PRIMARY,
+                  border: `1px solid ${TEAL_SECONDARY}`,
+                  borderRadius: '6px',
+                  padding: '2px 7px',
+                  fontSize: '10px',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                }}
+              >
+                {isAr ? '⚡ أسئلة نموذجية' : '⚡ Sample Qs'}
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {[0, 1, 2].map((i) => (
+                <input
+                  key={i}
+                  type="text"
+                  placeholder={`${isAr ? 'السؤال' : 'Focus Question'} ${i + 1}...`}
+                  value={focusQs[i] || ''}
+                  onChange={(e) => handleUpdateQuestion(i, e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '8px 10px',
+                    borderRadius: '8px',
+                    border: '1px solid #cbd5e1',
+                    fontSize: '11px',
+                    outline: 'none',
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* D10: Approve Referral */}
           <button
-            type="button"
-            onClick={handleLoadSampleQuestions}
+            onClick={() => {
+              onUpdateCase({ referralApproved: true, currentStage: 'AWAITING_PAYMENT', stage: 4 });
+              onAdvanceStage();
+            }}
             style={{
-              backgroundColor: '#f0fdfa',
-              color: TEAL_PRIMARY,
-              border: `1px solid ${TEAL_SECONDARY}`,
-              borderRadius: '6px',
-              padding: '2px 7px',
-              fontSize: '10px',
+              backgroundColor: TEAL_PRIMARY,
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '12px',
               fontWeight: 800,
+              fontSize: '12px',
               cursor: 'pointer',
+              boxShadow: '0 4px 10px rgba(0, 123, 110, 0.25)',
             }}
           >
-            {isAr ? '⚡ أسئلة نموذجية' : '⚡ Sample Qs'}
+            D10 · {isAr ? 'اعتماد التحويل وتوجيه الملف لمنسق ألو (C01)' : 'Approve Referral & Route to Alo Coordinator (C01)'}
           </button>
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {[0, 1, 2].map((i) => (
-            <input
-              key={i}
-              type="text"
-              placeholder={`${isAr ? 'السؤال' : 'Focus Question'} ${i + 1}...`}
-              value={focusQs[i] || ''}
-              onChange={(e) => handleUpdateQuestion(i, e.target.value)}
-              style={{
-                width: '100%',
-                padding: '8px 10px',
-                borderRadius: '8px',
-                border: '1px solid #cbd5e1',
-                fontSize: '11px',
-                outline: 'none',
-              }}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* D10: Approve Referral */}
-      <button
-        onClick={() => {
-          onUpdateCase({ referralApproved: true, currentStage: 'AWAITING_PAYMENT', stage: 4 });
-          onAdvanceStage();
-        }}
-        style={{
-          backgroundColor: TEAL_PRIMARY,
-          color: '#ffffff',
-          border: 'none',
-          borderRadius: '8px',
-          padding: '12px',
-          fontWeight: 800,
-          fontSize: '12px',
-          cursor: 'pointer',
-          boxShadow: '0 4px 10px rgba(0, 123, 110, 0.25)',
-        }}
-      >
-        D10 · {isAr ? 'اعتماد التحويل وتوجيه الملف لمنسق ألو (C01)' : 'Approve Referral & Route to Alo Coordinator (C01)'}
-      </button>
+        </>
+      )}
     </div>
   );
 };

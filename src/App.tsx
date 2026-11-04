@@ -30,17 +30,75 @@ const THEME_KEY = 'alo_theme_v2.4';
 const LANG_KEY = 'alo_lang_v2.4';
 const VIEW_MODE_KEY = 'alo_view_mode_v2.4';
 
+const FRESH_PRIMARY_CASE: ClinicalCase = {
+  id: 'case-test-01',
+  caseNumber: 'ALO-2026-TEST01',
+  patientName: '',
+  patientNameAr: 'مسار تجريبي نظيف (Fresh Case)',
+  patientNameEn: 'Fresh Real-Time Test Case',
+  nationalIdMasked: '',
+  age: 48,
+  gender: 'M',
+  city: 'الرياض (Riyadh)',
+  cityAr: 'الرياض',
+  cityEn: 'Riyadh',
+  specialty: 'أمراض القلب والشرايين (Cardiology)',
+  specialtyAr: 'أمراض القلب والشرايين',
+  specialtyEn: 'Cardiology',
+  diagnosis: '',
+  diagnosisAr: '',
+  diagnosisEn: '',
+  symptoms: '',
+  symptomsAr: '',
+  symptomsEn: '',
+  consultationType: 'video',
+  currentStage: 'INTAKE_RECEIVED',
+  stage: 1,
+  treatingDoctor: {
+    name: 'د. عبدالله الشمري',
+    hospital: 'مستشفى رعاية الرياض (Riyadh Care)',
+    city: 'الرياض',
+    focusQuestions: ['', '', ''],
+    focusQuestionsEn: ['', '', ''],
+  },
+  consultant: {
+    name: 'Dr. Arjun Menon',
+    center: 'Apollo Hospitals',
+    city: 'Chennai',
+  },
+  pricing: {
+    tier: 2,
+    tierName: 'Video',
+    baseSar: 450,
+    vatPercent: 15,
+    vatSar: 67.5,
+    totalSar: 517.5,
+    paid: false,
+  },
+  files: [],
+  partnerOrders: {
+    lab: { test: 'Troponin & Lipid Panel', status: 'pending' },
+    pharmacy: { meds: ['Atorvastatin 40mg', 'Aspirin 81mg'], substituteAllowed: false, status: 'pending' },
+    homeNurse: { area: 'Riyadh - Al Malqa', visits: 2, status: 'scheduled' },
+    physio: { sessions: 4, status: 'planned' },
+  },
+  metadata: {
+    isFreshTest: true,
+  },
+};
+
 export const App: React.FC = () => {
   const [activePersona, setActivePersona] = useState<Persona>(PERSONAS[0]);
   
-  // Persistent Cases state: isolated in user's browser sandbox
+  // Persistent Cases state: isolated in user's browser sandbox with FRESH_PRIMARY_CASE at index 0
   const [cases, setCases] = useState<ClinicalCase[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed.map((c: ClinicalCase) => {
+          const loaded = parsed.map((c: ClinicalCase) => {
+            if (c.id === FRESH_PRIMARY_CASE.id) return { ...FRESH_PRIMARY_CASE, ...c };
             const seed = SEED_CASES.find((s) => s.id === c.id);
             if (!seed) return c;
             return {
@@ -59,12 +117,16 @@ export const App: React.FC = () => {
               coordinatorQuestions: c.coordinatorQuestions || seed.coordinatorQuestions,
             };
           });
+          if (!loaded.find((c) => c.id === FRESH_PRIMARY_CASE.id)) {
+            return [FRESH_PRIMARY_CASE, ...loaded];
+          }
+          return loaded;
         }
       }
     } catch (e) {
       console.warn('Failed to parse cases from localStorage:', e);
     }
-    return SEED_CASES;
+    return [FRESH_PRIMARY_CASE, ...SEED_CASES];
   });
 
   const [activeCaseId, setActiveCaseId] = useState<string>(() => {
@@ -72,7 +134,7 @@ export const App: React.FC = () => {
       const saved = localStorage.getItem(ACTIVE_CASE_KEY);
       if (saved) return saved;
     } catch (e) {}
-    return SEED_CASES[0].id;
+    return FRESH_PRIMARY_CASE.id;
   });
   
   // Pinterest "Clinical Calm" light mode as default
@@ -168,17 +230,39 @@ export const App: React.FC = () => {
   const handleResetActiveCase = () => {
     const isAr = lang === 'ar';
     const confirmMsg = isAr
-      ? `هل أنت متأكد من رغبتك في إعادة ضبط مسار هذه الحالة (${activeCase.id}) فقط إلى البداية؟ لن تتأثر الحالات الأخرى.`
-      : `Are you sure you want to reset this case (${activeCase.id}) only? Other cases and demo seeds will remain untouched.`;
+      ? `هل أنت متأكد من رغبتك في تصفير هذه الحالة (${activeCase.caseNumber || activeCase.id}) بالكامل والبدء من جديد بمسار نظيف؟`
+      : `Reset this case (${activeCase.caseNumber || activeCase.id}) back to a clean slate (blank intake)?`;
     if (window.confirm(confirmMsg)) {
       handleUpdateCase({
         currentStage: 'INTAKE_RECEIVED',
+        stage: 1,
+        patientName: '',
+        patientNameAr: '',
+        patientNameEn: '',
+        nationalIdMasked: '',
+        symptoms: '',
+        symptomsAr: '',
+        symptomsEn: '',
+        diagnosis: '',
+        diagnosisAr: '',
+        diagnosisEn: '',
         consultantOpinion: '',
         proposedCallSlot: '',
         finalClosureNote: '',
-        pricing: { ...activeCase.pricing, paid: false },
+        vitals: undefined,
+        piiMasked: false,
+        triageComplete: false,
+        focusQuestions: ['', '', ''],
+        referralApproved: false,
+        invoiceIssued: false,
+        paymentVerified: false,
+        reportReleased: false,
+        verdicts: [],
+        secondOpinionSubmitted: false,
+        files: [],
+        pricing: { ...activeCase.pricing, paid: false, invoiceNumber: undefined },
         metadata: {
-          ...(activeCase.metadata || {}),
+          isFreshTest: true,
           pdf1Released: false,
           pdf2Released: false,
           paymentVerified: false,
