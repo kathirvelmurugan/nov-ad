@@ -28,16 +28,23 @@ export const FiveDeviceCockpitView: React.FC<FiveDeviceCockpitProps> = ({
   const isAr = lang === 'ar';
   const [expandedDevice, setExpandedDevice] = useState<CockpitRole | null>(null);
 
-  const stageNum = activeCase.stage ?? (
-    activeCase.currentStage === 'INTAKE_RECEIVED' ? 1 :
-    activeCase.currentStage === 'NURSE_CHECK' ? 2 :
-    activeCase.currentStage === 'DOCTOR_REVIEW' ? 3 :
-    activeCase.currentStage === 'AWAITING_PAYMENT' ? 4 :
-    activeCase.currentStage === 'WITH_CONSULTANT' ? 5 :
-    activeCase.currentStage === 'OPINION_READY' ? 6 :
-    activeCase.currentStage === 'PARTNER_SERVICES' ? 7 :
-    activeCase.currentStage === 'FOLLOW_UP_21_DAYS' ? 8 : 9
-  );
+  // Derive stageNum deterministically from currentStage, guaranteed >= 5 when paid
+  const STAGE_NUM_MAP: Record<string, number> = {
+    INTAKE_RECEIVED: 1,
+    NURSE_CHECK: 2,
+    DOCTOR_REVIEW: 3,
+    AWAITING_PAYMENT: 4,
+    WITH_CONSULTANT: 5,
+    OPINION_READY: 6,
+    PARTNER_SERVICES: 7,
+    FOLLOW_UP_21_DAYS: 8,
+    CLOSED: 9,
+  };
+
+  const baseStage = STAGE_NUM_MAP[activeCase.currentStage] || 1;
+  const stageNum = ((activeCase.pricing?.paid || activeCase.paymentVerified) && baseStage < 5)
+    ? 5
+    : (activeCase.stage && activeCase.stage > baseStage ? activeCase.stage : baseStage);
 
   const handleToggleExpand = useCallback((role: CockpitRole) => {
     setExpandedDevice((prev) => (prev === role ? null : role));

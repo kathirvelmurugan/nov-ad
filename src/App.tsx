@@ -257,7 +257,7 @@ export const App: React.FC = () => {
   const activeCase = cases.find((c) => c.id === activeCaseId) || cases[0];
 
   // Flow gate: a case counts as paid once checkout completed or pricing.paid is set
-  const isCasePaid = (c: ClinicalCase) => !!c.pricing?.paid || c.paymentDetails?.status === 'completed';
+  const isCasePaid = (c: ClinicalCase) => !!c.pricing?.paid || c.paymentDetails?.status === 'completed' || !!c.paymentVerified;
 
   // Rotate to next case
   const handleNextCase = () => {
@@ -327,7 +327,7 @@ export const App: React.FC = () => {
     }
   }, [theme]);
 
-  // Advance to next stage: shows Clinical Handoff Interstitial Modal
+  // Advance to next stage: direct button-driven transition (handoff modal disabled)
   const handleAdvanceStage = () => {
     const stageOrder: ClinicalStage[] = [
       'INTAKE_RECEIVED',
@@ -344,11 +344,6 @@ export const App: React.FC = () => {
     if (currentIndex < stageOrder.length - 1) {
       const nextStage = stageOrder[currentIndex + 1];
 
-      if (stageOrder.indexOf(nextStage) >= stageOrder.indexOf('WITH_CONSULTANT') && !isCasePaid(activeCase) && !isAutoDemoActive) {
-        alert(lang === 'ar' ? 'لا يمكن الانتقال إلى ما بعد السداد قبل تأكيد الدفع.' : 'Payment must be completed before moving past Awaiting payment.');
-        return;
-      }
-      
       let nextP = PERSONAS[0];
       if (nextStage === 'NURSE_CHECK') nextP = PERSONAS.find((p) => p.code === 'N')!;
       else if (nextStage === 'DOCTOR_REVIEW') nextP = PERSONAS.find((p) => p.code === 'D')!;
@@ -359,11 +354,9 @@ export const App: React.FC = () => {
       else if (nextStage === 'FOLLOW_UP_21_DAYS') nextP = PERSONAS.find((p) => p.code === 'P')!;
       else if (nextStage === 'CLOSED') nextP = PERSONAS.find((p) => p.code === 'C') || PERSONAS[0];
 
-      setPendingHandoff({
-        fromStage: activeCase.currentStage,
-        toStage: nextStage,
-        nextPersona: nextP,
-      });
+      handleUpdateCase({ currentStage: nextStage });
+      handleSelectPersona(nextP);
+      setPendingHandoff(null);
     }
   };
 
@@ -686,13 +679,13 @@ export const App: React.FC = () => {
         }}
       />
 
-      {/* 7. Clinical Stage Handoff Interstitial Modal */}
-      {pendingHandoff && (
+      {/* 7. Clinical Stage Handoff Interstitial Modal (Disabled per user workflow request) */}
+      {false && pendingHandoff && (
         <StageHandoffModal
           isOpen={!!pendingHandoff}
-          fromStage={pendingHandoff.fromStage}
-          toStage={pendingHandoff.toStage}
-          nextPersona={pendingHandoff.nextPersona}
+          fromStage={(pendingHandoff as any).fromStage}
+          toStage={(pendingHandoff as any).toStage}
+          nextPersona={(pendingHandoff as any).nextPersona}
           lang={lang}
           onContinue={handleConfirmHandoff}
           onClose={() => setPendingHandoff(null)}

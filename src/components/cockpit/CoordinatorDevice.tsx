@@ -9,9 +9,9 @@ export const CoordinatorDevice: React.FC<CockpitDeviceProps> = ({
   lang,
 }) => {
   const isAr = lang === 'ar';
-  const isReferralApproved = activeCase.referralApproved !== undefined ? activeCase.referralApproved : stageNum >= 4;
-  const isInvoiceIssued = activeCase.invoiceIssued !== undefined ? activeCase.invoiceIssued : (!!activeCase.pricing?.invoiceNumber || !!activeCase.pricing?.baseSar);
-  const isPaymentVerified = activeCase.paymentVerified !== undefined ? activeCase.paymentVerified : (!!activeCase.pricing?.paid || activeCase.paymentDetails?.status === 'completed');
+  const isReferralApproved = !!activeCase.referralApproved || stageNum >= 4;
+  const isInvoiceIssued = !!activeCase.invoiceIssued || !!activeCase.pricing?.invoiceNumber || stageNum >= 5;
+  const isPaymentVerified = !!activeCase.paymentVerified || !!activeCase.pricing?.paid || activeCase.paymentDetails?.status === 'completed' || stageNum >= 5;
   const currentModality = activeCase.modality || (activeCase.consultationType === 'video' ? 'Video' : 'Written');
 
   const cardInnerStyle: React.CSSProperties = {

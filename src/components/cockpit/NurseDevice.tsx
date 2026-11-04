@@ -9,9 +9,7 @@ export const NurseDevice: React.FC<CockpitDeviceProps> = ({
   lang,
 }) => {
   const isAr = lang === 'ar';
-  const isPiiMasked = activeCase.piiMasked !== undefined 
-    ? activeCase.piiMasked 
-    : (!!activeCase.nationalIdMasked || stageNum >= 2);
+  const isPiiMasked = !!activeCase.piiMasked || !!activeCase.nationalIdMasked || stageNum >= 2;
 
   const cardInnerStyle: React.CSSProperties = {
     backgroundColor: '#ffffff',

@@ -10,9 +10,7 @@ export const SaudiDoctorDevice: React.FC<CockpitDeviceProps> = ({
 }) => {
   const isAr = lang === 'ar';
   const currentModality = activeCase.modality || (activeCase.consultationType === 'video' ? 'Video' : 'Written');
-  const isPiiMasked = activeCase.piiMasked !== undefined 
-    ? activeCase.piiMasked 
-    : (!!activeCase.nationalIdMasked || stageNum >= 2);
+  const isPiiMasked = !!activeCase.piiMasked || !!activeCase.nationalIdMasked || stageNum >= 2;
 
   const initialQuestions = activeCase.focusQuestions && activeCase.focusQuestions.length > 0
     ? activeCase.focusQuestions

@@ -10,6 +10,7 @@ export const PatientDevice: React.FC<CockpitDeviceProps> = ({
 }) => {
   const isAr = lang === 'ar';
   const currentTier = activeCase.tier || activeCase.pricing?.tier || 1;
+  const [selectedTier, setSelectedTier] = useState<number>(currentTier);
 
   // Local Intake Form State
   const [patientName, setPatientName] = useState(activeCase.patientName || '');
@@ -244,60 +245,124 @@ export const PatientDevice: React.FC<CockpitDeviceProps> = ({
 
       {/* STAGE 4: P19 Payment Checkout */}
       {stageNum === 4 && (
-        <div style={{ ...cardInnerStyle, borderColor: WHATSAPP_GREEN, borderWidth: '2px' }}>
-          <span style={{ ...labelStyle, color: WHATSAPP_GREEN }}>P19 · {isAr ? 'بوابة الدفع وسداد الفاتورة' : 'Payment Checkout'}</span>
-          <p style={{ fontSize: '12px', color: '#334155', margin: '6px 0 12px 0' }}>
-            {isAr ? 'اعتمد الطبيب السعودي إحالتك. اختر باقة الاستشارة للسداد:' : 'Saudi Doctor approved referral. Select consultation tier:'}
+        <div style={{ ...cardInnerStyle, borderColor: WHATSAPP_GREEN, borderWidth: '2px', backgroundColor: '#f0fdf4' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ ...labelStyle, color: '#166534' }}>
+              P19 · {isAr ? 'بوابة الدفع وسداد الفاتورة' : 'Payment Checkout'}
+            </span>
+            <span style={{ fontSize: '10px', fontWeight: 800, color: '#166534', backgroundColor: '#dcfce7', padding: '2px 6px', borderRadius: '4px' }}>
+              {isAr ? 'معتمد من الطبيب' : 'Approved by MD'}
+            </span>
+          </div>
+
+          <p style={{ fontSize: '12px', color: '#334155', margin: '6px 0 10px 0' }}>
+            {isAr ? 'اعتمد الطبيب السعودي إحالتك. اختر باقة الاستشارة للسداد الفوري:' : 'Saudi Doctor approved referral. Select tier to pay:'}
           </p>
 
-          <div style={{ display: 'flex', gap: '8px' }}>
-            {[1, 2].map((tier) => (
-              <button
-                key={tier}
-                onClick={() => onUpdateCase({
-                  tier,
-                  stage: 5,
-                  currentStage: 'WITH_CONSULTANT',
-                  paymentVerified: true,
-                  pricing: {
-                    ...(activeCase.pricing || {
-                      baseSar: tier === 1 ? 250 : 450,
-                      totalSar: tier === 1 ? 250 : 450,
-                      vatPercent: 15,
-                      vatSar: 0,
-                      tierName: tier === 1 ? 'Written' : 'Video',
-                    }),
-                    tier,
-                    paid: true,
-                  },
-                })}
-                style={{
-                  flex: 1,
-                  padding: '12px 8px',
-                  borderRadius: '10px',
-                  border: currentTier === tier ? `2px solid ${TEAL_PRIMARY}` : '2px solid #e2e8f0',
-                  backgroundColor: currentTier === tier ? TEAL_BG : '#ffffff',
-                  cursor: 'pointer',
-                  textAlign: 'center',
-                }}
-              >
-                <div style={{ fontWeight: 800, color: TEAL_PRIMARY, fontSize: '12px' }}>
-                  {isAr ? `الفئة ${tier}` : `Tier ${tier}`}
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+            {[1, 2].map((tier) => {
+              const isSelected = selectedTier === tier;
+              return (
+                <div
+                  key={tier}
+                  onClick={() => setSelectedTier(tier)}
+                  style={{
+                    flex: 1,
+                    padding: '10px 8px',
+                    borderRadius: '10px',
+                    border: isSelected ? `2px solid ${TEAL_PRIMARY}` : '2px solid #cbd5e1',
+                    backgroundColor: isSelected ? TEAL_BG : '#ffffff',
+                    cursor: 'pointer',
+                    textAlign: 'center',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  <div style={{ fontWeight: 800, color: TEAL_PRIMARY, fontSize: '11px' }}>
+                    {isAr ? `الفئة ${tier}` : `Tier ${tier}`}
+                  </div>
+                  <div style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a', marginTop: '2px' }}>
+                    {tier === 1 ? '250 SAR' : '450 SAR'}
+                  </div>
+                  <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>
+                    {tier === 1 ? (isAr ? 'تقرير كتابي معتمد' : 'Written Report') : (isAr ? 'فيديو + مترجم' : 'Video + Interpreter')}
+                  </div>
                 </div>
-                <div style={{ fontSize: '16px', fontWeight: 800, color: '#0f172a', marginTop: '3px' }}>
-                  {tier === 1 ? '250 SAR' : '450 SAR'}
-                </div>
-                <div style={{ fontSize: '10px', color: '#64748b', marginTop: '3px' }}>
-                  {tier === 1 ? (isAr ? 'تقرير كتابي معتمد' : 'Written Report') : (isAr ? 'مكالمة فيديو + مترجم' : 'Video Call + Interpreter')}
-                </div>
-              </button>
-            ))}
+              );
+            })}
+          </div>
+
+          {/* Action Button: Pay Now */}
+          <button
+            onClick={() => {
+              const amount = selectedTier === 1 ? 250 : 450;
+              onUpdateCase({
+                tier: selectedTier,
+                stage: 5,
+                currentStage: 'WITH_CONSULTANT',
+                paymentVerified: true,
+                invoiceIssued: true,
+                pricing: {
+                  ...(activeCase.pricing || {}),
+                  tier: selectedTier,
+                  baseSar: amount,
+                  totalSar: amount,
+                  vatPercent: 15,
+                  vatSar: 0,
+                  tierName: selectedTier === 1 ? 'Written' : 'Video',
+                  invoiceNumber: 'INV-2026-001',
+                  paid: true,
+                },
+              });
+            }}
+            style={{
+              width: '100%',
+              backgroundColor: WHATSAPP_GREEN,
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '12px',
+              fontSize: '12px',
+              fontWeight: 800,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              boxShadow: '0 2px 4px rgba(18, 140, 126, 0.25)',
+            }}
+          >
+            <span>💳</span>
+            <span>
+              {isAr
+                ? `سداد ${selectedTier === 1 ? '250' : '450'} ر.س عبر مدى / Apple Pay`
+                : `Pay ${selectedTier === 1 ? '250' : '450'} SAR via Mada / Apple Pay`}
+            </span>
+          </button>
+        </div>
+      )}
+
+      {/* STAGE 5: In Review by Indian Consultant */}
+      {stageNum === 5 && (
+        <div style={{ ...cardInnerStyle, backgroundColor: '#f0fdf4', borderColor: WHATSAPP_GREEN }}>
+          <span style={{ ...labelStyle, color: '#166534' }}>
+            P21 · {isAr ? 'تم تأكيد السداد · قيد مراجعة الاستشاري الدولي' : 'Payment Confirmed · Under Review'}
+          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
+            <span style={{ fontSize: '20px' }}>⏳</span>
+            <div>
+              <p style={{ fontSize: '12px', fontWeight: 700, color: '#0f172a', margin: 0 }}>
+                {isAr ? 'فاتورة ضريبية مسددة (INV-2026-001)' : 'Paid Tax Invoice (INV-2026-001)'}
+              </p>
+              <p style={{ fontSize: '11px', color: '#166534', margin: '2px 0 0 0' }}>
+                {isAr ? 'الاستشاري د. براديب كومار يراجع الأشعة والملف الطبي الآن' : 'Senior Consultant is reviewing DICOM and records'}
+              </p>
+            </div>
           </div>
         </div>
       )}
 
-      {/* STAGE 5+: P26 Final Report Ready */}
-      {stageNum >= 5 && (
+      {/* STAGE 6+: P26 Final Report Ready */}
+      {stageNum >= 6 && (
         <div style={{ ...cardInnerStyle, backgroundColor: '#f0fdfa', borderColor: TEAL_SECONDARY }}>
           <span style={labelStyle}>P26 · {isAr ? 'التقرير الطبي الدولي جاهز' : 'Certified Opinion Ready'}</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
@@ -313,23 +378,6 @@ export const PatientDevice: React.FC<CockpitDeviceProps> = ({
           </div>
         </div>
       )}
-
-      {/* Universal Advance Stage Button */}
-      <button
-        onClick={onAdvanceStage}
-        style={{
-          backgroundColor: '#0f172a',
-          color: '#ffffff',
-          border: 'none',
-          borderRadius: '8px',
-          padding: '10px',
-          fontSize: '12px',
-          fontWeight: 700,
-          cursor: 'pointer',
-        }}
-      >
-        {isAr ? 'تقدم للمرحلة التالية ➔' : 'Advance Stage ➔'}
-      </button>
     </div>
   );
 };
