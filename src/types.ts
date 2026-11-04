@@ -118,4 +118,17 @@ export interface ClinicalCase {
   paymentDetails?: any;
   status?: string;
   metadata?: Record<string, any>;
+  stage?: number;
+  vitals?: Record<string, string>;
+  piiMasked?: boolean;
+  triageComplete?: boolean;
+  focusQuestions?: string[];
+  modality?: string;
+  referralApproved?: boolean;
+  invoiceIssued?: boolean;
+  paymentVerified?: boolean;
+  reportReleased?: boolean;
+  verdicts?: string[];
+  secondOpinionSubmitted?: boolean;
+  tier?: number;
 }

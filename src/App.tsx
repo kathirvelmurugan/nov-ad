@@ -22,11 +22,13 @@ import { GuideModal } from './components/GuideModal';
 import { StageHandoffModal } from './components/StageHandoffModal';
 import { AutoDemoController } from './components/AutoDemoController';
 import { PatientPipelineBoard } from './components/PatientPipelineBoard';
+import { FiveDeviceCockpitView } from './components/FiveDeviceCockpitView';
 
 const STORAGE_KEY = 'alo_cases_v2.4';
 const ACTIVE_CASE_KEY = 'alo_active_case_id_v2.4';
 const THEME_KEY = 'alo_theme_v2.4';
 const LANG_KEY = 'alo_lang_v2.4';
+const VIEW_MODE_KEY = 'alo_view_mode_v2.4';
 
 export const App: React.FC = () => {
   const [activePersona, setActivePersona] = useState<Persona>(PERSONAS[0]);
@@ -101,6 +103,23 @@ export const App: React.FC = () => {
     nextPersona: Persona;
   } | null>(null);
   const [isAutoDemoActive, setIsAutoDemoActive] = useState(false);
+  const [viewMode, setViewMode] = useState<'workstation' | 'studio'>(() => {
+    try {
+      const saved = localStorage.getItem(VIEW_MODE_KEY);
+      if (saved === 'studio' || saved === 'workstation') return saved;
+    } catch (e) {}
+    return 'studio';
+  });
+
+  const handleToggleViewMode = () => {
+    setViewMode((prev) => {
+      const next = prev === 'workstation' ? 'studio' : 'workstation';
+      try {
+        localStorage.setItem(VIEW_MODE_KEY, next);
+      } catch (e) {}
+      return next;
+    });
+  };
 
   // Sync state modifications to localStorage for refresh-durability
   useEffect(() => {
@@ -548,19 +567,39 @@ export const App: React.FC = () => {
         onToggleLang={handleToggleLang}
         theme={theme}
         onToggleTheme={handleToggleTheme}
+        viewMode={viewMode}
+        onToggleViewMode={handleToggleViewMode}
       />
 
-      {/* 2. Interactive 9-Stage Stepper Progress Bar */}
-      <StageProgressBar
-        currentStage={activeCase.currentStage}
-        onSetStage={handleSetStage}
-        lang={lang}
-      />
+      {viewMode === 'studio' ? (
+        <FiveDeviceCockpitView
+          activeCase={activeCase}
+          onAdvanceStage={handleAdvanceStage}
+          onUpdateCase={handleUpdateCase}
+          onResetActiveCase={handleResetActiveCase}
+          lang={lang}
+          onSwitchToWorkstation={() => {
+            setViewMode('workstation');
+            try {
+              localStorage.setItem(VIEW_MODE_KEY, 'workstation');
+            } catch (e) {}
+          }}
+        />
+      ) : (
+        <>
+          {/* 2. Interactive 9-Stage Stepper Progress Bar */}
+          <StageProgressBar
+            currentStage={activeCase.currentStage}
+            onSetStage={handleSetStage}
+            lang={lang}
+          />
 
-      {/* 3. Main Clinical Screen Body */}
-      <main className="flex-1 p-4 sm:p-6 lg:p-8">
-        {renderScreen()}
-      </main>
+          {/* 3. Main Clinical Screen Body */}
+          <main className="flex-1 p-4 sm:p-6 lg:p-8">
+            {renderScreen()}
+          </main>
+        </>
+      )}
 
       {/* 4. WhatsApp Real-Time Stage Transition Toast */}
       <WhatsAppToast

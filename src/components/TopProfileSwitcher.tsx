@@ -79,6 +79,8 @@ interface Props {
   onToggleLang: () => void;
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
+  viewMode?: 'workstation' | 'studio';
+  onToggleViewMode?: () => void;
 }
 
 export const TopProfileSwitcher: React.FC<Props> = ({
@@ -99,6 +101,8 @@ export const TopProfileSwitcher: React.FC<Props> = ({
   onToggleLang,
   theme,
   onToggleTheme,
+  viewMode = 'workstation',
+  onToggleViewMode,
 }) => {
   const isAr = lang === 'ar';
   const isCustom = activeCase.id.startsWith('TEST-') || activeCase.id.startsWith('REAL-');
@@ -179,6 +183,30 @@ export const TopProfileSwitcher: React.FC<Props> = ({
 
         {/* Right Section: Auto-Fill + Theme Toggle + Universal Language Pill */}
         <div className="flex items-center gap-2.5">
+          {/* 5-Role Studio Cockpit Multi-Device Toggle */}
+          {onToggleViewMode && (
+            <button
+              onClick={onToggleViewMode}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg shadow-sm transition-all text-xs active:scale-95 border font-extrabold ${
+                viewMode === 'studio'
+                  ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white border-teal-300 ring-2 ring-teal-400'
+                  : 'bg-gradient-to-r from-slate-900 to-teal-950 text-emerald-300 hover:text-white border-teal-700/60 hover:border-teal-500'
+              }`}
+              title={
+                isAr
+                  ? 'عرض الأدوار الخمسة معاً في شاشة واحدة متزامنة (Patient, Alo Nurse, Saudi treating doctor, Alo Coordinator, Indian consultant)'
+                  : 'Multi-device cockpit: all 5 canonical roles simultaneously in a single screen'
+              }
+            >
+              <span>📱</span>
+              <span>
+                {viewMode === 'studio'
+                  ? (isAr ? '🖥️ محطة فردية' : '🖥️ Single View')
+                  : (isAr ? '📱 استوديو ٥ شاشات' : '📱 5-Role Studio')}
+              </span>
+            </button>
+          )}
+
           {/* 10 Live Clinical Patients Pipeline Board */}
           {onOpenPipelineBoard && (
             <button
