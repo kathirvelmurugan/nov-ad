@@ -1,6 +1,18 @@
 import React from 'react';
 import { CockpitDeviceProps, TEAL_PRIMARY, TEAL_SECONDARY, WHATSAPP_GREEN } from './types';
 
+const DEFAULT_CONSULTANT_ANSWERS = [
+  'Based on 3D DICOM volumetric review, severe asymmetric annular calcification favors Open SAVR with a 23mm valve over TAVR to prevent paravalvular leak.',
+  'Ostial LAD 50-60% calcified plaque with preserved FFR (>0.82) is non-critical; standalone SAVR valve replacement advised without concurrent CABG bypass.',
+  'If bioprosthesis: Warfarin (INR target 2.0-2.5) for initial 3 months, then Aspirin 81mg daily. If mechanical: Life-long Warfarin (INR target 2.5-3.0).'
+];
+
+const DEFAULT_ANSWERS_AR = [
+  'استبدال الصمام الأبهري جراحياً (SAVR) بصمام 23 ملم مفضل لتجنب التسريب وحصار التوصيل الكهربائي.',
+  'تكلس لويحي معتدل (50-60%) مع احتفاظ احتياطي التدفق؛ لا حاجة لمجازة تاجية مرافقة (CABG).',
+  'بروتوكول التخثر: وارفارين (INR 2.0-2.5) لمدة 3 أشهر ثم أسبرين 81 ملغ يومياً.'
+];
+
 export const CoordinatorDevice: React.FC<CockpitDeviceProps> = ({
   activeCase,
   stageNum,
@@ -190,14 +202,47 @@ export const CoordinatorDevice: React.FC<CockpitDeviceProps> = ({
 
               {/* English Original Findings */}
               <div style={{ backgroundColor: '#ffffff', borderRadius: '6px', padding: '8px 10px', border: '1px solid #cbd5e1', fontSize: '10px', color: '#0f172a', direction: 'ltr', textAlign: 'left', lineHeight: 1.4 }}>
-                <div style={{ fontWeight: 800, color: '#475569', marginBottom: '2px' }}>🇬🇧 English Original (Dr. Pradeep Kumar):</div>
+                <div style={{ fontWeight: 800, color: '#475569', marginBottom: '2px' }}>🇬🇧 English Clinical Verdict ({activeCase.consultant?.name || 'Dr. Pradeep Kumar'}):</div>
                 <div>{activeCase.consultantOpinion || 'Surgical Aortic Valve Replacement (SAVR) indicated; no concurrent CABG required based on 3D DICOM.'}</div>
+              </div>
+
+              {/* 3 Specific Answered Focus Questions Breakdown */}
+              <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <div style={{ fontSize: '10px', fontWeight: 800, color: '#166534' }}>
+                  {isAr ? 'إجابات الأسئلة الثلاثة الواردة من الهند وترجمتها المعتمدة:' : '3 Specific Focus Q&A Relayed from Consultant:'}
+                </div>
+                {[0, 1, 2].map((idx) => {
+                  const ansEn = activeCase.consultantAnswers?.[idx] || DEFAULT_CONSULTANT_ANSWERS[idx];
+                  const ansAr = DEFAULT_ANSWERS_AR[idx];
+                  return (
+                    <div
+                      key={idx}
+                      style={{
+                        backgroundColor: '#ffffff',
+                        borderRadius: '6px',
+                        padding: '6px 8px',
+                        border: '1px solid #cbd5e1',
+                        fontSize: '10px',
+                      }}
+                    >
+                      <div style={{ fontWeight: 800, color: TEAL_PRIMARY }}>
+                        Q{idx + 1} English Finding:
+                      </div>
+                      <div style={{ direction: 'ltr', textAlign: 'left', color: '#0f172a', margin: '2px 0 4px 0', fontSize: '10px', lineHeight: 1.35 }}>
+                        {ansEn}
+                      </div>
+                      <div style={{ direction: 'rtl', textAlign: 'right', color: '#166534', fontSize: '9px', fontWeight: 600, borderTop: '1px dashed #e2e8f0', paddingTop: '3px' }}>
+                        🇸🇦 التعريب والتدقيق: {ansAr}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
 
               {/* Certified Arabic Localization (C08-TR) */}
               <div style={{ backgroundColor: '#f0fdfa', borderRadius: '6px', padding: '8px 10px', border: `1px solid ${TEAL_SECONDARY}`, fontSize: '10px', color: '#0f172a', direction: 'rtl', textAlign: 'right', lineHeight: 1.4, marginTop: '8px' }}>
-                <div style={{ fontWeight: 800, color: TEAL_PRIMARY, marginBottom: '2px' }}>🇸🇦 التعريب والتدقيق الطبي المعتمد (منسق رعاية ألو):</div>
-                <div>استبدال الصمام الأبهري جراحياً (SAVR) هو الإجراء الموصى به بشدة؛ مع تأجيل المجازة التاجية.</div>
+                <div style={{ fontWeight: 800, color: TEAL_PRIMARY, marginBottom: '2px' }}>🇸🇦 خلاصة التقرير الطبي المعتمد (منسق رعاية ألو):</div>
+                <div>استبدال الصمام الأبهري جراحياً (SAVR) بصمام 23 ملم هو الإجراء المعتمد لتفادي التسريب، مع إرجاء المجازة التاجية.</div>
                 <div style={{ fontSize: '9px', color: '#166534', fontWeight: 700, marginTop: '4px' }}>✓ مطابقة المصطلحات الطبية المعتمدة (SDAIA / المجلس الصحي)</div>
               </div>
 

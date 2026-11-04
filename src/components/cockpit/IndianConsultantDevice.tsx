@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { CockpitDeviceProps, TEAL_PRIMARY, TEAL_SECONDARY, TEAL_BG, VERDICTS_AR, VERDICTS_EN } from './types';
 
+const DEFAULT_CONSULTANT_ANSWERS = [
+  'Based on 3D DICOM volumetric review, severe asymmetric annular calcification favors Open SAVR with a 23mm valve over TAVR to prevent paravalvular leak.',
+  'Ostial LAD 50-60% calcified plaque with preserved FFR (>0.82) is non-critical; standalone SAVR valve replacement advised without concurrent CABG bypass.',
+  'If bioprosthesis: Warfarin (INR target 2.0-2.5) for initial 3 months, then Aspirin 81mg daily. If mechanical: Life-long Warfarin (INR target 2.5-3.0).'
+];
+
 export const IndianConsultantDevice: React.FC<CockpitDeviceProps> = ({
   activeCase,
   stageNum,
@@ -11,6 +17,12 @@ export const IndianConsultantDevice: React.FC<CockpitDeviceProps> = ({
   const isAr = lang === 'ar';
   const verdicts = isAr ? VERDICTS_AR : VERDICTS_EN;
   const [selectedVerdicts, setSelectedVerdicts] = useState<string[]>(activeCase.verdicts || []);
+  const [consultantAnswers, setConsultantAnswers] = useState<string[]>(() => {
+    if (activeCase.consultantAnswers && activeCase.consultantAnswers.length === 3) {
+      return activeCase.consultantAnswers;
+    }
+    return ['', '', ''];
+  });
 
   useEffect(() => {
     if (activeCase.verdicts) {
@@ -18,12 +30,30 @@ export const IndianConsultantDevice: React.FC<CockpitDeviceProps> = ({
     }
   }, [activeCase.verdicts]);
 
+  useEffect(() => {
+    if (activeCase.consultantAnswers && activeCase.consultantAnswers.length === 3) {
+      setConsultantAnswers(activeCase.consultantAnswers);
+    }
+  }, [activeCase.consultantAnswers]);
+
   const toggleVerdict = (v: string) => {
     const updated = selectedVerdicts.includes(v)
       ? selectedVerdicts.filter((item) => item !== v)
       : [...selectedVerdicts, v];
     setSelectedVerdicts(updated);
     onUpdateCase({ verdicts: updated });
+  };
+
+  const handleUpdateAnswer = (idx: number, text: string) => {
+    const updated = [...consultantAnswers];
+    updated[idx] = text;
+    setConsultantAnswers(updated);
+    onUpdateCase({ consultantAnswers: updated });
+  };
+
+  const handlePreFillSampleAnswers = () => {
+    setConsultantAnswers([...DEFAULT_CONSULTANT_ANSWERS]);
+    onUpdateCase({ consultantAnswers: [...DEFAULT_CONSULTANT_ANSWERS] });
   };
 
   const cardInnerStyle: React.CSSProperties = {
@@ -109,35 +139,104 @@ export const IndianConsultantDevice: React.FC<CockpitDeviceProps> = ({
             </div>
           </div>
 
-          {/* D07–D09: Treating Physician's 3 Focus Questions */}
+          {/* D07–D09 & K05-QA: Treating Physician's 3 Focus Questions & Consultant Answers */}
           <div style={{ ...cardInnerStyle, backgroundColor: '#f8fafc', borderColor: '#cbd5e1' }}>
-            <span style={labelStyle}>
-              D07–D09 · {isAr ? 'أسئلة الطبيب السعودي المعالج (د. الشمري)' : 'Treating Physician Focus Questions'}
-            </span>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '6px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <span style={{ ...labelStyle, margin: 0 }}>
+                D07–D09 · {isAr ? 'أسئلة الطبيب السعودي المعالج وإجابات الاستشاري' : 'Treating Physician Focus Questions & Answers'}
+              </span>
+              {!activeCase.secondOpinionSubmitted && (
+                <button
+                  type="button"
+                  onClick={handlePreFillSampleAnswers}
+                  style={{
+                    backgroundColor: '#f0fdfa',
+                    color: TEAL_PRIMARY,
+                    border: `1px solid ${TEAL_SECONDARY}`,
+                    borderRadius: '6px',
+                    padding: '2px 8px',
+                    fontSize: '10px',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {isAr ? '⚡ إجابات نموذجية' : '⚡ Sample Answers'}
+                </button>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '6px' }}>
               {(activeCase.focusQuestions && activeCase.focusQuestions.filter(Boolean).length > 0
                 ? activeCase.focusQuestions
                 : activeCase.treatingDoctor?.focusQuestions && activeCase.treatingDoctor.focusQuestions.filter(Boolean).length > 0
                 ? activeCase.treatingDoctor.focusQuestions
                 : [
-                    isAr ? '1. هل استبدال صمام الميترال مستعجل أم تحفظي؟' : '1. Is surgical intervention urgently indicated?',
-                    isAr ? '2. ما هو بروتوكول مضادات التخثر الأنسب؟' : '2. What anticoagulation regimen is recommended?',
-                    isAr ? '3. هل يوصى بإجراء تصوير إضافي عبر المريء؟' : '3. Is TEE or repeat 3D echo warranted before surgery?',
+                    isAr ? 'هل استبدال الصمام بالقسطرة (TAVR) أم الجراحة المفتوحة (SAVR) أنسب؟' : 'TAVR vs open SAVR recommendation?',
+                    isAr ? 'ما هو تقييم تكلس الشريان التاجي وهل يستدعي مجازة مرافقة (CABG)؟' : 'Does LAD calcification warrant concurrent CABG?',
+                    isAr ? 'ما هو بروتوكول مضادات التخثر الموصى به؟' : 'Recommended anticoagulation protocol?',
                   ]
               ).map((q, idx) => (
                 <div
                   key={idx}
                   style={{
-                    fontSize: '11px',
-                    color: '#1e293b',
                     backgroundColor: '#ffffff',
-                    padding: '6px 10px',
-                    borderRadius: '6px',
+                    padding: '10px',
+                    borderRadius: '8px',
                     border: '1px solid #e2e8f0',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '6px',
                   }}
                 >
-                  <span style={{ fontWeight: 800, color: TEAL_PRIMARY }}>Q{idx + 1}: </span>
-                  <span>{q}</span>
+                  <div style={{ fontSize: '11px', color: '#1e293b', lineHeight: 1.4 }}>
+                    <span style={{ fontWeight: 800, color: TEAL_PRIMARY }}>Q{idx + 1}: </span>
+                    <span style={{ fontWeight: 600 }}>{q}</span>
+                  </div>
+
+                  <div>
+                    <label
+                      style={{
+                        fontSize: '10px',
+                        fontWeight: 700,
+                        color: '#475569',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        marginBottom: '3px',
+                      }}
+                    >
+                      <span>
+                        {isAr
+                          ? `إجابة الاستشاري السريرية على السؤال ${idx + 1} (English):`
+                          : `Consultant Clinical Answer to Q${idx + 1} (English):`}
+                      </span>
+                      <span style={{ fontSize: '9px', color: consultantAnswers[idx]?.trim() ? TEAL_PRIMARY : '#94a3b8' }}>
+                        {consultantAnswers[idx]?.trim() ? '✓ Custom input' : '(Default fallback)'}
+                      </span>
+                    </label>
+                    <textarea
+                      rows={2}
+                      dir="ltr"
+                      disabled={activeCase.secondOpinionSubmitted}
+                      placeholder={DEFAULT_CONSULTANT_ANSWERS[idx]}
+                      value={consultantAnswers[idx] || ''}
+                      onChange={(e) => handleUpdateAnswer(idx, e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '6px 8px',
+                        borderRadius: '6px',
+                        border: '1px solid #cbd5e1',
+                        fontSize: '10px',
+                        lineHeight: 1.4,
+                        fontFamily: "'Inter', sans-serif",
+                        resize: 'vertical',
+                        backgroundColor: activeCase.secondOpinionSubmitted ? '#f8fafc' : '#ffffff',
+                        color: '#0f172a',
+                        outline: 'none',
+                        boxSizing: 'border-box',
+                      }}
+                    />
+                  </div>
                 </div>
               ))}
             </div>
@@ -197,11 +296,17 @@ export const IndianConsultantDevice: React.FC<CockpitDeviceProps> = ({
           {/* K06: Submit Second Opinion (Strict Button Lock) */}
           <button
             type="button"
-            disabled={activeCase.secondOpinionSubmitted || selectedVerdicts.length === 0}
+            disabled={activeCase.secondOpinionSubmitted}
             onClick={() => {
+              const resolvedAnswers = [
+                consultantAnswers[0]?.trim() || DEFAULT_CONSULTANT_ANSWERS[0],
+                consultantAnswers[1]?.trim() || DEFAULT_CONSULTANT_ANSWERS[1],
+                consultantAnswers[2]?.trim() || DEFAULT_CONSULTANT_ANSWERS[2],
+              ];
               onUpdateCase({
                 secondOpinionSubmitted: true,
-                consultantOpinion: selectedVerdicts.join('; ') || 'Second opinion evaluated and approved based on 3D DICOM.',
+                consultantAnswers: resolvedAnswers,
+                consultantOpinion: selectedVerdicts.join('; ') || resolvedAnswers.join(' | '),
                 currentStage: 'OPINION_READY',
                 stage: 6,
               });
@@ -215,8 +320,8 @@ export const IndianConsultantDevice: React.FC<CockpitDeviceProps> = ({
               padding: '12px',
               fontWeight: 800,
               fontSize: '11px',
-              cursor: (activeCase.secondOpinionSubmitted || selectedVerdicts.length === 0) ? 'not-allowed' : 'pointer',
-              opacity: (activeCase.secondOpinionSubmitted || selectedVerdicts.length === 0) ? 0.8 : 1,
+              cursor: activeCase.secondOpinionSubmitted ? 'not-allowed' : 'pointer',
+              opacity: activeCase.secondOpinionSubmitted ? 0.8 : 1,
               boxShadow: activeCase.secondOpinionSubmitted ? 'none' : '0 4px 12px rgba(0, 123, 110, 0.35)',
               display: 'flex',
               alignItems: 'center',

@@ -130,5 +130,6 @@ export interface ClinicalCase {
   reportReleased?: boolean;
   verdicts?: string[];
   secondOpinionSubmitted?: boolean;
+  consultantAnswers?: string[];
   tier?: number;
 }

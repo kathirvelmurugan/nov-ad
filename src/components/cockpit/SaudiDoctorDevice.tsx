@@ -336,7 +336,7 @@ export const SaudiDoctorDevice: React.FC<CockpitDeviceProps> = ({
 
               <div style={{ fontSize: '11px', color: '#334155', lineHeight: 1.5, marginBottom: '10px' }}>
                 <strong>{isAr ? 'الاستشاري الدولي (الهند): ' : 'Consultant (India): '}</strong>
-                <span>Dr. Pradeep Kumar (Apollo Hospitals)</span>
+                <span>{activeCase.consultant?.name || 'Dr. Pradeep Kumar'} ({activeCase.consultant?.center || 'Apollo Hospitals'})</span>
                 <div style={{ marginTop: '4px', color: '#166534', fontWeight: 700 }}>
                   {activeCase.consultantOpinion || (isAr ? 'تم تأكيد التوصية الجراحية (SAVR) بناءً على تكلس الصمام ثلاثي الأبعاد.' : 'SAVR indicated based on 3D DICOM volumetric reconstruction.')}
                 </div>
@@ -344,18 +344,35 @@ export const SaudiDoctorDevice: React.FC<CockpitDeviceProps> = ({
 
               {/* The 3 Answers Summary Box */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '12px' }}>
-                <div style={{ backgroundColor: '#ffffff', padding: '8px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '10px' }}>
-                  <strong style={{ color: TEAL_PRIMARY }}>Q1 (TAVR vs SAVR): </strong>
-                  <span>{isAr ? 'الجراحة المفتوحة (SAVR) بصمام 23 ملم مفضلة لتجنب التسريب.' : 'Open SAVR strongly recommended over TAVR.'}</span>
-                </div>
-                <div style={{ backgroundColor: '#ffffff', padding: '8px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '10px' }}>
-                  <strong style={{ color: TEAL_PRIMARY }}>Q2 (Coronary LAD): </strong>
-                  <span>{isAr ? 'لا حاجة لمجازة تاجية (CABG) مرافقة؛ الاحتفاظ بالجراحة المفردة.' : 'Standalone SAVR advised; concurrent CABG not indicated.'}</span>
-                </div>
-                <div style={{ backgroundColor: '#ffffff', padding: '8px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '10px' }}>
-                  <strong style={{ color: TEAL_PRIMARY }}>Q3 (Anticoagulation): </strong>
-                  <span>{isAr ? 'وارفارين (هدف 2.0-2.5) لمدة 3 أشهر في حال الصمام النسيجي.' : 'Warfarin for 3 months transitioning to Aspirin 81mg.'}</span>
-                </div>
+                {[0, 1, 2].map((idx) => {
+                  const defaultAnsEn = [
+                    'Based on 3D DICOM volumetric review, severe asymmetric annular calcification favors Open SAVR with a 23mm valve over TAVR to prevent paravalvular leak.',
+                    'Ostial LAD 50-60% calcified plaque with preserved FFR (>0.82) is non-critical; standalone SAVR valve replacement advised without concurrent CABG bypass.',
+                    'If bioprosthesis: Warfarin (INR target 2.0-2.5) for initial 3 months, then Aspirin 81mg daily. If mechanical: Life-long Warfarin (INR target 2.5-3.0).'
+                  ][idx];
+                  const defaultAnsAr = [
+                    'الجراحة المفتوحة (SAVR) بصمام 23 ملم مفضلة لتجنب التسريب وحصار التوصيل.',
+                    'لا حاجة لمجازة تاجية (CABG) مرافقة؛ الاحتفاظ بجراحة الصمام المفردة.',
+                    'وارفارين (هدف 2.0-2.5) لمدة 3 أشهر ثم أسبرين 81 ملغ يومياً.'
+                  ][idx];
+                  const qLabel = focusQs[idx] || (idx === 0 ? 'TAVR vs SAVR' : idx === 1 ? 'Coronary LAD' : 'Anticoagulation');
+                  const consultantAns = activeCase.consultantAnswers?.[idx] || defaultAnsEn;
+                  return (
+                    <div key={idx} style={{ backgroundColor: '#ffffff', padding: '8px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '10px' }}>
+                      <div style={{ fontWeight: 800, color: TEAL_PRIMARY, marginBottom: '2px' }}>
+                        Q{idx + 1}: {qLabel}
+                      </div>
+                      <div style={{ color: '#0f172a', direction: 'ltr', textAlign: 'left', fontSize: '10px', lineHeight: 1.35 }}>
+                        {consultantAns}
+                      </div>
+                      {isAr && (
+                        <div style={{ color: '#166534', direction: 'rtl', textAlign: 'right', fontSize: '9px', fontWeight: 600, marginTop: '3px', borderTop: '1px dashed #e2e8f0', paddingTop: '2px' }}>
+                          🇸🇦 الترجمة المعتمدة: {defaultAnsAr}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
 
               {/* Action Button: View Full Bilingual PDF */}

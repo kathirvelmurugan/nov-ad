@@ -24,12 +24,16 @@ export const BilingualReportModal: React.FC<Props> = ({
   const consultantName = activeCase.consultant?.name || 'Dr. Pradeep Kumar, MBBS, MS, MCh (CTVS)';
   const invoiceNum = activeCase.pricing?.invoiceNumber || 'INV-2026-001';
 
+  const customAnswers = activeCase.consultantAnswers || [];
+  const customQuestions = activeCase.focusQuestions || activeCase.treatingDoctor?.focusQuestions || [];
+
   const questionsAndAnswers = [
     {
       num: 1,
-      qAr: 'هل توصي بإجراء استبدال الصمام بالقسطرة (TAVR) أم الجراحة المفتوحة (SAVR) بناءً على نتائج الإيكو ومستوى التكلس؟',
+      qAr: customQuestions[0] || 'هل توصي بإجراء استبدال الصمام بالقسطرة (TAVR) أم الجراحة المفتوحة (SAVR) بناءً على نتائج الإيكو ومستوى التكلس؟',
       qEn: 'Do you recommend TAVR vs open surgical SAVR given aortic annular calcification and leaflet geometry?',
       ansEn:
+        customAnswers[0]?.trim() ||
         'Based on 3D DICOM volumetric reconstruction, asymmetric heavy calcification in the non-coronary cusp extends into the LVOT. Open Surgical Aortic Valve Replacement (SAVR) with a 23mm mechanical or bioprosthetic valve is strongly recommended over TAVR to prevent paravalvular leak and acute conduction block.',
       ansAr:
         'بناءً على إعادة البناء الحجمي ثلاثي الأبعاد (3D DICOM)، يظهر تكلس غير متماثل في الشرفة غير التاجية ممتد إلى مسار خروج البطين الأيسر. نوصي بشدة بإجراء استبدال الصمام الأبهري جراحياً (SAVR) بصمام 23 ملم لتجنب التسريب حول الصمام وحصار التوصيل الكهربائي مقارنة بالقسطرة.',
@@ -37,9 +41,10 @@ export const BilingualReportModal: React.FC<Props> = ({
     },
     {
       num: 2,
-      qAr: 'ما هو التقييم الدقيق لتكلس الشريان التاجي وهل يستدعي جراحة مرافقة (CABG)؟',
+      qAr: customQuestions[1] || 'ما هو التقييم الدقيق لتكلس الشريان التاجي وهل يستدعي جراحة مرافقة (CABG)؟',
       qEn: 'Does the coronary calcification and LAD lesion warrant concurrent CABG bypass grafting?',
       ansEn:
+        customAnswers[1]?.trim() ||
         'Moderate 50–60% ostial LAD calcified plaque with FFR preserved (>0.82). Standalone SAVR is advised; concurrent CABG is not indicated at this stage to avoid unnecessary cardiopulmonary bypass extension.',
       ansAr:
         'لوحظ تكلس لويحي معتدل بنسبة 50-60% في منشأ الشريان الأمامي النازل، مع احتفاظ احتياطي التدفق الجزئي (FFR > 0.82). يُكتفى بالجراحة المفردة للصمام، ولا يُنصح بإجراء مجازة تاجية مرافقة حالياً.',
@@ -47,9 +52,10 @@ export const BilingualReportModal: React.FC<Props> = ({
     },
     {
       num: 3,
-      qAr: 'ما هي خطة مضادات التخثر المقترحة للحفاظ على كفاءة الصمام؟',
+      qAr: customQuestions[2] || 'ما هي خطة مضادات التخثر المقترحة للحفاظ على كفاءة الصمام؟',
       qEn: 'What antithrombotic and anticoagulant regimen is optimal for long-term valve patency?',
       ansEn:
+        customAnswers[2]?.trim() ||
         'If bioprosthesis is selected: Oral anticoagulation (Warfarin, INR target 2.0–2.5) for initial 3 months, transitioning to Aspirin 81 mg daily. If mechanical: Life-long Warfarin (INR target 2.5–3.0).',
       ansAr:
         'في حال اختيار صمام نسيجي: مضاد تخثر فموي (وارفارين، الهدف 2.0-2.5) لأول 3 أشهر ثم الانتقال إلى أسبرين 81 ملغ يومياً. في حال الصمام الميكانيكي: وارفارين مدى الحياة بهدف 2.5-3.0.',
