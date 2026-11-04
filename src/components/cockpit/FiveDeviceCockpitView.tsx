@@ -7,6 +7,7 @@ import { NurseDevice } from './NurseDevice';
 import { SaudiDoctorDevice } from './SaudiDoctorDevice';
 import { CoordinatorDevice } from './CoordinatorDevice';
 import { IndianConsultantDevice } from './IndianConsultantDevice';
+import { BilingualReportModal } from './BilingualReportModal';
 
 const WHATSAPP_CUES: Record<number, { ar: string; en: string }> = {
   1: {
@@ -54,6 +55,7 @@ export const FiveDeviceCockpitView: React.FC<FiveDeviceCockpitProps> = ({
 }) => {
   const isAr = lang === 'ar';
   const [expandedDevice, setExpandedDevice] = useState<CockpitRole | null>(null);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
   // Derive stageNum deterministically from currentStage, guaranteed >= 5 when paid
   const STAGE_NUM_MAP: Record<string, number> = {
@@ -138,6 +140,7 @@ export const FiveDeviceCockpitView: React.FC<FiveDeviceCockpitProps> = ({
     onAdvanceStage,
     onUpdateCase,
     lang,
+    onOpenReportModal: () => setIsReportModalOpen(true),
   };
 
   const devicesMap: Record<CockpitRole, React.ReactNode> = {
@@ -575,6 +578,14 @@ export const FiveDeviceCockpitView: React.FC<FiveDeviceCockpitProps> = ({
         />
         <span>{isAr ? 'مزامنة تفاعلية حية عبر الشاشات الخمس' : 'Live Cross-Device Reactive Sync Active'}</span>
       </div>
+
+      {/* Interactive Bilingual Second Opinion PDF Viewer Modal */}
+      <BilingualReportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        activeCase={activeCase}
+        lang={lang}
+      />
     </div>
   );
 };

@@ -13,6 +13,7 @@ export interface CockpitDeviceProps {
   onAdvanceStage: () => void;
   onUpdateCase: (updated: Partial<ClinicalCase>) => void;
   lang: 'ar' | 'en';
+  onOpenReportModal?: () => void;
 }
 
 export const TEAL_PRIMARY = '#007B6E';

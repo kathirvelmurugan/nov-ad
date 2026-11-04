@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CockpitDeviceProps, TEAL_PRIMARY, TEAL_SECONDARY, TEAL_BG } from './types';
+import { CockpitDeviceProps, TEAL_PRIMARY, TEAL_SECONDARY, TEAL_BG, WHATSAPP_GREEN } from './types';
 
 export const SaudiDoctorDevice: React.FC<CockpitDeviceProps> = ({
   activeCase,
@@ -7,6 +7,7 @@ export const SaudiDoctorDevice: React.FC<CockpitDeviceProps> = ({
   onAdvanceStage,
   onUpdateCase,
   lang,
+  onOpenReportModal,
 }) => {
   const isAr = lang === 'ar';
   const currentModality = activeCase.modality || (activeCase.consultationType === 'video' ? 'Video' : 'Written');
@@ -228,6 +229,91 @@ export const SaudiDoctorDevice: React.FC<CockpitDeviceProps> = ({
               <span>{isAr ? 'D10 · اعتماد التحويل وتوجيه الملف لمنسق ألو (C01)' : 'D10 · Approve Referral & Route to Alo Coordinator (C01)'}</span>
             )}
           </button>
+
+          {/* D11–D12: International Second Opinion & 3 Focus Answers Delivered */}
+          {(stageNum >= 6 || activeCase.secondOpinionSubmitted || activeCase.reportReleased) && (
+            <div
+              style={{
+                ...cardInnerStyle,
+                backgroundColor: '#f0fdf4',
+                borderColor: WHATSAPP_GREEN,
+                borderWidth: '2px',
+                marginTop: '10px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ ...labelStyle, color: '#166534', margin: 0 }}>
+                  D11–D12 · {isAr ? 'تم استلام الرأي الدولي وإجابة الأسئلة الثلاثة' : 'International Opinion & 3 Answers Received'}
+                </span>
+                <span
+                  style={{
+                    backgroundColor: '#dcfce7',
+                    color: '#166534',
+                    border: '1px solid #86efac',
+                    borderRadius: '999px',
+                    padding: '2px 8px',
+                    fontSize: '10px',
+                    fontWeight: 800,
+                  }}
+                >
+                  {isAr ? '✓ معتمد ومترجم' : '✓ Verified & Translated'}
+                </span>
+              </div>
+
+              <div style={{ fontSize: '11px', color: '#334155', lineHeight: 1.5, marginBottom: '10px' }}>
+                <strong>{isAr ? 'الاستشاري الدولي (الهند): ' : 'Consultant (India): '}</strong>
+                <span>Dr. Pradeep Kumar (Apollo Hospitals)</span>
+                <div style={{ marginTop: '4px', color: '#166534', fontWeight: 700 }}>
+                  {activeCase.consultantOpinion || (isAr ? 'تم تأكيد التوصية الجراحية (SAVR) بناءً على تكلس الصمام ثلاثي الأبعاد.' : 'SAVR indicated based on 3D DICOM volumetric reconstruction.')}
+                </div>
+              </div>
+
+              {/* The 3 Answers Summary Box */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '12px' }}>
+                <div style={{ backgroundColor: '#ffffff', padding: '8px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '10px' }}>
+                  <strong style={{ color: TEAL_PRIMARY }}>Q1 (TAVR vs SAVR): </strong>
+                  <span>{isAr ? 'الجراحة المفتوحة (SAVR) بصمام 23 ملم مفضلة لتجنب التسريب.' : 'Open SAVR strongly recommended over TAVR.'}</span>
+                </div>
+                <div style={{ backgroundColor: '#ffffff', padding: '8px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '10px' }}>
+                  <strong style={{ color: TEAL_PRIMARY }}>Q2 (Coronary LAD): </strong>
+                  <span>{isAr ? 'لا حاجة لمجازة تاجية (CABG) مرافقة؛ الاحتفاظ بالجراحة المفردة.' : 'Standalone SAVR advised; concurrent CABG not indicated.'}</span>
+                </div>
+                <div style={{ backgroundColor: '#ffffff', padding: '8px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '10px' }}>
+                  <strong style={{ color: TEAL_PRIMARY }}>Q3 (Anticoagulation): </strong>
+                  <span>{isAr ? 'وارفارين (هدف 2.0-2.5) لمدة 3 أشهر في حال الصمام النسيجي.' : 'Warfarin for 3 months transitioning to Aspirin 81mg.'}</span>
+                </div>
+              </div>
+
+              {/* Action Button: View Full Bilingual PDF */}
+              <button
+                type="button"
+                onClick={onOpenReportModal}
+                style={{
+                  width: '100%',
+                  backgroundColor: TEAL_PRIMARY,
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '10px',
+                  fontSize: '11px',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  boxShadow: '0 2px 6px rgba(0, 123, 110, 0.3)',
+                }}
+              >
+                <span>📑</span>
+                <span>
+                  {isAr
+                    ? 'D12 · استعراض وتحميل التقرير الطبي الدولي المعتمد (PDF ثنائي اللغة)'
+                    : 'D12 · View & Download Certified Bilingual Opinion Dossier (PDF)'}
+                </span>
+              </button>
+            </div>
+          )}
         </>
       )}
     </div>

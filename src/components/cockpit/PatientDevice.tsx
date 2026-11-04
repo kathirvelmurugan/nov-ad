@@ -7,6 +7,7 @@ export const PatientDevice: React.FC<CockpitDeviceProps> = ({
   onAdvanceStage,
   onUpdateCase,
   lang,
+  onOpenReportModal,
 }) => {
   const isAr = lang === 'ar';
   const currentTier = activeCase.tier || activeCase.pricing?.tier || 1;
@@ -414,18 +415,43 @@ export const PatientDevice: React.FC<CockpitDeviceProps> = ({
       {/* STAGE 6+: P26 Final Report Ready */}
       {(stageNum >= 6 || activeCase.reportReleased) && (
         <div style={{ ...cardInnerStyle, backgroundColor: '#f0fdfa', borderColor: TEAL_SECONDARY }}>
-          <span style={labelStyle}>P26 · {isAr ? 'التقرير الطبي الدولي جاهز' : 'Certified Opinion Ready'}</span>
+          <span style={labelStyle}>P26 · {isAr ? 'التقرير الطبي الدولي جاهز للتحميل' : 'Certified Opinion Ready'}</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
             <span style={{ fontSize: '24px' }}>📄</span>
             <div>
               <p style={{ fontSize: '12px', fontWeight: 700, color: '#0f172a', margin: 0 }}>
-                {isAr ? 'تم اعتماد التقرير من الاستشاري الدولي' : 'Approved by International Senior Consultant'}
+                {isAr ? 'تم اعتماد التقرير ثنائي اللغة من الاستشاري الدولي' : 'Approved Bilingual Report Released'}
               </p>
               <p style={{ fontSize: '11px', color: '#64748b', margin: '4px 0 0 0' }}>
-                ALO-2026-SECOND-OPINION-SIGNED.pdf
+                ALO-2026-BILINGUAL-SECOND-OPINION.pdf
               </p>
             </div>
           </div>
+
+          <button
+            type="button"
+            onClick={onOpenReportModal}
+            style={{
+              width: '100%',
+              backgroundColor: TEAL_PRIMARY,
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '10px',
+              fontSize: '11px',
+              fontWeight: 800,
+              cursor: 'pointer',
+              marginTop: '10px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              boxShadow: '0 2px 6px rgba(0, 123, 110, 0.25)',
+            }}
+          >
+            <span>📑</span>
+            <span>{isAr ? 'عرض وتحميل التقرير الطبي المعتمد (PDF)' : 'View & Download Certified Dossier (PDF)'}</span>
+          </button>
         </div>
       )}
     </div>

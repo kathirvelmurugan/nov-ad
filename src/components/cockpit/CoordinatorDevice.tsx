@@ -1,5 +1,5 @@
 import React from 'react';
-import { CockpitDeviceProps, TEAL_PRIMARY, WHATSAPP_GREEN } from './types';
+import { CockpitDeviceProps, TEAL_PRIMARY, TEAL_SECONDARY, WHATSAPP_GREEN } from './types';
 
 export const CoordinatorDevice: React.FC<CockpitDeviceProps> = ({
   activeCase,
@@ -7,6 +7,7 @@ export const CoordinatorDevice: React.FC<CockpitDeviceProps> = ({
   onAdvanceStage,
   onUpdateCase,
   lang,
+  onOpenReportModal,
 }) => {
   const isAr = lang === 'ar';
   const isReferralApproved = !!activeCase.referralApproved || stageNum >= 4;
@@ -174,18 +175,55 @@ export const CoordinatorDevice: React.FC<CockpitDeviceProps> = ({
             </button>
           </div>
 
-          {/* Received Consultant Opinion Feedback Card */}
+          {/* Received Consultant Opinion & Bilingual Localization Workflow */}
           {activeCase.secondOpinionSubmitted && (
             <div style={{ ...cardInnerStyle, backgroundColor: '#f0fdf4', borderColor: WHATSAPP_GREEN, borderWidth: '2px' }}>
-              <span style={{ ...labelStyle, color: '#166534' }}>
-                K06 · {isAr ? 'تم استلام الرأي الثاني من الهند (مستشفى أبولو)' : 'Second Opinion Received from India'}
-              </span>
-              <div style={{ fontSize: '11px', color: '#0f172a', fontWeight: 700, marginTop: '4px', lineHeight: 1.4 }}>
-                {activeCase.consultantOpinion || (isAr ? 'تأكيد التشخيص: ارتجاع الصمام التاجي. استمرار العلاج التحفظي وتكرار الإيكو بعد 6 أشهر.' : 'Diagnosis Confirmed: Moderate mitral regurgitation. Continue medical therapy.')}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <span style={{ ...labelStyle, color: '#166534', margin: 0 }}>
+                  K06 · {isAr ? 'تم استلام الرأي الإنجليزي من الهند' : 'English Second Opinion Received from India'}
+                </span>
+                <span style={{ fontSize: '9px', backgroundColor: '#dcfce7', color: '#166534', padding: '2px 6px', borderRadius: '4px', fontWeight: 800 }}>
+                  Apollo Hospitals
+                </span>
               </div>
-              <div style={{ fontSize: '10px', color: '#166534', marginTop: '4px', fontWeight: 700 }}>
-                ✓ {isAr ? 'جاهز للختم والمصادقة المعتمدة والإصدار بالتوازي' : 'Ready for Certified Bilingual Stamping & Parallel Release'}
+
+              {/* English Original Findings */}
+              <div style={{ backgroundColor: '#ffffff', borderRadius: '6px', padding: '8px 10px', border: '1px solid #cbd5e1', fontSize: '10px', color: '#0f172a', direction: 'ltr', textAlign: 'left', lineHeight: 1.4 }}>
+                <div style={{ fontWeight: 800, color: '#475569', marginBottom: '2px' }}>🇬🇧 English Original (Dr. Pradeep Kumar):</div>
+                <div>{activeCase.consultantOpinion || 'Surgical Aortic Valve Replacement (SAVR) indicated; no concurrent CABG required based on 3D DICOM.'}</div>
               </div>
+
+              {/* Certified Arabic Localization (C08-TR) */}
+              <div style={{ backgroundColor: '#f0fdfa', borderRadius: '6px', padding: '8px 10px', border: `1px solid ${TEAL_SECONDARY}`, fontSize: '10px', color: '#0f172a', direction: 'rtl', textAlign: 'right', lineHeight: 1.4, marginTop: '8px' }}>
+                <div style={{ fontWeight: 800, color: TEAL_PRIMARY, marginBottom: '2px' }}>🇸🇦 التعريب والتدقيق الطبي المعتمد (منسق رعاية ألو):</div>
+                <div>استبدال الصمام الأبهري جراحياً (SAVR) هو الإجراء الموصى به بشدة؛ مع تأجيل المجازة التاجية.</div>
+                <div style={{ fontSize: '9px', color: '#166534', fontWeight: 700, marginTop: '4px' }}>✓ مطابقة المصطلحات الطبية المعتمدة (SDAIA / المجلس الصحي)</div>
+              </div>
+
+              {/* Bilingual Draft Preview Button */}
+              <button
+                type="button"
+                onClick={onOpenReportModal}
+                style={{
+                  width: '100%',
+                  backgroundColor: '#ffffff',
+                  color: TEAL_PRIMARY,
+                  border: `1.5px solid ${TEAL_PRIMARY}`,
+                  borderRadius: '6px',
+                  padding: '8px',
+                  fontSize: '10px',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  marginTop: '10px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                }}
+              >
+                <span>👁️</span>
+                <span>{isAr ? 'معاينة مسودة التقرير المعتمد ثنائي اللغة (Bilingual PDF)' : 'Preview Certified Bilingual Dossier (PDF)'}</span>
+              </button>
             </div>
           )}
 
@@ -229,12 +267,43 @@ export const CoordinatorDevice: React.FC<CockpitDeviceProps> = ({
             {activeCase.reportReleased ? (
               <>
                 <span>✓</span>
-                <span>{isAr ? 'C08 · تم إصدار التقرير الطبي المعتمد وتسليمه بالتوازي' : 'C08 · Report Released in Parallel'}</span>
+                <span>{isAr ? 'C08 · تم اعتماد وتسليم التقرير الطبي ثنائي اللغة بالتوازي' : 'C08 · Bilingual Report Released in Parallel'}</span>
               </>
             ) : (
-              <span>{isAr ? 'C08 · إصدار التقرير النهائي بالتوازي للطبيب والمريض' : 'C08 · Release Certified Report in Parallel to Doctor & Patient'}</span>
+              <span>
+                {isAr
+                  ? '⚡ C08 · اعتماد وختم التقرير ثنائي اللغة وإرساله بالتوازي (للطبيب والمريض)'
+                  : '⚡ C08 · Certify & Release Bilingual Report in Parallel to Doctor & Patient'}
+              </span>
             )}
           </button>
+
+          {/* Final Released PDF Quick Access Button */}
+          {activeCase.reportReleased && (
+            <button
+              type="button"
+              onClick={onOpenReportModal}
+              style={{
+                width: '100%',
+                backgroundColor: WHATSAPP_GREEN,
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '10px',
+                fontSize: '11px',
+                fontWeight: 800,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                boxShadow: '0 2px 8px rgba(37, 211, 102, 0.3)',
+              }}
+            >
+              <span>📑</span>
+              <span>{isAr ? 'استعراض التقرير المعتمد النهائي (PDF ثنائي اللغة)' : 'Open Released Certified Bilingual Dossier (PDF)'}</span>
+            </button>
+          )}
         </>
       )}
     </div>
