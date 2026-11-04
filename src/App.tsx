@@ -90,52 +90,26 @@ const FRESH_PRIMARY_CASE: ClinicalCase = {
 export const App: React.FC = () => {
   const [activePersona, setActivePersona] = useState<Persona>(PERSONAS[0]);
   
-  // Persistent Cases state: isolated in user's browser sandbox with FRESH_PRIMARY_CASE at index 0
+  // Pure Live Flow Case state: strictly isolated single patient without static demo clutter
   const [cases, setCases] = useState<ClinicalCase[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          const loaded = parsed.map((c: ClinicalCase) => {
-            if (c.id === FRESH_PRIMARY_CASE.id) return { ...FRESH_PRIMARY_CASE, ...c };
-            const seed = SEED_CASES.find((s) => s.id === c.id);
-            if (!seed) return c;
-            return {
-              ...seed,
-              ...c,
-              patientNameAr: c.patientNameAr || seed.patientNameAr,
-              patientNameEn: c.patientNameEn || seed.patientNameEn,
-              specialtyAr: c.specialtyAr || seed.specialtyAr,
-              specialtyEn: c.specialtyEn || seed.specialtyEn,
-              diagnosisAr: c.diagnosisAr || seed.diagnosisAr,
-              diagnosisEn: c.diagnosisEn || seed.diagnosisEn,
-              metadata: c.metadata || seed.metadata,
-              consultantOpinion: c.consultantOpinion || seed.consultantOpinion,
-              proposedCallSlot: c.proposedCallSlot || seed.proposedCallSlot,
-              finalClosureNote: c.finalClosureNote || seed.finalClosureNote,
-              coordinatorQuestions: c.coordinatorQuestions || seed.coordinatorQuestions,
-            };
-          });
-          if (!loaded.find((c) => c.id === FRESH_PRIMARY_CASE.id)) {
-            return [FRESH_PRIMARY_CASE, ...loaded];
+          const liveCase = parsed.find((c: ClinicalCase) => c.id === FRESH_PRIMARY_CASE.id);
+          if (liveCase) {
+            return [{ ...FRESH_PRIMARY_CASE, ...liveCase }];
           }
-          return loaded;
         }
       }
     } catch (e) {
       console.warn('Failed to parse cases from localStorage:', e);
     }
-    return [FRESH_PRIMARY_CASE, ...SEED_CASES];
+    return [FRESH_PRIMARY_CASE];
   });
 
-  const [activeCaseId, setActiveCaseId] = useState<string>(() => {
-    try {
-      const saved = localStorage.getItem(ACTIVE_CASE_KEY);
-      if (saved) return saved;
-    } catch (e) {}
-    return FRESH_PRIMARY_CASE.id;
-  });
+  const [activeCaseId, setActiveCaseId] = useState<string>(FRESH_PRIMARY_CASE.id);
   
   // Pinterest "Clinical Calm" light mode as default
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {

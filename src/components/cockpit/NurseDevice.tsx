@@ -47,6 +47,20 @@ export const NurseDevice: React.FC<CockpitDeviceProps> = ({
         </div>
       ) : (
         <>
+          {/* Patient Submitted Dossier Summary */}
+          <div style={{ ...cardInnerStyle, backgroundColor: '#f0fdfa', borderColor: TEAL_SECONDARY }}>
+            <span style={labelStyle}>{isAr ? 'ملف المريض المستلم حديثاً' : 'Live Patient Intake Dossier'}</span>
+            <div style={{ fontSize: '13px', fontWeight: 800, color: '#0f172a' }}>
+              {activeCase.patientName || (isAr ? 'سالم العامري' : 'Salem Al-Ameri')}
+            </div>
+            <div style={{ fontSize: '11px', color: '#475569', marginTop: '3px' }}>
+              <span style={{ fontWeight: 700 }}>{isAr ? 'التخصص المطلوب:' : 'Specialty:'}</span> {activeCase.specialtyAr || activeCase.specialty || 'Cardiology'}
+            </div>
+            <div style={{ fontSize: '11px', color: '#475569', marginTop: '2px' }}>
+              <span style={{ fontWeight: 700 }}>{isAr ? 'الشكوى:' : 'Complaint:'}</span> {activeCase.symptoms || activeCase.symptomsAr || 'Severe exertional dyspnea'}
+            </div>
+          </div>
+
           {/* N01: Triage Checklist */}
           <div style={cardInnerStyle}>
             <span style={labelStyle}>N01 · {isAr ? 'قائمة التحقق وفرز الحالة' : 'Triage Checklist'}</span>

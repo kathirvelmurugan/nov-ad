@@ -59,9 +59,17 @@ export const FiveDeviceCockpitView: React.FC<FiveDeviceCockpitProps> = ({
     { role: 'Indian consultant', component: <IndianConsultantDevice {...deviceProps} /> },
   ];
 
+  // Progressive Role Unveiling: devices awaken dynamically as upstream milestones resolve
   const visibleDevices = expandedDevice 
     ? devices.filter((d) => d.role === expandedDevice) 
-    : devices;
+    : devices.filter((d) => {
+        if (d.role === 'Patient') return true;
+        if (d.role === 'Alo Nurse') return stageNum >= 2;
+        if (d.role === 'Saudi treating doctor') return stageNum >= 3;
+        if (d.role === 'Alo Coordinator') return stageNum >= 4;
+        if (d.role === 'Indian consultant') return stageNum >= 5;
+        return false;
+      });
 
   return (
     <div
@@ -178,15 +186,17 @@ export const FiveDeviceCockpitView: React.FC<FiveDeviceCockpitProps> = ({
         </div>
       </header>
 
-      {/* Responsive Grid of 5 Device Frames */}
+      {/* Responsive Viewport Surface with Progressive Unveiling */}
       <div
         style={{
-          display: 'grid',
-          gridTemplateColumns: expandedDevice ? '1fr' : 'repeat(auto-fit, minmax(320px, 1fr))',
-          gap: '20px',
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '24px',
           maxWidth: '1800px',
           margin: '0 auto',
           alignItems: 'start',
+          justifyContent: visibleDevices.length === 1 ? (isAr ? 'flex-end' : 'flex-start') : 'center',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         }}
       >
         {visibleDevices.map(({ role, component }) => (

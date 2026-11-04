@@ -91,6 +91,12 @@ export const SaudiDoctorDevice: React.FC<CockpitDeviceProps> = ({
               <div style={{ fontSize: '15px', fontWeight: 800, color: TEAL_PRIMARY, letterSpacing: '1px', marginTop: '2px' }}>
                 {isPiiMasked ? '10********' : 'UNMASKED WARNING'}
               </div>
+              <div style={{ fontSize: '11px', color: '#475569', marginTop: '6px' }}>
+                <span style={{ fontWeight: 700 }}>{isAr ? 'الأعراض المحولة:' : 'Symptoms:'}</span> {activeCase.symptomsAr || activeCase.symptoms || (isAr ? 'ضيق تنفس تدريجي وألم بالصدر' : 'Exertional dyspnea & angina')}
+              </div>
+              <div style={{ fontSize: '10px', color: '#166534', fontWeight: 700, marginTop: '4px' }}>
+                ✓ {isAr ? 'مرفق الأشعة والتحاليل جاهز للمعاينة الدولية' : '3D DICOM & Lab Reports Verified'}
+              </div>
             </div>
           </div>
 

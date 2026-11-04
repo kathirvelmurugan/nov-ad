@@ -123,59 +123,29 @@ export const TopProfileSwitcher: React.FC<Props> = ({
 
           <div className="h-4 w-[1px] bg-slate-300 dark:bg-slate-700 hidden sm:block" />
 
-          {/* Active Case Selector */}
+          {/* Single Focused Case Indicator */}
           <div className="flex items-center gap-2">
             <span className="text-slate-500 dark:text-slate-400 font-medium">
-              {isAr ? 'الحالة النشطة:' : 'Active Case:'}
+              {isAr ? 'المسار السريري المباشر:' : 'Live Flow Case:'}
             </span>
-            <select
-              value={activeCase.id}
-              onChange={(e) => onSelectCase(e.target.value)}
-              className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 rounded-lg px-2.5 py-1 font-semibold focus:ring-2 focus:ring-alo-teal outline-none text-xs shadow-sm cursor-pointer"
-            >
-              {cases.map((c, i) => {
-                const patientDisplay = isAr 
-                  ? (c.patientNameAr || c.patientName)
-                  : `${c.patientNameEn || c.patientName} (${c.patientNameAr || ''})`;
-                const specialtyDisplay = isAr ? (c.specialtyAr || c.specialty) : (c.specialtyEn || c.specialty);
-                return (
-                  <option key={c.id} value={c.id}>
-                    #{i + 1} {c.caseNumber} - {patientDisplay} ({specialtyDisplay.split('(')[0].trim()})
-                  </option>
-                );
-              })}
-            </select>
+            <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-teal-400 dark:border-teal-700 text-slate-800 dark:text-slate-100 rounded-lg px-2.5 py-1 font-bold text-xs shadow-sm">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>{activeCase.caseNumber || 'ALO-2026-LIVE'}</span>
+              <span className="text-slate-400">·</span>
+              <span className="text-alo-teal font-extrabold">
+                {activeCase.patientName || (isAr ? 'مسار مباشر نظيف' : 'Clean Live Slate')}
+              </span>
+            </div>
 
-            <button
-              onClick={onNextCase}
-              className="flex items-center gap-1 bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-2.5 py-1 rounded-lg border border-slate-300 dark:border-slate-700 font-semibold transition-all shadow-sm active:scale-95"
-              title={isAr ? 'تدوير الحالة التالية (Next Case)' : 'Rotate to Next Case'}
-            >
-              <RefreshCw className="w-3 h-3 text-alo-teal" />
-              <span>{isAr ? 'تدوير (Next)' : 'Next Case'}</span>
-            </button>
-
-            {/* + Add New Test Case Button */}
-            {onOpenNewCaseModal && (
-              <button
-                onClick={onOpenNewCaseModal}
-                className="flex items-center gap-1 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 px-2.5 py-1 rounded-lg border border-emerald-300 dark:border-emerald-700 font-bold transition-all shadow-sm active:scale-95"
-                title={isAr ? 'إضافة مريض جديد للاختبار بمسار نظيف' : 'Add new patient test case with clean slate'}
-              >
-                <UserPlus className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                <span>{isAr ? '+ مريض جديد' : '+ New Patient'}</span>
-              </button>
-            )}
-
-            {/* Isolated Reset for Active Case Only */}
-            {onResetCurrentCase && isCustom && (
+            {/* Always Available 1-Click Reset Flow Button */}
+            {onResetCurrentCase && (
               <button
                 onClick={onResetCurrentCase}
                 className="flex items-center gap-1 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-300 px-2.5 py-1 rounded-lg border border-rose-300 dark:border-rose-700 font-bold transition-all shadow-sm active:scale-95"
-                title={isAr ? 'إعادة ضبط مسار هذا المريض التجريبي فقط' : 'Reset this test case only (keeps demo seeds)'}
+                title={isAr ? 'تصفير المسار بالكامل والعودة للبداية' : 'Reset Flow back to Step 1'}
               >
                 <RotateCcw className="w-3 h-3 text-rose-600 dark:text-rose-400" />
-                <span>{isAr ? 'تصفير الحالة' : 'Reset Case'}</span>
+                <span>{isAr ? 'تصفير المسار (Reset)' : 'Reset Flow'}</span>
               </button>
             )}
           </div>
@@ -204,30 +174,6 @@ export const TopProfileSwitcher: React.FC<Props> = ({
                   ? (isAr ? '🖥️ محطة فردية' : '🖥️ Single View')
                   : (isAr ? '📱 استوديو ٥ شاشات' : '📱 5-Role Studio')}
               </span>
-            </button>
-          )}
-
-          {/* 10 Live Clinical Patients Pipeline Board */}
-          {onOpenPipelineBoard && (
-            <button
-              onClick={onOpenPipelineBoard}
-              className="flex items-center gap-1.5 bg-gradient-to-r from-teal-700 to-[#007B6E] hover:from-teal-800 hover:to-teal-700 text-white font-extrabold px-3 py-1 rounded-lg shadow-sm transition-all text-xs active:scale-95 border border-teal-500/30"
-              title={isAr ? 'لوحة متابعة الحالات الحية (10 حالات سريرية عبر 9 مراحل)' : 'Executive Clinical Pipeline: 10 live patients across 9 stages'}
-            >
-              <span>🏥</span>
-              <span>{isAr ? 'متابعة الحالات (١٠)' : '10 Live Patients'}</span>
-            </button>
-          )}
-
-          {/* 1-Click Executive Auto-Demo Presentation Mode */}
-          {onStartAutoDemo && (
-            <button
-              onClick={onStartAutoDemo}
-              className="flex items-center gap-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold px-3 py-1 rounded-lg shadow-sm transition-all text-xs active:scale-95 animate-pulse"
-              title={isAr ? 'بدء جولة العرض التلقائي السريرية' : 'Start interactive auto-demo presentation walkthrough'}
-            >
-              <span>▶️</span>
-              <span>{isAr ? 'جولة تلقائية (Auto-Demo)' : '▶ Auto-Demo'}</span>
             </button>
           )}
 
