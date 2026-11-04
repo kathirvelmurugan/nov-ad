@@ -11,7 +11,8 @@ export const CoordinatorDevice: React.FC<CockpitDeviceProps> = ({
   const isAr = lang === 'ar';
   const isReferralApproved = !!activeCase.referralApproved || stageNum >= 4;
   const isInvoiceIssued = !!activeCase.invoiceIssued || !!activeCase.pricing?.invoiceNumber || stageNum >= 5;
-  const isPaymentVerified = !!activeCase.paymentVerified || !!activeCase.pricing?.paid || activeCase.paymentDetails?.status === 'completed' || stageNum >= 5;
+  const isPatientPaid = !!activeCase.pricing?.paid || activeCase.paymentDetails?.status === 'completed';
+  const isPaymentVerified = !!activeCase.paymentVerified;
   const currentModality = activeCase.modality || (activeCase.consultationType === 'video' ? 'Video' : 'Written');
 
   const cardInnerStyle: React.CSSProperties = {
@@ -128,27 +129,28 @@ export const CoordinatorDevice: React.FC<CockpitDeviceProps> = ({
             <span style={labelStyle}>C05–C06 · {isAr ? 'تحقق السداد وتوجيه الملف للهند' : 'Verify Payment & Dispatch'}</span>
             <button
               type="button"
-              disabled={isPaymentVerified || !activeCase.pricing?.paid}
-              onClick={() =>
+              disabled={isPaymentVerified || !isPatientPaid}
+              onClick={() => {
                 onUpdateCase({
                   paymentVerified: true,
                   currentStage: 'WITH_CONSULTANT',
                   stage: 5,
-                })
-              }
+                });
+                onAdvanceStage();
+              }}
               style={{
                 width: '100%',
-                backgroundColor: isPaymentVerified ? '#e2e8f0' : (activeCase.pricing?.paid ? WHATSAPP_GREEN : '#f1f5f9'),
-                color: isPaymentVerified ? '#475569' : (activeCase.pricing?.paid ? '#ffffff' : '#94a3b8'),
-                border: isPaymentVerified ? '1px solid #cbd5e1' : 'none',
+                backgroundColor: isPaymentVerified ? '#e2e8f0' : (isPatientPaid ? WHATSAPP_GREEN : '#f1f5f9'),
+                color: isPaymentVerified ? '#475569' : (isPatientPaid ? '#ffffff' : '#94a3b8'),
+                border: isPaymentVerified ? '1px solid #cbd5e1' : (isPatientPaid ? 'none' : '1px solid #e2e8f0'),
                 borderRadius: '8px',
-                padding: '10px',
+                padding: '12px',
                 fontWeight: 800,
                 fontSize: '11px',
-                cursor: (isPaymentVerified || !activeCase.pricing?.paid) ? 'not-allowed' : 'pointer',
+                cursor: (isPaymentVerified || !isPatientPaid) ? 'not-allowed' : 'pointer',
                 marginTop: '6px',
-                opacity: (isPaymentVerified || !activeCase.pricing?.paid) ? 0.8 : 1,
-                boxShadow: (isPaymentVerified || !activeCase.pricing?.paid) ? 'none' : '0 4px 12px rgba(37, 211, 102, 0.4)',
+                opacity: (isPaymentVerified || !isPatientPaid) ? 0.8 : 1,
+                boxShadow: (isPaymentVerified || !isPatientPaid) ? 'none' : '0 4px 14px rgba(37, 211, 102, 0.45)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -158,10 +160,14 @@ export const CoordinatorDevice: React.FC<CockpitDeviceProps> = ({
               {isPaymentVerified ? (
                 <>
                   <span>✓</span>
-                  <span>{isAr ? 'C06 · تم تأكيد السداد وإحالة الملف للهند بنجاح' : 'C06 · Payment Verified & Dispatched to India'}</span>
+                  <span>{isAr ? 'C06 · تم اعتماد السداد وتوجيه الملف للهند بنجاح' : 'C06 · Payment Verified & Dispatched to India'}</span>
                 </>
-              ) : activeCase.pricing?.paid ? (
-                <span>{isAr ? `C06 · تم استلام سداد مدى (${activeCase.pricing?.totalSar || 250} ر.س) · توجيه الملف للهند` : `C06 · Verify Mada Payment (${activeCase.pricing?.totalSar || 250} SAR) & Dispatch`}</span>
+              ) : isPatientPaid ? (
+                <span>
+                  {isAr 
+                    ? `⚡ C06 · اعتماد سداد مدى (${activeCase.pricing?.totalSar || 250} ر.س) وإحالة الملف للاستشاري بالهند` 
+                    : `⚡ C06 · Approve Mada Payment (${activeCase.pricing?.totalSar || 250} SAR) & Dispatch to India`}
+                </span>
               ) : (
                 <span>{isAr ? 'C05 · بانتظار سداد المريض للفاتورة' : 'C05 · Awaiting Patient Payment'}</span>
               )}

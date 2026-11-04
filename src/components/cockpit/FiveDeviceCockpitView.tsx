@@ -140,25 +140,71 @@ export const FiveDeviceCockpitView: React.FC<FiveDeviceCockpitProps> = ({
     lang,
   };
 
-  const devices: { role: CockpitRole; component: React.ReactNode }[] = [
-    { role: 'Patient', component: <PatientDevice {...deviceProps} /> },
-    { role: 'Alo Nurse', component: <NurseDevice {...deviceProps} /> },
-    { role: 'Saudi treating doctor', component: <SaudiDoctorDevice {...deviceProps} /> },
-    { role: 'Alo Coordinator', component: <CoordinatorDevice {...deviceProps} /> },
-    { role: 'Indian consultant', component: <IndianConsultantDevice {...deviceProps} /> },
-  ];
+  const devicesMap: Record<CockpitRole, React.ReactNode> = {
+    'Patient': <PatientDevice {...deviceProps} />,
+    'Alo Nurse': <NurseDevice {...deviceProps} />,
+    'Saudi treating doctor': <SaudiDoctorDevice {...deviceProps} />,
+    'Alo Coordinator': <CoordinatorDevice {...deviceProps} />,
+    'Indian consultant': <IndianConsultantDevice {...deviceProps} />,
+  };
 
-  // Progressive Role Unveiling: devices awaken dynamically as upstream milestones resolve
-  const visibleDevices = expandedDevice 
-    ? devices.filter((d) => d.role === expandedDevice) 
-    : devices.filter((d) => {
-        if (d.role === 'Patient') return true;
-        if (d.role === 'Alo Nurse') return stageNum >= 2;
-        if (d.role === 'Saudi treating doctor') return stageNum >= 3;
-        if (d.role === 'Alo Coordinator') return stageNum >= 4;
-        if (d.role === 'Indian consultant') return stageNum >= 5;
-        return false;
-      });
+  const SLOTS = [
+    {
+      role: 'Patient' as CockpitRole,
+      slotNum: 1,
+      unlockStage: 1,
+      titleAr: 'المريض (تطبيق الجوال)',
+      titleEn: 'Patient (Mobile App)',
+      icon: '📱',
+      deviceType: 'mobile',
+      descAr: 'متاح للبدء الفوري',
+      descEn: 'Active for intake',
+    },
+    {
+      role: 'Alo Nurse' as CockpitRole,
+      slotNum: 2,
+      unlockStage: 2,
+      titleAr: 'ممرضة ألو (جهاز لوحي)',
+      titleEn: 'Alo Nurse (Tablet)',
+      icon: '🩺',
+      deviceType: 'tablet',
+      descAr: 'يُفتح عند إرسال المريض للطلب (P01)',
+      descEn: 'Unlocks upon Patient submission (P01)',
+    },
+    {
+      role: 'Saudi treating doctor' as CockpitRole,
+      slotNum: 3,
+      unlockStage: 3,
+      titleAr: 'الطبيب المعالج (بوابة الويب)',
+      titleEn: 'Treating Doctor (Web Portal)',
+      icon: '🇸🇦',
+      deviceType: 'desktop',
+      descAr: 'يُفتح بعد اكتمال فرز التمريض (N04)',
+      descEn: 'Unlocks upon Triage completion (N04)',
+    },
+    {
+      role: 'Alo Coordinator' as CockpitRole,
+      slotNum: 4,
+      unlockStage: 4,
+      titleAr: 'منسق رعاية ألو (محطة العمل)',
+      titleEn: 'Alo Coordinator (Console)',
+      icon: '📋',
+      deviceType: 'desktop',
+      descAr: 'يُفتح بعد اعتماد الطبيب للإحالة (D10)',
+      descEn: 'Unlocks upon Doctor approval (D10)',
+    },
+    {
+      role: 'Indian consultant' as CockpitRole,
+      slotNum: 5,
+      unlockStage: 5,
+      titleAr: 'الاستشاري الدولي (تطبيق الجوال)',
+      titleEn: 'Senior Consultant (Mobile)',
+      icon: '🇮🇳',
+      deviceType: 'mobile',
+      descAr: 'يُفتح بعد اعتماد المنسق للسداد (C06)',
+      descEn: 'Unlocks upon Coordinator dispatch (C06)',
+    },
+  ];
 
   return (
     <div
@@ -346,32 +392,156 @@ export const FiveDeviceCockpitView: React.FC<FiveDeviceCockpitProps> = ({
       {/* Responsive Viewport Surface with Panoramic 5-Screen Horizontal Fit */}
       <div
         style={{
-          display: 'flex',
-          flexDirection: 'row',
-          flexWrap: 'nowrap',
-          gap: '10px',
           width: '100%',
-          maxWidth: '100%',
-          margin: '0 auto',
-          alignItems: 'stretch',
-          justifyContent: visibleDevices.length === 1 ? (isAr ? 'flex-end' : 'flex-start') : 'space-between',
-          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           overflowX: 'auto',
-          boxSizing: 'border-box',
+          paddingBottom: '16px',
         }}
       >
-        {visibleDevices.map(({ role, component }) => (
-          <DeviceChrome
-            key={role}
-            role={role}
-            stageNum={stageNum}
-            lang={lang}
-            isExpanded={expandedDevice === role}
-            onToggleExpand={() => handleToggleExpand(role)}
-          >
-            {component}
-          </DeviceChrome>
-        ))}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: expandedDevice
+              ? '1fr'
+              : 'minmax(280px, 1fr) minmax(320px, 1.2fr) minmax(360px, 1.4fr) minmax(360px, 1.4fr) minmax(280px, 1fr)',
+            gap: '12px',
+            width: '100%',
+            minWidth: expandedDevice ? '100%' : '1420px',
+            boxSizing: 'border-box',
+            alignItems: 'stretch',
+          }}
+        >
+          {expandedDevice ? (
+            <DeviceChrome
+              key={expandedDevice}
+              role={expandedDevice}
+              stageNum={stageNum}
+              lang={lang}
+              isExpanded={true}
+              onToggleExpand={() => handleToggleExpand(expandedDevice)}
+            >
+              {devicesMap[expandedDevice]}
+            </DeviceChrome>
+          ) : (
+            SLOTS.map((slot) => {
+              const isUnlocked = stageNum >= slot.unlockStage;
+              if (isUnlocked) {
+                return (
+                  <DeviceChrome
+                    key={slot.role}
+                    role={slot.role}
+                    stageNum={stageNum}
+                    lang={lang}
+                    isExpanded={false}
+                    onToggleExpand={() => handleToggleExpand(slot.role)}
+                  >
+                    {devicesMap[slot.role]}
+                  </DeviceChrome>
+                );
+              }
+
+              // Pre-allocated placeholder slot holding designated device space
+              return (
+                <div
+                  key={slot.role}
+                  style={{
+                    height: 'calc(100vh - 190px)',
+                    minHeight: '520px',
+                    backgroundColor: 'rgba(248, 250, 252, 0.7)',
+                    border: '2px dashed #cbd5e1',
+                    borderRadius:
+                      slot.deviceType === 'mobile'
+                        ? '28px'
+                        : slot.deviceType === 'tablet'
+                        ? '22px'
+                        : '14px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '24px',
+                    boxSizing: 'border-box',
+                    textAlign: 'center',
+                    position: 'relative',
+                    transition: 'all 0.3s ease',
+                  }}
+                >
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: '16px',
+                      [isAr ? 'right' : 'left']: '16px',
+                      fontSize: '10px',
+                      fontWeight: 800,
+                      color: '#94a3b8',
+                      letterSpacing: '0.5px',
+                    }}
+                  >
+                    {isAr ? `الموقع المخصص ٠${slot.slotNum}` : `SLOT 0${slot.slotNum}`}
+                  </div>
+
+                  <div
+                    style={{
+                      width: '64px',
+                      height: '64px',
+                      borderRadius: '50%',
+                      backgroundColor: '#e2e8f0',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '30px',
+                      marginBottom: '16px',
+                      boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06)',
+                    }}
+                  >
+                    {slot.icon}
+                  </div>
+
+                  <h3
+                    style={{
+                      fontSize: '14px',
+                      fontWeight: 800,
+                      color: '#475569',
+                      margin: '0 0 6px 0',
+                    }}
+                  >
+                    {isAr ? slot.titleAr : slot.titleEn}
+                  </h3>
+
+                  <p
+                    style={{
+                      fontSize: '11px',
+                      color: '#64748b',
+                      margin: '0 0 16px 0',
+                      maxWidth: '220px',
+                      lineHeight: 1.4,
+                      fontWeight: 500,
+                    }}
+                  >
+                    {isAr ? slot.descAr : slot.descEn}
+                  </p>
+
+                  <span
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      padding: '6px 12px',
+                      borderRadius: '999px',
+                      backgroundColor: '#f1f5f9',
+                      border: '1px solid #cbd5e1',
+                      color: '#64748b',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                    }}
+                  >
+                    <span>🔒</span>
+                    <span>{isAr ? `يُفتح عند مرحلة ${slot.unlockStage}` : `Unlocks at Stage ${slot.unlockStage}`}</span>
+                  </span>
+                </div>
+              );
+            })
+          )}
+        </div>
       </div>
 
       {/* Floating Live Reactive Sync Indicator */}
