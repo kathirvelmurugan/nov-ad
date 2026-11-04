@@ -404,35 +404,41 @@ export const PatientDevice: React.FC<CockpitDeviceProps> = ({
         </div>
       )}
 
-      {/* STAGE 5: In Review by Indian Consultant */}
-      {stageNum === 5 && !activeCase.reportReleased && (
+      {/* STAGE 5–6: Waiting for Consultant or Treating Doctor Endorsement */}
+      {stageNum >= 5 && !activeCase.doctorReleasedToPatient && (
         <div style={{ ...cardInnerStyle, backgroundColor: '#f0fdf4', borderColor: WHATSAPP_GREEN }}>
           <span style={{ ...labelStyle, color: '#166534' }}>
-            P21 · {isAr ? 'تم تأكيد السداد وإحالة الملف' : 'Payment Confirmed & Dispatched'}
+            {activeCase.coordinatorForwardedToDoctor 
+              ? (isAr ? 'P24 · قيد مصادقة واعتماد الطبيب السعودي المعالج' : 'P24 · Awaiting Treating Physician Endorsement')
+              : (isAr ? 'P21 · تم تأكيد السداد والملف قيد الدراسة السريرية' : 'P21 · Payment Confirmed & In Clinical Review')}
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
             <span style={{ fontSize: '20px' }}>⏳</span>
             <div>
               <p style={{ fontSize: '12px', fontWeight: 700, color: '#0f172a', margin: 0 }}>
-                {isAr ? 'فاتورة ضريبية مسددة (INV-2026-001)' : 'Paid Tax Invoice (INV-2026-001)'}
+                {activeCase.coordinatorForwardedToDoctor
+                  ? (isAr ? 'طبيبك المعالج د. عبدالله الشمري يراجع التقرير لاعتماده' : 'Dr. Abdullah Al-Shammari is reviewing the report for sign-off')
+                  : (isAr ? 'فاتورة ضريبية مسددة (INV-2026-001)' : 'Paid Tax Invoice (INV-2026-001)')}
               </p>
-              <p style={{ fontSize: '11px', color: '#166534', margin: '2px 0 0 0' }}>
-                {isAr ? 'الاستشاري د. براديب كومار يراجع الأشعة 3D والأسئلة الثلاثة الآن' : 'Dr. Pradeep Kumar is reviewing 3D DICOM & focus questions'}
+              <p style={{ fontSize: '11px', color: '#166534', margin: '2px 0 0 0', lineHeight: 1.4 }}>
+                {activeCase.coordinatorForwardedToDoctor
+                  ? (isAr ? 'الملف الطبي المترجم وصل لطبيبك المعالج بمستشفى رعاية الرياض. سيتاح التقرير لك فور اعتماده رسمياً.' : 'Bilingual dossier submitted to your treating doctor. Download unlocks immediately upon physician sign-off.')
+                  : (isAr ? 'الاستشاري د. براديب كومار يراجع الأشعة 3D والأسئلة الثلاثة الآن في الهند.' : 'Dr. Pradeep Kumar is reviewing 3D DICOM & focus questions at Apollo Hospitals.')}
               </p>
             </div>
           </div>
         </div>
       )}
 
-      {/* STAGE 6+: P26 Final Report Ready */}
-      {(stageNum >= 6 || activeCase.reportReleased) && (
+      {/* STAGE 6+: P26 Final Report Released BY SAUDI DOCTOR */}
+      {activeCase.doctorReleasedToPatient && (
         <div style={{ ...cardInnerStyle, backgroundColor: '#f0fdfa', borderColor: TEAL_SECONDARY }}>
-          <span style={labelStyle}>P26 · {isAr ? 'التقرير الطبي الدولي جاهز للتحميل' : 'Certified Opinion Ready'}</span>
+          <span style={labelStyle}>{isAr ? 'P26 · تم استلام التقرير الطبي المعتمد من طبيبك المعالج' : 'P26 · Approved Opinion Released by Doctor'}</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
             <span style={{ fontSize: '24px' }}>📄</span>
             <div>
               <p style={{ fontSize: '12px', fontWeight: 700, color: '#0f172a', margin: 0 }}>
-                {isAr ? 'تم اعتماد التقرير ثنائي اللغة من الاستشاري الدولي' : 'Approved Bilingual Report Released'}
+                {isAr ? 'معتمد رسمياً من د. عبدالله الشمري (مستشفى رعاية الرياض)' : 'Officially endorsed by Dr. Abdullah Al-Shammari'}
               </p>
               <p style={{ fontSize: '11px', color: '#64748b', margin: '4px 0 0 0' }}>
                 ALO-2026-BILINGUAL-SECOND-OPINION.pdf

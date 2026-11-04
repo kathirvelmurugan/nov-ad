@@ -140,13 +140,19 @@ export const CoordinatorDevice: React.FC<CockpitDeviceProps> = ({
 
           {/* C05–C06: Payment Verify & Push to India (Coordinator Gate 2) */}
           <div style={cardInnerStyle}>
-            <span style={labelStyle}>C05–C06 · {isAr ? 'تحقق السداد وتوجيه الملف للهند' : 'Verify Payment & Dispatch'}</span>
+            <span style={labelStyle}>C05–C06 · {isAr ? 'تحقق السداد وتجهيل الهوية وتوجيه الملف للهند' : 'Verify Payment, Tokenize & Dispatch'}</span>
+            <div style={{ fontSize: '10px', color: '#166534', backgroundColor: '#f0fdf4', padding: '6px 8px', borderRadius: '6px', border: '1px solid #bbf7d0', marginBottom: '6px' }}>
+              {isAr
+                ? '🇸🇦 داخل المملكة: بيانات المريض كاملة ومطابقة ──[C06 تجهيل الهوية وفق اشتراطات سدايا]──> 🇮🇳 الهند (ALO-KSA-9482)'
+                : '🇸🇦 Domestic KSA (Full PII) ──[C06 SDAIA Cross-border Tokenization]──> 🇮🇳 India (Token ALO-KSA-9482)'}
+            </div>
             <button
               type="button"
               disabled={isPaymentVerified || !isPatientPaid}
               onClick={() => {
                 onUpdateCase({
                   paymentVerified: true,
+                  isCrossBorderDeidentified: true,
                   currentStage: 'WITH_CONSULTANT',
                   stage: 5,
                 });
@@ -162,7 +168,7 @@ export const CoordinatorDevice: React.FC<CockpitDeviceProps> = ({
                 fontWeight: 800,
                 fontSize: '11px',
                 cursor: (isPaymentVerified || !isPatientPaid) ? 'not-allowed' : 'pointer',
-                marginTop: '6px',
+                marginTop: '2px',
                 opacity: (isPaymentVerified || !isPatientPaid) ? 0.8 : 1,
                 boxShadow: (isPaymentVerified || !isPatientPaid) ? 'none' : '0 4px 14px rgba(37, 211, 102, 0.45)',
                 display: 'flex',
@@ -174,13 +180,13 @@ export const CoordinatorDevice: React.FC<CockpitDeviceProps> = ({
               {isPaymentVerified ? (
                 <>
                   <span>✓</span>
-                  <span>{isAr ? 'C06 · تم اعتماد السداد وتوجيه الملف للهند بنجاح' : 'C06 · Payment Verified & Dispatched to India'}</span>
+                  <span>{isAr ? 'C06 · تم حجب الهوية بنجاح وتوجيه الملف للاستشاري بالهند' : 'C06 · PII Tokenized & Dispatched to India'}</span>
                 </>
               ) : isPatientPaid ? (
                 <span>
                   {isAr 
-                    ? `⚡ C06 · اعتماد سداد مدى (${activeCase.pricing?.totalSar || 250} ر.س) وإحالة الملف للاستشاري بالهند` 
-                    : `⚡ C06 · Approve Mada Payment (${activeCase.pricing?.totalSar || 250} SAR) & Dispatch to India`}
+                    ? `⚡ C06 · اعتماد سداد مدى (${activeCase.pricing?.totalSar || 250} ر.س) وتجهيل الهوية وتوجيه الملف للهند` 
+                    : `⚡ C06 · Approve Mada Payment (${activeCase.pricing?.totalSar || 250} SAR), Mask PII & Dispatch to India`}
                 </span>
               ) : (
                 <span>{isAr ? 'C05 · بانتظار سداد المريض للفاتورة' : 'C05 · Awaiting Patient Payment'}</span>
@@ -239,6 +245,21 @@ export const CoordinatorDevice: React.FC<CockpitDeviceProps> = ({
                 })}
               </div>
 
+              {/* Consultant Holistic Notes (Free-text) Relay */}
+              {activeCase.consultantNotes && (
+                <div style={{ marginTop: '8px', backgroundColor: '#ffffff', borderRadius: '6px', padding: '8px 10px', border: '1px solid #cbd5e1', fontSize: '10px' }}>
+                  <div style={{ fontWeight: 800, color: TEAL_PRIMARY, marginBottom: '2px' }}>
+                    🇬🇧 Senior Consultant Free-Text Notes & Considerations:
+                  </div>
+                  <div style={{ direction: 'ltr', textAlign: 'left', color: '#0f172a', lineHeight: 1.4 }}>
+                    {activeCase.consultantNotes}
+                  </div>
+                  <div style={{ direction: 'rtl', textAlign: 'right', color: '#166534', fontSize: '9px', fontWeight: 600, borderTop: '1px dashed #e2e8f0', paddingTop: '3px', marginTop: '4px' }}>
+                    🇸🇦 التعريب: تأكيد استبدال الصمام جراحياً بصمام 23 ملم بتوجيه الإيكو عبر المريء واستبعاد أي انسداد تحت الصمام، مع مراقبة التوصيل الأذيني البطيني.
+                  </div>
+                </div>
+              )}
+
               {/* Certified Arabic Localization (C08-TR) */}
               <div style={{ backgroundColor: '#f0fdfa', borderRadius: '6px', padding: '8px 10px', border: `1px solid ${TEAL_SECONDARY}`, fontSize: '10px', color: '#0f172a', direction: 'rtl', textAlign: 'right', lineHeight: 1.4, marginTop: '8px' }}>
                 <div style={{ fontWeight: 800, color: TEAL_PRIMARY, marginBottom: '2px' }}>🇸🇦 خلاصة التقرير الطبي المعتمد (منسق رعاية ألو):</div>
@@ -285,44 +306,60 @@ export const CoordinatorDevice: React.FC<CockpitDeviceProps> = ({
             </div>
           )}
 
-          {/* C08: Release Certified Report in Parallel (Strict Button Lock) */}
+          {/* C08: Certify Bilingual Report & Route to Saudi Treating Doctor (Sequential Legal Gate) */}
           <button
             type="button"
-            disabled={!activeCase.secondOpinionSubmitted || activeCase.reportReleased}
+            disabled={!activeCase.secondOpinionSubmitted || activeCase.coordinatorForwardedToDoctor}
             onClick={() => {
-              onUpdateCase({ reportReleased: true, currentStage: 'CLOSED', stage: 7 });
+              onUpdateCase({
+                coordinatorForwardedToDoctor: true,
+                currentStage: 'DOCTOR_REVIEW',
+                stage: 6,
+              });
               onAdvanceStage();
             }}
             style={{
-              backgroundColor: activeCase.reportReleased ? '#e2e8f0' : (activeCase.secondOpinionSubmitted ? TEAL_PRIMARY : '#f1f5f9'),
-              color: activeCase.reportReleased ? '#475569' : (activeCase.secondOpinionSubmitted ? '#ffffff' : '#94a3b8'),
-              border: activeCase.reportReleased ? '1px solid #cbd5e1' : 'none',
+              backgroundColor: activeCase.coordinatorForwardedToDoctor ? '#e2e8f0' : (activeCase.secondOpinionSubmitted ? TEAL_PRIMARY : '#f1f5f9'),
+              color: activeCase.coordinatorForwardedToDoctor ? '#475569' : (activeCase.secondOpinionSubmitted ? '#ffffff' : '#94a3b8'),
+              border: activeCase.coordinatorForwardedToDoctor ? '1px solid #cbd5e1' : 'none',
               borderRadius: '8px',
               padding: '12px',
               fontWeight: 800,
               fontSize: '11px',
-              cursor: (!activeCase.secondOpinionSubmitted || activeCase.reportReleased) ? 'not-allowed' : 'pointer',
-              opacity: (!activeCase.secondOpinionSubmitted || activeCase.reportReleased) ? 0.8 : 1,
-              boxShadow: (!activeCase.secondOpinionSubmitted || activeCase.reportReleased) ? 'none' : '0 4px 12px rgba(0, 123, 110, 0.35)',
+              cursor: (!activeCase.secondOpinionSubmitted || activeCase.coordinatorForwardedToDoctor) ? 'not-allowed' : 'pointer',
+              opacity: (!activeCase.secondOpinionSubmitted || activeCase.coordinatorForwardedToDoctor) ? 0.8 : 1,
+              boxShadow: (!activeCase.secondOpinionSubmitted || activeCase.coordinatorForwardedToDoctor) ? 'none' : '0 4px 12px rgba(0, 123, 110, 0.35)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: '6px',
             }}
           >
-            {activeCase.reportReleased ? (
+            {activeCase.coordinatorForwardedToDoctor ? (
               <>
                 <span>✓</span>
-                <span>{isAr ? 'C08 · تم اعتماد وتسليم التقرير الطبي ثنائي اللغة بالتوازي' : 'C08 · Bilingual Report Released in Parallel'}</span>
+                <span>{isAr ? 'C08 · تم اعتماد التعريب وتوجيه الملف للطبيب السعودي المعالج للمصادقة' : 'C08 · Translated Dossier Routed to Saudi Treating Doctor'}</span>
               </>
             ) : (
               <span>
                 {isAr
-                  ? '⚡ C08 · اعتماد وختم التقرير ثنائي اللغة وإرساله بالتوازي (للطبيب والمريض)'
-                  : '⚡ C08 · Certify & Release Bilingual Report in Parallel to Doctor & Patient'}
+                  ? '⚡ C08 · اعتماد التعريب وتوجيه التقرير للطبيب السعودي المعالج للمصادقة السريرية'
+                  : '⚡ C08 · Certify Arabic Translation & Route to Saudi Treating Doctor for Approval'}
               </span>
             )}
           </button>
+
+          {/* Sequential Status Indicator */}
+          {activeCase.coordinatorForwardedToDoctor && !activeCase.doctorReleasedToPatient && (
+            <div style={{ backgroundColor: '#fffbeb', borderRadius: '8px', padding: '10px', border: '1px solid #fde68a', fontSize: '11px', color: '#92400e', lineHeight: 1.4 }}>
+              <strong>⏳ {isAr ? 'قيد مصادقة الطبيب السعودي المعالج:' : 'Awaiting Treating Physician Approval:'}</strong>
+              <div style={{ marginTop: '2px', fontSize: '10px' }}>
+                {isAr
+                  ? 'تم إرسال الملف المترجم إلى د. عبدالله الشمري (مستشفى رعاية الرياض). سيتاح التقرير للمريض فور مصادقة الطبيب في الشاشة 3.'
+                  : 'Bilingual dossier sent to Dr. Abdullah Al-Shammari. Patient access unlocks once doctor gives final sign-off on Slot 3.'}
+              </div>
+            </div>
+          )}
 
           {/* Final Released PDF Quick Access Button */}
           {activeCase.reportReleased && (

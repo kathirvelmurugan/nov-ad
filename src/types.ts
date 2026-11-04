@@ -131,5 +131,9 @@ export interface ClinicalCase {
   verdicts?: string[];
   secondOpinionSubmitted?: boolean;
   consultantAnswers?: string[];
+  consultantNotes?: string;
+  coordinatorForwardedToDoctor?: boolean;
+  doctorReleasedToPatient?: boolean;
+  isCrossBorderDeidentified?: boolean;
   tier?: number;
 }

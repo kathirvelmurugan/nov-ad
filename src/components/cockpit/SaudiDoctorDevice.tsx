@@ -375,34 +375,106 @@ export const SaudiDoctorDevice: React.FC<CockpitDeviceProps> = ({
                 })}
               </div>
 
-              {/* Action Button: View Full Bilingual PDF */}
-              <button
-                type="button"
-                onClick={onOpenReportModal}
-                style={{
-                  width: '100%',
-                  backgroundColor: TEAL_PRIMARY,
-                  color: '#ffffff',
-                  border: 'none',
-                  borderRadius: '8px',
-                  padding: '10px',
-                  fontSize: '11px',
-                  fontWeight: 800,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '6px',
-                  boxShadow: '0 2px 6px rgba(0, 123, 110, 0.3)',
-                }}
-              >
-                <span>📑</span>
-                <span>
-                  {isAr
-                    ? 'D12 · استعراض وتحميل التقرير الطبي الدولي المعتمد (PDF ثنائي اللغة)'
-                    : 'D12 · View & Download Certified Bilingual Opinion Dossier (PDF)'}
-                </span>
-              </button>
+              {/* Consultant Free-Text Notes Relay */}
+              {activeCase.consultantNotes && (
+                <div style={{ backgroundColor: '#ffffff', padding: '8px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '10px', marginBottom: '12px' }}>
+                  <div style={{ fontWeight: 800, color: TEAL_PRIMARY, marginBottom: '2px' }}>
+                    {isAr ? 'ملاحظات وتوصيات الاستشاري الإضافية (الهند):' : 'Senior Consultant Clinical Notes (India):'}
+                  </div>
+                  <div style={{ color: '#0f172a', direction: 'ltr', textAlign: 'left', fontSize: '10px', lineHeight: 1.35 }}>
+                    {activeCase.consultantNotes}
+                  </div>
+                  {isAr && (
+                    <div style={{ color: '#166534', direction: 'rtl', textAlign: 'right', fontSize: '9px', fontWeight: 600, marginTop: '3px', borderTop: '1px dashed #e2e8f0', paddingTop: '2px' }}>
+                      🇸🇦 التعريب: تأكيد استبدال الصمام جراحياً بصمام 23 ملم بتوجيه الإيكو عبر المريء واستبعاد أي انسداد تحت الصمام، مع مراقبة التوصيل الأذيني البطيني.
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Action Buttons: Preview PDF & D12 Sovereign Doctor Release */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <button
+                  type="button"
+                  onClick={onOpenReportModal}
+                  style={{
+                    width: '100%',
+                    backgroundColor: '#ffffff',
+                    color: TEAL_PRIMARY,
+                    border: `1.5px solid ${TEAL_PRIMARY}`,
+                    borderRadius: '8px',
+                    padding: '8px',
+                    fontSize: '11px',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  <span>👁️</span>
+                  <span>
+                    {isAr
+                      ? 'معاينة مسودة التقرير الطبي ثنائي اللغة (Bilingual PDF)'
+                      : 'Preview Certified Bilingual Dossier (PDF)'}
+                  </span>
+                </button>
+
+                {/* D12: Saudi Treating Doctor Sovereign Release to Patient */}
+                <button
+                  type="button"
+                  disabled={activeCase.doctorReleasedToPatient || !activeCase.coordinatorForwardedToDoctor}
+                  onClick={() => {
+                    onUpdateCase({
+                      doctorReleasedToPatient: true,
+                      reportReleased: true,
+                      currentStage: 'CLOSED',
+                      stage: 7,
+                    });
+                    onAdvanceStage();
+                  }}
+                  style={{
+                    width: '100%',
+                    backgroundColor: activeCase.doctorReleasedToPatient ? '#e2e8f0' : (activeCase.coordinatorForwardedToDoctor ? WHATSAPP_GREEN : '#f1f5f9'),
+                    color: activeCase.doctorReleasedToPatient ? '#475569' : (activeCase.coordinatorForwardedToDoctor ? '#ffffff' : '#94a3b8'),
+                    border: activeCase.doctorReleasedToPatient ? '1px solid #cbd5e1' : 'none',
+                    borderRadius: '8px',
+                    padding: '12px',
+                    fontSize: '11px',
+                    fontWeight: 800,
+                    cursor: (activeCase.doctorReleasedToPatient || !activeCase.coordinatorForwardedToDoctor) ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    boxShadow: (activeCase.doctorReleasedToPatient || !activeCase.coordinatorForwardedToDoctor) ? 'none' : '0 4px 12px rgba(37, 211, 102, 0.4)',
+                  }}
+                >
+                  {activeCase.doctorReleasedToPatient ? (
+                    <>
+                      <span>✓</span>
+                      <span>
+                        {isAr
+                          ? 'D12 · تم مصادقة التقرير من الطبيب السعودي وتسليمه رسمياً للمريض'
+                          : 'D12 · Approved by Saudi Physician & Released to Patient'}
+                      </span>
+                    </>
+                  ) : activeCase.coordinatorForwardedToDoctor ? (
+                    <span>
+                      {isAr
+                        ? '⚡ D12 · مصادقة الطبيب السعودي المعالج واعتماد تسليم التقرير للمريض'
+                        : '⚡ D12 · Saudi Treating Doctor Endorsement & Release to Patient'}
+                    </span>
+                  ) : (
+                    <span>
+                      {isAr
+                        ? 'D11 · بانتظار استكمال التعريب من منسق ألو (C08)'
+                        : 'D11 · Awaiting Coordinator Localization (C08)'}
+                    </span>
+                  )}
+                </button>
+              </div>
             </div>
           )}
         </>

@@ -7,6 +7,9 @@ const DEFAULT_CONSULTANT_ANSWERS = [
   'If bioprosthesis: Warfarin (INR target 2.0-2.5) for initial 3 months, then Aspirin 81mg daily. If mechanical: Life-long Warfarin (INR target 2.5-3.0).'
 ];
 
+const DEFAULT_CONSULTANT_NOTE =
+  'Patient presents with severe symptomatic calcific aortic stenosis. Correlating 3D DICOM reconstructions with clinical hemodynamics, standalone SAVR 23mm valve replacement is strongly endorsed. Intraoperative transesophageal echocardiography (TEE) should guide seating and verify clearance from coronary ostia. Low-threshold monitoring for post-operative transient AV conduction disturbances advised.';
+
 export const IndianConsultantDevice: React.FC<CockpitDeviceProps> = ({
   activeCase,
   stageNum,
@@ -23,6 +26,7 @@ export const IndianConsultantDevice: React.FC<CockpitDeviceProps> = ({
     }
     return ['', '', ''];
   });
+  const [consultantNotes, setConsultantNotes] = useState<string>(activeCase.consultantNotes || '');
 
   useEffect(() => {
     if (activeCase.verdicts) {
@@ -35,6 +39,12 @@ export const IndianConsultantDevice: React.FC<CockpitDeviceProps> = ({
       setConsultantAnswers(activeCase.consultantAnswers);
     }
   }, [activeCase.consultantAnswers]);
+
+  useEffect(() => {
+    if (activeCase.consultantNotes) {
+      setConsultantNotes(activeCase.consultantNotes);
+    }
+  }, [activeCase.consultantNotes]);
 
   const toggleVerdict = (v: string) => {
     const updated = selectedVerdicts.includes(v)
@@ -100,6 +110,26 @@ export const IndianConsultantDevice: React.FC<CockpitDeviceProps> = ({
             </div>
             <div style={{ fontSize: '10px', color: '#64748b', marginTop: '1px' }}>
               {activeCase.consultant?.center || 'Apollo Hospitals'} · {activeCase.consultant?.city || 'Bengaluru, India'}
+            </div>
+          </div>
+
+          {/* SDAIA Cross-Border De-identified Patient Card (Art. 29 Compliance) */}
+          <div style={{ ...cardInnerStyle, backgroundColor: '#f8fafc', border: '1.5px solid #cbd5e1' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+              <span style={{ ...labelStyle, color: '#475569', margin: 0 }}>
+                {isAr ? 'ملف الحالة الدولية (مجهّل الهوية حسب اشتراطات سدايا)' : 'SDAIA Cross-Border De-identified Subject'}
+              </span>
+              <span style={{ fontSize: '9px', backgroundColor: '#e2e8f0', color: '#334155', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>
+                Saudi PDPL Art. 29
+              </span>
+            </div>
+            <div style={{ fontSize: '12px', fontWeight: 800, color: '#0f172a' }}>
+              {isAr ? 'رمز الحالة: ALO-KSA-9482 (٤٨ سنة / ذكر)' : 'Subject Token: ALO-KSA-9482 (48Y / Male)'}
+            </div>
+            <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px', lineHeight: 1.4 }}>
+              {isAr
+                ? '🔒 تم حجب الاسم الكامل ورقم الهوية الوطنية عند عبور البيانات خارج المملكة وفقاً لنظام حماية البيانات الشخصية.'
+                : '🔒 Direct identifiers (Full Name, National ID/Iqama, Phone) redacted prior to export in compliance with Saudi cross-border transfer laws.'}
             </div>
           </div>
 
@@ -293,6 +323,66 @@ export const IndianConsultantDevice: React.FC<CockpitDeviceProps> = ({
             </div>
           </div>
 
+          {/* K05-NOTES: Free-text Clinical Synthesis & Surgical Notes */}
+          <div style={cardInnerStyle}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+              <span style={{ ...labelStyle, margin: 0 }}>
+                K05-NOTES · {isAr ? 'ملاحظات سريرية ورؤى جراحية إضافية (نص حر)' : 'Consultant Notes & Holistic Impressions (Free-text)'}
+              </span>
+              {!activeCase.secondOpinionSubmitted && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setConsultantNotes(DEFAULT_CONSULTANT_NOTE);
+                    onUpdateCase({ consultantNotes: DEFAULT_CONSULTANT_NOTE });
+                  }}
+                  style={{
+                    backgroundColor: '#f0fdfa',
+                    color: TEAL_PRIMARY,
+                    border: `1px solid ${TEAL_SECONDARY}`,
+                    borderRadius: '6px',
+                    padding: '2px 8px',
+                    fontSize: '10px',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {isAr ? '⚡ ملاحظة نموذجية' : '⚡ Sample Note'}
+                </button>
+              )}
+            </div>
+            <textarea
+              rows={3}
+              dir="ltr"
+              disabled={activeCase.secondOpinionSubmitted}
+              placeholder={DEFAULT_CONSULTANT_NOTE}
+              value={consultantNotes}
+              onChange={(e) => {
+                setConsultantNotes(e.target.value);
+                onUpdateCase({ consultantNotes: e.target.value });
+              }}
+              style={{
+                width: '100%',
+                padding: '8px 10px',
+                borderRadius: '8px',
+                border: '1px solid #cbd5e1',
+                fontSize: '10px',
+                lineHeight: 1.45,
+                fontFamily: "'Inter', sans-serif",
+                resize: 'vertical',
+                backgroundColor: activeCase.secondOpinionSubmitted ? '#f8fafc' : '#ffffff',
+                color: '#0f172a',
+                outline: 'none',
+                boxSizing: 'border-box',
+              }}
+            />
+            <div style={{ fontSize: '9px', color: '#64748b', marginTop: '4px', textAlign: isAr ? 'right' : 'left' }}>
+              {isAr
+                ? 'تدوين أي اعتبارات تشريحية، تحفظات دوائية أو توصيات مرافقة للجراحة لنقلها لمنسق ألو والطبيب السعودي المعالج.'
+                : 'Enter anatomical nuances, intraoperative caveats, or post-operative monitoring advice to relay to Coordinator & Saudi Treating Doctor.'}
+            </div>
+          </div>
+
           {/* K06: Submit Second Opinion (Strict Button Lock) */}
           <button
             type="button"
@@ -303,9 +393,11 @@ export const IndianConsultantDevice: React.FC<CockpitDeviceProps> = ({
                 consultantAnswers[1]?.trim() || DEFAULT_CONSULTANT_ANSWERS[1],
                 consultantAnswers[2]?.trim() || DEFAULT_CONSULTANT_ANSWERS[2],
               ];
+              const resolvedNotes = consultantNotes.trim() || DEFAULT_CONSULTANT_NOTE;
               onUpdateCase({
                 secondOpinionSubmitted: true,
                 consultantAnswers: resolvedAnswers,
+                consultantNotes: resolvedNotes,
                 consultantOpinion: selectedVerdicts.join('; ') || resolvedAnswers.join(' | '),
                 currentStage: 'OPINION_READY',
                 stage: 6,
@@ -335,7 +427,7 @@ export const IndianConsultantDevice: React.FC<CockpitDeviceProps> = ({
                 <span>{isAr ? 'K06 · تم اعتماد الرأي الثاني وتوقيعه رقمياً' : 'K06 · Opinion Signed & Submitted'}</span>
               </>
             ) : (
-              <span>{isAr ? 'K06 · إرسال الرأي الثاني المعتمد لمنسق ألو (C08)' : 'K06 · Submit Second Opinion to Coordinator (C08)'}</span>
+              <span>{isAr ? 'K06 · إرسال الرأي الثاني والملاحظات لمنسق ألو للتعريب (C08)' : 'K06 · Submit Opinion & Notes to Coordinator for Localization (C08)'}</span>
             )}
           </button>
         </>

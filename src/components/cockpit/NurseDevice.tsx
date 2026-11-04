@@ -98,29 +98,31 @@ export const NurseDevice: React.FC<CockpitDeviceProps> = ({
             </div>
           </div>
 
-          {/* N04: SDAIA PII Masking */}
+          {/* N04: Domestic ID Verification & Border Token Prep */}
           <div style={cardInnerStyle}>
-            <span style={labelStyle}>N04 · {isAr ? 'حجب الهوية الوطنية آلياً (SDAIA)' : 'SDAIA Automated PII Masking'}</span>
+            <span style={labelStyle}>{isAr ? 'N04 · التحقق من الهوية المحلية وإعداد رمز التجهيل الحدودي' : 'N04 · Domestic ID & Border Token Prep'}</span>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px' }}>
-              <span style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a', letterSpacing: '1px' }}>
-                {isPiiMasked ? '10********' : (activeCase.nationalIdMasked || '1089345210')}
-              </span>
-              <button
-                onClick={() => onUpdateCase({ piiMasked: !isPiiMasked })}
+              <div>
+                <span style={{ fontSize: '13px', fontWeight: 800, color: '#0f172a', letterSpacing: '0.5px' }}>
+                  هوية وطنية: 1089345210
+                </span>
+                <div style={{ fontSize: '10px', color: '#166534', fontWeight: 600, marginTop: '2px' }}>
+                  {isAr ? '🇸🇦 معتمدة داخل المملكة (التجهيل يُطبق عند العبور للهند)' : '🇸🇦 Valid in KSA (SDAIA Token ALO-KSA-9482 staged for export)'}
+                </div>
+              </div>
+              <span
                 style={{
-                  backgroundColor: isPiiMasked ? WHATSAPP_GREEN : '#e2e8f0',
-                  border: 'none',
-                  padding: '6px 12px',
+                  backgroundColor: '#dcfce7',
+                  border: '1px solid #86efac',
+                  padding: '4px 10px',
                   borderRadius: '999px',
-                  cursor: 'pointer',
-                  fontSize: '11px',
+                  fontSize: '10px',
                   fontWeight: 800,
-                  color: isPiiMasked ? '#ffffff' : '#64748b',
-                  transition: 'all 0.2s',
+                  color: '#166534',
                 }}
               >
-                {isPiiMasked ? (isAr ? 'مُحجب' : 'Masked') : (isAr ? 'حجب الهوية' : 'Mask PII')}
-              </button>
+                {isAr ? '✓ سارية وموثقة' : '✓ Verified'}
+              </span>
             </div>
           </div>
 
