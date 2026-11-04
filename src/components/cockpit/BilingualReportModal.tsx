@@ -257,15 +257,15 @@ export const BilingualReportModal: React.FC<Props> = ({
             </div>
 
             <div>
-              <span style={{ color: '#64748b', display: 'block' }}>{isAr ? 'الطبيب المعالج المحيل (السعودية):' : 'Referring Physician (KSA):'}</span>
+              <span style={{ color: '#64748b', display: 'block' }}>{isAr ? 'الطبيب السعودي المعالج (المملكة):' : 'Saudi Treating Doctor (KSA):'}</span>
               <strong style={{ color: '#0f172a', fontSize: '12px' }}>{treatingDocName}</strong>
               <div style={{ color: '#94a3b8', fontSize: '10px' }}>مستشفى رعاية الرياض / KFSHRC</div>
             </div>
 
             <div>
-              <span style={{ color: '#64748b', display: 'block' }}>{isAr ? 'الاستشاري الدولي (الهند):' : 'International Senior Consultant:'}</span>
+              <span style={{ color: '#64748b', display: 'block' }}>{isAr ? 'الاستشاري الدولي المعين (الهند):' : 'Assigned Senior Consultant (India):'}</span>
               <strong style={{ color: TEAL_PRIMARY, fontSize: '12px' }}>{consultantName}</strong>
-              <div style={{ color: '#94a3b8', fontSize: '10px' }}>مستشفى أبولو / Apollo Hospitals, India</div>
+              <div style={{ color: '#94a3b8', fontSize: '10px' }}>{activeCase.consultant?.center || 'Apollo Hospitals'} · {activeCase.consultant?.city || 'India'}</div>
             </div>
 
             <div>

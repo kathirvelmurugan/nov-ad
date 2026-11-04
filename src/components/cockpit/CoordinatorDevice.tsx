@@ -65,8 +65,8 @@ export const CoordinatorDevice: React.FC<CockpitDeviceProps> = ({
               />
               <span style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>
                 {isReferralApproved
-                  ? (isAr ? 'تم اعتماد التحويل من الطبيب السعودي' : 'Referral Approved by Saudi Doctor')
-                  : (isAr ? 'في انتظار اعتماد الطبيب السعودي' : 'Awaiting Physician Approval')}
+                  ? (isAr ? 'تم اعتماد التحويل من الطبيب السعودي المعالج' : 'Referral Approved by Saudi Treating Doctor')
+                  : (isAr ? 'في انتظار اعتماد الطبيب السعودي المعالج' : 'Awaiting Saudi Treating Doctor Approval')}
               </span>
             </div>
           </div>
@@ -77,24 +77,25 @@ export const CoordinatorDevice: React.FC<CockpitDeviceProps> = ({
             <button
               type="button"
               disabled={isInvoiceIssued || !isReferralApproved}
-              onClick={() =>
+              onClick={() => {
+                const prescribedTier = activeCase.tier || (activeCase.modality === 'Video' ? 2 : 1);
+                const prescribedAmount = prescribedTier === 2 ? 450 : 250;
                 onUpdateCase({
                   invoiceIssued: true,
+                  tier: prescribedTier,
                   pricing: {
-                    ...(activeCase.pricing || {
-                      baseSar: (activeCase.tier || 1) === 1 ? 250 : 450,
-                      totalSar: (activeCase.tier || 1) === 1 ? 250 : 450,
-                      vatPercent: 15,
-                      vatSar: 0,
-                      tierName: (activeCase.tier || 1) === 1 ? 'Written' : 'Video',
-                      paid: false,
-                      tier: activeCase.tier || 1,
-                    }),
+                    ...(activeCase.pricing || {}),
+                    baseSar: prescribedAmount,
+                    totalSar: prescribedAmount,
+                    vatPercent: 15,
+                    vatSar: 0,
+                    tierName: prescribedTier === 1 ? 'Written' : 'Video',
+                    tier: prescribedTier,
                     invoiceNumber: 'INV-2026-001',
                     paid: false,
                   },
-                })
-              }
+                });
+              }}
               style={{
                 width: '100%',
                 backgroundColor: isInvoiceIssued ? '#e2e8f0' : TEAL_PRIMARY,

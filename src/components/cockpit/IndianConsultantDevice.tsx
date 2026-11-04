@@ -60,6 +60,19 @@ export const IndianConsultantDevice: React.FC<CockpitDeviceProps> = ({
         </div>
       ) : (
         <>
+          {/* Assigned Consultant Header (Selected by Saudi Treating Doctor) */}
+          <div style={{ ...cardInnerStyle, backgroundColor: '#f0fdfa', borderColor: TEAL_SECONDARY }}>
+            <span style={{ ...labelStyle, color: TEAL_PRIMARY, margin: 0, fontSize: '10px' }}>
+              {isAr ? 'الاستشاري الدولي المعين من الطبيب السعودي المعالج:' : 'Assigned Consultant by Saudi Treating Doctor:'}
+            </span>
+            <div style={{ fontSize: '13px', fontWeight: 800, color: '#0f172a', marginTop: '3px' }}>
+              {activeCase.consultant?.name || 'Dr. Pradeep Kumar, MBBS, MS, MCh (CTVS)'}
+            </div>
+            <div style={{ fontSize: '10px', color: '#64748b', marginTop: '1px' }}>
+              {activeCase.consultant?.center || 'Apollo Hospitals'} · {activeCase.consultant?.city || 'Bengaluru, India'}
+            </div>
+          </div>
+
           {/* K01 & K02–K04: 3D DICOM Inspection */}
           <div style={cardInnerStyle}>
             <span style={labelStyle}>K01–K04 · {isAr ? 'فحص مقاطع DICOM ثلاثية الأبعاد' : '3D DICOM Inspection'}</span>

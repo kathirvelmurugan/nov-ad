@@ -277,7 +277,7 @@ export const PatientDevice: React.FC<CockpitDeviceProps> = ({
                 <span style={{ fontSize: '20px' }}>⏳</span>
                 <div>
                   <p style={{ fontSize: '12px', fontWeight: 800, color: '#0f172a', margin: 0 }}>
-                    {isAr ? 'اعتمد د. عبدالله الشمري إحالتك الطبية' : 'Physician Approved Referral'}
+                    {isAr ? 'اعتمد الطبيب السعودي المعالج إحالتك الطبية' : 'Saudi Treating Doctor Approved Referral'}
                   </p>
                   <p style={{ fontSize: '11px', color: '#64748b', margin: '3px 0 0 0', lineHeight: 1.4 }}>
                     {isAr
@@ -288,89 +288,101 @@ export const PatientDevice: React.FC<CockpitDeviceProps> = ({
               </div>
             </div>
           ) : !activeCase.pricing?.paid ? (
-            /* Invoice Issued: Active Payment Form */
-            <>
-              <p style={{ fontSize: '12px', color: '#334155', margin: '6px 0 10px 0' }}>
-                {isAr ? 'أصدر منسق رعاية ألو الفاتورة الضريبية. اختر باقة الاستشارة للسداد:' : 'Invoice issued by Coordinator. Select tier to pay:'}
-              </p>
+            /* Invoice Issued: Active Payment Form for Doctor's Prescribed Modality ONLY */
+            (() => {
+              const prescribedTier = activeCase.tier || (activeCase.modality === 'Video' ? 2 : 1);
+              const prescribedAmount = prescribedTier === 2 ? 450 : 250;
+              const prescribedLabelAr = prescribedTier === 2 
+                ? 'مكالمة فيديو تفاعلية + تقرير استشاري كتابي معتمد (Tier 2)' 
+                : 'تقرير استشاري كتابي تخصصي معتمد (Tier 1)';
+              const prescribedLabelEn = prescribedTier === 2 
+                ? 'Video Telehealth Consultation + Certified Written Report (Tier 2)' 
+                : 'Certified Written Second Opinion Report (Tier 1)';
 
-              <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
-                {[1, 2].map((tier) => {
-                  const isSelected = selectedTier === tier;
-                  return (
-                    <div
-                      key={tier}
-                      onClick={() => setSelectedTier(tier)}
-                      style={{
-                        flex: 1,
-                        padding: '10px 8px',
-                        borderRadius: '10px',
-                        border: isSelected ? `2px solid ${TEAL_PRIMARY}` : '2px solid #cbd5e1',
-                        backgroundColor: isSelected ? TEAL_BG : '#ffffff',
-                        cursor: 'pointer',
-                        textAlign: 'center',
-                        transition: 'all 0.15s ease',
-                      }}
-                    >
-                      <div style={{ fontWeight: 800, color: TEAL_PRIMARY, fontSize: '11px' }}>
-                        {isAr ? `الفئة ${tier}` : `Tier ${tier}`}
-                      </div>
-                      <div style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a', marginTop: '2px' }}>
-                        {tier === 1 ? '250 SAR' : '450 SAR'}
-                      </div>
-                      <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>
-                        {tier === 1 ? (isAr ? 'تقرير كتابي معتمد' : 'Written Report') : (isAr ? 'فيديو + تقرير كتابي' : 'Video + Written')}
-                      </div>
+              return (
+                <>
+                  <div
+                    style={{
+                      marginBottom: '10px',
+                      padding: '10px 12px',
+                      borderRadius: '10px',
+                      border: `2px solid ${TEAL_PRIMARY}`,
+                      backgroundColor: TEAL_BG,
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '10px', fontWeight: 800, color: TEAL_PRIMARY, textTransform: 'uppercase' }}>
+                        {isAr ? 'الباقة المعتمدة من الطبيب السعودي المعالج:' : 'Prescribed by Saudi Treating Doctor:'}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: '11px',
+                          fontWeight: 800,
+                          backgroundColor: TEAL_PRIMARY,
+                          color: '#ffffff',
+                          padding: '2px 8px',
+                          borderRadius: '999px',
+                        }}
+                      >
+                        Tier {prescribedTier} · {prescribedAmount} SAR
+                      </span>
                     </div>
-                  );
-                })}
-              </div>
 
-              {/* Action Button: Pay Now (Coordinator Gate 2 Bridge) */}
-              <button
-                type="button"
-                onClick={() => {
-                  const amount = selectedTier === 1 ? 250 : 450;
-                  onUpdateCase({
-                    tier: selectedTier,
-                    pricing: {
-                      ...(activeCase.pricing || {}),
-                      tier: selectedTier,
-                      baseSar: amount,
-                      totalSar: amount,
-                      vatPercent: 15,
-                      vatSar: 0,
-                      tierName: selectedTier === 1 ? 'Written' : 'Video',
-                      invoiceNumber: activeCase.pricing?.invoiceNumber || 'INV-2026-001',
-                      paid: true,
-                    },
-                  });
-                }}
-                style={{
-                  width: '100%',
-                  backgroundColor: WHATSAPP_GREEN,
-                  color: '#ffffff',
-                  border: 'none',
-                  borderRadius: '8px',
-                  padding: '12px',
-                  fontSize: '12px',
-                  fontWeight: 800,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '6px',
-                  boxShadow: '0 2px 4px rgba(18, 140, 126, 0.25)',
-                }}
-              >
-                <span>💳</span>
-                <span>
-                  {isAr
-                    ? `سداد ${selectedTier === 1 ? '250' : '450'} ر.س عبر مدى / Apple Pay`
-                    : `Pay ${selectedTier === 1 ? '250' : '450'} SAR via Mada / Apple Pay`}
-                </span>
-              </button>
-            </>
+                    <div style={{ fontSize: '12px', fontWeight: 800, color: '#0f172a', marginTop: '6px' }}>
+                      {isAr ? prescribedLabelAr : prescribedLabelEn}
+                    </div>
+
+                    <div style={{ fontSize: '10px', color: '#64748b', marginTop: '3px' }}>
+                      {isAr ? 'فاتورة ضريبية معتمدة من هيئة الزكاة والضريبة والجمارك (ZATCA)' : 'ZATCA Tax Compliant Invoice (INV-2026-001)'}
+                    </div>
+                  </div>
+
+                  {/* Action Button: Pay Now for the Prescribed Amount (Coordinator Gate 2 Bridge) */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onUpdateCase({
+                        tier: prescribedTier,
+                        pricing: {
+                          ...(activeCase.pricing || {}),
+                          tier: prescribedTier,
+                          baseSar: prescribedAmount,
+                          totalSar: prescribedAmount,
+                          vatPercent: 15,
+                          vatSar: 0,
+                          tierName: prescribedTier === 1 ? 'Written' : 'Video',
+                          invoiceNumber: activeCase.pricing?.invoiceNumber || 'INV-2026-001',
+                          paid: true,
+                        },
+                      });
+                    }}
+                    style={{
+                      width: '100%',
+                      backgroundColor: WHATSAPP_GREEN,
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '8px',
+                      padding: '12px',
+                      fontSize: '12px',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      boxShadow: '0 2px 4px rgba(18, 140, 126, 0.25)',
+                    }}
+                  >
+                    <span>💳</span>
+                    <span>
+                      {isAr
+                        ? `سداد ${prescribedAmount} ر.س عبر مدى / Apple Pay`
+                        : `Pay ${prescribedAmount} SAR via Mada / Apple Pay`}
+                    </span>
+                  </button>
+                </>
+              );
+            })()
           ) : (
             /* Coordinator Gate 2: Paid, Waiting for Coordinator Verification & Dispatch */
             <div style={{ marginTop: '8px', padding: '10px', backgroundColor: '#ffffff', borderRadius: '8px', border: `1.5px solid ${WHATSAPP_GREEN}` }}>

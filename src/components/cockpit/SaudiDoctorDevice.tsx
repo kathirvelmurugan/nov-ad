@@ -1,6 +1,37 @@
 import React, { useState, useEffect } from 'react';
 import { CockpitDeviceProps, TEAL_PRIMARY, TEAL_SECONDARY, TEAL_BG, WHATSAPP_GREEN } from './types';
 
+const INDIAN_CONSULTANTS = [
+  {
+    name: 'Dr. Pradeep Kumar, MBBS, MS, MCh (CTVS)',
+    center: 'Apollo Hospitals',
+    city: 'Bengaluru, India',
+    specialtyAr: 'جراحة القلب والصدر والشرايين التاجية',
+    specialtyEn: 'Cardiothoracic & Vascular Surgery',
+  },
+  {
+    name: 'Dr. Devi Shetty, MS, FRCS',
+    center: 'Narayana Health City',
+    city: 'Bengaluru, India',
+    specialtyAr: 'جراحة القلب المعقدة واستبدال الصمامات',
+    specialtyEn: 'Complex Cardiac & Valvular Surgery',
+  },
+  {
+    name: 'Dr. Arjun Mehta, MD, DM',
+    center: 'KIMS Heart Institute',
+    city: 'Hyderabad, India',
+    specialtyAr: 'قسطرة القلب والشرايين التداخلية',
+    specialtyEn: 'Interventional Cardiology & Valve Therapy',
+  },
+  {
+    name: 'Dr. Sandeep Vaishya, MS, MCh',
+    center: 'Fortis Memorial Research Institute',
+    city: 'Gurugram, India',
+    specialtyAr: 'جراحة المخ والأعصاب وقاع الجمجمة',
+    specialtyEn: 'Neurosurgery & Skull Base Surgery',
+  },
+];
+
 export const SaudiDoctorDevice: React.FC<CockpitDeviceProps> = ({
   activeCase,
   stageNum,
@@ -12,6 +43,7 @@ export const SaudiDoctorDevice: React.FC<CockpitDeviceProps> = ({
   const isAr = lang === 'ar';
   const currentModality = activeCase.modality || (activeCase.consultationType === 'video' ? 'Video' : 'Written');
   const isPiiMasked = !!activeCase.piiMasked || !!activeCase.nationalIdMasked || stageNum >= 2;
+  const selectedConsultantName = activeCase.consultant?.name || INDIAN_CONSULTANTS[0].name;
 
   const initialQuestions = activeCase.focusQuestions && activeCase.focusQuestions.length > 0
     ? activeCase.focusQuestions
@@ -72,7 +104,7 @@ export const SaudiDoctorDevice: React.FC<CockpitDeviceProps> = ({
         <div style={{ ...cardInnerStyle, backgroundColor: '#f8fafc', textAlign: 'center', padding: '36px 16px' }}>
           <div style={{ fontSize: '32px', marginBottom: '10px' }}>🩺</div>
           <div style={{ fontSize: '13px', fontWeight: 800, color: '#1e293b' }}>
-            {isAr ? 'عيادة الطبيب السعودي (D01) في الانتظار' : 'Saudi Physician Workstation (D01) Idle'}
+            {isAr ? 'عيادة الطبيب السعودي المعالج (D01) في الانتظار' : 'Saudi Treating Doctor Workstation (D01) Idle'}
           </div>
           <div style={{ fontSize: '11px', color: '#64748b', marginTop: '6px', lineHeight: 1.5 }}>
             {isAr
@@ -96,6 +128,48 @@ export const SaudiDoctorDevice: React.FC<CockpitDeviceProps> = ({
               <div style={{ fontSize: '10px', color: '#166534', fontWeight: 700, marginTop: '4px' }}>
                 ✓ {isAr ? 'مرفق الأشعة والتحاليل جاهز للمعاينة الدولية' : '3D DICOM & Lab Reports Verified'}
               </div>
+            </div>
+          </div>
+
+          {/* D04: Assign International Senior Consultant in India */}
+          <div style={cardInnerStyle}>
+            <span style={labelStyle}>D04 · {isAr ? 'تعيين الاستشاري الدولي بالهند' : 'Assign Indian Senior Consultant'}</span>
+            <select
+              disabled={activeCase.referralApproved}
+              value={selectedConsultantName}
+              onChange={(e) => {
+                const found = INDIAN_CONSULTANTS.find((c) => c.name === e.target.value) || INDIAN_CONSULTANTS[0];
+                onUpdateCase({
+                  consultant: {
+                    name: found.name,
+                    center: found.center,
+                    city: found.city,
+                  },
+                });
+              }}
+              style={{
+                width: '100%',
+                padding: '9px 10px',
+                borderRadius: '8px',
+                border: '1px solid #cbd5e1',
+                fontSize: '11px',
+                backgroundColor: activeCase.referralApproved ? '#f1f5f9' : '#ffffff',
+                outline: 'none',
+                fontWeight: 700,
+                color: '#0f172a',
+                cursor: activeCase.referralApproved ? 'default' : 'pointer',
+              }}
+            >
+              {INDIAN_CONSULTANTS.map((c) => (
+                <option key={c.name} value={c.name}>
+                  {c.name} — {c.center}
+                </option>
+              ))}
+            </select>
+            <div style={{ fontSize: '10px', color: '#64748b', marginTop: '4px' }}>
+              {isAr
+                ? 'يحدد الطبيب السعودي المعالج الاستشاري الدولي الأنسب بناءً على طبيعة الحالة.'
+                : 'Saudi treating doctor selects the optimal Indian subspecialist for this case.'}
             </div>
           </div>
 
@@ -223,10 +297,10 @@ export const SaudiDoctorDevice: React.FC<CockpitDeviceProps> = ({
             {activeCase.referralApproved ? (
               <>
                 <span>✓</span>
-                <span>{isAr ? 'D10 · تم اعتماد التحويل وتوجيهه للمنسق' : 'D10 · Referral Approved & Routed'}</span>
+                <span>{isAr ? 'D10 · تم اعتماد الإحالة من الطبيب السعودي المعالج وتوجيهها للمنسق' : 'D10 · Referral Approved by Saudi Treating Doctor & Routed'}</span>
               </>
             ) : (
-              <span>{isAr ? 'D10 · اعتماد التحويل وتوجيه الملف لمنسق ألو (C01)' : 'D10 · Approve Referral & Route to Alo Coordinator (C01)'}</span>
+              <span>{isAr ? 'D10 · اعتماد الطبيب السعودي المعالج للإحالة وتوجيه الملف لمنسق ألو (C01)' : 'D10 · Saudi Treating Doctor Approves Referral & Routes to Alo Coordinator (C01)'}</span>
             )}
           </button>
 
