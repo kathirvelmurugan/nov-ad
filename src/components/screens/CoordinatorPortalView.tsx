@@ -64,6 +64,10 @@ const CoordinatorPortalView: React.FC<Props> = ({
       alert(isAr ? 'لا يمكن تأكيد موعد المكالمة قبل تأكيد السداد.' : 'Call time can be confirmed only after payment.');
       return;
     }
+    if (activeCase.consultationType === 'written') {
+      alert(isAr ? 'رأي مكتوب فقط — لا توجد مكالمة.' : 'Written opinion only — no call.');
+      return;
+    }
     onUpdateCase({ 
       metadata: { 
         ...(activeCase.metadata || {}), 
@@ -95,7 +99,8 @@ const CoordinatorPortalView: React.FC<Props> = ({
   };
 
   const handleRelayQuestion = async () => {
-    if (!relayMessage.trim()) return;
+    const text = relayMessage.trim() || incomingQuestions[incomingQuestions.length - 1] || '';
+    if (!text) return;
     setIsProcessing(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 800));
@@ -103,7 +108,7 @@ const CoordinatorPortalView: React.FC<Props> = ({
       onUpdateCase({
         metadata: {
           ...(activeCase.metadata || {}),
-          relayedQuestions: [...existingRelays, relayMessage],
+          relayedQuestions: [...existingRelays, text],
         }
       });
       setRelayMessage('');
@@ -131,6 +136,30 @@ const CoordinatorPortalView: React.FC<Props> = ({
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const isPaid = !!activeCase.pricing?.paid || activeCase.paymentDetails?.status === 'completed';
+  const paymentLinkIssued = !!activeCase.metadata?.paymentLinkIssued;
+
+  // C01 · C03-C04: confirm referral, set price per chosen service, issue payment link -> case moves to Patient
+  const handleIssuePaymentLink = () => {
+    const tier =
+      activeCase.consultationType === 'written'
+        ? { tier: 1, tierName: isAr ? 'رأي مكتوب فقط (Tier 1)' : 'Written opinion only (Tier 1)', baseSar: 65.22, vatSar: 9.78, totalSar: 75 }
+        : { tier: 2, tierName: isAr ? 'مرئي + رأي مكتوب (Tier 2)' : 'Video + written opinion (Tier 2)', baseSar: 130.43, vatSar: 19.57, totalSar: 150 };
+    onUpdateCase({
+      pricing: { ...activeCase.pricing, ...tier, vatPercent: 15, tabbyInstallmentSar: tier.totalSar / 4 },
+      metadata: { ...(activeCase.metadata || {}), paymentLinkIssued: true, paymentLinkIssuedAt: new Date().toISOString() },
+    });
+  };
+
+  // C05-C06: verify payment received, send consultant link, push case to the Indian consultant
+  const handleConfirmPaymentAndPush = () => {
+    if (!isPaid) return;
+    onUpdateCase({
+      metadata: { ...(activeCase.metadata || {}), paymentVerified: true, consultantLinkSent: true },
+    });
+    onAdvanceStage();
   };
 
   const proposedSlots = (activeCase.metadata?.proposedSlots as Array<{ id: string; time: string }>) || [
@@ -262,6 +291,27 @@ const CoordinatorPortalView: React.FC<Props> = ({
           )}
         </div>
       </header>
+
+      {/* C01-C04 / C05-C06: payment coordination hops (coordinator -> patient -> consultant) */}
+      <div style={{ ...cardStyle, marginBottom: '24px', padding: '20px' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
+          <button style={{ ...primaryButtonStyle, width: 'auto', flex: 1 }} onClick={handleIssuePaymentLink}>
+            C01·C03–04 · {isAr ? 'تأكيد · السعر · رابط السداد → إلى المريض' : 'Confirm · price · payment link → to Patient'}
+          </button>
+          <button
+            style={{ ...primaryButtonStyle, width: 'auto', flex: 1, opacity: isPaid ? 1 : 0.5, cursor: isPaid ? 'pointer' : 'not-allowed' }}
+            onClick={handleConfirmPaymentAndPush}
+            disabled={!isPaid}
+          >
+            C05–06 · {isAr ? 'استلام السداد · رابط الاستشاري → دفع للاستشاري' : 'Payment received · consultant link → push to Indian consultant'}
+          </button>
+        </div>
+        {paymentLinkIssued && (
+          <p style={{ margin: '12px 0 0', fontSize: '13px', color: TEAL_PRIMARY, fontWeight: 700 }}>
+            {isAr ? 'تم إصدار رابط السداد وإرساله للمريض (W05).' : 'Payment link issued and sent to the Patient (W05).'}
+          </p>
+        )}
+      </div>
 
       <nav style={tabNavStyle} role="tablist" aria-label={isAr ? 'مراحل التنسيق' : 'Coordination Stages'}>
         <button role="tab" aria-selected={activeTab === 'C07'} style={getTabStyle('C07')} onClick={() => setActiveTab('C07')}>

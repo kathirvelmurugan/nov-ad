@@ -403,6 +403,7 @@ export const App: React.FC = () => {
           <NurseTriageView
             activeCase={activeCase}
             onAdvanceStage={handleAdvanceStage}
+            onUpdateCase={handleUpdateCase}
             lang={lang}
           />
         );
@@ -455,6 +456,7 @@ export const App: React.FC = () => {
           <FollowUpChatView
             activeCase={activeCase}
             onAdvanceStage={handleAdvanceStage}
+            onUpdateCase={handleUpdateCase}
           />
         );
     }

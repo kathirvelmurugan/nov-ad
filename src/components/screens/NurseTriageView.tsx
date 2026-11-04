@@ -15,10 +15,11 @@ import {
 interface Props {
   activeCase: ClinicalCase;
   onAdvanceStage: () => void;
+  onUpdateCase: (updated: Partial<ClinicalCase>) => void;
   lang?: 'ar' | 'en';
 }
 
-export const NurseTriageView: React.FC<Props> = ({ activeCase, onAdvanceStage, lang = 'ar' }) => {
+export const NurseTriageView: React.FC<Props> = ({ activeCase, onAdvanceStage, onUpdateCase, lang = 'ar' }) => {
   const [urgencyLevel, setUrgencyLevel] = useState<'routine' | 'urgent' | 'stat'>('urgent');
   const isAr = lang === 'ar';
 
@@ -238,7 +239,16 @@ export const NurseTriageView: React.FC<Props> = ({ activeCase, onAdvanceStage, l
           </div>
 
           <button
-            onClick={onAdvanceStage}
+            onClick={() => {
+              onUpdateCase({
+                metadata: {
+                  ...(activeCase.metadata || {}),
+                  nurseVerified: true,
+                  deidentifiedAt: new Date().toISOString(),
+                },
+              });
+              onAdvanceStage();
+            }}
             className="w-full sm:w-auto bg-gradient-to-r from-alo-teal to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white font-extrabold py-3 px-8 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-sm active:scale-95 cursor-pointer"
           >
             <Send className="w-4 h-4" />

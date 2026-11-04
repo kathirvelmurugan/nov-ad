@@ -7,13 +7,18 @@ interface Props {
   onUpdateCase: (updated: Partial<ClinicalCase>) => void;
 }
 
-type ScreenStage = 'K05_K07' | 'K08' | 'K09';
+type ScreenStage = 'K01_K04' | 'K05' | 'K06' | 'K07' | 'K08' | 'K09';
 
 const ConsultantMobileView: React.FC<Props> = ({ activeCase, onAdvanceStage, onUpdateCase }) => {
-  const [currentScreen, setCurrentScreen] = useState<ScreenStage>('K05_K07');
+  const isWritten = activeCase.consultationType === 'written';
+  const accepted = !!activeCase.metadata?.consultantAccepted;
+  const [currentScreen, setCurrentScreen] = useState<ScreenStage>(accepted ? 'K05' : 'K01_K04');
   const [opinionText, setOpinionText] = useState<string>(activeCase.consultantOpinion || '');
   const [selectedSlot, setSelectedSlot] = useState<string>('');
   const [finalRemarks, setFinalRemarks] = useState<string>(activeCase.finalClosureNote || '');
+  const relayed = (activeCase.metadata?.relayedQuestions as string[]) || [];
+  const [answers, setAnswers] = useState<string[]>(relayed.map(() => ''));
+  const focusQuestionsEn = activeCase.treatingDoctor.focusQuestionsEn || activeCase.treatingDoctor.focusQuestions;
 
   const tealPrimary = '#007B6E';
   const tealSecondary = '#00C6AE';
@@ -25,12 +30,27 @@ const ConsultantMobileView: React.FC<Props> = ({ activeCase, onAdvanceStage, onU
     { id: 'slot_b', label: 'Slot B: Thursday 11:30 AST' },
   ];
 
-  const handleSaveOpinionAndSlots = () => {
+  const handleAcceptCase = () => {
     onUpdateCase({
-      consultantOpinion: opinionText,
-      proposedCallSlot: selectedSlot,
+      metadata: { ...(activeCase.metadata || {}), consultantAccepted: true, acceptedAt: new Date().toISOString() },
     });
-    setCurrentScreen('K08');
+    setCurrentScreen('K05');
+  };
+
+  const handleSaveOpinion = () => {
+    onUpdateCase({ consultantOpinion: opinionText });
+    if (isWritten) {
+      onAdvanceStage();
+    } else {
+      setCurrentScreen('K07');
+    }
+  };
+
+  const handleSaveSlots = () => {
+    onUpdateCase({
+      proposedCallSlot: selectedSlot,
+      metadata: { ...(activeCase.metadata || {}), proposedSlots: [{ id: selectedSlot, time: selectedSlot }] },
+    });
     onAdvanceStage();
   };
 
@@ -43,6 +63,7 @@ const ConsultantMobileView: React.FC<Props> = ({ activeCase, onAdvanceStage, onU
     onUpdateCase({
       finalClosureNote: finalRemarks,
       status: 'closed',
+      metadata: { ...(activeCase.metadata || {}), consultantAnswers: answers },
     });
     onAdvanceStage();
   };
@@ -79,48 +100,72 @@ const ConsultantMobileView: React.FC<Props> = ({ activeCase, onAdvanceStage, onU
         </p>
       </header>
 
-      {currentScreen === 'K05_K07' && (
-        <section
-          aria-label="Opinion and Slots Proposal"
-          style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: '12px',
-            padding: '20px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-          }}
-        >
-          <h2 style={{ fontSize: '18px', color: tealPrimary, marginTop: 0, marginBottom: '16px' }}>
-            Clinical Opinion & Call Slots Proposal
-          </h2>
-
-          <div
+      <nav style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px', alignItems: 'center' }}>
+        {[
+          { id: 'K05' as ScreenStage, label: 'K05 Review' },
+          { id: 'K06' as ScreenStage, label: 'K06 Opinion' },
+          ...(isWritten
+            ? []
+            : [
+                { id: 'K07' as ScreenStage, label: 'K07 Slots' },
+                { id: 'K08' as ScreenStage, label: 'K08 Call' },
+              ]),
+          { id: 'K09' as ScreenStage, label: 'K09 Follow-up' },
+        ].map((b) => (
+          <button
+            key={b.id}
+            disabled={!accepted}
+            onClick={() => setCurrentScreen(b.id)}
             style={{
-              backgroundColor: '#0D1B2A',
+              padding: '8px 12px',
               borderRadius: '8px',
-              height: '180px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginBottom: '20px',
-              border: `2px solid ${tealSecondary}`,
-              position: 'relative',
-              overflow: 'hidden',
+              border: `1px solid ${tealSecondary}`,
+              backgroundColor: currentScreen === b.id ? tealPrimary : '#FFFFFF',
+              color: currentScreen === b.id ? '#FFFFFF' : tealPrimary,
+              fontSize: '12px',
+              fontWeight: 700,
+              cursor: accepted ? 'pointer' : 'not-allowed',
+              fontFamily: "'Cairo', sans-serif",
             }}
+          >
+            {b.label}
+          </button>
+        ))}
+        <span style={{ fontSize: '12px', fontWeight: 700, color: tealPrimary }}>
+          {accepted ? '48h SLA running' : '48h SLA starts on accept'}
+        </span>
+      </nav>
+
+      {currentScreen === 'K01_K04' && (
+        <section aria-label="Accept case" style={{ backgroundColor: '#FFFFFF', borderRadius: '12px', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+          <h2 style={{ fontSize: '18px', color: tealPrimary, marginTop: 0, marginBottom: '16px' }}>
+            K01–04 · Accept case · 48h starts
+          </h2>
+          <p style={{ fontSize: '14px', color: '#333', lineHeight: 1.6, marginBottom: '8px' }}>
+            De-identified case · {activeCase.specialtyEn || activeCase.specialty} · {activeCase.diagnosisEn || activeCase.diagnosis}
+          </p>
+          <p style={{ fontSize: '13px', color: '#555', marginBottom: '20px' }}>
+            Nurse-verified summary · {activeCase.files.length} file(s). Patient identity hidden.
+          </p>
+          <button
+            onClick={handleAcceptCase}
+            style={{ width: '100%', padding: '14px', backgroundColor: tealPrimary, color: '#FFFFFF', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: 700, cursor: 'pointer', fontFamily: "'Cairo', sans-serif" }}
+          >
+            Accept case · start 48h SLA
+          </button>
+        </section>
+      )}
+
+      {currentScreen === 'K05' && (
+        <section aria-label="Review the case" style={{ backgroundColor: '#FFFFFF', borderRadius: '12px', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+          <h2 style={{ fontSize: '18px', color: tealPrimary, marginTop: 0, marginBottom: '16px' }}>
+            K05 · Review the case (English)
+          </h2>
+          <div
+            style={{ backgroundColor: '#0D1B2A', borderRadius: '8px', height: '180px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px', border: `2px solid ${tealSecondary}`, position: 'relative', overflow: 'hidden' }}
             aria-label="Multi-slice DICOM Viewer Preview"
           >
-            <div
-              style={{
-                position: 'absolute',
-                top: '8px',
-                left: '8px',
-                backgroundColor: 'rgba(0, 198, 174, 0.8)',
-                color: '#FFF',
-                padding: '2px 8px',
-                borderRadius: '4px',
-                fontSize: '10px',
-                fontWeight: 700,
-              }}
-            >
+            <div style={{ position: 'absolute', top: '8px', left: '8px', backgroundColor: 'rgba(0, 198, 174, 0.8)', color: '#FFF', padding: '2px 8px', borderRadius: '4px', fontSize: '10px', fontWeight: 700 }}>
               DICOM PREVIEW
             </div>
             <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#00C6AE" strokeWidth="1.5">
@@ -129,11 +174,29 @@ const ConsultantMobileView: React.FC<Props> = ({ activeCase, onAdvanceStage, onU
               <polyline points="21 15 16 10 5 21" />
             </svg>
           </div>
-
-          <label
-            htmlFor="consultant-opinion"
-            style={{ display: 'block', fontSize: '14px', fontWeight: 600, marginBottom: '8px', color: '#333' }}
+          <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#333', marginBottom: '8px' }}>
+            Focus questions from the Saudi treating doctor
+          </h3>
+          <ul style={{ margin: '0 0 20px 18px', padding: 0, fontSize: '14px', color: '#333', lineHeight: 1.7 }}>
+            {focusQuestionsEn.map((q, i) => (
+              <li key={i}>{q}</li>
+            ))}
+          </ul>
+          <button
+            onClick={() => setCurrentScreen('K06')}
+            style={{ width: '100%', padding: '14px', backgroundColor: tealPrimary, color: '#FFFFFF', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: 700, cursor: 'pointer', fontFamily: "'Cairo', sans-serif" }}
           >
+            Continue to written opinion (K06)
+          </button>
+        </section>
+      )}
+
+      {currentScreen === 'K06' && (
+        <section aria-label="Written opinion" style={{ backgroundColor: '#FFFFFF', borderRadius: '12px', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+          <h2 style={{ fontSize: '18px', color: tealPrimary, marginTop: 0, marginBottom: '16px' }}>
+            K06 · Written opinion
+          </h2>
+          <label htmlFor="consultant-opinion" style={{ display: 'block', fontSize: '14px', fontWeight: 600, marginBottom: '8px', color: '#333' }}>
             Written Clinical Opinion
           </label>
           <textarea
@@ -142,30 +205,24 @@ const ConsultantMobileView: React.FC<Props> = ({ activeCase, onAdvanceStage, onU
             onChange={(e) => setOpinionText(e.target.value)}
             placeholder="Enter your detailed clinical findings and recommendations here..."
             rows={5}
-            style={{
-              width: '100%',
-              padding: '12px',
-              borderRadius: '8px',
-              border: `1px solid ${tealSecondary}`,
-              fontFamily: "'Cairo', sans-serif",
-              fontSize: '14px',
-              resize: 'vertical',
-              marginBottom: '24px',
-              outline: 'none',
-              boxSizing: 'border-box',
-              transition: 'border-color 0.2s ease',
-            }}
-            onFocus={(e) => (e.target.style.borderColor = tealPrimary)}
-            onBlur={(e) => (e.target.style.borderColor = tealSecondary)}
+            style={{ width: '100%', padding: '12px', borderRadius: '8px', border: `1px solid ${tealSecondary}`, fontFamily: "'Cairo', sans-serif", fontSize: '14px', resize: 'vertical', marginBottom: '24px', outline: 'none', boxSizing: 'border-box' }}
           />
-
-          <fieldset
-            style={{
-              border: 'none',
-              padding: 0,
-              margin: '0 0 24px 0',
-            }}
+          <button
+            onClick={handleSaveOpinion}
+            disabled={!opinionText.trim()}
+            style={{ width: '100%', padding: '14px', backgroundColor: !opinionText.trim() ? '#B0BEC5' : tealPrimary, color: '#FFFFFF', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: 700, cursor: !opinionText.trim() ? 'not-allowed' : 'pointer', fontFamily: "'Cairo', sans-serif" }}
           >
+            {isWritten ? 'Submit written opinion (no call)' : 'Save opinion · continue to slots (K07)'}
+          </button>
+        </section>
+      )}
+
+      {currentScreen === 'K07' && !isWritten && (
+        <section aria-label="Offer call slots" style={{ backgroundColor: '#FFFFFF', borderRadius: '12px', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+          <h2 style={{ fontSize: '18px', color: tealPrimary, marginTop: 0, marginBottom: '16px' }}>
+            K07 · Offer call slots (IST)
+          </h2>
+          <fieldset style={{ border: 'none', padding: 0, margin: '0 0 24px 0' }}>
             <legend style={{ fontSize: '14px', fontWeight: 600, marginBottom: '12px', color: '#333' }}>
               Propose Teleconsultation Call Slot
             </legend>
@@ -173,16 +230,7 @@ const ConsultantMobileView: React.FC<Props> = ({ activeCase, onAdvanceStage, onU
               {callSlots.map((slot) => (
                 <label
                   key={slot.id}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    padding: '12px 16px',
-                    borderRadius: '8px',
-                    border: `2px solid ${selectedSlot === slot.id ? tealPrimary : '#E0E0E0'}`,
-                    backgroundColor: selectedSlot === slot.id ? tealBg : '#FFFFFF',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                  }}
+                  style={{ display: 'flex', alignItems: 'center', padding: '12px 16px', borderRadius: '8px', border: `2px solid ${selectedSlot === slot.id ? tealPrimary : '#E0E0E0'}`, backgroundColor: selectedSlot === slot.id ? tealBg : '#FFFFFF', cursor: 'pointer' }}
                 >
                   <input
                     type="radio"
@@ -199,31 +247,12 @@ const ConsultantMobileView: React.FC<Props> = ({ activeCase, onAdvanceStage, onU
               ))}
             </div>
           </fieldset>
-
           <button
-            onClick={handleSaveOpinionAndSlots}
-            disabled={!selectedSlot || !opinionText.trim()}
-            style={{
-              width: '100%',
-              padding: '14px',
-              backgroundColor: !selectedSlot || !opinionText.trim() ? '#B0BEC5' : tealPrimary,
-              color: '#FFFFFF',
-              border: 'none',
-              borderRadius: '8px',
-              fontSize: '16px',
-              fontWeight: 700,
-              cursor: !selectedSlot || !opinionText.trim() ? 'not-allowed' : 'pointer',
-              fontFamily: "'Cairo', sans-serif",
-              transition: 'background-color 0.2s ease',
-            }}
-            onMouseEnter={(e) => {
-              if (selectedSlot && opinionText.trim()) e.currentTarget.style.backgroundColor = '#005C52';
-            }}
-            onMouseLeave={(e) => {
-              if (selectedSlot && opinionText.trim()) e.currentTarget.style.backgroundColor = tealPrimary;
-            }}
+            onClick={handleSaveSlots}
+            disabled={!selectedSlot}
+            style={{ width: '100%', padding: '14px', backgroundColor: !selectedSlot ? '#B0BEC5' : tealPrimary, color: '#FFFFFF', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: 700, cursor: !selectedSlot ? 'not-allowed' : 'pointer', fontFamily: "'Cairo', sans-serif" }}
           >
-            Submit Opinion & Proposed Slots
+            Submit proposed slots
           </button>
         </section>
       )}
@@ -346,10 +375,25 @@ const ConsultantMobileView: React.FC<Props> = ({ activeCase, onAdvanceStage, onU
                 Relayed Questions from ALO Coordinator
               </h3>
             </div>
-            <p style={{ margin: 0, fontSize: '14px', color: '#333', lineHeight: 1.6 }}>
-              {activeCase.coordinatorQuestions ||
-                'Please confirm if the suggested dosage adjustments for the pediatric patient align with the latest WHO guidelines, and advise on the follow-up imaging schedule.'}
-            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {relayed.length === 0 && (
+                <p style={{ margin: 0, fontSize: '14px', color: '#333', lineHeight: 1.6 }}>
+                  No relayed follow-up questions yet.
+                </p>
+              )}
+              {relayed.map((q, idx) => (
+                <div key={idx} style={{ backgroundColor: '#FFFFFF', border: `1px solid ${tealSecondary}`, borderRadius: '8px', padding: '12px' }}>
+                  <p style={{ margin: '0 0 8px', fontSize: '14px', color: '#333', lineHeight: 1.5 }}>Q{idx + 1}: {q}</p>
+                  <textarea
+                    value={answers[idx] || ''}
+                    onChange={(e) => setAnswers((prev) => { const next = [...prev]; next[idx] = e.target.value; return next; })}
+                    rows={2}
+                    placeholder="Your answer to this question..."
+                    style={{ width: '100%', padding: '10px', borderRadius: '6px', border: `1px solid ${tealSecondary}`, fontFamily: "'Cairo', sans-serif", fontSize: '13px', boxSizing: 'border-box' }}
+                  />
+                </div>
+              ))}
+            </div>
           </div>
 
           <label

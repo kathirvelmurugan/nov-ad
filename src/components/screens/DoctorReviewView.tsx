@@ -17,6 +17,14 @@ export const DoctorReviewView: React.FC<Props> = ({
 }) => {
   const isAr = lang === 'ar';
 
+  const CONSULTANT_NETWORK = [
+    { name: 'Dr. Arjun Mehta', center: 'KIMS Heart Institute', city: 'Hyderabad, India' },
+    { name: 'Dr. Suresh Rao', center: 'Apollo Hospitals', city: 'Chennai, India' },
+    { name: 'Dr. Rajesh Deshmukh', center: 'Fortis Memorial Research Institute', city: 'Delhi, India' },
+    { name: 'Dr. Alok Sharma', center: 'NIMHANS / Manipal', city: 'Bangalore, India' },
+    { name: 'Dr. Priya Ramachandran', center: 'Tata Memorial / Apollo Cancer Center', city: 'Mumbai, India' },
+  ];
+
   const handleQuestionChange = (index: 0 | 1 | 2, value: string) => {
     const currentQuestions = [...activeCase.treatingDoctor.focusQuestions] as [string, string, string];
     currentQuestions[index] = value;
@@ -82,22 +90,56 @@ export const DoctorReviewView: React.FC<Props> = ({
           </p>
         </div>
 
-        {/* Consultant Selector Card */}
-        <div>
-          <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-            {isAr ? 'الاستشاري الدولي المستهدف للرأي الثاني:' : 'Target International Specialist:'}
-          </label>
-          <div className="bg-slate-50 dark:bg-slate-900/60 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">👨‍⚕️</span>
-              <div>
-                <p className="font-extrabold text-alo-teal text-sm">{activeCase.consultant.name}</p>
-                <p className="text-xs text-slate-500 font-medium">{activeCase.consultant.center} · {activeCase.consultant.city}</p>
-              </div>
-            </div>
-            <span className="bg-alo-mint text-alo-teal text-xs px-2.5 py-1 rounded-md border border-teal-200 font-extrabold">
-              ✓ {isAr ? 'معتمد في الشبكة' : 'Network Accredited'}
+        {/* D05-D06: Pick the Indian consultant (recipient) + confirm call type */}
+        <div className="space-y-3">
+          <div>
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+              {isAr ? 'اختر الاستشاري الهندي (المستقبل):' : 'Pick the Indian consultant (recipient):'}
+            </label>
+            <select
+              value={activeCase.consultant.name}
+              onChange={(e) => {
+                const picked = CONSULTANT_NETWORK.find((c) => c.name === e.target.value);
+                if (picked) onUpdateCase({ consultant: { ...activeCase.consultant, ...picked } });
+              }}
+              className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl p-2.5 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-alo-teal outline-none shadow-sm"
+            >
+              {CONSULTANT_NETWORK.map((c) => (
+                <option key={c.name} value={c.name}>
+                  {c.name} — {c.center} · {c.city}
+                </option>
+              ))}
+            </select>
+            <p className="text-[11px] text-slate-500 mt-1">
+              {activeCase.consultant.center} · {activeCase.consultant.city}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+              {isAr ? 'تأكيد نوع الاستشارة:' : 'Confirm call type:'}
             </span>
+            <button
+              type="button"
+              onClick={() => onUpdateCase({ consultationType: 'written' })}
+              className={`text-xs px-3 py-1 rounded-lg font-extrabold border transition-colors ${
+                activeCase.consultationType === 'written'
+                  ? 'bg-alo-mint border-teal-300 text-alo-teal'
+                  : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400'
+              }`}
+            >
+              {isAr ? 'رأي مكتوب فقط' : 'Written opinion only'}
+            </button>
+            <button
+              type="button"
+              onClick={() => onUpdateCase({ consultationType: 'video' })}
+              className={`text-xs px-3 py-1 rounded-lg font-extrabold border transition-colors ${
+                activeCase.consultationType === 'video'
+                  ? 'bg-alo-mint border-teal-300 text-alo-teal'
+                  : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400'
+              }`}
+            >
+              {isAr ? 'مرئي + رأي مكتوب' : 'Video + written opinion'}
+            </button>
           </div>
         </div>
 

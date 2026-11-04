@@ -4,6 +4,7 @@ import { ClinicalCase } from '../../types';
 interface Props {
   activeCase: ClinicalCase;
   onAdvanceStage: () => void;
+  onUpdateCase: (updated: Partial<ClinicalCase>) => void;
 }
 
 const TEAL_PRIMARY = '#007B6E';
@@ -14,12 +15,24 @@ const WHATSAPP_GREEN = '#25D366';
 const FEEDBACK_TAGS_AR = ['دقة التشخيص', 'وضوح التفسير الطبي', 'سرعة الاستجابة', 'التعامل الراقي', 'جودة التقرير'];
 const FEEDBACK_TAGS_EN = ['Diagnostic Accuracy', 'Clear Explanation', 'Fast Response', 'Professionalism', 'Report Quality'];
 
-const FollowUpChatView: React.FC<Props> = ({ activeCase, onAdvanceStage }) => {
+const FollowUpChatView: React.FC<Props> = ({ activeCase, onAdvanceStage, onUpdateCase }) => {
   const [lang, setLang] = useState<'ar' | 'en'>('ar');
   const [personaId, setPersonaId] = useState<number>(1);
   const [daysRemaining, setDaysRemaining] = useState<number>(20);
   const [chatInput, setChatInput] = useState<string>('');
-  const [messages, setMessages] = useState<Array<{ id: string; text: string; sender: 'patient' | 'coordinator'; timestamp: Date }>>([]);
+  const [messages, setMessages] = useState<Array<{ id: string; text: string; sender: 'patient' | 'coordinator'; timestamp: Date }>>(() => {
+    // Re-hydrate the persisted relay loop: patient question -> consultant answer
+    const persistedQ = (activeCase.metadata?.patientQuestions as string[]) || [];
+    const persistedA = (activeCase.metadata?.consultantAnswers as string[]) || [];
+    const seeded: Array<{ id: string; text: string; sender: 'patient' | 'coordinator'; timestamp: Date }> = [];
+    persistedQ.forEach((q, i) => {
+      seeded.push({ id: `seed_q_${i}`, text: q, sender: 'patient', timestamp: new Date() });
+      if (persistedA[i]) {
+        seeded.push({ id: `seed_a_${i}`, text: `Indian consultant answer: ${persistedA[i]}`, sender: 'coordinator', timestamp: new Date() });
+      }
+    });
+    return seeded;
+  });
   const [rating, setRating] = useState<number>(0);
   const [hoverRating, setHoverRating] = useState<number>(0);
   const [selectedTags, setSelectedTags] = useState<Set<number>>(new Set());
@@ -109,6 +122,15 @@ const FollowUpChatView: React.FC<Props> = ({ activeCase, onAdvanceStage }) => {
     };
     setMessages((prev) => [...prev, newMsg]);
     setChatInput('');
+
+    // Persist the patient's question so the coordinator relays THIS exact text (C09)
+    const existingQ = (activeCase.metadata?.patientQuestions as string[]) || [];
+    onUpdateCase({
+      metadata: {
+        ...(activeCase.metadata || {}),
+        patientQuestions: [...existingQ, newMsg.text],
+      },
+    });
 
     setTimeout(() => {
       const coordinatorReply = {
@@ -643,7 +665,10 @@ const FollowUpChatView: React.FC<Props> = ({ activeCase, onAdvanceStage }) => {
                   role="radio"
                   aria-checked={rating === star}
                   aria-label={`${star} ${isRTL ? 'نجوم' : 'stars'}`}
-                  onClick={() => setRating(star)}
+                  onClick={() => {
+                                      setRating(star);
+                                      onUpdateCase({ metadata: { ...(activeCase.metadata || {}), rating: star } });
+                                    }}
                   onMouseEnter={() => setHoverRating(star)}
                   onMouseLeave={() => setHoverRating(0)}
                   onFocus={() => setHoverRating(star)}
