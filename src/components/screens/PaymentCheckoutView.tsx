@@ -207,7 +207,7 @@ export const PaymentCheckoutView: React.FC<Props> = ({
           </p>
         </div>
 
-        {/* 3-Tier Selection Matrix */}
+        {/* 2-Tier Selection Matrix (Tier 1 & Tier 2 Only) */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
           {TIERS.map((tier) => {
             const isSelected = selectedTierId === tier.id;

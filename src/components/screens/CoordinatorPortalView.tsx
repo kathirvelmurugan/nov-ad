@@ -45,7 +45,9 @@ const CoordinatorPortalView: React.FC<Props> = ({
     c07_confirm: isAr ? 'تأكيد الموعد' : 'Confirm Slot',
     c07_confirmed: isAr ? 'تم التأكيد' : 'Confirmed',
     c08_title: isAr ? 'إصدار التقرير الأول' : 'Release Report PDF 1',
-    c08_action: isAr ? 'إصدار تقرير الرأي الطبي الثاني المعتمد PDF 1 للمريض' : 'Release Certified Second Opinion Report PDF 1 to Patient',
+    c08_action: isAr 
+      ? 'اعتماد وإصدار التقرير الطبي الأول (PDF 1) بالتوازي للطبيب السعودي وللمريض' 
+      : 'Release Certified Report PDF 1 Simultaneously to Saudi Doctor & Patient',
     c08_qr: isAr ? 'رمز التحقق QR' : 'QR Verification Code',
     c08_vat: isAr ? 'إيصال ضريبة القيمة المضافة 15% (ZATCA)' : '15% VAT ZATCA Receipt',
     c09_title: isAr ? 'صندوق متابعة الـ 21 يوماً' : 'Follow-up 21 days',
@@ -478,13 +480,20 @@ const CoordinatorPortalView: React.FC<Props> = ({
             </div>
 
             {pdf1Released ? (
-              <div style={{ textAlign: 'center', padding: '20px' }}>
+              <div style={{ textAlign: 'center', padding: '24px', backgroundColor: TEAL_BG, borderRadius: '12px', border: `1px solid ${TEAL_ACCENT}` }}>
                 <span style={badgeStyle('success')}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
-                  {isAr ? 'تم إصدار التقرير بنجاح' : 'Report Released Successfully'}
+                  {isAr 
+                    ? 'تم إصدار التقرير وتسليمه بنجاح في نفس الوقت للطبيب السعودي المعالج وللمريض' 
+                    : 'Report PDF 1 Delivered in Parallel to Both Saudi Treating Doctor & Patient'}
                 </span>
+                <p style={{ margin: '12px 0 0', fontSize: '13px', color: TEAL_PRIMARY, fontWeight: 700, fontFamily }}>
+                  {isAr
+                    ? 'تم إرسال إشعار موثق للطرفين، وتفعيل نافذة المتابعة الطبية لمدة 21 يوماً.'
+                    : 'Dispatch confirmed to both parties; 21-Day Clinical Follow-Up window is now active.'}
+                </p>
               </div>
             ) : (
               <button

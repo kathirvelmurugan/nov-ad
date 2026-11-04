@@ -36,7 +36,7 @@ const STAGE_MATRIX: Record<StageKey, StageConfig> = {
   AWAITING_PAYMENT: { heroCode: 'P', en: 'Awaiting Payment', ar: 'بانتظار الدفع' },
   WITH_CONSULTANT: { heroCode: 'K', en: 'With Consultant', ar: 'مع الاستشاري' },
   OPINION_READY: { heroCode: 'P', en: 'Opinion Ready', ar: 'الرأي جاهز' },
-  PARTNER_SERVICES: { heroCode: 'L', en: 'Partner Services', ar: 'خدمات الشركاء' },
+  PARTNER_SERVICES: { heroCode: 'C', en: 'Report Release (PDF 1)', ar: 'إصدار التقرير (PDF 1)' },
   FOLLOW_UP_21_DAYS: { heroCode: 'N', en: '21-Day Follow Up', ar: 'متابعة ٢١ يوم' },
   CLOSED: { heroCode: 'HA', en: 'Closed', ar: 'مغلق' },
 };

@@ -94,14 +94,14 @@ const STAGE_NARRATIONS: Record<ClinicalStage, StageNarration> = {
   },
   PARTNER_SERVICES: {
     stageNum: 7,
-    stageNameAr: 'المرحلة 7: خدمات الشركاء · L01–V01',
-    stageNameEn: 'Partner services · L01 · T01 · H01 · V01',
+    stageNameAr: 'المرحلة 7: اعتماد وإصدار التقرير الطبي بالتوازي · C08',
+    stageNameEn: 'Stage 7: Dual-Parallel Report Release (PDF 1) · C08',
     roleAr: 'منسق رعاية ألو (عبدالرحمن)',
     roleEn: 'ALO coordinator (Abdulrahman)',
-    headlineAr: 'مراجعة واعتماد مسودة الرأي وإصدار تقرير PDF 1 المعتمد للمريض',
-    headlineEn: 'Coordinator validates opinion draft, issues certified PDF 1 report, and coordinates care',
-    detailAr: 'إصدار التقرير الأول مع الختم الرقمي ورمز QR للتحقق، والتنسيق مع الشركاء الميدانيين.',
-    detailEn: 'Official PDF 1 release with digital cryptographic stamp, QR verification, and partner logistics.'
+    headlineAr: 'مراجعة واعتماد مسودة الرأي وإصدار تقرير PDF 1 المعتمد بالتوازي للطبيب السعودي وللمريض',
+    headlineEn: 'Coordinator validates opinion draft and releases certified PDF 1 simultaneously to Saudi doctor & patient',
+    detailAr: 'إصدار التقرير الأول مع الختم الرقمي ورمز QR المعتمد، والتسليم الفوري المتزامن للطرفين.',
+    detailEn: 'Official PDF 1 release with cryptographic seal, QR verification, and synchronized dual dispatch.'
   },
   FOLLOW_UP_21_DAYS: {
     stageNum: 8,

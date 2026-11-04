@@ -1,6 +1,6 @@
 import React from 'react';
 import { ClinicalCase } from '../../types';
-import { Stethoscope, HelpCircle, Check, Timer, UserCheck } from 'lucide-react';
+import { Stethoscope, HelpCircle, Check, Timer, UserCheck, ShieldCheck, FileCheck2, ArrowRight } from 'lucide-react';
 
 interface Props {
   activeCase: ClinicalCase;
@@ -47,7 +47,7 @@ export const DoctorReviewView: React.FC<Props> = ({
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="bg-alo-mint text-alo-teal font-mono text-[10px] px-2 py-0.5 rounded font-bold border border-teal-200">
-              D01 · {isAr ? 'الطبيب المعالج' : 'Saudi treating doctor'}
+              D01 · {isAr ? 'الطبيب السعودي المعالج' : 'Saudi Treating Doctor'}
             </span>
             <span className="text-xs font-bold text-slate-500">
               {isAr ? 'المستشفى الشريك:' : 'Partner Hospital:'} {activeCase.treatingDoctor.hospital}
@@ -60,9 +60,19 @@ export const DoctorReviewView: React.FC<Props> = ({
           <h2 className="text-2xl font-black text-alo-navy dark:text-slate-100 mt-1">
             {isAr ? activeCase.treatingDoctor.name : (activeCase.treatingDoctor.name || 'Treating Doctor, MD')}
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            <strong className="text-slate-700 dark:text-slate-200">{isAr ? activeCase.patientNameAr : (activeCase.patientNameEn || activeCase.patientName)}</strong> · {isAr ? (activeCase.specialtyAr || activeCase.specialty) : (activeCase.specialtyEn || activeCase.specialty)} · {activeCase.treatingDoctor.city}
-          </p>
+          <div className="flex flex-wrap items-center gap-2 mt-2">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 font-mono text-xs font-bold border border-emerald-200 dark:border-emerald-800">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+              {isAr ? 'بيانات المريض: محجوبة الهوية (SDAIA De-identified)' : 'Patient Record: De-identified (SDAIA Compliant)'}
+            </span>
+            <span className="text-xs font-mono font-bold text-slate-600 dark:text-slate-300">
+              ID: {activeCase.nationalIdMasked || '10********'}
+            </span>
+            <span className="text-xs text-slate-400">·</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400">
+              {isAr ? (activeCase.specialtyAr || activeCase.specialty) : (activeCase.specialtyEn || activeCase.specialty)} · {activeCase.treatingDoctor.city}
+            </span>
+          </div>
         </div>
 
         {/* 24-Hour SLA Badge */}
@@ -79,19 +89,37 @@ export const DoctorReviewView: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* Review Details & Consultant Selection */}
-      <div className="card-clinical p-6 space-y-6">
-        <div>
-          <h3 className="text-sm font-extrabold text-alo-navy dark:text-slate-100 mb-2">
-            {isAr ? 'التشخيص السريري المرفوع من التمريض:' : 'Clinical Diagnosis from Triage:'}
-          </h3>
-          <p className="bg-slate-50 dark:bg-slate-900/60 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-semibold">
-            {isAr ? (activeCase.diagnosisAr || activeCase.diagnosis) : (activeCase.diagnosisEn || activeCase.diagnosis)}
-          </p>
+      {/* D02-D04: Diagnostic Scans & Lab Triage Review */}
+      <div className="card-clinical p-5 space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
+          <div className="flex items-center gap-2">
+            <span className="bg-alo-mint text-alo-teal font-mono text-[10px] px-2 py-0.5 rounded font-bold border border-teal-200">
+              D02–D04 · {isAr ? 'تدقيق الفحوصات والأشعة والمؤشرات' : 'Diagnostic Scans & Lab Inspection'}
+            </span>
+            <FileCheck2 className="w-4 h-4 text-alo-teal" />
+            <h3 className="text-sm font-extrabold text-alo-navy dark:text-slate-100">
+              {isAr ? 'الملف التشخيصي المرفوع من التمريض:' : 'Clinical Dossier & Scans:'}
+            </h3>
+          </div>
+          <span className="text-[11px] text-emerald-700 dark:text-emerald-300 font-bold bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded">
+            ✓ {isAr ? 'فحوصات مكتملة ومدققة' : 'Verified Clinical Scans'}
+          </span>
         </div>
 
+        <p className="bg-slate-50 dark:bg-slate-900/60 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-semibold">
+          {isAr ? (activeCase.diagnosisAr || activeCase.diagnosis) : (activeCase.diagnosisEn || activeCase.diagnosis)}
+        </p>
+      </div>
+
+      {/* Review Details & Consultant Selection */}
+      <div className="card-clinical p-6 space-y-6">
         {/* D05-D06: Pick the Indian consultant (recipient) + confirm call type */}
         <div className="space-y-3">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="bg-alo-mint text-alo-teal font-mono text-[10px] px-2 py-0.5 rounded font-bold border border-teal-200">
+              D05–D06 · {isAr ? 'اختيار الاستشاري ونمط الاستشارة' : 'Specialist & Modality Selection'}
+            </span>
+          </div>
           <div>
             <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
               {isAr ? 'اختر الاستشاري الهندي (المستقبل):' : 'Pick the Indian consultant (recipient):'}
@@ -204,7 +232,7 @@ export const DoctorReviewView: React.FC<Props> = ({
             className="w-full sm:w-auto bg-gradient-to-r from-alo-teal to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white font-extrabold py-3 px-8 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-sm active:scale-95 cursor-pointer"
           >
             <Check className="w-4 h-4" />
-            <span>{isAr ? 'D10 · اعتماد التوجيهات وإصدار رابط السداد (P19)' : 'Approve & Issue Payment Invoice (P19)'}</span>
+            <span>{isAr ? 'D10 · اعتماد الإحالة وإرسال الملف لمنسق رعاية ألو (C01)' : 'D10 · Approve Referral & Route to ALO Coordinator (C01)'}</span>
             <span>{isAr ? '←' : '→'}</span>
           </button>
         </div>

@@ -81,13 +81,13 @@ export const GuideModal: React.FC<Props> = ({
     {
       stage: 'DOCTOR_REVIEW',
       num: 3,
-      titleAr: 'المرحلة 3: مراجعة الطبيب · D02–06',
-      titleEn: 'Doctor review · D02–06',
+      titleAr: 'المرحلة 3: مراجعة الطبيب السعودي المعالج · D01–10',
+      titleEn: 'Saudi Doctor review · D01–10',
       role: 'D (Saudi treating doctor)',
-      descAr: 'يقوم الاستشاري السعودي بمراجعة الحالة، تحديد الأسئلة الدقيقة للاستشاري الهندي، وتأكيد الحاجة للرأي الثاني.',
-      descEn: 'Saudi treating physician validates clinical history, frames targeted questions for the Indian specialist, and confirms eligibility.',
-      keyPointsAr: ['شاشات D01 إلى D10', 'تحديد أولوية الحالة والبروتوكول', 'اعتماد ملف الإحالة الدولية'],
-      keyPointsEn: ['Screens D01 to D10', 'Clinical priority & protocol triage', 'International referral pack sign-off']
+      descAr: 'يقوم الطبيب السعودي المعالج بمراجعة السجل المحجوب الهوية (SDAIA)، تدقيق الأشعة والمؤشرات (D02-D04)، اختيار الاستشاري ونمط الاستشارة (D05-D06)، صياغة 3 أسئلة سريرية، وإحالة الملف للمنسق (D10).',
+      descEn: 'Saudi treating physician inspects de-identified record (SDAIA compliant), reviews scans & labs (D02–D04), selects Indian specialist & modality (D05–D06), formulates 3 focus questions, and routes to ALO coordinator (D10).',
+      keyPointsAr: ['شاشات D01 إلى D10', 'سجل محجوب الهوية متوافق مع سدايا', 'تحديد الاستشاري و3 أسئلة سريرية وإحالة للمنسق'],
+      keyPointsEn: ['Screens D01 to D10', 'SDAIA-compliant de-identified dossier', 'Specialist selection, 3 focus questions & route to coordinator']
     },
     {
       stage: 'AWAITING_PAYMENT',
@@ -125,13 +125,13 @@ export const GuideModal: React.FC<Props> = ({
     {
       stage: 'PARTNER_SERVICES',
       num: 7,
-      titleAr: 'المرحلة 7: خدمات الشركاء · L01–V01',
-      titleEn: 'Partner services · L01 · T01 · H01 · V01',
-      role: 'L / H / T / V (Partners / شركاء الرعاية)',
-      descAr: 'تنسيق الخدمات الموصى بها في التقرير: تحاليل منزلية عبر مختبرات ألفا، تمريض منزلي سند، وتنسيق سفر وعلاج خارجي الفرسان.',
-      descEn: 'Fulfillment of post-opinion recommendations: Alpha Labs at-home blood draws, Sanad home nursing visits, and Al-Fursan medical travel logistics.',
-      keyPointsAr: ['شاشات L01، H01، T01، V01', 'تتبع المندوب والفني في الوقت الفعلي', 'الموافقة المسبقة للتأمين الصحي'],
-      keyPointsEn: ['Screens L01, H01, T01, V01', 'Live technician dispatch & sample tracking', 'CHI insurance pre-authorization workflows']
+      titleAr: 'المرحلة 7: اعتماد وإصدار التقرير الطبي بالتوازي · C08',
+      titleEn: 'Stage 7: Dual-Parallel Report Release (PDF 1) · C08',
+      role: 'C (ALO Coordinator / منسق رعاية ألو)',
+      descAr: 'يقوم منسق رعاية ألو بمراجعة مسودة الرأي الطبي الثاني واعتماد وإصدار التقرير الطبي المعتمد PDF 1 في نفس الوقت بالتوازي للطبيب السعودي المعالج وللمريض.',
+      descEn: 'ALO coordinator reviews the finalized second opinion report and releases certified PDF 1 simultaneously to both the Saudi treating doctor and the patient in parallel.',
+      keyPointsAr: ['بوابة المنسق C08', 'تسليم متزامن للطرفين (طبيب معالج ومريض)', 'تفعيل نافذة المتابعة الطبية لـ 21 يوماً'],
+      keyPointsEn: ['Coordinator Portal C08', 'Synchronized dual delivery to Doctor & Patient', '21-day clinical follow-up activation']
     },
     {
       stage: 'FOLLOW_UP_21_DAYS',
