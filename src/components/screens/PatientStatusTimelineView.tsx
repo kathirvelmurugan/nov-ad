@@ -26,6 +26,7 @@ interface Props {
   onUpdateCase: (updated: Partial<ClinicalCase>) => void;
   onResetActiveCase?: () => void;
   onSelectRole?: (roleCode: string) => void;
+  onBackToLanding?: () => void;
   lang?: 'ar' | 'en';
 }
 
@@ -54,6 +55,7 @@ export const PatientStatusTimelineView: React.FC<Props> = ({
   onUpdateCase,
   onResetActiveCase,
   onSelectRole,
+  onBackToLanding,
   lang = 'ar',
 }) => {
   const isAr = lang === 'ar';
@@ -201,6 +203,18 @@ export const PatientStatusTimelineView: React.FC<Props> = ({
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in duration-200" dir={isAr ? 'rtl' : 'ltr'}>
+      {/* Return to Landing Page Breadcrumb */}
+      {onBackToLanding && (
+        <div className="flex items-center justify-between pb-1">
+          <button
+            onClick={onBackToLanding}
+            className="inline-flex items-center gap-2 text-xs font-black text-emerald-800 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-900/50 px-3.5 py-2 rounded-xl border border-emerald-200 dark:border-emerald-800 transition-all cursor-pointer active:scale-95 shadow-xs"
+          >
+            {isAr ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+            <span>{isAr ? '← العودة إلى الصفحة الرئيسية واختيار الخدمات' : '← Back to Patient Landing Page'}</span>
+          </button>
+        </div>
+      )}
       
       {/* 1. Header: Patient Journey Banner */}
       <div className="bg-gradient-to-r from-teal-900 via-slate-900 to-teal-950 p-6 rounded-2xl border border-teal-800/60 shadow-lg text-white">

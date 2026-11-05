@@ -17,6 +17,7 @@ import { FollowUpChatView } from './components/screens/FollowUpChatView';
 import { AdminSettingsView } from './components/screens/AdminSettingsView';
 import { CoordinatorPortalView } from './components/screens/CoordinatorPortalView';
 import { PatientStatusTimelineView } from './components/screens/PatientStatusTimelineView';
+import { PatientLandingView } from './components/screens/PatientLandingView';
 import { NewCaseModal } from './components/NewCaseModal';
 import { GuideModal } from './components/GuideModal';
 import { StageHandoffModal } from './components/StageHandoffModal';
@@ -141,11 +142,100 @@ export const App: React.FC = () => {
   const [isAutoDemoActive, setIsAutoDemoActive] = useState(false);
   const [viewMode, setViewMode] = useState<'workstation' | 'studio'>(() => {
     try {
-      const saved = localStorage.getItem(VIEW_MODE_KEY);
-      if (saved === 'studio' || saved === 'workstation') return saved;
+      if (typeof window !== 'undefined' && window.location.hash === '#cockpit') {
+        return 'studio';
+      }
     } catch (e) {}
-    return 'studio';
+    return 'workstation';
   });
+
+  const [patientSubView, setPatientSubView] = useState<'landing' | 'intake' | 'timeline'>(() => {
+    try {
+      const saved = localStorage.getItem('alo_patient_subview_v2.4');
+      if (saved === 'landing' || saved === 'intake' || saved === 'timeline') return saved;
+    } catch (e) {}
+    return 'landing';
+  });
+
+  const [selectedServiceId, setSelectedServiceId] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem('alo_selected_service_v2.4');
+      if (saved) return saved;
+    } catch (e) {}
+    return 'second-opinion';
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('alo_patient_subview_v2.4', patientSubView);
+    } catch (e) {}
+  }, [patientSubView]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('alo_selected_service_v2.4', selectedServiceId);
+    } catch (e) {}
+  }, [selectedServiceId]);
+
+  // Browser back / forward navigation synchronization for 5-Role Demo Cockpit
+  useEffect(() => {
+    const handlePopState = () => {
+      if (typeof window !== 'undefined') {
+        if (window.location.hash === '#cockpit') {
+          setViewMode('studio');
+          const p = PERSONAS.find((x) => x.code === 'P') || PERSONAS[0];
+          setActivePersona(p);
+        } else {
+          setViewMode('workstation');
+          setPatientSubView('landing');
+        }
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    window.addEventListener('hashchange', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('hashchange', handlePopState);
+    };
+  }, []);
+
+  const handleSelectPatientSubView = (subView: 'landing' | 'intake' | 'timeline') => {
+    setPatientSubView(subView);
+    setViewMode('workstation');
+    const p = PERSONAS.find((x) => x.code === 'P') || PERSONAS[0];
+    setActivePersona(p);
+    try {
+      localStorage.setItem('alo_patient_subview_v2.4', subView);
+      localStorage.setItem(VIEW_MODE_KEY, 'workstation');
+    } catch (e) {}
+    if (typeof window !== 'undefined' && window.location.hash === '#cockpit') {
+      window.history.pushState({ viewMode: 'workstation' }, '', window.location.pathname + window.location.search);
+    }
+  };
+
+  const handleSelectServiceFromLanding = (serviceId: string) => {
+    setSelectedServiceId(serviceId);
+    if (serviceId === 'video-consultation') {
+      handleUpdateCase({ consultationType: 'video' });
+    } else if (serviceId === 'second-opinion') {
+      handleUpdateCase({ consultationType: 'written' });
+    }
+    handleSelectPatientSubView('intake');
+  };
+
+  // Navigates directly from Landing Page "Start Your Case" CTA to 5-Role Demo Cockpit with Patient selected
+  const handleStartCaseToCockpit = () => {
+    setViewMode('studio');
+    const patientPersona = PERSONAS.find((p) => p.code === 'P') || PERSONAS[0];
+    setActivePersona(patientPersona);
+    try {
+      localStorage.setItem(VIEW_MODE_KEY, 'studio');
+    } catch (e) {}
+    if (typeof window !== 'undefined' && window.location.hash !== '#cockpit') {
+      window.history.pushState({ viewMode: 'studio' }, '', '#cockpit');
+    }
+  };
 
   const handleToggleViewMode = () => {
     setViewMode((prev) => {
@@ -153,6 +243,13 @@ export const App: React.FC = () => {
       try {
         localStorage.setItem(VIEW_MODE_KEY, next);
       } catch (e) {}
+      if (typeof window !== 'undefined') {
+        if (next === 'studio' && window.location.hash !== '#cockpit') {
+          window.history.pushState({ viewMode: 'studio' }, '', '#cockpit');
+        } else if (next === 'workstation' && window.location.hash === '#cockpit') {
+          window.history.pushState({ viewMode: 'workstation' }, '', window.location.pathname + window.location.search);
+        }
+      }
       return next;
     });
   };
@@ -197,6 +294,8 @@ export const App: React.FC = () => {
       } catch (e) {}
       setCases(SEED_CASES);
       setActiveCaseId(SEED_CASES[0].id);
+      setPatientSubView('landing');
+      setSelectedServiceId('second-opinion');
     }
   };
 
@@ -251,6 +350,8 @@ export const App: React.FC = () => {
         },
       });
       setActivePersona(PERSONAS[0]); // Return to Patient at Stage 1
+      setPatientSubView('landing');
+      setSelectedServiceId('second-opinion');
     }
   };
 
@@ -259,6 +360,8 @@ export const App: React.FC = () => {
     setCases((prev) => [newCase, ...prev]);
     setActiveCaseId(newCase.id);
     setActivePersona(PERSONAS[0]); // Patient
+    setPatientSubView('landing');
+    setSelectedServiceId('second-opinion');
   };
 
   const activeCase = cases.find((c) => c.id === activeCaseId) || cases[0];
@@ -283,6 +386,12 @@ export const App: React.FC = () => {
   // Smart persona select: updates persona while strictly preserving explicit user language lock
   const handleSelectPersona = (p: Persona) => {
     setActivePersona(p);
+    if (p.code === 'P') {
+      setViewMode('workstation');
+      try {
+        localStorage.setItem(VIEW_MODE_KEY, 'workstation');
+      } catch (e) {}
+    }
     
     // Check if user has explicitly locked their language
     const lockedLang = localStorage.getItem(LANG_KEY);
@@ -527,16 +636,60 @@ export const App: React.FC = () => {
 
     // If Patient Persona (P)
     if (activePersona.code === 'P') {
-      if (activeCase.currentStage === 'INTAKE_RECEIVED') {
+      // 1. Explicit Landing Page view
+      if (patientSubView === 'landing') {
+        return (
+          <PatientLandingView
+            activeCase={activeCase}
+            lang={lang}
+            onToggleLang={handleToggleLang}
+            onSelectService={handleSelectServiceFromLanding}
+            onOpenMyCases={() => handleSelectPatientSubView('timeline')}
+            onOpenNewCaseModal={() => setIsNewCaseModalOpen(true)}
+            theme={theme}
+            onToggleTheme={handleToggleTheme}
+            onStartCase={handleStartCaseToCockpit}
+          />
+        );
+      }
+
+      // 2. Explicit Intake Form view
+      if (patientSubView === 'intake') {
         return (
           <PatientIntakeView
             activeCase={activeCase}
+            onAdvanceStage={() => {
+              handleAdvanceStage();
+              handleSelectPatientSubView('timeline');
+            }}
+            onUpdateCase={handleUpdateCase}
+            lang={lang}
+            selectedService={selectedServiceId}
+            onSelectService={setSelectedServiceId}
+            onBackToLanding={() => handleSelectPatientSubView('landing')}
+          />
+        );
+      }
+
+      // 3. Explicit Status Tracker view
+      if (patientSubView === 'timeline') {
+        return (
+          <PatientStatusTimelineView
+            activeCase={activeCase}
             onAdvanceStage={handleAdvanceStage}
             onUpdateCase={handleUpdateCase}
+            onResetActiveCase={handleResetActiveCase}
+            onSelectRole={(code) => {
+              const p = PERSONAS.find((x) => x.code === code);
+              if (p) handleSelectPersona(p);
+            }}
+            onBackToLanding={() => handleSelectPatientSubView('landing')}
             lang={lang}
           />
         );
       }
+
+      // 4. Default stage-based views
       if (activeCase.currentStage === 'AWAITING_PAYMENT') {
         return (
           <PaymentCheckoutView
@@ -577,6 +730,7 @@ export const App: React.FC = () => {
             const p = PERSONAS.find((x) => x.code === code);
             if (p) handleSelectPersona(p);
           }}
+          onBackToLanding={() => handleSelectPatientSubView('landing')}
           lang={lang}
         />
       );
@@ -629,6 +783,8 @@ export const App: React.FC = () => {
         onToggleTheme={handleToggleTheme}
         viewMode={viewMode}
         onToggleViewMode={handleToggleViewMode}
+        patientSubView={patientSubView}
+        onSelectPatientSubView={handleSelectPatientSubView}
       />
 
       {viewMode === 'studio' ? (
@@ -639,24 +795,23 @@ export const App: React.FC = () => {
           onResetActiveCase={handleResetActiveCase}
           lang={lang}
           onSwitchToWorkstation={() => {
-            setViewMode('workstation');
-            try {
-              localStorage.setItem(VIEW_MODE_KEY, 'workstation');
-            } catch (e) {}
+            handleSelectPatientSubView('landing');
           }}
           onOpenWhatsAppDrawer={() => setIsWhatsAppDrawerOpen(true)}
         />
       ) : (
         <>
-          {/* 2. Interactive 9-Stage Stepper Progress Bar */}
-          <StageProgressBar
-            currentStage={activeCase.currentStage}
-            onSetStage={handleSetStage}
-            lang={lang}
-          />
+          {/* 2. Interactive 9-Stage Stepper Progress Bar (hidden on pure landing page) */}
+          {!(activePersona.code === 'P' && patientSubView === 'landing') && (
+            <StageProgressBar
+              currentStage={activeCase.currentStage}
+              onSetStage={handleSetStage}
+              lang={lang}
+            />
+          )}
 
           {/* 3. Main Clinical Screen Body */}
-          <main className="flex-1 p-4 sm:p-6 lg:p-8">
+          <main className={activePersona.code === 'P' && patientSubView === 'landing' ? 'flex-1 w-full p-0' : 'flex-1 p-4 sm:p-6 lg:p-8'}>
             {renderScreen()}
           </main>
         </>

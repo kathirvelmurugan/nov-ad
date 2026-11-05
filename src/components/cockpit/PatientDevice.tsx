@@ -1,5 +1,19 @@
 import React, { useState } from 'react';
 import { CockpitDeviceProps, TEAL_PRIMARY, TEAL_SECONDARY, TEAL_BG, WHATSAPP_GREEN } from './types';
+import { 
+  FileCheck2, 
+  Video, 
+  FlaskConical, 
+  Pill, 
+  Building2, 
+  Activity, 
+  ArrowRight, 
+  ArrowLeft, 
+  HeartPulse, 
+  Sparkles, 
+  CheckCircle2, 
+  ShieldCheck 
+} from 'lucide-react';
 
 export const PatientDevice: React.FC<CockpitDeviceProps> = ({
   activeCase,

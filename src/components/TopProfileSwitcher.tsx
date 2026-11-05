@@ -81,6 +81,8 @@ interface Props {
   onToggleTheme: () => void;
   viewMode?: 'workstation' | 'studio';
   onToggleViewMode?: () => void;
+  patientSubView?: 'landing' | 'intake' | 'timeline';
+  onSelectPatientSubView?: (view: 'landing' | 'intake' | 'timeline') => void;
 }
 
 export const TopProfileSwitcher: React.FC<Props> = ({
@@ -103,6 +105,8 @@ export const TopProfileSwitcher: React.FC<Props> = ({
   onToggleTheme,
   viewMode = 'workstation',
   onToggleViewMode,
+  patientSubView = 'landing',
+  onSelectPatientSubView,
 }) => {
   const isAr = lang === 'ar';
   const isCustom = activeCase.id.startsWith('TEST-') || activeCase.id.startsWith('REAL-');
@@ -151,28 +155,70 @@ export const TopProfileSwitcher: React.FC<Props> = ({
           </div>
         </div>
 
+        {/* Center: Patient Experience Navigation (Landing Page | Intake Form | Status Tracker) */}
+        {onSelectPatientSubView && (
+          <div className="flex items-center gap-1 bg-slate-200/80 dark:bg-slate-800 p-1 rounded-xl border border-slate-300/80 dark:border-slate-700 shadow-inner">
+            <button
+              type="button"
+              onClick={() => onSelectPatientSubView('landing')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer ${
+                patientSubView === 'landing' && viewMode !== 'studio'
+                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-700/20 ring-2 ring-emerald-400'
+                  : 'text-slate-700 dark:text-slate-300 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-white/60 dark:hover:bg-slate-700/60'
+              }`}
+            >
+              <span>🏠</span>
+              <span>{isAr ? 'الصفحة الرئيسية للمريض' : 'Landing Page'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => onSelectPatientSubView('intake')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer ${
+                patientSubView === 'intake' && viewMode !== 'studio'
+                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-700/20 ring-2 ring-emerald-400'
+                  : 'text-slate-700 dark:text-slate-300 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-white/60 dark:hover:bg-slate-700/60'
+              }`}
+            >
+              <span>📝</span>
+              <span>{isAr ? 'نموذج الاستقبال' : 'Intake Form'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => onSelectPatientSubView('timeline')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer ${
+                patientSubView === 'timeline' && viewMode !== 'studio'
+                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-700/20 ring-2 ring-emerald-400'
+                  : 'text-slate-700 dark:text-slate-300 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-white/60 dark:hover:bg-slate-700/60'
+              }`}
+            >
+              <span>⏱️</span>
+              <span>{isAr ? 'مسار الحالة' : 'Status Tracker'}</span>
+            </button>
+          </div>
+        )}
+
         {/* Right Section: Auto-Fill + Theme Toggle + Universal Language Pill */}
         <div className="flex items-center gap-2.5">
           {/* 5-Role Studio Cockpit Multi-Device Toggle */}
           {onToggleViewMode && (
             <button
               onClick={onToggleViewMode}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg shadow-sm transition-all text-xs active:scale-95 border font-extrabold ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl shadow-sm transition-all text-xs active:scale-95 border font-extrabold cursor-pointer ${
                 viewMode === 'studio'
                   ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white border-teal-300 ring-2 ring-teal-400'
-                  : 'bg-gradient-to-r from-slate-900 to-teal-950 text-emerald-300 hover:text-white border-teal-700/60 hover:border-teal-500'
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-300 dark:border-slate-700'
               }`}
               title={
                 isAr
-                  ? 'عرض الأدوار الخمسة معاً في شاشة واحدة متزامنة (Patient, Alo Nurse, Saudi treating doctor, Alo Coordinator, Indian consultant)'
-                  : 'Multi-device cockpit: all 5 canonical roles simultaneously in a single screen'
+                  ? 'قمرة القيادة الداخلية لاختبار الأدوار الخمسة معاً (Internal Demo Cockpit)'
+                  : 'Internal demo cockpit: all 5 roles simultaneously'
               }
             >
               <span>📱</span>
               <span>
                 {viewMode === 'studio'
-                  ? (isAr ? '🖥️ محطة فردية' : '🖥️ Single View')
-                  : (isAr ? '📱 استوديو ٥ شاشات' : '📱 5-Role Studio')}
+                  ? (isAr ? '🌐 الخروج لبوابة المريض' : '🌐 Exit to Patient App')
+                  : (isAr ? '📱 استوديو ٥ شاشات (تجريبي)' : '📱 5-Role Demo Cockpit')}
               </span>
             </button>
           )}
@@ -281,7 +327,24 @@ export const TopProfileSwitcher: React.FC<Props> = ({
               </span>
             </div>
 
-            <div className="flex items-center gap-1.5 text-[10px] font-mono shrink-0">
+            <div className="flex items-center gap-2 text-[10px] font-mono shrink-0">
+              <div className="flex items-center gap-1 bg-white/90 dark:bg-slate-900/90 p-0.5 rounded-lg border border-teal-300/80 dark:border-teal-700 shadow-2xs font-sans">
+                {PERSONAS.map((p) => (
+                  <button
+                    key={p.code}
+                    type="button"
+                    onClick={() => onSelectPersona(p)}
+                    className={`px-2 py-0.5 rounded-md text-[10px] font-bold transition-all cursor-pointer ${
+                      activePersona.code === p.code
+                        ? 'bg-slate-900 text-white shadow-2xs'
+                        : 'text-slate-600 dark:text-slate-300 hover:text-emerald-700'
+                    }`}
+                    title={p.title}
+                  >
+                    <span>{p.avatar} {isAr ? p.name.split(' ')[0] : p.code}</span>
+                  </button>
+                ))}
+              </div>
               <span className="text-slate-500 dark:text-slate-400 hidden md:inline">
                 {isAr ? 'شاشة العرض:' : 'Surface:'}
               </span>
