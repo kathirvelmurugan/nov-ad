@@ -146,7 +146,11 @@ export const CoordinatorDevice: React.FC<CockpitDeviceProps> = ({
                 {isAr ? '🇸🇦 بنية الهوية المزدوجة (سدايا مادة ٢٩):' : '🇸🇦 Dual-Token Decoupling Gateway:'}
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#334155' }}>
-                <span>{isAr ? '• الهوية المحلية (محفوظة بالمملكة): طارق المطيري' : '• Domestic Identity (Escrowed in KSA): Tariq Al-Mutairi'}</span>
+                <span>
+                  {isAr
+                    ? `• الهوية المحلية (محفوظة بالمملكة): ${activeCase.patientName || activeCase.patientNameAr || 'سالم العامري'}`
+                    : `• Domestic Identity (Escrowed in KSA): ${activeCase.patientName || activeCase.patientNameEn || 'Salem Al-Ameri'}`}
+                </span>
                 <span style={{ fontWeight: 800, color: TEAL_PRIMARY }}>
                   ➔ {isAr ? 'رمز التصدير للهند: ALO-KSA-9482' : 'Egress Token: ALO-KSA-9482'}
                 </span>

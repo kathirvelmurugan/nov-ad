@@ -126,13 +126,13 @@ export const NurseDevice: React.FC<CockpitDeviceProps> = ({
                   {isAr ? '🇸🇦 الهوية المحلية (داخل المملكة):' : '🇸🇦 Domestic Identity (In-Kingdom):'}
                 </div>
                 <div style={{ fontSize: '11px', fontWeight: 800, color: '#0f172a', marginTop: '3px' }}>
-                  طارق بن سالم المطيري
+                  {activeCase.patientName || (isAr ? activeCase.patientNameAr : activeCase.patientNameEn) || (isAr ? 'سالم العامري' : 'Salem Al-Ameri')}
                 </div>
                 <div style={{ fontSize: '10px', color: '#64748b', marginTop: '1px' }}>
-                  هوية: 1089345210 · ملف: RC-8821
+                  {isAr ? 'هوية / إقامة' : 'ID / Iqama'}: {activeCase.nationalIdMasked || '1089345210'} · {isAr ? 'ملف' : 'File'}: RC-{activeCase.caseNumber?.slice(-4) || '8821'}
                 </div>
                 <div style={{ fontSize: '9px', color: '#166534', fontWeight: 700, marginTop: '3px' }}>
-                  ✓ مرئية للطبيب السعودي والمنسق
+                  {isAr ? '✓ مرئية للطبيب السعودي والمنسق' : '✓ Visual of the Saudi doctor and coordinator'}
                 </div>
               </div>
 

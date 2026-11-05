@@ -123,10 +123,10 @@ export const SaudiDoctorDevice: React.FC<CockpitDeviceProps> = ({
                 <div>
                   <div style={{ fontSize: '10px', color: '#64748b' }}>{isAr ? '🇸🇦 المريض المسجل (مستشفى رعاية الرياض):' : '🇸🇦 Domestic Patient Record:'}</div>
                   <div style={{ fontSize: '13px', fontWeight: 800, color: '#0f172a', marginTop: '2px' }}>
-                    طارق بن سالم المطيري
+                    {activeCase.patientName || (isAr ? activeCase.patientNameAr : activeCase.patientNameEn) || (isAr ? 'سالم العامري' : 'Salem Al-Ameri')}
                   </div>
                   <div style={{ fontSize: '10px', color: '#64748b', marginTop: '1px' }}>
-                    هوية: 1089345210 · ذكر (٤٨ سنة)
+                    {isAr ? 'هوية / إقامة' : 'ID / Iqama'}: {activeCase.nationalIdMasked || '1089345210'} · {activeCase.age ? `${activeCase.age}${isAr ? ' سنة' : ' years old'}` : (isAr ? '٤٨ سنة' : '48 years old')}
                   </div>
                 </div>
 

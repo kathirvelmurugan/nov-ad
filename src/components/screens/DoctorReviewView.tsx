@@ -63,10 +63,12 @@ export const DoctorReviewView: React.FC<Props> = ({
           <div className="flex flex-wrap items-center gap-2 mt-2">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-teal-50 dark:bg-teal-950/40 text-alo-teal font-mono text-xs font-bold border border-teal-200 dark:border-teal-800">
               <ShieldCheck className="w-3.5 h-3.5 text-alo-teal" />
-              {isAr ? 'المريض المسجل (محلياً): طارق بن سالم المطيري' : 'Domestic Patient: Tariq Al-Mutairi'}
+              {isAr
+                ? `المريض المسجل (محلياً): ${activeCase.patientName || activeCase.patientNameAr || 'سالم العامري'}`
+                : `Domestic Patient: ${activeCase.patientName || activeCase.patientNameEn || 'Salem Al-Ameri'}`}
             </span>
             <span className="text-xs font-mono font-bold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">
-              {isAr ? 'الهوية الوطنية: 1089345210' : 'National ID: 1089345210'}
+              {isAr ? `الهوية / الإقامة: ${activeCase.nationalIdMasked || '1089345210'}` : `ID / Iqama: ${activeCase.nationalIdMasked || '1089345210'}`}
             </span>
             <span className="text-xs font-mono font-bold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/30 px-2 py-0.5 rounded border border-teal-200 dark:border-teal-800">
               {isAr ? `رمز العبور للهند: ${activeCase.egressToken || 'ALO-KSA-9482'}` : `Egress Token: ${activeCase.egressToken || 'ALO-KSA-9482'}`}
