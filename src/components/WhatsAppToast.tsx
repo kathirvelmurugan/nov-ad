@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { MessageCircle, ExternalLink, X, ArrowRight, ArrowLeft } from 'lucide-react';
 import { ClinicalCase } from '../types';
 
@@ -26,9 +26,16 @@ export const WhatsAppToast: React.FC<Props> = ({
   const [visible, setVisible] = useState(false);
   const [currentPayload, setCurrentPayload] = useState<ToastPayload | null>(null);
   const isAr = lang === 'ar';
+  const isFirstMount = useRef(true);
 
   // Map each stage to its official Meta Cloud WhatsApp template
   useEffect(() => {
+    // Suppress premature toast on initial page load / screen mount before submission
+    if (isFirstMount.current) {
+      isFirstMount.current = false;
+      return;
+    }
+
     let payload: ToastPayload | null = null;
 
     switch (activeCase.currentStage) {
@@ -46,17 +53,17 @@ export const WhatsAppToast: React.FC<Props> = ({
           code: 'W04',
           titleAr: 'اكتمال التدقيق وحجب الهوية',
           titleEn: 'Triage & De-Identification Complete',
-          bodyAr: `أتمت ممرضة ألو دكتور تدقيق الفحوصات وحجب الهوية بنجاح.`,
-          bodyEn: `Nurse audit complete; PHI de-identified per MOH regulations.`,
+          bodyAr: `أتمت ممرضة ألو دكتور تدقيق الفحوصات وحجب الهوية بنظام سدايا بنجاح.`,
+          bodyEn: `Nurse audit complete; dual-token de-identification applied per SDAIA Art. 29.`,
         };
         break;
       case 'DOCTOR_REVIEW':
         payload = {
           code: 'W05',
           titleAr: 'مراجعة الطبيب السعودي وصياغة الأسئلة',
-          titleEn: 'Doctor review',
-          bodyAr: `يقوم ${activeCase.treatingDoctor.name} بدراسة الملف وصياغة 3 أسئلة توجيهية.`,
-          bodyEn: `${activeCase.treatingDoctor.name} is reviewing and formulating 3 focus questions.`,
+          titleEn: 'Doctor Review & Referral',
+          bodyAr: `اعتمد ${activeCase.treatingDoctor?.name || 'د. عبدالله الشمري'} الإحالة وصاغ الأسئلة السريرية. الفاتورة جاهزة.`,
+          bodyEn: `${activeCase.treatingDoctor?.name || 'Dr. Al-Shammari'} reviewed case and formulated clinical focus questions.`,
         };
         break;
       case 'AWAITING_PAYMENT':
@@ -73,18 +80,36 @@ export const WhatsAppToast: React.FC<Props> = ({
           code: 'W08',
           titleAr: 'إحالة الملف للاستشاري الدولي',
           titleEn: 'Consultant Assigned',
-          bodyAr: `تم تعيين ${activeCase.consultant.name} في ${activeCase.consultant.center}.`,
-          bodyEn: `Assigned to ${activeCase.consultant.name} at ${activeCase.consultant.center}.`,
+          bodyAr: `تم تفعيل الرمز ${activeCase.egressToken || 'ALO-KSA-9482'} وإحالة الملف إلى ${activeCase.consultant.name} في ${activeCase.consultant.center}.`,
+          bodyEn: `Dossier token ${activeCase.egressToken || 'ALO-KSA-9482'} dispatched to ${activeCase.consultant.name} at ${activeCase.consultant.center}.`,
         };
         break;
       case 'OPINION_READY':
-        payload = {
-          code: 'W14',
-          titleAr: 'صدور التقرير الطبي المعتمد والاتصال',
-          titleEn: 'Bilingual Report Ready',
-          bodyAr: `صدر الرأي الطبي الثاني المعتمد باللغتين العربية والإنجليزية.`,
-          bodyEn: `Accredited bilingual second opinion report released with hospital stamps.`,
-        };
+        if (!activeCase.coordinatorForwardedToDoctor) {
+          payload = {
+            code: 'W12',
+            titleAr: 'استلام الرأي وجاري التعريب',
+            titleEn: 'In Localization',
+            bodyAr: `تم استلام الرأي الطبي من الهند بنجاح لحالة ${activeCase.caseNumber}. يقوم المنسق بإعداد النسخة المعربة.`,
+            bodyEn: `Second opinion received from India. Alo Coordinator localizing bilingual report.`,
+          };
+        } else if (!activeCase.doctorReleasedToPatient) {
+          payload = {
+            code: 'W13',
+            titleAr: 'قيد مصادقة الطبيب المعالج',
+            titleEn: 'Doctor Sign-Off Pending',
+            bodyAr: `وصل التقرير المعرب إلى طبيبك السعودي المعالج (${activeCase.treatingDoctor?.name || 'د. عبدالله الشمري'}) للمصادقة السريرية.`,
+            bodyEn: `Bilingual report routed to your treating physician for clinical endorsement.`,
+          };
+        } else {
+          payload = {
+            code: 'W14',
+            titleAr: 'صدور التقرير الطبي المعتمد',
+            titleEn: 'Bilingual Report Released',
+            bodyAr: `اعتمد ${activeCase.treatingDoctor?.name || 'د. عبدالله الشمري'} الرأي الطبي الثاني وأصبح متاحاً للتحميل.`,
+            bodyEn: `Accredited bilingual second opinion report released with hospital stamps.`,
+          };
+        }
         break;
       case 'PARTNER_SERVICES':
         payload = {
@@ -125,7 +150,12 @@ export const WhatsAppToast: React.FC<Props> = ({
     }, 10000);
 
     return () => clearTimeout(timer);
-  }, [activeCase.currentStage, activeCase.caseNumber]);
+  }, [
+    activeCase.currentStage,
+    activeCase.caseNumber,
+    activeCase.coordinatorForwardedToDoctor,
+    activeCase.doctorReleasedToPatient,
+  ]);
 
   if (!visible || !currentPayload) return null;
 

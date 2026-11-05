@@ -364,6 +364,7 @@ export const App: React.FC = () => {
       handleUpdateCase({ currentStage: nextStage });
       handleSelectPersona(nextP);
       setPendingHandoff(null);
+      setIsWhatsAppDrawerOpen(true);
     }
   };
 
@@ -374,6 +375,7 @@ export const App: React.FC = () => {
     handleUpdateCase({ currentStage: toStage });
     handleSelectPersona(nextPersona);
     setPendingHandoff(null);
+    setIsWhatsAppDrawerOpen(true);
   };
 
   // Select case from 10-patient pipeline overview board with automatic hero activation
@@ -642,6 +644,7 @@ export const App: React.FC = () => {
               localStorage.setItem(VIEW_MODE_KEY, 'workstation');
             } catch (e) {}
           }}
+          onOpenWhatsAppDrawer={() => setIsWhatsAppDrawerOpen(true)}
         />
       ) : (
         <>
