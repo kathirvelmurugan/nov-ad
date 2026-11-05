@@ -120,13 +120,25 @@ export const FiveDeviceCockpitView: React.FC<FiveDeviceCockpitProps> = ({
         };
       }
       return {
-        ar: '💬 واتساب (الاستشاري ➔ المنسق): اعتمد د. براديب كومار الرأي الثاني بناءً على فحص الأشعة 3D DICOM. جاهز للختم.',
-        en: '💬 WhatsApp (Consultant ➔ Coordinator): Second opinion evaluated and signed based on 3D DICOM. Ready for release.',
+        ar: '💬 واتساب (الاستشاري ➔ المنسق): سلّم د. براديب كومار الرأي الإنجليزي لمنسق ألو لتعريبه ومطابقة المصطلحات الطبية.',
+        en: '💬 WhatsApp (Consultant ➔ Coordinator): English opinion delivered to Alo Coordinator for certified Arabic localization.',
+      };
+    }
+    if (!activeCase.coordinatorForwardedToDoctor) {
+      return {
+        ar: '💬 واتساب (منسق ألو ➔ التعريب): يجري منسق رعاية ألو التعريب والتدقيق المعتمد تمهيداً لإحالته للطبيب المعالج (C08).',
+        en: '💬 WhatsApp (Coordinator ➔ Translation): Alo Coordinator localizing bilingual dossier for treating doctor routing (C08).',
+      };
+    }
+    if (!activeCase.doctorReleasedToPatient) {
+      return {
+        ar: '💬 واتساب (المنسق ➔ الطبيب المعالج): تم تسليم الملف المعرب لد. عبدالله الشمري للمصادقة السريرية قبل إتاحته للمريض.',
+        en: '💬 WhatsApp (Coordinator ➔ Saudi Doctor): Localized dossier routed to Dr. Al-Shammari for final clinical sign-off.',
       };
     }
     return {
-      ar: '💬 واتساب (المنسق ➔ المريض والطبيب): تم إصدار وتسليم التقرير الطبي الدولي المعتمد ثنائي اللغة بنجاح.',
-      en: '💬 WhatsApp (Coordinator ➔ Patient & MD): Certified bilingual second opinion report released and delivered in parallel.',
+      ar: '💬 واتساب (د. عبدالله الشمري ➔ المريض): اعتمد الطبيب السعودي المعالج التقرير النهائي ثنائي اللغة وتم تسليمه للمريض.',
+      en: '💬 WhatsApp (Saudi Doctor ➔ Patient): Dr. Al-Shammari endorsed the certified bilingual report and released it to the patient.',
     };
   })();
 

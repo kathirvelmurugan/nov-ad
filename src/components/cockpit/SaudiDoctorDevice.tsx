@@ -304,8 +304,48 @@ export const SaudiDoctorDevice: React.FC<CockpitDeviceProps> = ({
             )}
           </button>
 
-          {/* D11–D12: International Second Opinion & 3 Focus Answers Delivered */}
-          {(stageNum >= 6 || activeCase.secondOpinionSubmitted || activeCase.reportReleased) && (
+          {/* D11: Waiting state while Alo Coordinator is localizing the English opinion */}
+          {activeCase.secondOpinionSubmitted && !activeCase.coordinatorForwardedToDoctor && (
+            <div
+              style={{
+                ...cardInnerStyle,
+                backgroundColor: '#f8fafc',
+                borderColor: '#cbd5e1',
+                marginTop: '10px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <span style={{ ...labelStyle, color: '#475569', margin: 0 }}>
+                  D11 · {isAr ? 'قيد التعريب والتدقيق اللغوي من منسق ألو' : 'In Coordinator Arabic Localization'}
+                </span>
+                <span
+                  style={{
+                    backgroundColor: '#f1f5f9',
+                    color: '#475569',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '999px',
+                    padding: '2px 8px',
+                    fontSize: '10px',
+                    fontWeight: 700,
+                  }}
+                >
+                  ⏳ {isAr ? 'بانتظار التعريب' : 'Awaiting Localization'}
+                </span>
+              </div>
+              <div style={{ fontSize: '11px', color: '#334155', lineHeight: 1.5 }}>
+                <strong>{isAr ? 'الاستشاري الدولي (الهند): ' : 'Consultant (India): '}</strong>
+                <span>{activeCase.consultant?.name || 'Dr. Pradeep Kumar'} ({activeCase.consultant?.center || 'Apollo Hospitals'})</span>
+                <div style={{ marginTop: '6px', fontSize: '10px', color: '#64748b', lineHeight: 1.4 }}>
+                  {isAr
+                    ? 'وصل الرأي الطبي الإنجليزي لمنسق ألو. يقوم المنسق حالياً بالتدقيق اللغوي وإعداد الترجمة العربية المعتمدة. سيصلك الملف ثنائي اللغة فور اعتماده في (C08).'
+                    : 'English opinion received by Alo Coordinator. Arabic localization in progress. The complete bilingual dossier will be forwarded to your screen upon C08 certification.'}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* D11–D12: International Second Opinion Unlocked ONLY Post-Coordinator Forwarding */}
+          {activeCase.coordinatorForwardedToDoctor && (
             <div
               style={{
                 ...cardInnerStyle,
@@ -317,7 +357,7 @@ export const SaudiDoctorDevice: React.FC<CockpitDeviceProps> = ({
             >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                 <span style={{ ...labelStyle, color: '#166534', margin: 0 }}>
-                  D11–D12 · {isAr ? 'تم استلام الرأي الدولي وإجابة الأسئلة الثلاثة' : 'International Opinion & 3 Answers Received'}
+                  D11–D12 · {isAr ? 'تم استلام الرأي الدولي المعتمد ثنائي اللغة' : 'Bilingual Opinion Received from Coordinator'}
                 </span>
                 <span
                   style={{
@@ -424,7 +464,7 @@ export const SaudiDoctorDevice: React.FC<CockpitDeviceProps> = ({
                 {/* D12: Saudi Treating Doctor Sovereign Release to Patient */}
                 <button
                   type="button"
-                  disabled={activeCase.doctorReleasedToPatient || !activeCase.coordinatorForwardedToDoctor}
+                  disabled={activeCase.doctorReleasedToPatient}
                   onClick={() => {
                     onUpdateCase({
                       doctorReleasedToPatient: true,
@@ -436,19 +476,19 @@ export const SaudiDoctorDevice: React.FC<CockpitDeviceProps> = ({
                   }}
                   style={{
                     width: '100%',
-                    backgroundColor: activeCase.doctorReleasedToPatient ? '#e2e8f0' : (activeCase.coordinatorForwardedToDoctor ? WHATSAPP_GREEN : '#f1f5f9'),
-                    color: activeCase.doctorReleasedToPatient ? '#475569' : (activeCase.coordinatorForwardedToDoctor ? '#ffffff' : '#94a3b8'),
+                    backgroundColor: activeCase.doctorReleasedToPatient ? '#e2e8f0' : WHATSAPP_GREEN,
+                    color: activeCase.doctorReleasedToPatient ? '#475569' : '#ffffff',
                     border: activeCase.doctorReleasedToPatient ? '1px solid #cbd5e1' : 'none',
                     borderRadius: '8px',
                     padding: '12px',
                     fontSize: '11px',
                     fontWeight: 800,
-                    cursor: (activeCase.doctorReleasedToPatient || !activeCase.coordinatorForwardedToDoctor) ? 'not-allowed' : 'pointer',
+                    cursor: activeCase.doctorReleasedToPatient ? 'not-allowed' : 'pointer',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: '6px',
-                    boxShadow: (activeCase.doctorReleasedToPatient || !activeCase.coordinatorForwardedToDoctor) ? 'none' : '0 4px 12px rgba(37, 211, 102, 0.4)',
+                    boxShadow: activeCase.doctorReleasedToPatient ? 'none' : '0 4px 12px rgba(37, 211, 102, 0.4)',
                   }}
                 >
                   {activeCase.doctorReleasedToPatient ? (
@@ -460,17 +500,11 @@ export const SaudiDoctorDevice: React.FC<CockpitDeviceProps> = ({
                           : 'D12 · Approved by Saudi Physician & Released to Patient'}
                       </span>
                     </>
-                  ) : activeCase.coordinatorForwardedToDoctor ? (
+                  ) : (
                     <span>
                       {isAr
                         ? '⚡ D12 · مصادقة الطبيب السعودي المعالج واعتماد تسليم التقرير للمريض'
                         : '⚡ D12 · Saudi Treating Doctor Endorsement & Release to Patient'}
-                    </span>
-                  ) : (
-                    <span>
-                      {isAr
-                        ? 'D11 · بانتظار استكمال التعريب من منسق ألو (C08)'
-                        : 'D11 · Awaiting Coordinator Localization (C08)'}
                     </span>
                   )}
                 </button>
