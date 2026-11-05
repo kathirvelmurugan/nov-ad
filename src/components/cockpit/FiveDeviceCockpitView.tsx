@@ -275,8 +275,8 @@ export const FiveDeviceCockpitView: React.FC<FiveDeviceCockpitProps> = ({
           </h1>
           <p style={{ fontSize: '12px', color: '#64748b', margin: '4px 0 0 0', fontWeight: 600 }}>
             {isAr
-              ? `الحالة النشطة: ${activeCase.caseNumber || activeCase.id} · ${activeCase.patientNameAr || activeCase.patientName} · المرحلة السريرية: ${stageNum} من 5`
-              : `Active Case: ${activeCase.caseNumber || activeCase.id} · ${activeCase.patientNameEn || activeCase.patientName} · Stage: ${stageNum} of 5`}
+              ? `الحالة النشطة: ${activeCase.caseNumber || activeCase.id} · ${activeCase.patientNameAr || activeCase.patientName} · المرحلة السريرية: ${Math.min(Math.max(stageNum, 1), 9)} من 9`
+              : `Active Case: ${activeCase.caseNumber || activeCase.id} · ${activeCase.patientNameEn || activeCase.patientName} · Clinical Stage: ${Math.min(Math.max(stageNum, 1), 9)} of 9`}
           </p>
         </div>
 

@@ -78,11 +78,16 @@ export const PatientDevice: React.FC<CockpitDeviceProps> = ({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-      {/* 5-Step Progress Tracker */}
+      {/* 9-Stage Clinical Progress Tracker */}
       <div style={cardInnerStyle}>
-        <span style={labelStyle}>{isAr ? 'رحلة المريض الحية' : 'Live Patient Journey'}</span>
-        <div style={{ display: 'flex', gap: '4px', marginTop: '6px' }}>
-          {[1, 2, 3, 4, 5].map((s) => (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={labelStyle}>{isAr ? 'رحلة المريض السريرية' : 'Clinical Patient Journey'}</span>
+          <span style={{ fontSize: '10px', fontWeight: 800, color: TEAL_PRIMARY }}>
+            {isAr ? `المرحلة ${Math.min(Math.max(stageNum, 1), 9)} من 9` : `Stage ${Math.min(Math.max(stageNum, 1), 9)} of 9`}
+          </span>
+        </div>
+        <div style={{ display: 'flex', gap: '3px', marginTop: '6px' }}>
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((s) => (
             <div
               key={s}
               style={{
@@ -96,7 +101,21 @@ export const PatientDevice: React.FC<CockpitDeviceProps> = ({
           ))}
         </div>
         <div style={{ fontSize: '11px', marginTop: '6px', color: '#64748b', fontWeight: 600 }}>
-          {isAr ? `المرحلة ${stageNum} من 5` : `Stage ${stageNum} of 5`}
+          {(() => {
+            const labels: Record<number, { ar: string; en: string }> = {
+              1: { ar: '1. استلام وتفويض الملف', en: '1. Intake & Consent' },
+              2: { ar: '2. فرز التمريض وحجب الهوية', en: '2. Nurse Triage & PII Masking' },
+              3: { ar: '3. مراجعة الطبيب المعالج والأسئلة', en: '3. Doctor Review & Questions' },
+              4: { ar: '4. سداد الفاتورة والرمز السيادي', en: '4. Payment & Egress Token' },
+              5: { ar: '5. دراسة الاستشاري الدولي (الهند)', en: '5. Indian Specialist Evaluation' },
+              6: { ar: '6. تعريب التقرير ومصادقة الطبيب', en: '6. Localization & Sign-Off' },
+              7: { ar: '7. اعتماد وتسليم التقرير النهائي', en: '7. Bilingual Report Release' },
+              8: { ar: '8. متابعة سريرية مباشرة (21 يوماً)', en: '8. 21-Day Follow-Up Window' },
+              9: { ar: '9. إغلاق الملف وحفظ السجل', en: '9. Case Closed & Archival' },
+            };
+            const s = Math.min(Math.max(stageNum, 1), 9);
+            return isAr ? labels[s]?.ar : labels[s]?.en;
+          })()}
         </div>
       </div>
 
