@@ -753,6 +753,7 @@ export const App: React.FC = () => {
   };
 
   const isAr = lang === 'ar';
+  const isPureLandingPage = activePersona.code === 'P' && patientSubView === 'landing' && viewMode !== 'studio';
 
   return (
     <div
@@ -762,30 +763,45 @@ export const App: React.FC = () => {
       dir={isAr ? 'rtl' : 'ltr'}
       lang={lang}
     >
-      {/* 1. Top Utility Ribbon & Persona Switcher */}
-      <TopProfileSwitcher
-        activePersona={activePersona}
-        onSelectPersona={handleSelectPersona}
-        activeCase={activeCase}
-        onNextCase={handleNextCase}
-        onSelectCase={setActiveCaseId}
-        cases={cases}
-        onAutoFill={handleAutoFill}
-        onResetDemo={handleResetDemo}
-        onOpenNewCaseModal={() => setIsNewCaseModalOpen(true)}
-        onResetCurrentCase={handleResetActiveCase}
-        onOpenGuide={() => setIsGuideOpen(true)}
-        onStartAutoDemo={() => setIsAutoDemoActive(true)}
-        onOpenPipelineBoard={() => setIsPipelineBoardOpen(true)}
-        lang={lang}
-        onToggleLang={handleToggleLang}
-        theme={theme}
-        onToggleTheme={handleToggleTheme}
-        viewMode={viewMode}
-        onToggleViewMode={handleToggleViewMode}
-        patientSubView={patientSubView}
-        onSelectPatientSubView={handleSelectPatientSubView}
-      />
+      {/* 1. Top Utility Ribbon & Persona Switcher (Hidden on Pure Landing Page for Pristine Mobile UX) */}
+      {!isPureLandingPage && (
+        <TopProfileSwitcher
+          activePersona={activePersona}
+          onSelectPersona={handleSelectPersona}
+          activeCase={activeCase}
+          onNextCase={handleNextCase}
+          onSelectCase={setActiveCaseId}
+          cases={cases}
+          onAutoFill={handleAutoFill}
+          onResetDemo={handleResetDemo}
+          onOpenNewCaseModal={() => setIsNewCaseModalOpen(true)}
+          onResetCurrentCase={handleResetActiveCase}
+          onOpenGuide={() => setIsGuideOpen(true)}
+          onStartAutoDemo={() => setIsAutoDemoActive(true)}
+          onOpenPipelineBoard={() => setIsPipelineBoardOpen(true)}
+          lang={lang}
+          onToggleLang={handleToggleLang}
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
+          viewMode={viewMode}
+          onToggleViewMode={handleToggleViewMode}
+          patientSubView={patientSubView}
+          onSelectPatientSubView={handleSelectPatientSubView}
+        />
+      )}
+
+      {/* Floating Demo Cockpit Badge (Unobtrusive access for internal evaluators & testers on Landing Page) */}
+      {isPureLandingPage && (
+        <button
+          type="button"
+          onClick={handleStartCaseToCockpit}
+          className="fixed bottom-6 start-6 z-50 inline-flex items-center gap-2 px-4 py-2.5 bg-slate-900/90 hover:bg-slate-900 text-teal-300 hover:text-white rounded-full shadow-2xl border border-teal-500/30 backdrop-blur-md text-xs font-bold transition-all hover:scale-105 active:scale-95 cursor-pointer"
+          title={isAr ? 'الانتقال إلى قمرة المحاكاة الخماسية (Demo Cockpit)' : 'Open 5-Role Demo Cockpit'}
+        >
+          <span className="w-2 h-2 rounded-full bg-teal-400 animate-pulse" />
+          <span>{isAr ? '📱 قمرة المحاكاة الخماسية' : '📱 5-Role Demo Cockpit'}</span>
+        </button>
+      )}
 
       {viewMode === 'studio' ? (
         <FiveDeviceCockpitView
