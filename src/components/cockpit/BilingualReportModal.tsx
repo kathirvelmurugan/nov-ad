@@ -225,7 +225,7 @@ export const BilingualReportModal: React.FC<Props> = ({
                 }}
               >
                 <span>✓</span>
-                <span>SDAIA Masked (10********)</span>
+                <span>SDAIA Art. 29 Tokenized ({activeCase.egressToken || 'ALO-KSA-9482'})</span>
               </span>
               <span
                 style={{

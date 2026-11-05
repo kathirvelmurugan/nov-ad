@@ -61,12 +61,15 @@ export const DoctorReviewView: React.FC<Props> = ({
             {isAr ? activeCase.treatingDoctor.name : (activeCase.treatingDoctor.name || 'Treating Doctor, MD')}
           </h2>
           <div className="flex flex-wrap items-center gap-2 mt-2">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 font-mono text-xs font-bold border border-emerald-200 dark:border-emerald-800">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-              {isAr ? 'بيانات المريض: محجوبة الهوية (SDAIA De-identified)' : 'Patient Record: De-identified (SDAIA Compliant)'}
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-teal-50 dark:bg-teal-950/40 text-alo-teal font-mono text-xs font-bold border border-teal-200 dark:border-teal-800">
+              <ShieldCheck className="w-3.5 h-3.5 text-alo-teal" />
+              {isAr ? 'المريض المسجل (محلياً): طارق بن سالم المطيري' : 'Domestic Patient: Tariq Al-Mutairi'}
             </span>
-            <span className="text-xs font-mono font-bold text-slate-600 dark:text-slate-300">
-              ID: {activeCase.nationalIdMasked || '10********'}
+            <span className="text-xs font-mono font-bold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">
+              {isAr ? 'الهوية الوطنية: 1089345210' : 'National ID: 1089345210'}
+            </span>
+            <span className="text-xs font-mono font-bold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/30 px-2 py-0.5 rounded border border-teal-200 dark:border-teal-800">
+              {isAr ? `رمز العبور للهند: ${activeCase.egressToken || 'ALO-KSA-9482'}` : `Egress Token: ${activeCase.egressToken || 'ALO-KSA-9482'}`}
             </span>
             <span className="text-xs text-slate-400">·</span>
             <span className="text-xs text-slate-500 dark:text-slate-400">

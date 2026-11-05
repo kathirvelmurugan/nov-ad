@@ -52,10 +52,26 @@ export const WhatsAppDrawer: React.FC<Props> = ({ activeCase, externalOpen, onSe
           button: 'متابعة جدول المواعيد',
         };
       case 'OPINION_READY':
+        if (!activeCase.coordinatorForwardedToDoctor) {
+          return {
+            code: 'W12',
+            title: 'استلام الرأي وجاري التعريب (In Localization)',
+            body: `تم استلام الرأي الطبي الإنجليزي من الهند بنجاح لحالة ${activeCase.caseNumber}. يقوم منسق رعاية ألو حالياً بإعداد النسخة المعربة وتدقيق المصطلحات الطبية.`,
+            button: 'متابعة حالة التعريب',
+          };
+        }
+        if (!activeCase.doctorReleasedToPatient) {
+          return {
+            code: 'W13',
+            title: 'قيد مصادقة الطبيب المعالج (Treating Doctor Sign-Off)',
+            body: `وصل التقرير الطبي ثنائي اللغة إلى طبيبك السعودي المعالج (${activeCase.treatingDoctor?.name || 'د. عبدالله الشمري'}) للمصادقة السريرية قبل إتاحته لك.`,
+            button: 'بانتظار مصادقة الطبيب المعالج',
+          };
+        }
         return {
           code: 'W14',
-          title: 'صدور التقرير الطبي الثاني المعتمد (Bilingual Report Ready)',
-          body: `صدر الرأي الطبي الثاني لحالة ${activeCase.caseNumber} معتمداً باللغتين العربية والإنجليزية ومختوماً رسمياً من ألو دكتور.`,
+          title: 'صدور التقرير الطبي الثاني المعتمد (Bilingual Report Released)',
+          body: `اعتمد ${activeCase.treatingDoctor?.name || 'د. عبدالله الشمري'} الرأي الطبي الثاني لحالة ${activeCase.caseNumber} وأصبح متاحاً للتحميل باللغتين العربية والإنجليزية.`,
           button: 'تحميل التقرير الطبي المعتمد (Download PDF)',
         };
       case 'PARTNER_SERVICES':

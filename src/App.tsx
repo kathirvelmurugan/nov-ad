@@ -233,6 +233,13 @@ export const App: React.FC = () => {
         reportReleased: false,
         verdicts: [],
         secondOpinionSubmitted: false,
+        consultantAnswers: [],
+        consultantNotes: '',
+        coordinatorForwardedToDoctor: false,
+        doctorReleasedToPatient: false,
+        isCrossBorderDeidentified: false,
+        dualTokenGenerated: false,
+        egressToken: '',
         files: [],
         pricing: { ...activeCase.pricing, paid: false, invoiceNumber: undefined },
         metadata: {
