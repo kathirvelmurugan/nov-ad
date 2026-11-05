@@ -135,5 +135,7 @@ export interface ClinicalCase {
   coordinatorForwardedToDoctor?: boolean;
   doctorReleasedToPatient?: boolean;
   isCrossBorderDeidentified?: boolean;
+  egressToken?: string;
+  dualTokenGenerated?: boolean;
   tier?: number;
 }

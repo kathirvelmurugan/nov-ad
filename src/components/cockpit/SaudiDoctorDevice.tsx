@@ -114,19 +114,41 @@ export const SaudiDoctorDevice: React.FC<CockpitDeviceProps> = ({
         </div>
       ) : (
         <>
-          {/* D01: De-identified Dossier Review */}
+          {/* D01: Option B - Dual-Token Sovereignty Inspection */}
           <div style={cardInnerStyle}>
-            <span style={labelStyle}>D01 · {isAr ? 'مراجعة السجل المحجوب الهوية' : 'Record Inspection'}</span>
+            <span style={labelStyle}>{isAr ? 'D01 · فحص الهوية المزدوجة والمطابقة السريرية' : 'D01 · Dual-Token Sovereignty Review'}</span>
             <div style={{ backgroundColor: '#f8fafc', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0', marginTop: '4px' }}>
-              <div style={{ fontSize: '11px', color: '#64748b' }}>{isAr ? 'معرف المريض المحجوب (SDAIA):' : 'De-identified Patient ID:'}</div>
-              <div style={{ fontSize: '15px', fontWeight: 800, color: TEAL_PRIMARY, letterSpacing: '1px', marginTop: '2px' }}>
-                {isPiiMasked ? '10********' : 'UNMASKED WARNING'}
+              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '8px' }}>
+                {/* Domestic identity for doctor */}
+                <div>
+                  <div style={{ fontSize: '10px', color: '#64748b' }}>{isAr ? '🇸🇦 المريض المسجل (مستشفى رعاية الرياض):' : '🇸🇦 Domestic Patient Record:'}</div>
+                  <div style={{ fontSize: '13px', fontWeight: 800, color: '#0f172a', marginTop: '2px' }}>
+                    طارق بن سالم المطيري
+                  </div>
+                  <div style={{ fontSize: '10px', color: '#64748b', marginTop: '1px' }}>
+                    هوية: 1089345210 · ذكر (٤٨ سنة)
+                  </div>
+                </div>
+
+                {/* Sovereign export token */}
+                <div style={{ backgroundColor: '#f0fdfa', padding: '6px 8px', borderRadius: '6px', border: `1px solid ${TEAL_SECONDARY}` }}>
+                  <div style={{ fontSize: '9px', fontWeight: 800, color: TEAL_PRIMARY }}>
+                    {isAr ? 'رمز العبور الدولي المعتمد:' : 'Audited Egress Token:'}
+                  </div>
+                  <div style={{ fontSize: '12px', fontWeight: 800, color: TEAL_PRIMARY, marginTop: '2px' }}>
+                    {activeCase.egressToken || 'ALO-KSA-9482'}
+                  </div>
+                  <div style={{ fontSize: '9px', color: '#166534', fontWeight: 600, marginTop: '2px' }}>
+                    ✓ حجب PII تام عند العبور للهند
+                  </div>
+                </div>
               </div>
-              <div style={{ fontSize: '11px', color: '#475569', marginTop: '6px' }}>
+
+              <div style={{ fontSize: '11px', color: '#475569', marginTop: '8px', borderTop: '1px dashed #e2e8f0', paddingTop: '6px' }}>
                 <span style={{ fontWeight: 700 }}>{isAr ? 'الأعراض المحولة:' : 'Symptoms:'}</span> {activeCase.symptomsAr || activeCase.symptoms || (isAr ? 'ضيق تنفس تدريجي وألم بالصدر' : 'Exertional dyspnea & angina')}
               </div>
               <div style={{ fontSize: '10px', color: '#166534', fontWeight: 700, marginTop: '4px' }}>
-                ✓ {isAr ? 'مرفق الأشعة والتحاليل جاهز للمعاينة الدولية' : '3D DICOM & Lab Reports Verified'}
+                ✓ {isAr ? 'مرفق الأشعة 3D DICOM والفحوصات مدققة وجاهزة للإحالة' : '3D DICOM & Lab Assets Audited for Export'}
               </div>
             </div>
           </div>

@@ -98,31 +98,65 @@ export const NurseDevice: React.FC<CockpitDeviceProps> = ({
             </div>
           </div>
 
-          {/* N04: Domestic ID Verification & Border Token Prep */}
-          <div style={cardInnerStyle}>
-            <span style={labelStyle}>{isAr ? 'N04 · التحقق من الهوية المحلية وإعداد رمز التجهيل الحدودي' : 'N04 · Domestic ID & Border Token Prep'}</span>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px' }}>
-              <div>
-                <span style={{ fontSize: '13px', fontWeight: 800, color: '#0f172a', letterSpacing: '0.5px' }}>
-                  هوية وطنية: 1089345210
-                </span>
-                <div style={{ fontSize: '10px', color: '#166534', fontWeight: 600, marginTop: '2px' }}>
-                  {isAr ? '🇸🇦 معتمدة داخل المملكة (التجهيل يُطبق عند العبور للهند)' : '🇸🇦 Valid in KSA (SDAIA Token ALO-KSA-9482 staged for export)'}
-                </div>
-              </div>
+          {/* N04: Option B - Dual-Token Architecture (SDAIA PDPL Compliance) */}
+          <div style={{ ...cardInnerStyle, backgroundColor: '#f0fdfa', borderColor: TEAL_SECONDARY, borderWidth: '1.5px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <span style={{ ...labelStyle, color: TEAL_PRIMARY, margin: 0 }}>
+                {isAr ? 'N04 · بنية الهوية المزدوجة (نظام حماية البيانات الشخصية سدايا)' : 'N04 · Dual-Token Identity (SDAIA PDPL Architecture)'}
+              </span>
               <span
                 style={{
-                  backgroundColor: '#dcfce7',
-                  border: '1px solid #86efac',
-                  padding: '4px 10px',
+                  backgroundColor: '#ccfbf1',
+                  color: TEAL_PRIMARY,
+                  border: `1px solid ${TEAL_SECONDARY}`,
+                  padding: '2px 8px',
                   borderRadius: '999px',
-                  fontSize: '10px',
+                  fontSize: '9px',
                   fontWeight: 800,
-                  color: '#166534',
                 }}
               >
-                {isAr ? '✓ سارية وموثقة' : '✓ Verified'}
+                Dual-Token Active
               </span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              {/* Token Layer 1: Domestic Clinical Identity */}
+              <div style={{ backgroundColor: '#ffffff', borderRadius: '8px', padding: '8px', border: '1px solid #cbd5e1' }}>
+                <div style={{ fontSize: '9px', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>
+                  {isAr ? '🇸🇦 الهوية المحلية (داخل المملكة):' : '🇸🇦 Domestic Identity (In-Kingdom):'}
+                </div>
+                <div style={{ fontSize: '11px', fontWeight: 800, color: '#0f172a', marginTop: '3px' }}>
+                  طارق بن سالم المطيري
+                </div>
+                <div style={{ fontSize: '10px', color: '#64748b', marginTop: '1px' }}>
+                  هوية: 1089345210 · ملف: RC-8821
+                </div>
+                <div style={{ fontSize: '9px', color: '#166534', fontWeight: 700, marginTop: '3px' }}>
+                  ✓ مرئية للطبيب السعودي والمنسق
+                </div>
+              </div>
+
+              {/* Token Layer 2: Sovereign Cross-Border Token */}
+              <div style={{ backgroundColor: '#ffffff', borderRadius: '8px', padding: '8px', border: '1px solid #cbd5e1' }}>
+                <div style={{ fontSize: '9px', fontWeight: 800, color: TEAL_PRIMARY, textTransform: 'uppercase' }}>
+                  {isAr ? '🌐 رمز العبور الحدودي (للهند):' : '🌐 Cross-Border Token (Export):'}
+                </div>
+                <div style={{ fontSize: '11px', fontWeight: 800, color: TEAL_PRIMARY, marginTop: '3px' }}>
+                  ALO-KSA-9482
+                </div>
+                <div style={{ fontSize: '10px', color: '#64748b', marginTop: '1px' }}>
+                  ذكر · ٤٨ سنة · فصيلة الدم B+
+                </div>
+                <div style={{ fontSize: '9px', color: '#0369a1', fontWeight: 700, marginTop: '3px' }}>
+                  🔒 مجهّلة الهوية (سدايا مادة ٢٩)
+                </div>
+              </div>
+            </div>
+
+            <div style={{ fontSize: '9px', color: '#0f766e', marginTop: '8px', lineHeight: 1.4 }}>
+              {isAr
+                ? 'وفقاً لاشتراطات سدايا: يحتفظ الطبيب السعودي بحق الاطلاع الكامل على الهوية المحلية، ويتم اعتماد الرمز المستعار للعبور الحدودي فقط.'
+                : 'Per SDAIA PDPL: Saudi physician retains full domestic clinical visibility, while only the audited pseudonym token exports across borders.'}
             </div>
           </div>
 
@@ -131,7 +165,13 @@ export const NurseDevice: React.FC<CockpitDeviceProps> = ({
             type="button"
             disabled={activeCase.triageComplete}
             onClick={() => {
-              onUpdateCase({ triageComplete: true, currentStage: 'DOCTOR_REVIEW', stage: 3 });
+              onUpdateCase({
+                triageComplete: true,
+                dualTokenGenerated: true,
+                egressToken: 'ALO-KSA-9482',
+                currentStage: 'DOCTOR_REVIEW',
+                stage: 3,
+              });
               onAdvanceStage();
             }}
             style={{

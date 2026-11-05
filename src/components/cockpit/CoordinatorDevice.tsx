@@ -140,11 +140,17 @@ export const CoordinatorDevice: React.FC<CockpitDeviceProps> = ({
 
           {/* C05–C06: Payment Verify & Push to India (Coordinator Gate 2) */}
           <div style={cardInnerStyle}>
-            <span style={labelStyle}>C05–C06 · {isAr ? 'تحقق السداد وتجهيل الهوية وتوجيه الملف للهند' : 'Verify Payment, Tokenize & Dispatch'}</span>
-            <div style={{ fontSize: '10px', color: '#166534', backgroundColor: '#f0fdf4', padding: '6px 8px', borderRadius: '6px', border: '1px solid #bbf7d0', marginBottom: '6px' }}>
-              {isAr
-                ? '🇸🇦 داخل المملكة: بيانات المريض كاملة ومطابقة ──[C06 تجهيل الهوية وفق اشتراطات سدايا]──> 🇮🇳 الهند (ALO-KSA-9482)'
-                : '🇸🇦 Domestic KSA (Full PII) ──[C06 SDAIA Cross-border Tokenization]──> 🇮🇳 India (Token ALO-KSA-9482)'}
+            <span style={labelStyle}>{isAr ? 'C05–C06 · تأكيد السداد وفصل الهوية وتوجيه الرمز للهند' : 'Verify Payment, Tokenize & Dispatch'}</span>
+            <div style={{ fontSize: '10px', backgroundColor: '#f0fdf4', padding: '8px', borderRadius: '6px', border: '1px solid #bbf7d0', marginBottom: '8px' }}>
+              <div style={{ fontWeight: 800, color: '#166534', marginBottom: '3px' }}>
+                {isAr ? '🇸🇦 بنية الهوية المزدوجة (سدايا مادة ٢٩):' : '🇸🇦 Dual-Token Decoupling Gateway:'}
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#334155' }}>
+                <span>{isAr ? '• الهوية المحلية (محفوظة بالمملكة): طارق المطيري' : '• Domestic Identity (Escrowed in KSA): Tariq Al-Mutairi'}</span>
+                <span style={{ fontWeight: 800, color: TEAL_PRIMARY }}>
+                  ➔ {isAr ? 'رمز التصدير للهند: ALO-KSA-9482' : 'Egress Token: ALO-KSA-9482'}
+                </span>
+              </div>
             </div>
             <button
               type="button"
@@ -153,6 +159,7 @@ export const CoordinatorDevice: React.FC<CockpitDeviceProps> = ({
                 onUpdateCase({
                   paymentVerified: true,
                   isCrossBorderDeidentified: true,
+                  egressToken: 'ALO-KSA-9482',
                   currentStage: 'WITH_CONSULTANT',
                   stage: 5,
                 });

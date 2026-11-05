@@ -124,7 +124,7 @@ export const IndianConsultantDevice: React.FC<CockpitDeviceProps> = ({
               </span>
             </div>
             <div style={{ fontSize: '12px', fontWeight: 800, color: '#0f172a' }}>
-              {isAr ? 'رمز الحالة: ALO-KSA-9482 (٤٨ سنة / ذكر)' : 'Subject Token: ALO-KSA-9482 (48Y / Male)'}
+              {isAr ? `رمز الحالة: ${activeCase.egressToken || 'ALO-KSA-9482'} (٤٨ سنة / ذكر)` : `Subject Token: ${activeCase.egressToken || 'ALO-KSA-9482'} (48Y / Male)`}
             </div>
             <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px', lineHeight: 1.4 }}>
               {isAr
