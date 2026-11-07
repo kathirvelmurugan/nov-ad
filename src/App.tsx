@@ -17,7 +17,7 @@ import { FollowUpChatView } from './components/screens/FollowUpChatView';
 import { AdminSettingsView } from './components/screens/AdminSettingsView';
 import { CoordinatorPortalView } from './components/screens/CoordinatorPortalView';
 import { PatientStatusTimelineView } from './components/screens/PatientStatusTimelineView';
-import { PatientLandingView } from './components/screens/PatientLandingView';
+import { PatientHomeView } from './components/screens/PatientHomeView';
 import { NewCaseModal } from './components/NewCaseModal';
 import { GuideModal } from './components/GuideModal';
 import { StageHandoffModal } from './components/StageHandoffModal';
@@ -639,16 +639,13 @@ export const App: React.FC = () => {
       // 1. Explicit Landing Page view
       if (patientSubView === 'landing') {
         return (
-          <PatientLandingView
+          <PatientHomeView
             activeCase={activeCase}
             lang={lang}
             onToggleLang={handleToggleLang}
             onSelectService={handleSelectServiceFromLanding}
             onOpenMyCases={() => handleSelectPatientSubView('timeline')}
-            onOpenNewCaseModal={() => setIsNewCaseModalOpen(true)}
-            theme={theme}
-            onToggleTheme={handleToggleTheme}
-            onStartCase={handleStartCaseToCockpit}
+            onOpenWhatsApp={() => setIsWhatsAppDrawerOpen(true)}
           />
         );
       }
@@ -790,8 +787,10 @@ export const App: React.FC = () => {
         />
       )}
 
-      {/* Floating Demo Cockpit Badge (Unobtrusive access for internal evaluators & testers on Landing Page) */}
-      {isPureLandingPage && (
+      {/* Floating Demo Cockpit Badge (internal testers only - add ?demo=1 to the URL) */}
+      {isPureLandingPage &&
+        typeof window !== 'undefined' &&
+        new URLSearchParams(window.location.search).get('demo') === '1' && (
         <button
           type="button"
           onClick={handleStartCaseToCockpit}
@@ -833,19 +832,22 @@ export const App: React.FC = () => {
         </>
       )}
 
-      {/* 4. WhatsApp Real-Time Stage Transition Toast */}
-      <WhatsAppToast
-        activeCase={activeCase}
-        onAdvanceStage={handleAdvanceStage}
-        onOpenDrawer={() => setIsWhatsAppDrawerOpen(true)}
-        lang={lang}
-      />
+      {/* 4. WhatsApp Real-Time Stage Transition Toast (hidden on the patient home) */}
+      {!isPureLandingPage && (
+        <WhatsAppToast
+          activeCase={activeCase}
+          onAdvanceStage={handleAdvanceStage}
+          onOpenDrawer={() => setIsWhatsAppDrawerOpen(true)}
+          lang={lang}
+        />
+      )}
 
       {/* 5. WhatsApp Meta-Approved Templates Drawer */}
       <WhatsAppDrawer
         activeCase={activeCase}
         externalOpen={isWhatsAppDrawerOpen}
         onSetExternalOpen={setIsWhatsAppDrawerOpen}
+        hideFloatingToggle={isPureLandingPage}
       />
 
       {/* 6. Bilingual Platform Testing Guide Modal */}

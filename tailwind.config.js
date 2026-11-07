@@ -14,8 +14,11 @@ export default {
       colors: {
         alo: {
           canvas: '#F8FAFC',
+          canvasMobile: '#F4F6F9',
           card: '#FFFFFF',
           navy: '#0F233C',
+          navyDeep: '#0B1B2B',
+          gold: '#C9A227',
           teal: '#007B6E',
           tealDeep: '#0C7F9C',
           aqua: '#00C6AE',

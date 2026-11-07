@@ -29,6 +29,16 @@
   font-family: 'Inter', system-ui, sans-serif;
 }
 
+/* Horizontal rails (hospital names, doctors) - scrollable but no visible bar */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* Custom Scrollbars */
 ::-webkit-scrollbar {
   width: 6px;

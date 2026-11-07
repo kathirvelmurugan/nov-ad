@@ -6,6 +6,8 @@ interface Props {
   activeCase: ClinicalCase;
   externalOpen?: boolean;
   onSetExternalOpen?: (open: boolean) => void;
+  /** Hide the demo simulator's own floating button (the patient home has its own FAB). */
+  hideFloatingToggle?: boolean;
 }
 
 interface WhatsAppMessage {
@@ -17,7 +19,12 @@ interface WhatsAppMessage {
   isLatest?: boolean;
 }
 
-export const WhatsAppDrawer: React.FC<Props> = ({ activeCase, externalOpen, onSetExternalOpen }) => {
+export const WhatsAppDrawer: React.FC<Props> = ({
+  activeCase,
+  externalOpen,
+  onSetExternalOpen,
+  hideFloatingToggle = false,
+}) => {
   const [internalOpen, setInternalOpen] = useState(false);
   const isOpen = externalOpen !== undefined ? externalOpen : internalOpen;
   const setIsOpen = onSetExternalOpen || setInternalOpen;
@@ -166,16 +173,18 @@ export const WhatsAppDrawer: React.FC<Props> = ({ activeCase, externalOpen, onSe
   return (
     <>
       {/* Floating Toggle Button */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-5 left-5 z-40 bg-[#25D366] hover:bg-emerald-500 text-white p-3 rounded-full shadow-2xl flex items-center gap-2 border-2 border-emerald-400/40 transition-all hover:scale-105"
-        title="محاكي إشعارات واتساب الرسمية (Meta WhatsApp Drawer)"
-      >
-        <MessageCircle className="w-5 h-5 fill-white text-[#25D366]" />
-        <span className="text-xs font-bold hidden sm:inline">
-          WhatsApp ({messages.length > 0 ? messages[messages.length - 1].code : 'Meta'})
-        </span>
-      </button>
+      {!hideFloatingToggle && (
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="fixed bottom-5 left-5 z-40 bg-[#25D366] hover:bg-emerald-500 text-white p-3 rounded-full shadow-2xl flex items-center gap-2 border-2 border-emerald-400/40 transition-all hover:scale-105"
+          title="محاكي إشعارات واتساب الرسمية (Meta WhatsApp Drawer)"
+        >
+          <MessageCircle className="w-5 h-5 fill-white text-[#25D366]" />
+          <span className="text-xs font-bold hidden sm:inline">
+            WhatsApp ({messages.length > 0 ? messages[messages.length - 1].code : 'Meta'})
+          </span>
+        </button>
+      )}
 
       {/* Drawer Overlay */}
       {isOpen && (
