@@ -1,4 +1,4 @@
-name: CI/CD Pipeline & Coolify Deploy (nov-ad)
+name: CI/CD Pipeline & Automated Deploy (nov-ad)
 
 on:
   push:
@@ -43,19 +43,16 @@ jobs:
             node -e "import fs from 'fs'; const c = JSON.parse(fs.readFileSync('./config/ai-orchestration.json')); console.log('Orchestration DAG valid. Max parallel:', c.orchestration.concurrency.max_parallel_sessions);"
           fi
 
-  deploy-to-coolify:
-    name: Trigger Coolify Auto-Deploy
+  deploy-to-production:
+    name: Auto-Deploy to Production VPS
     needs: validate-and-test
     runs-on: ubuntu-latest
     steps:
-      - name: Notify Coolify Webhook
-        env:
-          COOLIFY_WEBHOOK: ${{ secrets.COOLIFY_WEBHOOK_URL }}
-        run: |
-          if [ -n "$COOLIFY_WEBHOOK" ]; then
-            echo "Triggering deployment on Coolify VPS..."
-            curl -s -X GET "$COOLIFY_WEBHOOK" || curl -s -X POST "$COOLIFY_WEBHOOK"
-            echo "Deploy hook sent successfully."
-          else
-            echo "COOLIFY_WEBHOOK_URL secret not configured yet. Skipping remote trigger."
-          fi
+      - name: Deploy to VPS Container
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          script: |
+            echo "${{ secrets.VPS_PASSWORD }}" | sudo -S bash -c 'cd /data/alodoctor/nov-ad && git fetch origin main && git reset --hard origin/main && docker build -t alo-frontend:latest . && docker rm -f alo-frontend && docker run -d --name alo-frontend --restart always --network coolify -p 3000:80 alo-frontend:latest'
