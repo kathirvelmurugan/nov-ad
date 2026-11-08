@@ -210,6 +210,104 @@ export const NurseTriageView: React.FC<Props> = ({ activeCase, onAdvanceStage, o
           </div>
         </div>
 
+        {/* N05-B: Doctor Matching & Assignment for Need Assistance */}
+        <div className="bg-slate-50 dark:bg-slate-900/60 border border-teal-200 dark:border-teal-900/40 rounded-xl p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="bg-alo-mint text-alo-teal font-mono text-[10px] px-2 py-0.5 rounded font-bold border border-teal-200">
+                N05-B · {isAr ? 'مطابقة وتعيين الطبيب السعودي' : 'Doctor Matching & Assignment'}
+              </span>
+              <span className="text-xs font-extrabold text-alo-navy dark:text-slate-200">
+                {activeCase.doctorSelectionPreference === 'need_assistance'
+                  ? (isAr ? '✨ المريض طلب مساعدة ألو في الاختيار (موصى بالتعيين السريري):' : '✨ Patient requested ALO Assistance in Doctor Matching:')
+                  : (isAr ? 'الطبيب المعالج المحدد من المريض (يمكن للممرضة إعادة التوجيه إن لزم):' : 'Patient-selected Doctor (Nurse can re-route if needed):')}
+              </span>
+            </div>
+            <span className="text-[10px] font-bold text-teal-700 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/50 px-2 py-0.5 rounded border border-teal-200">
+              {isAr ? 'أطباء معتمدون على رأس العمل' : 'Accredited On-Duty Specialists'}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            {[
+              {
+                name: 'د. عبدالله الشمري',
+                hospital: 'مستشفى رعاية الرياض (Riyadh Care)',
+                city: 'الرياض',
+                specialty: isAr ? 'أمراض وجراحة القلب' : 'Cardiology & Surgery',
+                scfhs: 'SCFHS-8821',
+              },
+              {
+                name: 'د. فيصل الغامدي',
+                hospital: 'مستشفى الدكتور سليمان فقيه (Fakeeh Health)',
+                city: 'جدة',
+                specialty: isAr ? 'قسطرة وتداخل جراحي' : 'Interventional Cardiology',
+                scfhs: 'SCFHS-4412',
+              },
+              {
+                name: 'د. عمر الملحم',
+                hospital: 'مستشفى بروكير رعاية (Procare Riaya)',
+                city: 'الخبر',
+                specialty: isAr ? 'جراحة العظام والمفاصل' : 'Orthopedic Surgery',
+                scfhs: 'SCFHS-9931',
+              },
+              {
+                name: 'د. خالد الدوسري',
+                hospital: 'مستشفى الموسى التخصصي',
+                city: 'الأحساء',
+                specialty: isAr ? 'جراحة المخ والعمود الفقري' : 'Neurosurgery',
+                scfhs: 'SCFHS-1029',
+              },
+            ].map((doc) => {
+              const isSelected = activeCase.treatingDoctor.name === doc.name;
+              return (
+                <div
+                  key={doc.name}
+                  onClick={() => {
+                    onUpdateCase({
+                      treatingDoctor: {
+                        ...activeCase.treatingDoctor,
+                        name: doc.name,
+                        hospital: doc.hospital,
+                        city: doc.city,
+                      },
+                      doctorSelectionPreference: 'specific_doctor',
+                    });
+                  }}
+                  className={`p-3 rounded-xl border text-xs cursor-pointer transition-all flex items-start justify-between gap-2 ${
+                    isSelected
+                      ? 'border-alo-teal bg-teal-50/70 dark:bg-teal-950/40 ring-1 ring-alo-teal'
+                      : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-teal-300'
+                  }`}
+                >
+                  <div className="space-y-0.5">
+                    <div className="font-black text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                      <span>{doc.name}</span>
+                      {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-alo-teal" />}
+                    </div>
+                    <div className="text-[11px] text-slate-600 dark:text-slate-400 font-medium">
+                      {doc.hospital} · {doc.city}
+                    </div>
+                    <div className="text-[10px] text-teal-700 dark:text-teal-400 font-bold">
+                      {doc.specialty} · <span className="font-mono text-slate-400">{doc.scfhs}</span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className={`text-[10px] px-2 py-1 rounded font-bold transition-all ${
+                      isSelected
+                        ? 'bg-alo-teal text-white'
+                        : 'bg-slate-100 text-slate-600 hover:bg-teal-50 hover:text-teal-700'
+                    }`}
+                  >
+                    {isSelected ? (isAr ? 'تم التعيين' : 'Assigned') : (isAr ? 'تعيين' : 'Assign')}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
         {/* N05: Nurse Summary Formulation */}
         <div>
           <div className="flex items-center gap-2 mb-1.5">
