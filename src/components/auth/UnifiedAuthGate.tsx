@@ -141,11 +141,24 @@ export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }:
   const handlePersonaQuickLogin = async (persona: PersonaPreset) => {
     setIsLoading(true);
     setPhone(formatPhoneDisplay(persona.phone));
-    await new Promise(r => setTimeout(r, 500));
+    setOtp(['1', '2', '3', '4', '5', '6']);
+    await new Promise(r => setTimeout(r, 200));
     setIsLoading(false);
-    setCountdown(60);
-    setStep('otp');
-    setTimeout(() => otpRefs.current[0]?.focus(), 100);
+    
+    // Instant 1-click authentication for QA Presets
+    const rawPhone = extractRawPhone(persona.phone);
+    const session: SessionData = {
+      isAuthenticated: true,
+      phone: rawPhone,
+      personaId: persona.id,
+      isGuest: false,
+      expiresAt: Date.now() + THIRTY_DAYS_MS,
+      lang
+    };
+    try {
+      localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    } catch (e) {}
+    onAuthenticated(session);
   };
 
   const handleOtpChange = (index: number, value: string) => {
