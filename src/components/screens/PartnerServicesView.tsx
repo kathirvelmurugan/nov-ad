@@ -1,6 +1,17 @@
-import React from 'react';
-import { ClinicalCase } from '../../types';
-import { FlaskConical, Pill, Activity, Home, CheckCircle2, AlertCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { ClinicalCase, MedicalCenterInternalOrders } from '../../types';
+import { 
+  FlaskConical, 
+  Pill, 
+  CheckCircle2, 
+  Clock, 
+  Building2, 
+  QrCode, 
+  MessageSquare, 
+  ArrowRight,
+  ShieldCheck,
+  AlertTriangle
+} from 'lucide-react';
 
 interface Props {
   activeCase: ClinicalCase;
@@ -13,168 +24,375 @@ export const PartnerServicesView: React.FC<Props> = ({
   onAdvanceStage,
   onUpdateCase,
 }) => {
+  const [activeTab, setActiveTab] = useState<'all' | 'lab' | 'pharmacy' | 'reception'>('all');
+
+  const internalOrders: MedicalCenterInternalOrders = activeCase.internalOrders || {
+    medicalCenterId: 'mc-riyadh-01',
+    medicalCenterName: 'مركز الرعاية التخصصية الطبي (الرياض)',
+    lab: {
+      ordered: true,
+      tests: ['Troponin-I (Quantitative)', 'Complete Blood Count (CBC)', 'Renal Function Panel (eGFR)'],
+      requisitionNumber: 'L01-REQ-8821',
+      status: 'sample_collected',
+      updatedAt: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }),
+    },
+    pharmacy: {
+      ordered: true,
+      medications: ['Rosuvastatin 20mg Once Daily', 'Aspirin (Cardiprin) 81mg Daily', 'Ramipril 5mg (SFDA Generic Substitute Allowed)'],
+      prescriptionNumber: 'RX-SA-2026-904',
+      status: 'verified',
+      updatedAt: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }),
+    },
+    reception: {
+      checkinCode: 'ALO-CHECKIN-4421',
+      status: 'checked_in',
+      checkedInAt: '10:15 AM',
+      appointmentSlot: 'Today 11:30 AM (Room 204)',
+    },
+  };
+
+  const handleUpdateLabStatus = (newStatus: 'ordered' | 'sample_collected' | 'results_uploaded') => {
+    const updatedOrders: MedicalCenterInternalOrders = {
+      ...internalOrders,
+      lab: {
+        ...internalOrders.lab,
+        status: newStatus,
+        updatedAt: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }),
+      },
+    };
+    onUpdateCase({
+      internalOrders: updatedOrders,
+      partnerOrders: {
+        ...activeCase.partnerOrders,
+        lab: {
+          ...activeCase.partnerOrders.lab,
+          status: newStatus === 'results_uploaded' ? 'completed' : 'pending',
+        },
+      },
+    });
+  };
+
+  const handleUpdatePharmacyStatus = (newStatus: 'ordered' | 'verified' | 'dispensed' | 'delivered') => {
+    const updatedOrders: MedicalCenterInternalOrders = {
+      ...internalOrders,
+      pharmacy: {
+        ...internalOrders.pharmacy,
+        status: newStatus,
+        updatedAt: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }),
+      },
+    };
+    onUpdateCase({
+      internalOrders: updatedOrders,
+      partnerOrders: {
+        ...activeCase.partnerOrders,
+        pharmacy: {
+          ...activeCase.partnerOrders.pharmacy,
+          status: newStatus === 'dispensed' || newStatus === 'delivered' ? 'ready' : 'pending',
+        },
+      },
+    });
+  };
+
+  const handleUpdateReceptionStatus = (newStatus: 'scheduled' | 'checked_in' | 'completed') => {
+    const updatedOrders: MedicalCenterInternalOrders = {
+      ...internalOrders,
+      reception: {
+        ...internalOrders.reception,
+        status: newStatus,
+        checkedInAt: newStatus === 'checked_in' ? new Date().toLocaleTimeString('ar-SA') : internalOrders.reception.checkedInAt,
+      },
+    };
+    onUpdateCase({ internalOrders: updatedOrders });
+  };
+
+  const handleDeliverReportAndActivate21Days = () => {
+    const expiry = new Date();
+    expiry.setDate(expiry.getDate() + 21);
+    
+    onUpdateCase({
+      stage: 8,
+      followUpExpiresAt: expiry.toISOString(),
+      saudiEndorsement: activeCase.saudiEndorsement ? {
+        ...activeCase.saudiEndorsement,
+        releasedToPatient: true,
+      } : undefined,
+    });
+    onAdvanceStage();
+  };
+
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <span className="text-xs font-bold text-teal-400 bg-teal-950/60 border border-teal-800 px-2.5 py-1 rounded-full">
-            🏥 شبكة الشركاء الميدانيين (Partner Services Hub)
-          </span>
-          <h2 className="text-xl font-bold text-white mt-2">
-            أوامر الإحالة والتنفيذ لحالة: <span className="font-mono text-teal-400">{activeCase.caseNumber}</span>
+    <div className="max-w-5xl mx-auto space-y-6 pb-12 font-sans" dir="rtl">
+      {/* Header Banner */}
+      <div className="bg-slate-900 border border-teal-500/30 p-6 rounded-2xl flex flex-wrap items-center justify-between gap-4 shadow-xl">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-teal-400 bg-teal-950/80 border border-teal-700/60 px-3 py-1 rounded-full flex items-center gap-1.5">
+              <Building2 className="w-3.5 h-3.5" />
+              <span>المرحلة 6: طوابير الخدمات الداخلية للمركز الطبي (In-House Facility Hub)</span>
+            </span>
+            <span className="text-xs font-mono text-slate-400 bg-slate-800 px-2.5 py-0.5 rounded border border-slate-700">
+              {internalOrders.medicalCenterName}
+            </span>
+          </div>
+          <h2 className="text-2xl font-bold text-white mt-1">
+            تنفيذ الأوامر السريرية للحالة: <span className="font-mono text-teal-300">{activeCase.caseNumber}</span>
           </h2>
           <p className="text-sm text-slate-400">
-            متابعة استيفاء طلبات المختبر، الصيدلية، التمريض المنزلي، والعلاج الطبيعي
+            متابعة إنجاز تحاليل المختبر الداخلي، صرف الأدوية بالصيدلية الداخلية، واستقبال المراجع بالعيادة وفق معايير SLA المعتمدة
           </p>
+        </div>
+
+        {/* Filter Navigation */}
+        <div className="flex items-center gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800">
+          {(['all', 'lab', 'pharmacy', 'reception'] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`text-xs px-3 py-1.5 rounded-lg font-bold transition-all ${
+                activeTab === tab
+                  ? 'bg-teal-600 text-white shadow'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              {tab === 'all' && 'الكل'}
+              {tab === 'lab' && 'المختبر الداخلي'}
+              {tab === 'pharmacy' && 'الصيدلية الداخلية'}
+              {tab === 'reception' && 'الاستقبال و SLA'}
+            </button>
+          ))}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* 1. Lab Orders (L01) */}
-        <div className="bg-slate-900/90 border border-slate-800 p-5 rounded-2xl space-y-3">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-            <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2">
-              <FlaskConical className="w-4 h-4 text-emerald-400" />
-              <span>فحوصات المختبر المطلوبة (Lab Order L01)</span>
-            </h3>
-            <span className="text-[10px] bg-emerald-950 text-emerald-400 px-2 py-0.5 rounded font-mono">
-              {activeCase.partnerOrders.lab.status}
-            </span>
-          </div>
-          <p className="text-xs text-slate-300 bg-slate-950 p-3 rounded-xl border border-slate-800">
-            {activeCase.partnerOrders.lab.test}
-          </p>
-          <button
-            onClick={() => {
-              onUpdateCase({
-                partnerOrders: {
-                  ...activeCase.partnerOrders,
-                  lab: { ...activeCase.partnerOrders.lab, status: 'completed' },
-                },
-              });
-              alert('تم سحب العينة ورفع النتائج للملف الطبي بنجاح!');
-            }}
-            className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold py-2 rounded-lg transition-colors"
-          >
-            تحديث: تم سحب العينة واعتماد النتيجة ✓
-          </button>
-        </div>
+      {/* Grid of Queues */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        {/* 1. In-House Facility Lab (L01) */}
+        {(activeTab === 'all' || activeTab === 'lab') && (
+          <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-lg flex flex-col justify-between">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-emerald-950/80 border border-emerald-800/60 text-emerald-400">
+                    <FlaskConical className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-white">المختبر الداخلي (In-House Lab)</h3>
+                    <span className="text-[11px] text-slate-400 font-mono">L01 • {internalOrders.lab.requisitionNumber}</span>
+                  </div>
+                </div>
+                <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
+                  internalOrders.lab.status === 'results_uploaded'
+                    ? 'bg-emerald-950 text-emerald-400 border border-emerald-800'
+                    : internalOrders.lab.status === 'sample_collected'
+                    ? 'bg-amber-950 text-amber-400 border border-amber-800'
+                    : 'bg-slate-800 text-slate-300'
+                }`}>
+                  {internalOrders.lab.status === 'results_uploaded' ? 'النتائج معتمدة ✓' : internalOrders.lab.status === 'sample_collected' ? 'تم سحب العينة 🧪' : 'طلب جديد'}
+                </span>
+              </div>
 
-        {/* 2. Pharmacy Fulfillment & Generic Substitution (H01, X20) */}
-        <div className="bg-slate-900/90 border border-slate-800 p-5 rounded-2xl space-y-3">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-            <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2">
-              <Pill className="w-4 h-4 text-sky-400" />
-              <span>صرف الوصفة الدوائية (Pharmacy H01)</span>
-            </h3>
-            <span className="text-[10px] bg-sky-950 text-sky-400 px-2 py-0.5 rounded font-mono">
-              {activeCase.partnerOrders.pharmacy.status}
-            </span>
-          </div>
-          <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs space-y-1.5">
-            <span className="text-slate-400 block text-[10px]">الأدوية الموصوفة:</span>
-            <ul className="list-disc list-inside text-slate-200 font-mono">
-              {activeCase.partnerOrders.pharmacy.meds.map((m, i) => (
-                <li key={i}>{m}</li>
-              ))}
-            </ul>
-            <div className="pt-2 flex items-center gap-1.5 text-[11px] text-amber-400">
-              <AlertCircle className="w-3.5 h-3.5" />
-              <span>صلاحية استبدال الدواء بالبديل المكافئ الجنيس (X20): مسموح بها ✓</span>
+              {/* Tests Checklist */}
+              <div className="bg-slate-950/80 p-3.5 rounded-xl border border-slate-800 space-y-2">
+                <span className="text-[11px] font-bold text-slate-400 block">الفحوصات المطلوبة:</span>
+                <ul className="space-y-1.5 text-xs text-slate-200">
+                  {internalOrders.lab.tests.map((test, idx) => (
+                    <li key={idx} className="flex items-center gap-2 bg-slate-900/60 p-2 rounded-lg border border-slate-800/80">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                      <span className="font-medium">{test}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="text-[11px] text-slate-400 flex items-center justify-between px-1">
+                <span>آخر تحديث: {internalOrders.lab.updatedAt || 'قبل دقيقة'}</span>
+                <span className="text-emerald-400 font-semibold">مختبر المركز المركزي</span>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="space-y-2 pt-2 border-t border-slate-800/80">
+              {internalOrders.lab.status !== 'results_uploaded' ? (
+                <>
+                  {internalOrders.lab.status === 'ordered' && (
+                    <button
+                      onClick={() => handleUpdateLabStatus('sample_collected')}
+                      className="w-full bg-amber-600/90 hover:bg-amber-500 text-white text-xs font-bold py-2.5 px-3 rounded-xl transition-all shadow"
+                    >
+                      تأكيد سحب العينات المخبرية (Sample Collected)
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleUpdateLabStatus('results_uploaded')}
+                    className="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold py-2.5 px-3 rounded-xl transition-all shadow flex items-center justify-center gap-1.5"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>اعتماد ورفع النتائج للملف الطبي (Upload Results)</span>
+                  </button>
+                </>
+              ) : (
+                <div className="bg-emerald-950/40 border border-emerald-800/50 p-2.5 rounded-xl text-center text-xs text-emerald-300 font-bold">
+                  ✓ تم دمج النتائج المخبرية في ملف الحالة
+                </div>
+              )}
             </div>
           </div>
-          <button
-            onClick={() => {
-              onUpdateCase({
-                partnerOrders: {
-                  ...activeCase.partnerOrders,
-                  pharmacy: { ...activeCase.partnerOrders.pharmacy, status: 'ready' },
-                },
-              });
-              alert('تم تسعير الوصفة وتجهيز الأدوية للتسليم!');
-            }}
-            className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold py-2 rounded-lg transition-colors"
-          >
-            تحديث: جاهز للتسليم بصيدلية الشريك ✓
-          </button>
-        </div>
+        )}
 
-        {/* 3. Home Nursing Dispatch (V01, W16) */}
-        <div className="bg-slate-900/90 border border-slate-800 p-5 rounded-2xl space-y-3">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-            <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2">
-              <Home className="w-4 h-4 text-purple-400" />
-              <span>التمريض المنزلي (Home Nursing V01)</span>
-            </h3>
-            <span className="text-[10px] bg-purple-950 text-purple-400 px-2 py-0.5 rounded font-mono">
-              {activeCase.partnerOrders.homeNurse.status}
-            </span>
-          </div>
-          <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs space-y-1">
-            <p className="text-slate-300">منطقة الخدمة: <strong className="text-white">{activeCase.partnerOrders.homeNurse.area}</strong></p>
-            <p className="text-slate-400">عدد الزيارات المجدولة: {activeCase.partnerOrders.homeNurse.visits} زيارات تمريضية</p>
-          </div>
-          <button
-            onClick={() => {
-              onUpdateCase({
-                partnerOrders: {
-                  ...activeCase.partnerOrders,
-                  homeNurse: { ...activeCase.partnerOrders.homeNurse, status: 'dispatched' },
-                },
-              });
-              alert('تم إرسال الممرضة وإشعار المريض عبر واتساب W16!');
-            }}
-            className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold py-2 rounded-lg transition-colors"
-          >
-            إرسال الممرضة للمنزل (Trigger W16 WhatsApp)
-          </button>
-        </div>
+        {/* 2. In-House Facility Pharmacy (H01) */}
+        {(activeTab === 'all' || activeTab === 'pharmacy') && (
+          <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-lg flex flex-col justify-between">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-sky-950/80 border border-sky-800/60 text-sky-400">
+                    <Pill className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-white">الصيدلية الداخلية (Facility Pharmacy)</h3>
+                    <span className="text-[11px] text-slate-400 font-mono">H01 • {internalOrders.pharmacy.prescriptionNumber}</span>
+                  </div>
+                </div>
+                <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
+                  internalOrders.pharmacy.status === 'dispensed' || internalOrders.pharmacy.status === 'delivered'
+                    ? 'bg-sky-950 text-sky-400 border border-sky-800'
+                    : 'bg-indigo-950 text-indigo-400 border border-indigo-800'
+                }`}>
+                  {internalOrders.pharmacy.status === 'dispensed' ? 'جاهز للتسليم 📦' : 'تم التحقق ✓'}
+                </span>
+              </div>
 
-        {/* 4. Physiotherapy Rehabilitation (T01) */}
-        <div className="bg-slate-900/90 border border-slate-800 p-5 rounded-2xl space-y-3">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-            <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2">
-              <Activity className="w-4 h-4 text-rose-400" />
-              <span>برنامج العلاج الطبيعي والتأهيل (Physio T01)</span>
-            </h3>
-            <span className="text-[10px] bg-rose-950 text-rose-400 px-2 py-0.5 rounded font-mono">
-              {activeCase.partnerOrders.physio.status}
-            </span>
+              {/* Medications List */}
+              <div className="bg-slate-950/80 p-3.5 rounded-xl border border-slate-800 space-y-2">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="font-bold text-slate-400">الأدوية المعتمدة:</span>
+                  <span className="text-teal-400 font-mono text-[10px]">SFDA Verified</span>
+                </div>
+                <ul className="space-y-1.5 text-xs text-slate-200">
+                  {internalOrders.pharmacy.medications.map((med, idx) => (
+                    <li key={idx} className="bg-slate-900/60 p-2 rounded-lg border border-slate-800/80 text-xs font-mono">
+                      {med}
+                    </li>
+                  ))}
+                </ul>
+                <div className="p-2 bg-slate-900/90 rounded-lg border border-slate-800 flex items-center gap-2 text-[11px] text-amber-300">
+                  <ShieldCheck className="w-3.5 h-3.5 shrink-0 text-amber-400" />
+                  <span>بدائل الأدوية الجنيسة المكافئة معتمدة نظاماً (X20)</span>
+                </div>
+              </div>
+
+              <div className="text-[11px] text-slate-400 flex items-center justify-between px-1">
+                <span>آخر تحديث: {internalOrders.pharmacy.updatedAt || 'قبل دقيقة'}</span>
+                <span className="text-sky-400 font-semibold">صيدلية المركز الداخلية</span>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="space-y-2 pt-2 border-t border-slate-800/80">
+              {internalOrders.pharmacy.status !== 'dispensed' ? (
+                <button
+                  onClick={() => handleUpdatePharmacyStatus('dispensed')}
+                  className="w-full bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold py-2.5 px-3 rounded-xl transition-all shadow flex items-center justify-center gap-1.5"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>تأكيد التحضير والصرف للمريض (Dispense Rx)</span>
+                </button>
+              ) : (
+                <div className="bg-sky-950/40 border border-sky-800/50 p-2.5 rounded-xl text-center text-xs text-sky-300 font-bold">
+                  ✓ تم تجهيز الأدوية وصرفها للمراجع
+                </div>
+              )}
+            </div>
           </div>
-          <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs space-y-1">
-            <p className="text-slate-300">خطة التأهيل: <strong className="text-white">{activeCase.partnerOrders.physio.sessions} جلسات علاجية</strong></p>
-            <p className="text-slate-400">المركز المعتمد: مركز التأهيل الطبي بمستشفى رعاية الرياض</p>
+        )}
+
+        {/* 3. Reception Desk & SLA SLA01 */}
+        {(activeTab === 'all' || activeTab === 'reception') && (
+          <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-lg flex flex-col justify-between">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-purple-950/80 border border-purple-800/60 text-purple-400">
+                    <QrCode className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-white">الاستقبال وحجز المواعيد (Reception SLA)</h3>
+                    <span className="text-[11px] text-slate-400 font-mono">{internalOrders.reception.checkinCode}</span>
+                  </div>
+                </div>
+                <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-purple-950 text-purple-400 border border-purple-800">
+                  {internalOrders.reception.status === 'completed' ? 'اكتملت الزيارة' : 'تم التحضير'}
+                </span>
+              </div>
+
+              {/* SLA & Room Card */}
+              <div className="bg-slate-950/80 p-3.5 rounded-xl border border-slate-800 space-y-2.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-slate-400">موعد الاستشارة الحضورية:</span>
+                  <span className="font-bold text-slate-200">{internalOrders.reception.appointmentSlot}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-slate-400">زمن وصول المريض:</span>
+                  <span className="font-mono text-purple-300">{internalOrders.reception.checkedInAt}</span>
+                </div>
+                <div className="p-2.5 bg-slate-900/90 rounded-lg border border-purple-900/40 flex items-center gap-2 text-[11px] text-slate-300">
+                  <Clock className="w-4 h-4 text-purple-400 shrink-0" />
+                  <span>مؤشر SLA: وصول الحالة وغرفة الفحص جاهزة في الموعد المحدد ✓</span>
+                </div>
+              </div>
+
+              <div className="text-[11px] text-slate-400 flex items-center justify-between px-1">
+                <span>تأكيد الموعد: آلي عبر الرسائل</span>
+                <span className="text-purple-400 font-semibold">بوابة المركز</span>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="space-y-2 pt-2 border-t border-slate-800/80">
+              {internalOrders.reception.status !== 'completed' ? (
+                <button
+                  onClick={() => handleUpdateReceptionStatus('completed')}
+                  className="w-full bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold py-2.5 px-3 rounded-xl transition-all shadow flex items-center justify-center gap-1.5"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>تأكيد اكتمال الزيارة والاستقبال (Check-in Done)</span>
+                </button>
+              ) : (
+                <div className="bg-purple-950/40 border border-purple-800/50 p-2.5 rounded-xl text-center text-xs text-purple-300 font-bold">
+                  ✓ تم إنهاء إجراءات الاستقبال الميداني
+                </div>
+              )}
+            </div>
           </div>
-          <button
-            onClick={() => {
-              onUpdateCase({
-                partnerOrders: {
-                  ...activeCase.partnerOrders,
-                  physio: { ...activeCase.partnerOrders.physio, status: 'in_progress' },
-                },
-              });
-              alert('تم تأكيد الخطة العلاجية وبدء الجلسات التأهيلية!');
-            }}
-            className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold py-2 rounded-lg transition-colors"
-          >
-            تأكيد وجدولة الجلسات التأهيلية ✓
-          </button>
-        </div>
+        )}
       </div>
 
-      {/* Advance Action */}
-      <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex items-center justify-between">
-        <span className="text-xs text-slate-400">
-          تم تفعيل خدمات الشركاء وإشعار المريض. يمكن الآن فتح قناة المتابعة الطبية المباشرة (21 يوماً).
-        </span>
+      {/* Phase 6 Final Milestone Gate: Deliver Endorsed Report & Activate 21-Day Window (D13) */}
+      <div className="bg-gradient-to-l from-slate-900 via-teal-950/30 to-slate-900 border-2 border-teal-500/50 p-6 rounded-2xl shadow-2xl space-y-4">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2">
+              <span className="bg-teal-500/20 text-teal-300 border border-teal-500/40 text-[11px] font-bold px-2.5 py-0.5 rounded-md">
+                D13 • الإجراء الختامي للمرحلة 6
+              </span>
+              <span className="text-xs text-slate-300 font-semibold">تسليم التقرير السريري المعتمد وتفعيل قناة الـ 21 يوماً</span>
+            </div>
+            <h3 className="text-lg font-bold text-white">
+              اعتماد إنجاز طوابير المركز ونقل الحالة لنافذة المتابعة الطبية (Follow-Up 21 Days)
+            </h3>
+            <p className="text-xs text-slate-400 max-w-2xl leading-relaxed">
+              عند الضغط، سيتم إشعار المريض رسميًا بتوفر التقرير النهائي المعتمد بترخيص الهيئة وتفعيل قناة التواصل السريري المباشرة لمدة 21 يوماً للإجابة على أية استفسارات متابعة.
+            </p>
+          </div>
 
-        <button
-          onClick={onAdvanceStage}
-          className="bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-500 hover:to-teal-400 text-white font-bold py-2.5 px-6 rounded-xl shadow-lg transition-all flex items-center gap-2 text-sm"
-        >
-          <CheckCircle2 className="w-4 h-4" />
-          <span>فتح نافذة المتابعة الطبية (Follow-up 21 days)</span>
-        </button>
+          <button
+            onClick={handleDeliverReportAndActivate21Days}
+            className="w-full md:w-auto bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white font-extrabold px-6 py-3.5 rounded-xl shadow-lg hover:shadow-teal-500/20 transition-all flex items-center justify-center gap-2.5 text-sm shrink-0"
+          >
+            <MessageSquare className="w-5 h-5" />
+            <span>تسليم التقرير وتفعيل متابعة الـ 21 يوماً</span>
+            <ArrowRight className="w-4 h-4 rotate-180" />
+          </button>
+        </div>
       </div>
     </div>
   );

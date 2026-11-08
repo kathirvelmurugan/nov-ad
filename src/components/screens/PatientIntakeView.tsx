@@ -259,34 +259,48 @@ export const PatientIntakeView: React.FC<Props> = ({
 
         <div className="space-y-2">
           <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-            {isAr ? 'الطبيب المعالج الذي ترغب بإحالة ملفك إليه بعد فرز التمريض:' : 'Saudi physician to review dossier post-triage:'}
+            {isAr ? 'تحديد خيار الطبيب المعالج المشرف بالمملكة:' : 'Select Saudi Treating Doctor Assignment:'}
           </label>
           <select
-            value={activeCase.treatingDoctor.name}
+            value={activeCase.doctorSelectionPreference === 'need_assistance' ? 'need_assistance' : activeCase.treatingDoctor.name}
             onChange={(e) => {
-              const selectedName = e.target.value;
+              const val = e.target.value;
+              if (val === 'need_assistance') {
+                onUpdateCase({
+                  doctorSelectionPreference: 'need_assistance',
+                  treatingDoctor: {
+                    ...activeCase.treatingDoctor,
+                    name: 'بانتظار فرز التمريض (ألو تختار الأنسب)',
+                    hospital: 'شبكة المستشفيات المعتمدة (ALO Accredited Network)',
+                    city: 'الرياض / المملكة'
+                  }
+                });
+                return;
+              }
+
               let hospital = activeCase.treatingDoctor.hospital;
               let city = activeCase.treatingDoctor.city;
-              if (selectedName.includes('عبدالله')) {
+              if (val.includes('عبدالله')) {
                 hospital = 'مستشفى رعاية الرياض (Riyadh Care)';
                 city = 'الرياض';
-              } else if (selectedName.includes('فيصل')) {
+              } else if (val.includes('فيصل')) {
                 hospital = 'مستشفى الدكتور سليمان فقيه (Fakeeh Health)';
                 city = 'جدة';
-              } else if (selectedName.includes('عمر')) {
+              } else if (val.includes('عمر')) {
                 hospital = 'مستشفى بروكير رعاية (Procare Riaya)';
                 city = 'الخبر';
-              } else if (selectedName.includes('هند')) {
+              } else if (val.includes('هند')) {
                 hospital = 'مركز الأمير سلطان لطب وجراحة القلب';
                 city = 'الطائف';
-              } else if (selectedName.includes('خالد')) {
+              } else if (val.includes('خالد')) {
                 hospital = 'مستشفى الموسى التخصصي';
                 city = 'الأحساء';
               }
               onUpdateCase({
+                doctorSelectionPreference: 'specific_doctor',
                 treatingDoctor: {
                   ...activeCase.treatingDoctor,
-                  name: selectedName,
+                  name: val,
                   hospital,
                   city
                 }
@@ -294,6 +308,7 @@ export const PatientIntakeView: React.FC<Props> = ({
             }}
             className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-alo-teal outline-none font-bold shadow-sm cursor-pointer"
           >
+            <option value="need_assistance">✨ {isAr ? 'أحتاج مساعدة ألو في الاختيار (موصى به - مطابقة التمريض السريري)' : 'Need ALO Assistance to Choose (Recommended - Clinical Nurse Match)'}</option>
             <option value="د. عبدالله الشمري">د. عبدالله الشمري — مستشفى رعاية الرياض (Riyadh Care Hospital) · أمراض وجراحة القلب</option>
             <option value="د. فيصل الغامدي">د. فيصل الغامدي — مستشفى الدكتور سليمان فقيه (Fakeeh Health Jeddah) · قسطرة وتداخل جراحي</option>
             <option value="د. عمر الملحم">د. عمر الملحم — مستشفى بروكير رعاية (Procare Riaya Khobar) · جراحة العظام والمفاصل</option>
@@ -303,8 +318,8 @@ export const PatientIntakeView: React.FC<Props> = ({
 
           <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-normal">
             {isAr
-              ? '💡 وفقاً لدليل المسار السريري (Master Map 1/2): بعد اعتماد التمريض، ستتم إحالة الملف إلى هذا الطبيب لدراسة التاريخ المرضي وتحديد الأسئلة التوجيهية واختيار الاستشاري الدولي.'
-              : '💡 Per Master map 1/2: once the ALO nurse completes nurse check, the Saudi treating doctor reviews the file, writes 3 focus questions, and picks the Indian consultant.'}
+              ? '💡 الخيار الافتراضي يتيح لممرضة ألو فرز تقاريرك وتعيين الطبيب الاستشاري الأنسب في مدينتك، مع إمكانية تحديد طبيب معين إذا رغبت.'
+              : '💡 Default option enables ALO Nurse triage to match the best-suited Saudi consultant based on your clinical records and location.'}
           </p>
         </div>
       </div>

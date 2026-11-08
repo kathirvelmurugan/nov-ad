@@ -12,13 +12,20 @@ type ScreenStage = 'K01_K04' | 'K05' | 'K06' | 'K07' | 'K08' | 'K09';
 const ConsultantMobileView: React.FC<Props> = ({ activeCase, onAdvanceStage, onUpdateCase }) => {
   const isWritten = activeCase.consultationType === 'written';
   const accepted = !!activeCase.metadata?.consultantAccepted;
+  const isOtpVerified = !!activeCase.consultantToken?.otpVerified;
   const [currentScreen, setCurrentScreen] = useState<ScreenStage>(accepted ? 'K05' : 'K01_K04');
+  const [otpCode, setOtpCode] = useState<string>('123456');
   const [opinionText, setOpinionText] = useState<string>(activeCase.consultantOpinion || '');
   const [selectedSlot, setSelectedSlot] = useState<string>('');
   const [finalRemarks, setFinalRemarks] = useState<string>(activeCase.finalClosureNote || '');
   const relayed = (activeCase.metadata?.relayedQuestions as string[]) || [];
   const [answers, setAnswers] = useState<string[]>(relayed.map(() => ''));
   const focusQuestionsEn = activeCase.treatingDoctor.focusQuestionsEn || activeCase.treatingDoctor.focusQuestions;
+  const [focusAnswers, setFocusAnswers] = useState<[string, string, string]>([
+    'TAVR is clinically indicated given the high surgical risk and anatomical suitability on aortic root CTA.',
+    'Recommend dual antiplatelet therapy (DAPT) with Aspirin 81mg and Clopidogrel 75mg for 3-6 months post-procedure.',
+    'Perform transthoracic echocardiogram (TTE) at 30 days and 6 months to evaluate prosthetic valve hemodynamics.'
+  ]);
 
   const tealPrimary = '#007B6E';
   const tealSecondary = '#00C6AE';
@@ -30,6 +37,18 @@ const ConsultantMobileView: React.FC<Props> = ({ activeCase, onAdvanceStage, onU
     { id: 'slot_b', label: 'Slot B: Thursday 11:30 AST' },
   ];
 
+  const handleVerifyOtp = () => {
+    onUpdateCase({
+      consultantToken: {
+        token: 'ALO-MAGIC-REV-72H-TOKEN',
+        expiresAt: new Date(Date.now() + 72 * 3600 * 1000).toISOString(),
+        otpVerified: true,
+        sessionCookieActive: true,
+        sessionExpiresAt: new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString(),
+      }
+    });
+  };
+
   const handleAcceptCase = () => {
     onUpdateCase({
       metadata: { ...(activeCase.metadata || {}), consultantAccepted: true, acceptedAt: new Date().toISOString() },
@@ -38,7 +57,15 @@ const ConsultantMobileView: React.FC<Props> = ({ activeCase, onAdvanceStage, onU
   };
 
   const handleSaveOpinion = () => {
-    onUpdateCase({ consultantOpinion: opinionText });
+    const combinedOpinion = `${opinionText}\n\n--- ANSWERS TO SAUDI DOCTOR FOCUS QUESTIONS ---\nQ1: ${focusQuestionsEn[0]}\nA1: ${focusAnswers[0]}\n\nQ2: ${focusQuestionsEn[1]}\nA2: ${focusAnswers[1]}\n\nQ3: ${focusQuestionsEn[2]}\nA3: ${focusAnswers[2]}`;
+    onUpdateCase({ 
+      consultantOpinion: combinedOpinion,
+      metadata: { 
+        ...(activeCase.metadata || {}), 
+        focusAnswers,
+        consultantAnswers: focusAnswers
+      } 
+    });
     if (isWritten) {
       onAdvanceStage();
     } else {
@@ -96,10 +123,58 @@ const ConsultantMobileView: React.FC<Props> = ({ activeCase, onAdvanceStage, onU
           Indian Consultant Clinical Portal
         </h1>
         <p style={{ margin: '4px 0 0 0', fontSize: '12px', opacity: 0.9 }}>
-          Case ID: {activeCase.id || 'N/A'}
+          Case Ref: {activeCase.caseNumber || activeCase.id || 'N/A'} · Tokenized Access
         </p>
       </header>
 
+      {!isOtpVerified ? (
+        /* K00: Magic Link OTP Ingress Challenge & 30-Day Session */
+        <section aria-label="Magic link OTP challenge" style={{ backgroundColor: '#FFFFFF', borderRadius: '12px', padding: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', border: `2px solid ${tealSecondary}` }}>
+          <div style={{ display: 'inline-block', backgroundColor: tealBg, color: tealPrimary, fontSize: '11px', fontWeight: 800, padding: '4px 10px', borderRadius: '6px', marginBottom: '12px', border: `1px solid ${tealSecondary}` }}>
+            K00 · MAGIC LINK ACCESS CONTROL
+          </div>
+          <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#1A1A1A', marginTop: 0, marginBottom: '8px' }}>
+            Verify Identity to Unlock Clinical File
+          </h2>
+          <p style={{ fontSize: '13px', color: '#666', lineHeight: 1.6, marginBottom: '16px' }}>
+            A temporary magic link was dispatched to your registered specialist credentials. Enter the 6-digit WhatsApp OTP to authenticate your session.
+          </p>
+
+          <div style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '8px', padding: '12px', marginBottom: '16px' }}>
+            <div style={{ fontSize: '11px', color: '#64748B', fontWeight: 600 }}>Active Magic Token:</div>
+            <div style={{ fontSize: '12px', fontFamily: 'monospace', fontWeight: 700, color: tealPrimary }}>
+              {activeCase.consultantToken?.token || 'ALO-TOKEN-72H-DR-ARJUN-KIMS'}
+            </div>
+          </div>
+
+          <label htmlFor="otp-input" style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#333', marginBottom: '6px' }}>
+            6-Digit Verification OTP (WhatsApp / SMS):
+          </label>
+          <input
+            id="otp-input"
+            type="text"
+            maxLength={6}
+            value={otpCode}
+            onChange={(e) => setOtpCode(e.target.value)}
+            style={{ width: '100%', padding: '12px', fontSize: '18px', fontWeight: 800, textAlign: 'center', letterSpacing: '4px', borderRadius: '8px', border: `2px solid ${tealPrimary}`, marginBottom: '12px', outline: 'none', boxSizing: 'border-box' }}
+          />
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', backgroundColor: tealBg, borderRadius: '8px', marginBottom: '20px', border: `1px solid ${tealSecondary}` }}>
+            <span style={{ color: whatsappGreen, fontSize: '16px', fontWeight: 800 }}>✓</span>
+            <span style={{ fontSize: '12px', color: tealPrimary, fontWeight: 700 }}>
+              Encrypted 30-day session cookie will be established on this browser.
+            </span>
+          </div>
+
+          <button
+            onClick={handleVerifyOtp}
+            style={{ width: '100%', padding: '14px', backgroundColor: tealPrimary, color: '#FFFFFF', border: 'none', borderRadius: '8px', fontSize: '15px', fontWeight: 800, cursor: 'pointer', boxShadow: '0 2px 6px rgba(0,123,110,0.2)' }}
+          >
+            Verify OTP & Unlock Case Dossier (K01) →
+          </button>
+        </section>
+      ) : (
+        <>
       <nav style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px', alignItems: 'center' }}>
         {[
           { id: 'K05' as ScreenStage, label: 'K05 Review' },
@@ -196,8 +271,33 @@ const ConsultantMobileView: React.FC<Props> = ({ activeCase, onAdvanceStage, onU
           <h2 style={{ fontSize: '18px', color: tealPrimary, marginTop: 0, marginBottom: '16px' }}>
             K06 · Written opinion
           </h2>
+
+          {/* Answers to Saudi Doctor's 3 Focus Questions */}
+          <div style={{ backgroundColor: tealBg, borderRadius: '8px', padding: '16px', marginBottom: '20px', border: `1px solid ${tealSecondary}` }}>
+            <h3 style={{ fontSize: '14px', fontWeight: 700, color: tealPrimary, marginTop: 0, marginBottom: '12px' }}>
+              Direct Answers to Saudi Treating Doctor Focus Questions:
+            </h3>
+            {focusQuestionsEn.map((q, i) => (
+              <div key={i} style={{ marginBottom: '12px' }}>
+                <div style={{ fontSize: '12px', fontWeight: 700, color: '#333', marginBottom: '4px' }}>
+                  Q{i+1}: {q}
+                </div>
+                <textarea
+                  rows={2}
+                  value={focusAnswers[i]}
+                  onChange={(e) => {
+                    const next = [...focusAnswers] as [string, string, string];
+                    next[i] = e.target.value;
+                    setFocusAnswers(next);
+                  }}
+                  style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '12px', outline: 'none', boxSizing: 'border-box', fontFamily: "'Cairo', sans-serif" }}
+                />
+              </div>
+            ))}
+          </div>
+
           <label htmlFor="consultant-opinion" style={{ display: 'block', fontSize: '14px', fontWeight: 600, marginBottom: '8px', color: '#333' }}>
-            Written Clinical Opinion
+            Written Clinical Opinion / Synthesis
           </label>
           <textarea
             id="consultant-opinion"
@@ -451,6 +551,8 @@ const ConsultantMobileView: React.FC<Props> = ({ activeCase, onAdvanceStage, onU
             Submit Final Comment & Close Case
           </button>
         </section>
+      )}
+      </>
       )}
 
       <footer
