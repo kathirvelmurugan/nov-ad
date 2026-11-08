@@ -141,6 +141,18 @@ export const TopProfileSwitcher: React.FC<Props> = ({
               </span>
             </div>
 
+            {/* Next Case Rotator */}
+            {onNextCase && (
+              <button
+                onClick={onNextCase}
+                className="flex items-center gap-1 bg-teal-50 hover:bg-teal-100 dark:bg-teal-950/40 dark:hover:bg-teal-900/50 text-teal-700 dark:text-teal-300 px-2 py-1 rounded-lg border border-teal-300 dark:border-teal-700 font-bold transition-all shadow-sm active:scale-95 text-xs cursor-pointer"
+                title={isAr ? 'الانتقال للحالة التالية' : 'Next Case'}
+              >
+                <RefreshCw className="w-3 h-3 text-teal-600 dark:text-teal-400" />
+                <span>{isAr ? 'حالة تالية' : 'Next Case'}</span>
+              </button>
+            )}
+
             {/* Always Available 1-Click Reset Flow Button */}
             {onResetCurrentCase && (
               <button
