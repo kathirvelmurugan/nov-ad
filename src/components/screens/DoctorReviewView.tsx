@@ -365,6 +365,9 @@ export const DoctorReviewView: React.FC<Props> = ({
                   💊 {med}
                 </span>
               ))}
+              <span className="text-[10px] font-bold bg-teal-50 dark:bg-teal-950/60 text-teal-800 dark:text-teal-300 px-2 py-0.5 rounded-lg border border-teal-200 dark:border-teal-900">
+                🛡️ {isAr ? 'معتمد نظاماً استبدال البدائل الجنيسة (SFDA Generic Substitution X20)' : 'SFDA Generic Substitution Permitted (X20)'}
+              </span>
             </div>
           </div>
         </div>
