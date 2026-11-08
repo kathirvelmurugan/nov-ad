@@ -50,6 +50,9 @@ export const SaudiDoctorDevice: React.FC<CockpitDeviceProps> = ({
     : (activeCase.treatingDoctor?.focusQuestions ? [...activeCase.treatingDoctor.focusQuestions] : ['', '', '']);
 
   const [focusQs, setFocusQs] = useState<string[]>(initialQuestions);
+  const [localDirectives, setLocalDirectives] = useState('موصى بمتابعة تخطيط القلب وإيكو بعد 30 يوماً، والالتزام بجرعات مسيلات الدم.');
+  const [showRevisionBox, setShowRevisionBox] = useState(false);
+  const [revisionText, setRevisionText] = useState('');
 
   useEffect(() => {
     if (activeCase.focusQuestions && activeCase.focusQuestions.length > 0) {
@@ -483,7 +486,26 @@ export const SaudiDoctorDevice: React.FC<CockpitDeviceProps> = ({
                   </span>
                 </button>
 
-                {/* D12: Saudi Treating Doctor Sovereign Release to Patient */}
+                {/* SCFHS License & Local Clinical Directives Input */}
+                <div style={{ backgroundColor: '#ffffff', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '10px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <span style={{ fontWeight: 800, color: TEAL_PRIMARY }}>
+                      {isAr ? 'توجيهات الطبيب السعودي المعالج (SCFHS: 8821):' : 'Saudi Doctor Directives (SCFHS: 8821):'}
+                    </span>
+                    <span style={{ backgroundColor: TEAL_BG, color: TEAL_PRIMARY, padding: '2px 6px', borderRadius: '4px', fontSize: '9px', fontWeight: 700 }}>
+                      ✓ {isAr ? 'ترخيص ساري' : 'SCFHS Active'}
+                    </span>
+                  </div>
+                  <textarea
+                    rows={2}
+                    value={localDirectives}
+                    onChange={(e) => setLocalDirectives(e.target.value)}
+                    placeholder={isAr ? 'أدخل أي توجيهات دوائية أو نمط حياة محلي للمريض...' : 'Enter local clinical or lifestyle directives...'}
+                    style={{ width: '100%', padding: '6px 8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '10px', outline: 'none', boxSizing: 'border-box' }}
+                  />
+                </div>
+
+                {/* D12-A: Saudi Treating Doctor Sovereign Release to Patient (Action 7A) */}
                 <button
                   type="button"
                   disabled={activeCase.doctorReleasedToPatient}
@@ -493,6 +515,16 @@ export const SaudiDoctorDevice: React.FC<CockpitDeviceProps> = ({
                       reportReleased: true,
                       currentStage: 'CLOSED',
                       stage: 7,
+                      saudiEndorsement: {
+                        status: 'endorsed',
+                        doctorName: activeCase.treatingDoctor?.name || 'د. عبدالله الشمري',
+                        scfhsLicense: 'SCFHS-2024-KSA-8821',
+                        endorsementDate: new Date().toISOString(),
+                        localClinicalNotes: localDirectives,
+                        requiresLocalLab: true,
+                        prescriptionIssued: true,
+                        releasedToPatient: true,
+                      }
                     });
                     onAdvanceStage();
                   }}
@@ -518,18 +550,84 @@ export const SaudiDoctorDevice: React.FC<CockpitDeviceProps> = ({
                       <span>✓</span>
                       <span>
                         {isAr
-                          ? 'D12 · تم مصادقة التقرير من الطبيب السعودي وتسليمه رسمياً للمريض'
-                          : 'D12 · Approved by Saudi Physician & Released to Patient'}
+                          ? 'D12-A · تم مصادقة التقرير من الطبيب السعودي وتسليمه رسمياً للمريض'
+                          : 'D12-A · Approved by Saudi Physician & Released to Patient'}
                       </span>
                     </>
                   ) : (
                     <span>
                       {isAr
-                        ? '⚡ D12 · مصادقة الطبيب السعودي المعالج واعتماد تسليم التقرير للمريض'
-                        : '⚡ D12 · Saudi Treating Doctor Endorsement & Release to Patient'}
+                        ? '⚡ D12-A · مصادقة الطبيب السعودي المعالج واعتماد تسليم التقرير للمريض'
+                        : '⚡ D12-A · Saudi Treating Doctor Endorsement & Release to Patient'}
                     </span>
                   )}
                 </button>
+
+                {/* D12-B: Request Clinical Revision (Action 7B Fallback) */}
+                {!activeCase.doctorReleasedToPatient && (
+                  <div>
+                    {!showRevisionBox ? (
+                      <button
+                        type="button"
+                        onClick={() => setShowRevisionBox(true)}
+                        style={{
+                          width: '100%',
+                          backgroundColor: '#ffffff',
+                          color: '#b91c1c',
+                          border: '1.5px dashed #f87171',
+                          borderRadius: '8px',
+                          padding: '8px',
+                          fontSize: '10px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        🔄 {isAr ? 'D12-B · طلب مراجعة وتعديل سريري من الاستشاري الدولي (Action 7B)' : 'D12-B · Request Clinical Revision from Specialist (Action 7B)'}
+                      </button>
+                    ) : (
+                      <div style={{ backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '10px', marginTop: '4px' }}>
+                        <div style={{ fontSize: '10px', fontWeight: 700, color: '#991b1b', marginBottom: '4px' }}>
+                          {isAr ? 'سبب طلب المراجعة السريرية (يُعاد توجيهه لمنسق ألو والاستشاري):' : 'Clinical Revision Query for Coordinator & Consultant:'}
+                        </div>
+                        <textarea
+                          rows={2}
+                          value={revisionText}
+                          onChange={(e) => setRevisionText(e.target.value)}
+                          placeholder={isAr ? 'أدخل استفسارك أو تحفظك السريري على الجرعة أو التوصية...' : 'Specify clinical contraindications or dosage queries...'}
+                          style={{ width: '100%', padding: '6px', borderRadius: '6px', border: '1px solid #f87171', fontSize: '10px', outline: 'none', boxSizing: 'border-box' }}
+                        />
+                        <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              onUpdateCase({
+                                saudiEndorsement: {
+                                  status: 'revision_requested',
+                                  revisionQuery: revisionText || 'الرجاء تدقيق جرعات مضادات التخثر ومقارنتها بتوصيات قسطرة الشرايين.',
+                                  requiresLocalLab: true,
+                                  prescriptionIssued: false,
+                                  releasedToPatient: false,
+                                }
+                              });
+                              alert(isAr ? 'تم إرسال طلب المراجعة لمنسق ألو بنجاح!' : 'Revision query dispatched to ALO Coordinator!');
+                              setShowRevisionBox(false);
+                            }}
+                            style={{ flex: 1, backgroundColor: '#dc2626', color: '#ffffff', border: 'none', borderRadius: '6px', padding: '6px', fontSize: '10px', fontWeight: 800, cursor: 'pointer' }}
+                          >
+                            {isAr ? 'إرسال طلب المراجعة' : 'Submit Revision'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setShowRevisionBox(false)}
+                            style={{ backgroundColor: '#f1f5f9', color: '#475569', border: 'none', borderRadius: '6px', padding: '6px 12px', fontSize: '10px', fontWeight: 600, cursor: 'pointer' }}
+                          >
+                            {isAr ? 'إلغاء' : 'Cancel'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           )}
