@@ -12,7 +12,8 @@ import {
   Moon,
   HelpCircle,
   Sparkles,
-  UserPlus
+  UserPlus,
+  LogOut
 } from 'lucide-react';
 
 const PATIENT_FIRST_NAMES: Record<string, { ar: string; en: string }> = {
@@ -83,6 +84,7 @@ interface Props {
   onToggleViewMode?: () => void;
   patientSubView?: 'landing' | 'intake' | 'timeline';
   onSelectPatientSubView?: (view: 'landing' | 'intake' | 'timeline') => void;
+  onLogout?: () => void;
 }
 
 export const TopProfileSwitcher: React.FC<Props> = ({
@@ -107,6 +109,7 @@ export const TopProfileSwitcher: React.FC<Props> = ({
   onToggleViewMode,
   patientSubView = 'landing',
   onSelectPatientSubView,
+  onLogout,
 }) => {
   const isAr = lang === 'ar';
   const isCustom = activeCase.id.startsWith('TEST-') || activeCase.id.startsWith('REAL-');
@@ -291,6 +294,18 @@ export const TopProfileSwitcher: React.FC<Props> = ({
             <Globe className="w-3.5 h-3.5 text-alo-teal dark:text-alo-aqua" />
             <span>{isAr ? 'English (EN)' : 'العربية (AR)'}</span>
           </button>
+
+          {/* Sign Out to Mobile OTP Login Gate */}
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              className="flex items-center gap-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 dark:hover:bg-rose-900/50 px-2.5 py-1 rounded-lg border border-rose-200 dark:border-rose-800 font-bold text-xs transition-all shadow-sm active:scale-95 cursor-pointer"
+              title={isAr ? 'تسجيل الخروج والعودة لشاشة الدخول والتحقق برقم الجوال' : 'Sign out and return to Mobile Phone & OTP Login'}
+            >
+              <LogOut className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+              <span>{isAr ? 'خروج' : 'Logout'}</span>
+            </button>
+          )}
         </div>
       </div>
 

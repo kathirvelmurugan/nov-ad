@@ -21,6 +21,7 @@ interface Props {
   onSelectService: (serviceId: string) => void;
   onOpenMyCases: () => void;
   onOpenWhatsApp?: () => void;
+  onLogout?: () => void;
 }
 
 export const PatientHomeView: React.FC<Props> = ({
@@ -30,6 +31,7 @@ export const PatientHomeView: React.FC<Props> = ({
   onSelectService,
   onOpenMyCases,
   onOpenWhatsApp,
+  onLogout,
 }) => {
   const isAr = lang === 'ar';
   const [activeTab, setActiveTab] = useState<HomeTab>('home');
@@ -233,6 +235,19 @@ export const PatientHomeView: React.FC<Props> = ({
             <span>{isAr ? 'بدء طلب جديد' : 'Start a new request'}</span>
             <ChevronRight className="h-3.5 w-3.5 rtl:rotate-180" />
           </button>
+          {onLogout && (
+            <button
+              type="button"
+              onClick={() => {
+                closeSheet();
+                onLogout();
+              }}
+              className="flex w-full items-center justify-between rounded-xl bg-rose-50 border border-rose-200 px-3.5 py-3 text-[11.5px] font-black text-rose-700 hover:bg-rose-100 transition-colors cursor-pointer"
+            >
+              <span>{isAr ? 'تسجيل الخروج والتحقق برقم جوال آخر (OTP)' : 'Sign Out & Verify with Mobile OTP'}</span>
+              <ArrowRight className="h-3.5 w-3.5 rtl:rotate-180" />
+            </button>
+          )}
         </div>
       </HomeSheet>
 

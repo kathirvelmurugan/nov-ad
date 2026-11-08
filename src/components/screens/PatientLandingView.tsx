@@ -43,6 +43,7 @@ interface Props {
   theme?: 'light' | 'dark';
   onToggleTheme?: () => void;
   onStartCase?: () => void;
+  onLogout?: () => void;
 }
 
 export interface HealthcareServiceItem {
@@ -205,6 +206,7 @@ export const PatientLandingView: React.FC<Props> = ({
   theme = 'light',
   onToggleTheme,
   onStartCase,
+  onLogout,
 }) => {
   const isAr = lang === 'ar';
   const ArrowIcon = isAr ? ArrowLeft : ArrowRight;
@@ -1242,6 +1244,22 @@ export const PatientLandingView: React.FC<Props> = ({
                 </div>
                 <ArrowIcon className="w-4 h-4" />
               </button>
+
+              {onLogout && (
+                <button
+                  onClick={() => {
+                    setAccountModalOpen(false);
+                    onLogout();
+                  }}
+                  className="w-full py-3 px-4 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-extrabold text-xs flex items-center justify-between transition-colors border border-rose-200 cursor-pointer"
+                >
+                  <div className="flex items-center gap-2">
+                    <Lock className="w-4 h-4 text-rose-600" />
+                    <span>{isAr ? 'تسجيل الخروج والتحقق برقم جوال آخر (OTP)' : 'Sign Out & Verify with Mobile OTP'}</span>
+                  </div>
+                  <ArrowIcon className="w-4 h-4" />
+                </button>
+              )}
             </div>
 
             {/* Privacy notice in modal */}

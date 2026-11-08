@@ -24,12 +24,23 @@ import { StageHandoffModal } from './components/StageHandoffModal';
 import { AutoDemoController } from './components/AutoDemoController';
 import { PatientPipelineBoard } from './components/PatientPipelineBoard';
 import { FiveDeviceCockpitView } from './components/FiveDeviceCockpitView';
+import UnifiedAuthGate from './components/auth/UnifiedAuthGate';
 
 const STORAGE_KEY = 'alo_cases_v2.4';
 const ACTIVE_CASE_KEY = 'alo_active_case_id_v2.4';
 const THEME_KEY = 'alo_theme_v2.4';
 const LANG_KEY = 'alo_lang_v2.4';
 const VIEW_MODE_KEY = 'alo_view_mode_v2.4';
+const USER_SESSION_KEY = 'alo_user_session_v2.4';
+
+interface UserSession {
+  isAuthenticated: boolean;
+  phone: string;
+  personaId: string | null;
+  isGuest: boolean;
+  expiresAt: number;
+  lang: 'ar' | 'en';
+}
 
 const FRESH_PRIMARY_CASE: ClinicalCase = {
   id: 'case-test-01',
@@ -130,6 +141,34 @@ export const App: React.FC = () => {
     } catch (e) {}
     return 'ar';
   });
+
+  // Persistent 30-day user session state
+  const [userSession, setUserSession] = useState<UserSession | null>(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const search = new URLSearchParams(window.location.search);
+        // Explicit query param bypass for quick testing or demo cockpit: ?demo=1 or ?auth=bypass
+        if (search.get('demo') === '1' || search.get('cockpit') === '1' || search.get('auth') === 'bypass' || window.location.hash === '#cockpit') {
+          return { isAuthenticated: true, phone: '+966501111111', personaId: 'patient', isGuest: true, expiresAt: Date.now() + 30 * 24 * 3600 * 1000, lang: 'ar' };
+        }
+        const saved = localStorage.getItem(USER_SESSION_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed.isAuthenticated && parsed.expiresAt > Date.now()) {
+            return parsed;
+          }
+        }
+      }
+    } catch (e) {}
+    return null;
+  });
+
+  const handleLogout = () => {
+    try {
+      localStorage.removeItem(USER_SESSION_KEY);
+    } catch (e) {}
+    setUserSession(null);
+  };
 
   const [isWhatsAppDrawerOpen, setIsWhatsAppDrawerOpen] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
@@ -654,6 +693,7 @@ export const App: React.FC = () => {
             onSelectService={handleSelectServiceFromLanding}
             onOpenMyCases={() => handleSelectPatientSubView('timeline')}
             onOpenWhatsApp={() => setIsWhatsAppDrawerOpen(true)}
+            onLogout={handleLogout}
           />
         );
       }
@@ -760,6 +800,35 @@ export const App: React.FC = () => {
   const isAr = lang === 'ar';
   const isPureLandingPage = activePersona.code === 'P' && patientSubView === 'landing' && viewMode !== 'studio';
 
+  // Ingress Authentication Gate: Requires Saudi Mobile Phone + OTP (123456)
+  if (!userSession) {
+    return (
+      <UnifiedAuthGate
+        initialLang={lang}
+        onAuthenticated={(session) => {
+          setUserSession(session);
+          if (session.personaId) {
+            const personaCodeMap: Record<string, string> = {
+              patient: 'P',
+              doctor: 'D',
+              nurse: 'N',
+              admin: 'C',
+              consultant: 'K',
+            };
+            const targetCode = personaCodeMap[session.personaId] || 'P';
+            const matched = PERSONAS.find((p) => p.code === targetCode);
+            if (matched) {
+              setActivePersona(matched);
+            }
+          }
+          if (session.lang && session.lang !== lang) {
+            setLang(session.lang);
+          }
+        }}
+      />
+    );
+  }
+
   return (
     <div
       className={`min-h-screen bg-alo-canvas dark:bg-alo-darkCanvas text-slate-800 dark:text-slate-100 flex flex-col transition-colors duration-200 ${
@@ -792,6 +861,7 @@ export const App: React.FC = () => {
           onToggleViewMode={handleToggleViewMode}
           patientSubView={patientSubView}
           onSelectPatientSubView={handleSelectPatientSubView}
+          onLogout={handleLogout}
         />
       )}
 
