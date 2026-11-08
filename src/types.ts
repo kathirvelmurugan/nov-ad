@@ -1,15 +1,24 @@
 export type RoleCode = 
   | 'P'   // Patient (Salem / Fatima / etc.)
+  | 'F'   // Family Member / Caregiver Proxy
   | 'N'   // ALO nurse (Sara N.)
   | 'D'   // Saudi treating doctor (Dr. Abdullah)
   | 'C'   // ALO coordinator (Abdulrahman)
   | 'K'   // Indian consultant (Dr. Arjun / Dr. Alok)
-  | 'L'   // Diagnostic Lab Partner (Alpha Labs)
+  | 'L'   // Diagnostic Lab Partner (Alpha Labs / Facility Lab)
+  | 'PH'  // Facility Pharmacy Partner
+  | 'REC' // Hospital Reception Desk
   | 'H'   // Home Healthcare Partner (Sanad Health)
   | 'T'   // Travel & Medical Visa Partner (Al-Fursan)
   | 'V'   // Insurance Approvals (Tawuniya / Bupa)
   | 'HA'  // Medical Center Partner Admin (Riyadh Care)
   | 'AD'; // ALO Platform Super Admin
+
+export type TenantTier = 'ALO_MASTER' | 'MEDICAL_CENTER_TENANT';
+
+export type DoctorSelectionPreference = 'need_assistance' | 'specific_doctor';
+
+export type ClinicalFocusQuestions = [string, string, string];
 
 export interface Persona {
   code: RoleCode;
@@ -20,6 +29,7 @@ export interface Persona {
   surface: 'patient-mobile' | 'portal-web' | 'consultant-mobile' | 'partner-portal' | 'admin-portal';
   isRtl: boolean;
   lang: 'ar' | 'en';
+  tenantTier?: TenantTier;
 }
 
 export type ClinicalStage = 
@@ -50,6 +60,82 @@ export interface DiagnosticAsset {
   verified: boolean;
   url: string;
   metrics?: Record<string, string>;
+}
+
+export interface AiFileCard {
+  id: string;
+  fileUri: string;
+  fileName: string;
+  kind: 'lab' | 'radiology' | 'prescription' | 'discharge' | 'biopsy' | 'other';
+  date?: string;
+  bodyPart?: string;
+  keyPointsEn: string[];
+  keyPointsAr: string[];
+}
+
+export interface AiLabItem {
+  testName: string;
+  value: string;
+  unit: string;
+  referenceRange?: string;
+  flag: 'HIGH' | 'LOW' | 'NORMAL';
+}
+
+export interface AiClinicalSummary {
+  concern: string;
+  history: string;
+  findings: string;
+  medications: string;
+  questions: string;
+}
+
+export interface SaudiEndorsementState {
+  status: 'pending' | 'endorsed' | 'revision_requested';
+  doctorId?: string;
+  doctorName?: string;
+  scfhsLicense?: string;
+  endorsementDate?: string;
+  localClinicalNotes?: string;
+  revisionQuery?: string;
+  requiresLocalLab: boolean;
+  prescriptionIssued: boolean;
+  releasedToPatient: boolean;
+}
+
+export interface MedicalCenterInternalOrders {
+  medicalCenterId: string;
+  medicalCenterName: string;
+  lab: {
+    ordered: boolean;
+    tests: string[];
+    requisitionNumber?: string;
+    status: 'none' | 'ordered' | 'sample_collected' | 'results_uploaded';
+    resultsFileUrl?: string;
+    resultsNotes?: string;
+    updatedAt?: string;
+  };
+  pharmacy: {
+    ordered: boolean;
+    medications: string[];
+    prescriptionNumber?: string;
+    status: 'none' | 'ordered' | 'verified' | 'dispensed' | 'delivered';
+    dispenseNotes?: string;
+    updatedAt?: string;
+  };
+  reception: {
+    checkinCode: string;
+    status: 'none' | 'scheduled' | 'checked_in' | 'completed';
+    checkedInAt?: string;
+    appointmentSlot?: string;
+  };
+}
+
+export interface ConsultantMagicToken {
+  token: string;
+  expiresAt: string;
+  otpVerified: boolean;
+  sessionCookieActive: boolean;
+  sessionExpiresAt: string; // 30-day cookie
 }
 
 export interface ClinicalCase {
@@ -138,4 +224,15 @@ export interface ClinicalCase {
   egressToken?: string;
   dualTokenGenerated?: boolean;
   tier?: number;
+  doctorSelectionPreference?: DoctorSelectionPreference;
+  saudiEndorsement?: SaudiEndorsementState;
+  aiFileCards?: AiFileCard[];
+  aiLabs?: AiLabItem[];
+  aiSummaryEn?: AiClinicalSummary;
+  aiSummaryAr?: AiClinicalSummary;
+  internalOrders?: MedicalCenterInternalOrders;
+  consultantToken?: ConsultantMagicToken;
+  finalReportEn?: string;
+  finalReportAr?: string;
+  followUpExpiresAt?: string;
 }

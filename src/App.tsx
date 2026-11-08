@@ -410,7 +410,7 @@ export const App: React.FC = () => {
       }
       handleUpdateCase({ currentStage: 'WITH_CONSULTANT' });
     }
-    else if (p.code === 'L' || p.code === 'H' || p.code === 'T' || p.code === 'V') handleUpdateCase({ currentStage: 'PARTNER_SERVICES' });
+    else if (p.code === 'L' || p.code === 'PH' || p.code === 'REC' || p.code === 'H' || p.code === 'T' || p.code === 'V') handleUpdateCase({ currentStage: 'PARTNER_SERVICES' });
     else if (p.code === 'AD' || p.code === 'HA') handleUpdateCase({ currentStage: 'CLOSED' });
     else if (p.code === 'P' || p.code === 'F') {
       if (activeCase.currentStage === 'CLOSED' || activeCase.currentStage === 'PARTNER_SERVICES') {
