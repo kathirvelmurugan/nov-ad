@@ -1,14 +1,22 @@
 import React, { useState } from 'react';
+import { INITIAL_MEDICAL_CENTER_DOCTORS } from '../../data/medicalCenterDoctors';
 import { Plus, Trash2, CheckCircle2, UserPlus, FileSpreadsheet, Stethoscope, Pill } from 'lucide-react';
 
 export const AdminSettingsView: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'staff' | 'specialties' | 'lab' | 'formulary'>('staff');
 
-  // Dynamic Staff state
+  // Dynamic Staff state seeded from Medical Center Doctors Catalog
   const [staffList, setStaffList] = useState([
-    { id: '1', name: 'د. عبدالله الشمري', role: 'Saudi treating doctor', specialty: 'Cardiology', license: 'SCFHS-2018-9941', hospital: 'Riyadh Care' },
-    { id: '2', name: 'Dr. Arjun Mehta', role: 'Indian consultant', specialty: 'Cardiac Surgery', license: 'MCI-99421', hospital: 'KIMS Hyderabad' },
-    { id: '3', name: 'نورة الدوسري', role: 'ALO nurse', specialty: 'Triage & Interpretation', license: 'SCFHS-2021-4412', hospital: 'ALO Hub' },
+    ...INITIAL_MEDICAL_CENTER_DOCTORS.map((d) => ({
+      id: d.id,
+      name: d.name,
+      role: 'Saudi treating doctor',
+      specialty: d.specialty,
+      license: d.license,
+      hospital: d.hospital,
+    })),
+    { id: 'cons-01', name: 'Dr. Arjun Mehta', role: 'Indian consultant', specialty: 'Cardiac Surgery', license: 'MCI-99421', hospital: 'KIMS Hyderabad' },
+    { id: 'nurse-01', name: 'سارة الدوسري', role: 'ALO nurse', specialty: 'Triage & Interpretation', license: 'SCFHS-2021-4412', hospital: 'ALO Central Hub' },
   ]);
 
   // Dynamic Specialties state

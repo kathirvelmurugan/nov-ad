@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ClinicalCase } from '../../types';
+import { INITIAL_MEDICAL_CENTER_DOCTORS } from '../../data/medicalCenterDoctors';
 import { 
   ShieldAlert, 
   UserX, 
@@ -229,42 +230,14 @@ export const NurseTriageView: React.FC<Props> = ({ activeCase, onAdvanceStage, o
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            {[
-              {
-                name: 'د. عبدالله الشمري',
-                hospital: 'مستشفى رعاية الرياض (Riyadh Care)',
-                city: 'الرياض',
-                specialty: isAr ? 'أمراض وجراحة القلب' : 'Cardiology & Surgery',
-                scfhs: 'SCFHS-8821',
-              },
-              {
-                name: 'د. فيصل الغامدي',
-                hospital: 'مستشفى الدكتور سليمان فقيه (Fakeeh Health)',
-                city: 'جدة',
-                specialty: isAr ? 'قسطرة وتداخل جراحي' : 'Interventional Cardiology',
-                scfhs: 'SCFHS-4412',
-              },
-              {
-                name: 'د. عمر الملحم',
-                hospital: 'مستشفى بروكير رعاية (Procare Riaya)',
-                city: 'الخبر',
-                specialty: isAr ? 'جراحة العظام والمفاصل' : 'Orthopedic Surgery',
-                scfhs: 'SCFHS-9931',
-              },
-              {
-                name: 'د. خالد الدوسري',
-                hospital: 'مستشفى الموسى التخصصي',
-                city: 'الأحساء',
-                specialty: isAr ? 'جراحة المخ والعمود الفقري' : 'Neurosurgery',
-                scfhs: 'SCFHS-1029',
-              },
-            ].map((doc) => {
+            {INITIAL_MEDICAL_CENTER_DOCTORS.map((doc) => {
               const isSelected = activeCase.treatingDoctor.name === doc.name;
               return (
                 <div
-                  key={doc.name}
+                  key={doc.id}
                   onClick={() => {
                     onUpdateCase({
+                      tier: doc.tier,
                       treatingDoctor: {
                         ...activeCase.treatingDoctor,
                         name: doc.name,
@@ -282,14 +255,15 @@ export const NurseTriageView: React.FC<Props> = ({ activeCase, onAdvanceStage, o
                 >
                   <div className="space-y-0.5">
                     <div className="font-black text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
-                      <span>{doc.name}</span>
+                      <Stethoscope className="w-3.5 h-3.5 text-alo-teal" />
+                      <span>{isAr ? doc.name : doc.nameEn}</span>
                       {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-alo-teal" />}
                     </div>
                     <div className="text-[11px] text-slate-600 dark:text-slate-400 font-medium">
-                      {doc.hospital} · {doc.city}
+                      {isAr ? doc.hospital : doc.hospitalEn} · {doc.city}
                     </div>
                     <div className="text-[10px] text-teal-700 dark:text-teal-400 font-bold">
-                      {doc.specialty} · <span className="font-mono text-slate-400">{doc.scfhs}</span>
+                      {isAr ? doc.specialty : doc.specialtyEn} · <span className="font-mono text-slate-400">{doc.license}</span>
                     </div>
                   </div>
                   <button

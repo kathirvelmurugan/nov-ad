@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ClinicalCase } from '../../types';
+import { INITIAL_MEDICAL_CENTER_DOCTORS } from '../../data/medicalCenterDoctors';
 import { 
   FileUp, 
   Shield, 
@@ -278,42 +279,30 @@ export const PatientIntakeView: React.FC<Props> = ({
                 return;
               }
 
-              let hospital = activeCase.treatingDoctor.hospital;
-              let city = activeCase.treatingDoctor.city;
-              if (val.includes('عبدالله')) {
-                hospital = 'مستشفى رعاية الرياض (Riyadh Care)';
-                city = 'الرياض';
-              } else if (val.includes('فيصل')) {
-                hospital = 'مستشفى الدكتور سليمان فقيه (Fakeeh Health)';
-                city = 'جدة';
-              } else if (val.includes('عمر')) {
-                hospital = 'مستشفى بروكير رعاية (Procare Riaya)';
-                city = 'الخبر';
-              } else if (val.includes('هند')) {
-                hospital = 'مركز الأمير سلطان لطب وجراحة القلب';
-                city = 'الطائف';
-              } else if (val.includes('خالد')) {
-                hospital = 'مستشفى الموسى التخصصي';
-                city = 'الأحساء';
+              const selectedDoc = INITIAL_MEDICAL_CENTER_DOCTORS.find((d) => d.name === val || d.nameEn === val);
+              if (selectedDoc) {
+                onUpdateCase({
+                  doctorSelectionPreference: 'specific_doctor',
+                  tier: selectedDoc.tier,
+                  treatingDoctor: {
+                    ...activeCase.treatingDoctor,
+                    name: selectedDoc.name,
+                    hospital: selectedDoc.hospital,
+                    city: selectedDoc.city,
+                  }
+                });
               }
-              onUpdateCase({
-                doctorSelectionPreference: 'specific_doctor',
-                treatingDoctor: {
-                  ...activeCase.treatingDoctor,
-                  name: val,
-                  hospital,
-                  city
-                }
-              });
             }}
             className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-alo-teal outline-none font-bold shadow-sm cursor-pointer"
           >
             <option value="need_assistance">✨ {isAr ? 'أحتاج مساعدة ألو في الاختيار (موصى به - مطابقة التمريض السريري)' : 'Need ALO Assistance to Choose (Recommended - Clinical Nurse Match)'}</option>
-            <option value="د. عبدالله الشمري">د. عبدالله الشمري — مستشفى رعاية الرياض (Riyadh Care Hospital) · أمراض وجراحة القلب</option>
-            <option value="د. فيصل الغامدي">د. فيصل الغامدي — مستشفى الدكتور سليمان فقيه (Fakeeh Health Jeddah) · قسطرة وتداخل جراحي</option>
-            <option value="د. عمر الملحم">د. عمر الملحم — مستشفى بروكير رعاية (Procare Riaya Khobar) · جراحة العظام والمفاصل</option>
-            <option value="د. هند الحازمي">د. هند الحازمي — مركز الأمير سلطان لطب وجراحة القلب (Taif) · أمراض قلب الأطفال</option>
-            <option value="د. خالد الدوسري">د. خالد الدوسري — مستشفى الموسى التخصصي (Al-Ahsa) · جراحة المخ والعمود الفقري</option>
+            {INITIAL_MEDICAL_CENTER_DOCTORS.map((doc) => (
+              <option key={doc.id} value={doc.name}>
+                {isAr
+                  ? `${doc.name} — ${doc.hospital} · ${doc.specialty} (${doc.license})`
+                  : `${doc.nameEn} — ${doc.hospitalEn} · ${doc.specialtyEn} (${doc.license})`}
+              </option>
+            ))}
           </select>
 
           <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-normal">
