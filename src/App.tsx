@@ -143,8 +143,11 @@ export const App: React.FC = () => {
   const [isAutoDemoActive, setIsAutoDemoActive] = useState(false);
   const [viewMode, setViewMode] = useState<'workstation' | 'studio'>(() => {
     try {
-      if (typeof window !== 'undefined' && window.location.hash === '#cockpit') {
-        return 'studio';
+      if (typeof window !== 'undefined') {
+        const search = new URLSearchParams(window.location.search);
+        if (window.location.hash === '#cockpit' || search.get('demo') === '1' || search.get('cockpit') === '1') {
+          return 'studio';
+        }
       }
     } catch (e) {}
     return 'workstation';
@@ -152,6 +155,10 @@ export const App: React.FC = () => {
 
   const [patientSubView, setPatientSubView] = useState<'landing' | 'intake' | 'timeline'>(() => {
     try {
+      if (typeof window !== 'undefined') {
+        const search = new URLSearchParams(window.location.search);
+        if (search.get('intake') === '1') return 'intake';
+      }
       const saved = localStorage.getItem('alo_patient_subview_v2.4');
       if (saved === 'landing' || saved === 'intake' || saved === 'timeline') return saved;
     } catch (e) {}
