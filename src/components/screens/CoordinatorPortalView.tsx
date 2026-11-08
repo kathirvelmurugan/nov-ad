@@ -88,6 +88,7 @@ const CoordinatorPortalView: React.FC<Props> = ({
     try {
       await new Promise(resolve => setTimeout(resolve, 1200));
       onUpdateCase({ 
+        coordinatorForwardedToDoctor: true,
         metadata: { 
           ...(activeCase.metadata || {}), 
           pdf1Released: true,

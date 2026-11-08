@@ -110,6 +110,7 @@ export const PartnerServicesView: React.FC<Props> = ({
     expiry.setDate(expiry.getDate() + 21);
     
     onUpdateCase({
+      currentStage: 'FOLLOW_UP_21_DAYS',
       stage: 8,
       followUpExpiresAt: expiry.toISOString(),
       saudiEndorsement: activeCase.saudiEndorsement ? {

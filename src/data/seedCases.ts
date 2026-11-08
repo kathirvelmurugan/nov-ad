@@ -32,6 +32,7 @@ export const SEED_CASES: ClinicalCase[] = [
     },
     consultationType: 'video',
     currentStage: 'INTAKE_RECEIVED',
+    doctorSelectionPreference: 'need_assistance',
     treatingDoctor: {
       name: 'د. عبدالله الشمري',
       hospital: 'مستشفى رعاية الرياض (Riyadh Care)',
@@ -704,6 +705,7 @@ export const SEED_CASES: ClinicalCase[] = [
     symptoms: 'التهابات تنفسية متكررة وضعف في النمو والتغذية مع نفخة قلبية شاملة للانقباض.',
     consultationType: 'video',
     currentStage: 'INTAKE_RECEIVED',
+    doctorSelectionPreference: 'need_assistance',
     treatingDoctor: {
       name: 'د. ليلى السفياني',
       hospital: 'مستشفى القوات المسلحة بالهدا (Hada Armed Forces)',

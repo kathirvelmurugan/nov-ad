@@ -372,7 +372,12 @@ export const DoctorReviewView: React.FC<Props> = ({
         {/* Advance Action */}
         <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex justify-end">
           <button
-            onClick={onAdvanceStage}
+            onClick={() => {
+              onUpdateCase({
+                referralApproved: true,
+              });
+              onAdvanceStage();
+            }}
             className="w-full sm:w-auto bg-gradient-to-r from-alo-teal to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white font-extrabold py-3 px-8 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-sm active:scale-95 cursor-pointer"
           >
             <Check className="w-4 h-4" />

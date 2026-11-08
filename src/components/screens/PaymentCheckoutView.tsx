@@ -165,6 +165,13 @@ export const PaymentCheckoutView: React.FC<Props> = ({
         ...activeCase.pricing,
         paid: true,
       },
+      consultantToken: activeCase.consultantToken || {
+        token: 'ALO-MAGIC-REV-72H-DR-ARJUN',
+        expiresAt: new Date(Date.now() + 72 * 3600 * 1000).toISOString(),
+        otpVerified: false,
+        sessionCookieActive: false,
+        sessionExpiresAt: new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString(),
+      },
       paymentDetails: {
         ...activeCase.paymentDetails,
         tapChargeId,
