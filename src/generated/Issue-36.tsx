@@ -82,7 +82,7 @@ export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }:
   }, [onAuthenticated]);
 
   useEffect(() => {
-    let timer: NodeJS.Timeout;
+    let timer: ReturnType<typeof setTimeout>;
     if (countdown > 0) {
       timer = setTimeout(() => setCountdown(c => c - 1), 1000);
     }
