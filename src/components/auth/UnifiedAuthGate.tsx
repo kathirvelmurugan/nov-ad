@@ -61,6 +61,7 @@ export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }:
   const [isLoading, setIsLoading] = useState(false);
   const [deliveryMethod, setDeliveryMethod] = useState<'sms' | 'whatsapp'>('sms');
   const [countdown, setCountdown] = useState(0);
+  const isDemoMode = typeof window !== 'undefined' && (new URLSearchParams(window.location.search).get('demo') === '1' || window.location.hash === '#cockpit');
 
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
   const phoneRef = useRef<HTMLInputElement>(null);
@@ -505,73 +506,77 @@ export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }:
         </button>
       </form>
 
-      <div style={{ marginTop: '32px', borderTop: `1px solid ${PALETTE.border}`, paddingTop: '24px' }}>
-        <p style={{ fontSize: '13px', fontWeight: 700, color: PALETTE.textMuted, margin: '0 0 12px 0', textAlign: 'center' }}>
-          {t('⚡ دخول سريع للاختبار (QA Presets)', '⚡ Quick Login for Testing (QA Presets)')}
-        </p>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
-          {PERSONA_PRESETS.map(persona => (
-            <div
-              key={persona.id}
-              role="button"
-              tabIndex={0}
-              onClick={() => handlePersonaQuickLogin(persona)}
-              onKeyDown={e => e.key === 'Enter' && handlePersonaQuickLogin(persona)}
-              style={personaCardStyle}
-              onMouseEnter={e => {
-                (e.currentTarget as HTMLDivElement).style.borderColor = PALETTE.secondary;
-                (e.currentTarget as HTMLDivElement).style.backgroundColor = PALETTE.background;
-              }}
-              onMouseLeave={e => {
-                (e.currentTarget as HTMLDivElement).style.borderColor = PALETTE.border;
-                (e.currentTarget as HTMLDivElement).style.backgroundColor = PALETTE.white;
-              }}
-              aria-label={`${t('تسجيل دخول كـ', 'Login as')} ${isRTL ? persona.nameAr : persona.nameEn}`}
-            >
-              <div style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '10px',
-                backgroundColor: PALETTE.background,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '18px',
-                flexShrink: 0
-              }}>
-                {persona.id === 'patient' ? '👤' : persona.id === 'doctor' ? '🩺' : persona.id === 'nurse' ? '💉' : persona.id === 'admin' ? '🏥' : '🌍'}
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: '14px', fontWeight: 700, color: PALETTE.textDark, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {isRTL ? persona.nameAr : persona.nameEn}
+      {isDemoMode && (
+        <>
+          <div style={{ marginTop: '32px', borderTop: `1px solid ${PALETTE.border}`, paddingTop: '24px' }}>
+            <p style={{ fontSize: '13px', fontWeight: 700, color: PALETTE.textMuted, margin: '0 0 12px 0', textAlign: 'center' }}>
+              {t('⚡ دخول سريع للاختبار (QA Presets)', '⚡ Quick Login for Testing (QA Presets)')}
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+              {PERSONA_PRESETS.map(persona => (
+                <div
+                  key={persona.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => handlePersonaQuickLogin(persona)}
+                  onKeyDown={e => e.key === 'Enter' && handlePersonaQuickLogin(persona)}
+                  style={personaCardStyle}
+                  onMouseEnter={e => {
+                    (e.currentTarget as HTMLDivElement).style.borderColor = PALETTE.secondary;
+                    (e.currentTarget as HTMLDivElement).style.backgroundColor = PALETTE.background;
+                  }}
+                  onMouseLeave={e => {
+                    (e.currentTarget as HTMLDivElement).style.borderColor = PALETTE.border;
+                    (e.currentTarget as HTMLDivElement).style.backgroundColor = PALETTE.white;
+                  }}
+                  aria-label={`${t('تسجيل دخول كـ', 'Login as')} ${isRTL ? persona.nameAr : persona.nameEn}`}
+                >
+                  <div style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '10px',
+                    backgroundColor: PALETTE.background,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '18px',
+                    flexShrink: 0
+                  }}>
+                    {persona.id === 'patient' ? '👤' : persona.id === 'doctor' ? '🩺' : persona.id === 'nurse' ? '💉' : persona.id === 'admin' ? '🏥' : '🌍'}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: '14px', fontWeight: 700, color: PALETTE.textDark, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {isRTL ? persona.nameAr : persona.nameEn}
+                    </div>
+                    <div style={{ fontSize: '11px', color: PALETTE.textMuted, fontWeight: 500 }}>
+                      {persona.role}
+                    </div>
+                  </div>
+                  <div style={{ fontSize: '11px', color: PALETTE.secondary, fontWeight: 700, direction: 'ltr', flexShrink: 0 }}>
+                    {persona.phone.replace('+966', '0').replace(/(\d{2})(\d{3})(\d{4})/, '$1 $2 $3')}
+                  </div>
                 </div>
-                <div style={{ fontSize: '11px', color: PALETTE.textMuted, fontWeight: 500 }}>
-                  {persona.role}
-                </div>
-              </div>
-              <div style={{ fontSize: '11px', color: PALETTE.secondary, fontWeight: 700, direction: 'ltr', flexShrink: 0 }}>
-                {persona.phone.replace('+966', '0').replace(/(\d{2})(\d{3})(\d{4})/, '$1 $2 $3')}
-              </div>
+              ))}
             </div>
-          ))}
-        </div>
-      </div>
+          </div>
 
-      <button
-        type="button"
-        onClick={handleGuestBypass}
-        style={guestButtonStyle}
-        onMouseEnter={e => {
-          (e.target as HTMLButtonElement).style.borderColor = PALETTE.secondary;
-          (e.target as HTMLButtonElement).style.color = PALETTE.primary;
-        }}
-        onMouseLeave={e => {
-          (e.target as HTMLButtonElement).style.borderColor = PALETTE.border;
-          (e.target as HTMLButtonElement).style.color = PALETTE.textMuted;
-        }}
-      >
-        {t('استكشاف كزائر تجريبي', 'Explore in Demo Mode')}
-      </button>
+          <button
+            type="button"
+            onClick={handleGuestBypass}
+            style={guestButtonStyle}
+            onMouseEnter={e => {
+              (e.target as HTMLButtonElement).style.borderColor = PALETTE.secondary;
+              (e.target as HTMLButtonElement).style.color = PALETTE.primary;
+            }}
+            onMouseLeave={e => {
+              (e.target as HTMLButtonElement).style.borderColor = PALETTE.border;
+              (e.target as HTMLButtonElement).style.color = PALETTE.textMuted;
+            }}
+          >
+            {t('استكشاف كزائر تجريبي', 'Explore in Demo Mode')}
+          </button>
+        </>
+      )}
     </div>
   );
 
@@ -662,12 +667,14 @@ export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }:
           </div>
         )}
 
-        <div style={{ textAlign: 'center', margin: '16px 0' }}>
-          <p style={{ fontSize: '13px', color: PALETTE.textMuted, margin: 0 }}>
-            {t('للتجربة، استخدم الرمز:', 'For testing, use code:')}{' '}
-            <span style={{ fontWeight: 800, color: PALETTE.primary, letterSpacing: '2px', fontFamily: 'monospace' }}>{DEV_OTP}</span>
-          </p>
-        </div>
+        {isDemoMode && (
+          <div style={{ textAlign: 'center', margin: '16px 0' }}>
+            <p style={{ fontSize: '13px', color: PALETTE.textMuted, margin: 0 }}>
+              {t('للتجربة، استخدم الرمز:', 'For testing, use code:')}{' '}
+              <span style={{ fontWeight: 800, color: PALETTE.primary, letterSpacing: '2px', fontFamily: 'monospace' }}>{DEV_OTP}</span>
+            </p>
+          </div>
+        )}
 
         <button
           type="submit"

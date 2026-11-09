@@ -63,7 +63,7 @@ export const PatientStatusTimelineView: React.FC<Props> = ({
   const isAr = lang === 'ar';
   const stage = activeCase.currentStage;
   const currentIndex = STAGES.findIndex((s) => s.stage === stage);
-
+  const isDemoMode = typeof window !== 'undefined' && (new URLSearchParams(window.location.search).get('demo') === '1' || window.location.hash === '#cockpit');
   const isCustomCase = activeCase.id.startsWith('TEST-') || activeCase.id.startsWith('REAL-');
 
   // Stage-specific Dynamic Timeline Content
@@ -224,14 +224,8 @@ export const PatientStatusTimelineView: React.FC<Props> = ({
           <div>
             <div className="flex flex-wrap items-center gap-2 mb-2">
               <span className="bg-teal-500/20 text-teal-200 px-2.5 py-0.5 rounded text-xs font-mono font-bold border border-teal-500/30">
-                {activeCase.id}
+                {activeCase.caseNumber || activeCase.id}
               </span>
-              {isCustomCase && (
-                <span className="bg-amber-500/20 text-amber-200 px-2.5 py-0.5 rounded text-xs font-bold border border-amber-500/40 flex items-center gap-1">
-                  <Sparkles className="w-3 h-3 text-amber-300" />
-                  {isAr ? 'حالة اختبار حية' : 'Live Test Case'}
-                </span>
-              )}
               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
                 {isAr ? 'بوابة متابعة المريض المباشرة' : 'Live Patient Portal'}
@@ -250,12 +244,12 @@ export const PatientStatusTimelineView: React.FC<Props> = ({
             </p>
           </div>
 
-          {/* Quick Isolated Reset (for this patient only) */}
-          {onResetActiveCase && (
+          {/* Quick Isolated Reset (QA Only) */}
+          {isDemoMode && onResetActiveCase && (
             <button
               onClick={onResetActiveCase}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-rose-900/60 text-slate-300 hover:text-rose-200 border border-slate-700 hover:border-rose-500/50 text-xs font-bold transition-all"
-              title={isAr ? 'إعادة ضبط مسار هذا المريض فقط' : 'Reset this patient test case only'}
+              title={isAr ? 'إعادة ضبط مسار هذا المريض فقط' : 'Reset this patient case only'}
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>{isAr ? 'إعادة ضبط هذه الحالة فقط' : 'Reset This Case'}</span>
@@ -377,10 +371,13 @@ export const PatientStatusTimelineView: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* Tester Quick Handoff Action */}
+        {/* Clinical Next Step Action */}
         <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="text-xs text-slate-500 dark:text-slate-400 font-bold">
-            {isAr ? 'للاختبار والمحاكاة: انتقل لدور الفريق الطبي المختص لمتابعة الدورة:' : 'Demo / Testing Action: Switch to the active clinical role to continue:'}
+            {isDemoMode
+              ? (isAr ? 'للاختبار والمحاكاة: انتقل لدور الفريق الطبي المختص لمتابعة الدورة:' : 'Demo / Testing Action: Switch to the active clinical role to continue:')
+              : (isAr ? 'الإجراء السريري لمتابعة مسار الحالة:' : 'Current Clinical Milestone Action:')
+            }
           </div>
 
           <button
