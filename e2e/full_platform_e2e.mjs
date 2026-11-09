@@ -164,6 +164,14 @@ const run = async () => {
       doctorScreenText.includes('بديل') || doctorScreenText.includes('SFDA') || doctorScreenText.includes('substitute')
     );
 
+    // 5.2b Universal In-Person Physical Exam Flag (for Written & Video)
+    check('Universal In-Person Exam flag present on Doctor Review screen',
+      doctorScreenText.includes('فحص سريري حضوري بالمجمع الطبي') || doctorScreenText.includes('In-Person Clinical Exam Required')
+    );
+    check('In-Person Exam explicitly marked Universal (Written & Video)',
+      doctorScreenText.includes('للرأي المكتوب والمرئي') || doctorScreenText.includes('Universal (Written & Video)')
+    );
+
     // 5.3 International Consultant OTP Access Control (Role K - Step K00)
     await clickPersona('استشاري');
     const consultantScreenText = await page.evaluate(() => document.body.innerText);
@@ -193,6 +201,19 @@ const run = async () => {
     const coordScreenText = await page.evaluate(() => document.body.innerText);
     check('Coordinator verification and invoicing surface verified', 
       coordScreenText.includes('منسق') || coordScreenText.includes('Coordinator') || coordScreenText.includes('سداد') || coordScreenText.includes('ZATCA')
+    );
+
+    // 5.5 Stage 6 Telehealth LiveKit Multi-party Session
+    await clickPersona('مريض');
+    await page.evaluate(() => {
+      localStorage.setItem('alo_patient_subview_v2.4', 'telehealth');
+    });
+    await page.reload({ waitUntil: 'networkidle2' });
+    await new Promise(r => setTimeout(r, 1200));
+
+    const telehealthText = await page.evaluate(() => document.body.innerText);
+    check('LiveKit WebRTC Telehealth session room rendered at Stage 6',
+      telehealthText.includes('LiveKit') || telehealthText.includes('المتعدد التخصصات') || telehealthText.includes('Telehealth')
     );
 
     // -------------------------------------------------------------
