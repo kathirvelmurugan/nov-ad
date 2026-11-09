@@ -174,6 +174,81 @@ export const DoctorReviewView: React.FC<Props> = ({
               {isAr ? 'مرئي + رأي مكتوب' : 'Video + written opinion'}
             </button>
           </div>
+
+          {/* Universal In-Person Physical Exam Flag (Applies to both Written Opinion & Video Consultation) */}
+          <div className="p-3.5 bg-amber-50/80 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-800/70 rounded-xl space-y-2.5">
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={!!activeCase.inPersonExamRequired}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    onUpdateCase({
+                      inPersonExamRequired: checked,
+                      inPersonExamReason: checked ? (activeCase.inPersonExamReason || (isAr ? 'فحص سريري مباشر وتقييم استقرار المفصل وردود الفعل الحركية' : 'Direct physical examination & joint stability / motor reflex evaluation')) : undefined,
+                      inPersonAppointmentSlot: checked ? (activeCase.inPersonAppointmentSlot || (isAr ? 'غداً - 10:30 صباحاً (عيادة العظام)' : 'Tomorrow - 10:30 AM (Orthopedic Clinic)')) : undefined,
+                      internalOrders: {
+                        ...(activeCase.internalOrders || {
+                          medicalCenterId: 'mc_riyadh_care',
+                          medicalCenterName: activeCase.treatingDoctor.hospital,
+                          lab: { ordered: false, tests: [], status: 'none' },
+                          pharmacy: { ordered: false, medications: [], status: 'none' },
+                        }),
+                        reception: {
+                          checkinCode: 'ALO-RC-8812',
+                          status: checked ? 'scheduled' : 'none',
+                          appointmentSlot: checked ? (isAr ? 'غداً - 10:30 صباحاً' : 'Tomorrow - 10:30 AM') : undefined,
+                        }
+                      }
+                    });
+                  }}
+                  className="rounded text-amber-600 focus:ring-amber-500 w-4 h-4 cursor-pointer"
+                />
+                <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                  {isAr ? '🏥 يلزم فحص سريري حضوري بالمجمع الطبي (قرار الطبيب المعالج)' : '🏥 In-Person Clinical Exam Required at Medical Center'}
+                </span>
+              </label>
+              <span className="text-[10px] font-bold text-amber-800 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/60 px-2 py-0.5 rounded border border-amber-300">
+                {isAr ? 'شامل: للرأي المكتوب والمرئي' : 'Universal (Written & Video)'}
+              </span>
+            </div>
+
+            <p className="text-[11px] text-slate-600 dark:text-slate-400">
+              {isAr
+                ? '💡 معيار طبي سعودي: يقرر الطبيب المعالج حاجة المريض للفحص الحسي البدني أو قياس المدى الحركي بالمجمع، ويتم حجز موعد الاستقبال تلقائياً دون إيقاف دراسة الاستشاري الدولي.'
+                : '💡 Saudi clinical standard: Treating physician determines if hands-on physical palpation is needed; reception slot is scheduled concurrently without halting the international review.'}
+            </p>
+
+            {activeCase.inPersonExamRequired && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    {isAr ? 'السبب السريري للفحص الحضوري:' : 'Clinical Reason for In-Person Exam:'}
+                  </label>
+                  <input
+                    type="text"
+                    value={activeCase.inPersonExamReason || ''}
+                    onChange={(e) => onUpdateCase({ inPersonExamReason: e.target.value })}
+                    placeholder={isAr ? 'مثال: فحص استقرار المفصل ودرجة الحركة' : 'e.g. Joint stability & ROM evaluation'}
+                    className="w-full bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700 rounded-lg p-2 text-xs text-slate-800 dark:text-slate-200 font-medium"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    {isAr ? 'موعد الحضور الموصى به لدى الاستقبال (REC01):' : 'Scheduled In-Person Slot (REC01):'}
+                  </label>
+                  <input
+                    type="text"
+                    value={activeCase.inPersonAppointmentSlot || ''}
+                    onChange={(e) => onUpdateCase({ inPersonAppointmentSlot: e.target.value })}
+                    placeholder={isAr ? 'غداً - 10:30 صباحاً' : 'Tomorrow - 10:30 AM'}
+                    className="w-full bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700 rounded-lg p-2 text-xs text-slate-800 dark:text-slate-200 font-mono"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* 3 Mandatory Focus Questions */}

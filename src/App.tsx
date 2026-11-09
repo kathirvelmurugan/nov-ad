@@ -192,14 +192,14 @@ export const App: React.FC = () => {
     return 'workstation';
   });
 
-  const [patientSubView, setPatientSubView] = useState<'landing' | 'intake' | 'timeline'>(() => {
+  const [patientSubView, setPatientSubView] = useState<'landing' | 'intake' | 'timeline' | 'telehealth'>(() => {
     try {
       if (typeof window !== 'undefined') {
         const search = new URLSearchParams(window.location.search);
         if (search.get('intake') === '1') return 'intake';
       }
       const saved = localStorage.getItem('alo_patient_subview_v2.4');
-      if (saved === 'landing' || saved === 'intake' || saved === 'timeline') return saved;
+      if (saved === 'landing' || saved === 'intake' || saved === 'timeline' || saved === 'telehealth') return saved;
     } catch (e) {}
     return 'landing';
   });
@@ -247,7 +247,7 @@ export const App: React.FC = () => {
     };
   }, []);
 
-  const handleSelectPatientSubView = (subView: 'landing' | 'intake' | 'timeline') => {
+  const handleSelectPatientSubView = (subView: 'landing' | 'intake' | 'timeline' | 'telehealth') => {
     setPatientSubView(subView);
     setViewMode('workstation');
     const p = PERSONAS.find((x) => x.code === 'P') || PERSONAS[0];
@@ -729,7 +729,23 @@ export const App: React.FC = () => {
               if (p) handleSelectPersona(p);
             }}
             onBackToLanding={() => handleSelectPatientSubView('landing')}
+            onOpenTelehealth={() => handleSelectPatientSubView('telehealth')}
             lang={lang}
+          />
+        );
+      }
+
+      // 3.5 Stage 6 Telehealth LiveKit Room view
+      if (patientSubView === 'telehealth' || (activeCase.currentStage === 'OPINION_READY' && activeCase.consultationType === 'video' && patientSubView !== 'timeline')) {
+        return (
+          <OpinionTelehealthView
+            activeCase={activeCase}
+            onAdvanceStage={() => {
+              handleAdvanceStage();
+              handleSelectPatientSubView('timeline');
+            }}
+            onUpdateCase={handleUpdateCase}
+            onBackToTimeline={() => handleSelectPatientSubView('timeline')}
           />
         );
       }
@@ -776,6 +792,7 @@ export const App: React.FC = () => {
             if (p) handleSelectPersona(p);
           }}
           onBackToLanding={() => handleSelectPatientSubView('landing')}
+          onOpenTelehealth={() => handleSelectPatientSubView('telehealth')}
           lang={lang}
         />
       );
@@ -792,6 +809,7 @@ export const App: React.FC = () => {
           const p = PERSONAS.find((x) => x.code === code);
           if (p) handleSelectPersona(p);
         }}
+        onOpenTelehealth={() => handleSelectPatientSubView('telehealth')}
         lang={lang}
       />
     );

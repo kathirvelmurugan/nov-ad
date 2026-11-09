@@ -231,6 +231,9 @@ export interface ClinicalCase {
   aiSummaryEn?: AiClinicalSummary;
   aiSummaryAr?: AiClinicalSummary;
   internalOrders?: MedicalCenterInternalOrders;
+  inPersonExamRequired?: boolean;
+  inPersonExamReason?: string;
+  inPersonAppointmentSlot?: string;
   consultantToken?: ConsultantMagicToken;
   finalReportEn?: string;
   finalReportAr?: string;

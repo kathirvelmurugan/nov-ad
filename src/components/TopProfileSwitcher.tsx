@@ -82,8 +82,8 @@ interface Props {
   onToggleTheme: () => void;
   viewMode?: 'workstation' | 'studio';
   onToggleViewMode?: () => void;
-  patientSubView?: 'landing' | 'intake' | 'timeline';
-  onSelectPatientSubView?: (view: 'landing' | 'intake' | 'timeline') => void;
+  patientSubView?: 'landing' | 'intake' | 'timeline' | 'telehealth';
+  onSelectPatientSubView?: (view: 'landing' | 'intake' | 'timeline' | 'telehealth') => void;
   onLogout?: () => void;
 }
 
