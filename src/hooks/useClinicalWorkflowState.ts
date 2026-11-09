@@ -34,11 +34,11 @@ export interface UserSession {
 // ─── Seed Data ───────────────────────────────────────────────────────────────
 export const FRESH_PRIMARY_CASE: ClinicalCase = {
   id: 'case-test-01',
-  caseNumber: 'ALO-2026-TEST01',
-  patientName: '',
-  patientNameAr: 'مسار تجريبي نظيف (Fresh Case)',
-  patientNameEn: 'Fresh Real-Time Test Case',
-  nationalIdMasked: '',
+  caseNumber: 'ALO-2026-8812',
+  patientName: 'سالم العامري',
+  patientNameAr: 'سالم العامري',
+  patientNameEn: 'Salem Al-Ameri',
+  nationalIdMasked: '1088****92',
   age: 48,
   gender: 'M',
   city: 'الرياض (Riyadh)',
