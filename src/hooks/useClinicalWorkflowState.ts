@@ -187,6 +187,8 @@ export function useClinicalWorkflowState() {
       if (typeof window !== 'undefined') {
         const search = new URLSearchParams(window.location.search);
         if (search.get('intake') === '1') return 'intake';
+        if (search.get('telehealth') === '1' || search.get('subview') === 'telehealth') return 'telehealth';
+        if (search.get('timeline') === '1' || search.get('subview') === 'timeline') return 'timeline';
       }
       const saved = localStorage.getItem('alo_patient_subview_v2.4');
       if (saved === 'landing' || saved === 'intake' || saved === 'timeline' || saved === 'telehealth') return saved;
@@ -226,9 +228,8 @@ export function useClinicalWorkflowState() {
         setViewMode('studio');
         const p = PERSONAS.find((x) => x.code === 'P') || PERSONAS[0];
         setActivePersona(p);
-      } else {
+      } else if (window.location.hash !== '#cockpit') {
         setViewMode('workstation');
-        setPatientSubView('landing');
       }
     };
     window.addEventListener('popstate', handlePopState);
