@@ -1,24 +1,26 @@
-# ALO Doctor — Workspace Architectural Rules
+# ALO Doctor — Workspace Architectural Rules & Multi-Agent Standard
 # Applies to every coding session in this project (2026NOV02_ALO_IMPLEMENTATION)
+# Last Updated: 2026-11-09 (Post-Decomposition Parity Achieved)
 
-## 🏗️ Component Architecture Invariant
+---
 
-**RULE: App.tsx MUST stay under 300 lines. Any new screen, feature, or workflow MUST be extracted into a dedicated component file.**
+## 🏗️ 1. Multi-Agent Component Architecture Standard
 
-### Mandatory File Structure (Phase 2+)
-Every new piece of functionality goes into one of these categories — NEVER inline into App.tsx:
+### Core Invariant
+**RULE: `App.tsx` MUST stay strictly under 150 lines (currently 93 lines).**
+No business logic, state hooks, or inline rendering blocks are permitted in `App.tsx`. It acts solely as the top-level orchestrator wiring State Hook ➔ Layout Shell ➔ Screen Router.
 
 ```
 src/
-├── App.tsx                          ← MAX 300 lines: Only imports, state init, and <AppLayout>
+├── App.tsx                          ← [93 lines] Root Orchestrator: Wires Hook ➔ Layout ➔ Router
 ├── hooks/
-│   └── useClinicalWorkflowState.ts  ← All useState, useEffect, handleXxx logic
+│   └── useClinicalWorkflowState.ts  ← [503 lines] State, Handlers & localStorage Sync
 ├── router/
-│   └── ScreenRouter.tsx             ← All renderScreen() / route decision logic
+│   └── ScreenRouter.tsx             ← [250 lines] Pure Functional Screen Routing (Role + Stage)
 ├── layout/
-│   └── AppLayout.tsx                ← Top ribbon, Stage bar, WhatsApp drawer, GuideModal
+│   └── AppLayout.tsx                ← [279 lines] Top Ribbon, Progress Bar, Drawer, Modals, Auth
 └── components/
-    └── screens/                     ← One file per screen/view
+    └── screens/                     ← Isolated, single-responsibility screen views (≤ 500 lines)
         ├── DoctorReviewView.tsx
         ├── OpinionTelehealthView.tsx
         ├── PatientStatusTimelineView.tsx
@@ -33,45 +35,64 @@ src/
         └── AdminSettingsView.tsx
 ```
 
-### Coding Rules
+---
 
-1. **New screen?** → Always create `src/components/screens/NewScreenView.tsx`, import in `ScreenRouter.tsx`
-2. **New state variable?** → Goes into `useClinicalWorkflowState.ts`, not App.tsx
-3. **New handler (handleXxx)?** → Goes into `useClinicalWorkflowState.ts`
-4. **New layout element (ribbon, toast, modal)?** → Goes into `AppLayout.tsx`
-5. **Never** add more than ~10 lines of JSX directly into App.tsx
-6. **Never** add inline logic or conditional rendering into App.tsx
+## 📐 2. The 4-Layer Architecture Rules
 
-### Component File Size Limits
-| File | Max Lines |
-|------|-----------|
-| `App.tsx` | 300 |
-| Any screen component | 600 |
-| Any hook | 400 |
-| Any utility/service | 200 |
-
-> If a component exceeds its limit, split it into sub-components in a subfolder
-> (e.g., `screens/doctor/` for sub-panels of DoctorReviewView).
-
-### Existing Debt (Phase 2 — do in order)
-1. Extract `useClinicalWorkflowState.ts` from App.tsx lines 100–550
-2. Extract `ScreenRouter.tsx` from App.tsx lines 620–815
-3. Extract `AppLayout.tsx` from App.tsx lines 850–991
-4. App.tsx becomes: `<AppLayout> + useClinicalWorkflowState() + ScreenRouter`
+| Layer | Path | Responsibility | What Goes Here | What NEVER Goes Here |
+| :--- | :--- | :--- | :--- | :--- |
+| **1. Orchestrator** | `src/App.tsx` | Wire dependencies | Single hook call, Layout wrapper, Router child | `useState`, `useEffect`, inline JSX screens |
+| **2. State & Handlers** | `src/hooks/useClinicalWorkflowState.ts` | Business logic & data | `useState`, `useEffect`, `localStorage`, handlers (`handleXxx`) | UI JSX, markup, CSS styles |
+| **3. Layout Shell** | `src/layout/AppLayout.tsx` | Presentation & overlays | Top bar, progress stepper, modals, toasts, auth gate | Business state calculations, screen interiors |
+| **4. Routing Matrix** | `src/router/ScreenRouter.tsx` | Stage & Role mapping | Pure switch/if conditions mapping `(persona, stage) ➔ <View />` | State declarations, persistent storage calls |
 
 ---
 
-## 🩺 Clinical Workflow Invariants (do not regress)
+## 🤖 3. Multi-Agent AI Work Allocation Protocol
 
-- Universal In-Person Exam flag (`inPersonExamRequired`) must appear on **both** Written Opinion and Video screens
-- LiveKit WebRTC room connects to `wss://alo-6mx1e8u4.livekit.cloud`
-- Stage sequence: INTAKE → NURSE_CHECK → DOCTOR_REVIEW → AWAITING_PAYMENT → WITH_CONSULTANT → OPINION_READY → PARTNER_SERVICES → FOLLOW_UP_21_DAYS → CLOSED
-- `patientSubView` values: `'landing' | 'intake' | 'timeline' | 'telehealth'`
+When assigning coding tasks to multiple concurrent AI agents:
+
+1. **Agent 1 (State & Business Logic)**: Works strictly inside `src/hooks/useClinicalWorkflowState.ts` or domain hooks. Modifies state signatures, API calls, and handlers.
+2. **Agent 2 (Screen UI & Features)**: Works strictly inside a single file in `src/components/screens/`. Receives typed props; zero risk of breaking global state.
+3. **Agent 3 (Navigation & Stage Gates)**: Works strictly inside `src/router/ScreenRouter.tsx`. Configures access rules, routing checks, and redirects.
+4. **Agent 4 (Overlays & Modals)**: Works strictly inside `src/layout/AppLayout.tsx` or new modal components.
+
+*Benefit*: Zero merge conflicts, zero prompt context truncation, and sub-30-second AI generation turns.
 
 ---
 
-## 🔐 Name & Data Scrubbing
+## 📏 4. Hard File Size Limits
 
-- Never use "Kathirvel" in code, commits, or UI
-- Personas: `Adrian Lewis (Operations Lead)`, `Emmanuel Arcon Gonzalez`, `David Nunez`, `Marcus Vance`, `V. Prasanth`
-- Pricing: always ±5% variance, never exact sensitive figures
+| File Category | Max Line Count | Action If Exceeded |
+| :--- | :--- | :--- |
+| `App.tsx` | **150 lines** | Must extract state into hooks or UI into layout. |
+| Screens (`screens/*.tsx`) | **500 lines** | Extract sub-panels into `screens/<domain>/` subfolder. |
+| Workflow Hooks (`hooks/*.ts`) | **400 lines** | Split into sub-hooks (e.g. `useTelehealthState`, `useCaseAuth`). |
+| Services / Clients (`services/*.ts`) | **200 lines** | Split into dedicated service endpoints. |
+| Utility Components (`components/*.tsx`) | **250 lines** | Extract sub-elements into atomic components. |
+
+---
+
+## 🧠 5. Architecture Learning: The "Velocity Trap" vs. Decomposition
+
+* **Phase 1 (Days 1–7): Rapid Prototyping**
+  * Teams naturally code monolithically in `App.tsx` to get immediate feedback and demo screens.
+* **Phase 2 (Day 8+): Production Transition**
+  * Monolithic `App.tsx` becomes tech debt (1,000+ lines), causing AI context drift and slow code reviews.
+  * **Solution**: Surgically decompose into the 4-layer pattern before adding complex integrations (e.g. LiveKit WebRTC, in-person exam flags).
+
+---
+
+## 🩺 6. Clinical Workflow Invariants (Do Not Regress)
+
+- **Universal In-Person Exam flag (`inPersonExamRequired`)**: Must appear on **both** Written Opinion and Video screens in `DoctorReviewView.tsx`.
+- **LiveKit WebRTC Cloud**: Connects to `wss://alo-6mx1e8u4.livekit.cloud` via `src/services/livekit.ts` with auto-joining Stage 6 video room.
+- **Stage Progression Order**: `INTAKE_RECEIVED` ➔ `NURSE_CHECK` ➔ `DOCTOR_REVIEW` ➔ `AWAITING_PAYMENT` ➔ `WITH_CONSULTANT` ➔ `OPINION_READY` ➔ `PARTNER_SERVICES` ➔ `FOLLOW_UP_21_DAYS` ➔ `CLOSED`.
+- **Session Lifespan**: 30-day verified session stored under `alo_user_session_v2.4`.
+
+---
+
+## 🔐 7. Strict Privacy & Anonymization Rules
+
+- **Strict Name Scrubbing**: Never mention "Kathirvel" anywhere in code, commits, comments, or UI. Use real field names: `Adrian Lewis (Operations Lead)`, `Emmanuel Arcon Gonzalez`, `David Nunez`, `Marcus Vance`, `V. Prasanth`.
+- **Pricing Neutralization**: Apply ±5% variance to all prices, quotes, and wages.
