@@ -5,104 +5,35 @@
  * persistence, and every handler function for the ALO Doctor platform.
  *
  * Returns a flat object consumed by AppLayout and ScreenRouter.
- * This file must stay ≤ 400 lines. Add state → extract sub-hooks if needed.
+ * Decomposed into modular sub-hooks (<300 lines).
  */
 
 import { useState, useEffect } from 'react';
 import { PERSONAS } from '../data/personas';
 import { SEED_CASES } from '../data/seedCases';
-import { Persona, ClinicalCase, ClinicalStage, PaymentMethodId } from '../types';
+import { Persona, ClinicalCase, ClinicalStage } from '../types';
+import {
+  STORAGE_KEY,
+  ACTIVE_CASE_KEY,
+  THEME_KEY,
+  LANG_KEY,
+  VIEW_MODE_KEY,
+  USER_SESSION_KEY,
+  UserSession,
+  FRESH_PRIMARY_CASE,
+} from './workflowConstants';
+import { useWorkflowStageTransitions } from './useWorkflowStageTransitions';
 
-// ─── Storage Keys ───────────────────────────────────────────────────────────
-export const STORAGE_KEY       = 'alo_cases_v2.4';
-export const ACTIVE_CASE_KEY   = 'alo_active_case_id_v2.4';
-export const THEME_KEY         = 'alo_theme_v2.4';
-export const LANG_KEY          = 'alo_lang_v2.4';
-export const VIEW_MODE_KEY     = 'alo_view_mode_v2.4';
-export const USER_SESSION_KEY  = 'alo_user_session_v2.4';
-
-// ─── Types ───────────────────────────────────────────────────────────────────
-export interface UserSession {
-  isAuthenticated: boolean;
-  phone: string;
-  personaId: string | null;
-  isGuest: boolean;
-  expiresAt: number;
-  lang: 'ar' | 'en';
-}
-
-// ─── Seed Data ───────────────────────────────────────────────────────────────
-export const FRESH_PRIMARY_CASE: ClinicalCase = {
-  id: 'case-test-01',
-  caseNumber: 'ALO-2026-8812',
-  patientName: 'سالم العامري',
-  patientNameAr: 'سالم العامري',
-  patientNameEn: 'Salem Al-Ameri',
-  nationalIdMasked: '1088****92',
-  age: 48,
-  gender: 'M',
-  city: 'الرياض (Riyadh)',
-  cityAr: 'الرياض',
-  cityEn: 'Riyadh',
-  specialty: 'أمراض القلب والشرايين (Cardiology)',
-  specialtyAr: 'أمراض القلب والشرايين',
-  specialtyEn: 'Cardiology',
-  diagnosis: '',
-  diagnosisAr: '',
-  diagnosisEn: '',
-  symptoms: '',
-  symptomsAr: '',
-  symptomsEn: '',
-  consultationType: 'video',
-  currentStage: 'INTAKE_RECEIVED',
-  stage: 1,
-  doctorSelectionPreference: 'need_assistance',
-  treatingDoctor: {
-    name: 'بانتظار فرز التمريض (ألو تختار الأنسب)',
-    hospital: 'شبكة المستشفيات المعتمدة (ALO Accredited Network)',
-    city: 'الرياض / المملكة',
-    focusQuestions: ['', '', ''],
-    focusQuestionsEn: ['', '', ''],
-  },
-  consultant: {
-    name: 'Dr. Arjun Menon',
-    center: 'Apollo Hospitals',
-    city: 'Chennai',
-  },
-  pricing: {
-    tier: 2,
-    tierName: 'Video',
-    baseSar: 450,
-    vatPercent: 15,
-    vatSar: 67.5,
-    totalSar: 517.5,
-    paid: false,
-  },
-  files: [],
-  invoiceIssued: false,
-  allowedPaymentMethods: [],
-  paymentVerified: false,
-  partnerOrders: {
-    lab: { test: 'Troponin & Lipid Panel', status: 'pending' },
-    pharmacy: { meds: ['Atorvastatin 40mg', 'Aspirin 81mg'], substituteAllowed: false, status: 'pending' },
-    homeNurse: { area: 'Riyadh - Al Malqa', visits: 2, status: 'scheduled' },
-    physio: { sessions: 4, status: 'planned' },
-  },
-  metadata: { isFreshTest: true },
+export type { UserSession };
+export {
+  STORAGE_KEY,
+  ACTIVE_CASE_KEY,
+  THEME_KEY,
+  LANG_KEY,
+  VIEW_MODE_KEY,
+  USER_SESSION_KEY,
+  FRESH_PRIMARY_CASE,
 };
-
-// ─── Stage order helper (shared by multiple handlers) ────────────────────────
-const STAGE_ORDER: ClinicalStage[] = [
-  'INTAKE_RECEIVED',
-  'NURSE_CHECK',
-  'DOCTOR_REVIEW',
-  'AWAITING_PAYMENT',
-  'WITH_CONSULTANT',
-  'OPINION_READY',
-  'PARTNER_SERVICES',
-  'FOLLOW_UP_21_DAYS',
-  'CLOSED',
-];
 
 // ─── Hook ────────────────────────────────────────────────────────────────────
 export function useClinicalWorkflowState() {
@@ -287,8 +218,6 @@ export function useClinicalWorkflowState() {
   // Derived State
   // ─────────────────────────────────────────────────────────────────────────
   const activeCase = cases.find((c) => c.id === activeCaseId) || cases[0];
-  const isCasePaid = (c: ClinicalCase) => !!c.pricing?.paid || c.paymentDetails?.status === 'completed';
-  const isCaseVerified = (c: ClinicalCase) => !!c.paymentVerified || !!c.metadata?.paymentVerified;
 
   // ─────────────────────────────────────────────────────────────────────────
   // Handlers
@@ -296,6 +225,21 @@ export function useClinicalWorkflowState() {
   const handleUpdateCase = (updated: Partial<ClinicalCase>) => {
     setCases((prev) => prev.map((c) => (c.id === activeCase.id ? { ...c, ...updated } : c)));
   };
+
+  const transitions = useWorkflowStageTransitions({
+    activeCase,
+    lang,
+    setLang,
+    isAutoDemoActive,
+    setActivePersona,
+    setViewMode,
+    setPatientSubView,
+    setIsWhatsAppDrawerOpen,
+    pendingHandoff,
+    setPendingHandoff,
+    handleUpdateCase,
+    setCases,
+  });
 
   const handleLogout = () => {
     try { localStorage.removeItem(USER_SESSION_KEY); } catch (e) {}
@@ -356,236 +300,6 @@ export function useClinicalWorkflowState() {
     }
   };
 
-  const handleSelectPersona = (p: Persona) => {
-    if (p.code === 'K' && !isAutoDemoActive) {
-      if (!isCasePaid(activeCase)) {
-        alert(lang === 'ar' ? 'لا يمكن فتح شاشة الاستشاري الهندي قبل تأكيد السداد.' : 'The Indian consultant screen opens only after payment is confirmed.');
-        return;
-      }
-      if (!isCaseVerified(activeCase)) {
-        alert(lang === 'ar' ? 'يجب تحقق منسق رعاية ألو من السداد أولاً قبل الاتصال بالاستشاري الهندي.' : 'Payment must be verified by the ALO Coordinator before connecting to the Indian consultant.');
-        return;
-      }
-    }
-
-    setActivePersona(p);
-    if (p.code === 'P') {
-      setViewMode('workstation');
-      try { localStorage.setItem(VIEW_MODE_KEY, 'workstation'); } catch (e) {}
-    }
-    const lockedLang = localStorage.getItem(LANG_KEY);
-    if (!lockedLang) setLang(p.lang);
-
-    if (p.code === 'N') handleUpdateCase({ currentStage: 'NURSE_CHECK' });
-    else if (p.code === 'D') {
-      if (['INTAKE_RECEIVED', 'NURSE_CHECK'].includes(activeCase.currentStage)) {
-        handleUpdateCase({ currentStage: 'DOCTOR_REVIEW' });
-      }
-    }
-    else if (p.code === 'C') {
-      if (['INTAKE_RECEIVED', 'NURSE_CHECK', 'DOCTOR_REVIEW'].includes(activeCase.currentStage)) {
-        handleUpdateCase({ currentStage: 'AWAITING_PAYMENT' });
-      }
-    }
-    else if (p.code === 'K') {
-      handleUpdateCase({ currentStage: 'WITH_CONSULTANT' });
-    }
-    else if (['L', 'PH', 'REC', 'H', 'T', 'V'].includes(p.code)) handleUpdateCase({ currentStage: 'PARTNER_SERVICES' });
-    else if (p.code === 'AD' || p.code === 'HA') handleUpdateCase({ currentStage: 'CLOSED' });
-    else if (p.code === 'P' || p.code === 'F') {
-      if (activeCase.currentStage === 'CLOSED') {
-        handleUpdateCase({ currentStage: 'INTAKE_RECEIVED' });
-      }
-    }
-  };
-
-  const handleSetStage = (stage: ClinicalStage) => {
-    const gated: ClinicalStage[] = ['WITH_CONSULTANT', 'OPINION_READY', 'PARTNER_SERVICES', 'FOLLOW_UP_21_DAYS', 'CLOSED'];
-    if (gated.includes(stage) && (!isCasePaid(activeCase) || !isCaseVerified(activeCase)) && !isAutoDemoActive) {
-      alert(
-        !isCasePaid(activeCase)
-          ? (lang === 'ar' ? 'لا يمكن الانتقال إلى ما بعد السداد قبل تأكيد الدفع.' : 'Payment must be completed before moving past Awaiting payment.')
-          : (lang === 'ar' ? 'يجب تحقق منسق رعاية ألو من السداد أولاً قبل الانتقال للاستشاري الهندي.' : 'ALO Coordinator must verify payment before connecting to the Indian consultant.')
-      );
-      return;
-    }
-    handleUpdateCase({ currentStage: stage });
-    const awaitPaymentPersona = activeCase.invoiceIssued && !isCasePaid(activeCase) ? 'P' : 'C';
-    const stagePersonaMap: Partial<Record<ClinicalStage, string>> = {
-      INTAKE_RECEIVED: 'P', NURSE_CHECK: 'N', DOCTOR_REVIEW: 'D', AWAITING_PAYMENT: awaitPaymentPersona,
-      WITH_CONSULTANT: 'K', OPINION_READY: 'D', PARTNER_SERVICES: 'C',
-      FOLLOW_UP_21_DAYS: 'P', CLOSED: 'C',
-    };
-    const code = stagePersonaMap[stage];
-    const p = code ? (PERSONAS.find((x) => x.code === code) || PERSONAS[0]) : PERSONAS[0];
-    setActivePersona(p);
-    const lockedLang = localStorage.getItem(LANG_KEY);
-    if (!lockedLang) setLang(p.lang);
-  };
-
-  const handleAdvanceStage = () => {
-    const currentIndex = STAGE_ORDER.indexOf(activeCase.currentStage);
-    if (currentIndex >= STAGE_ORDER.length - 1) return;
-    const nextStage = STAGE_ORDER[currentIndex + 1];
-
-    if (nextStage === 'WITH_CONSULTANT' && !isAutoDemoActive) {
-      if (!isCasePaid(activeCase)) {
-        alert(lang === 'ar' ? 'لا يمكن الانتقال للاستشاري قبل إتمام المريض للدفع.' : 'Patient must complete payment first.');
-        return;
-      }
-      if (!isCaseVerified(activeCase)) {
-        alert(lang === 'ar' ? 'يجب تحقق منسق رعاية ألو من السداد أولاً قبل الاتصال بالاستشاري الهندي.' : 'ALO Coordinator must verify payment before connecting to the Indian consultant.');
-        return;
-      }
-    }
-
-    const nextPersonaMap: Partial<Record<ClinicalStage, string>> = {
-      NURSE_CHECK: 'N', DOCTOR_REVIEW: 'D', AWAITING_PAYMENT: 'C',
-      WITH_CONSULTANT: 'K', OPINION_READY: 'D', PARTNER_SERVICES: 'C',
-      FOLLOW_UP_21_DAYS: 'P', CLOSED: 'C',
-    };
-    const code = nextPersonaMap[nextStage];
-    const nextP = code ? (PERSONAS.find((p) => p.code === code) || PERSONAS[0]) : PERSONAS[0];
-    handleUpdateCase({ currentStage: nextStage });
-    setActivePersona(nextP);
-    const lockedLang = localStorage.getItem(LANG_KEY);
-    if (!lockedLang) setLang(nextP.lang);
-
-    if (nextStage === 'AWAITING_PAYMENT') {
-      setPatientSubView('timeline');
-    }
-    setPendingHandoff(null);
-    setIsWhatsAppDrawerOpen(true);
-  };
-
-  const handleAssignPaymentToPatient = (
-    methods: PaymentMethodId[],
-    tierData: { tier: number; tierName: string; baseSar: number; vatSar: number; totalSar: number },
-  ) => {
-    if (!methods.length) return;
-    const invoiceNumber = activeCase.pricing?.invoiceNumber || `INV-2026-${Math.floor(100000 + Math.random() * 900000)}`;
-    handleUpdateCase({
-      currentStage: 'AWAITING_PAYMENT',
-      invoiceIssued: true,
-      allowedPaymentMethods: methods,
-      paymentAssignedAt: new Date().toISOString(),
-      paymentVerified: false,
-      consultationType: tierData.tier === 1 ? 'written' : 'video',
-      tier: tierData.tier,
-      pricing: {
-        ...activeCase.pricing,
-        ...tierData,
-        vatPercent: 15,
-        tabbyInstallmentSar: Number((tierData.totalSar / 4).toFixed(2)),
-        invoiceNumber,
-        paid: false,
-      },
-      metadata: {
-        ...(activeCase.metadata || {}),
-        paymentLinkIssued: true,
-        paymentLinkIssuedAt: new Date().toISOString(),
-        assignedPaymentMethods: methods,
-        paymentVerified: false,
-      },
-    });
-    const patientPersona = PERSONAS.find((p) => p.code === 'P') || PERSONAS[0];
-    setActivePersona(patientPersona);
-    setViewMode('workstation');
-    setPatientSubView('checkout');
-    setIsWhatsAppDrawerOpen(true);
-  };
-
-  const handleCompletePatientPayment = () => {
-    setCases((prev) =>
-      prev.map((c) =>
-        c.id === activeCase.id
-          ? {
-              ...c,
-              currentStage: 'AWAITING_PAYMENT',
-              paymentVerified: false,
-              pricing: { ...c.pricing, paid: true },
-              paymentDetails: { ...(c.paymentDetails || {}), status: 'completed' },
-              metadata: { ...(c.metadata || {}), paymentVerified: false },
-            }
-          : c
-      )
-    );
-    const coordinatorPersona = PERSONAS.find((p) => p.code === 'C') || PERSONAS[0];
-    setActivePersona(coordinatorPersona);
-    setPatientSubView('timeline');
-    setIsWhatsAppDrawerOpen(true);
-  };
-
-  const handleVerifyPaymentAndDispatch = () => {
-    if (!isCasePaid(activeCase)) return;
-    setCases((prev) =>
-      prev.map((c) =>
-        c.id === activeCase.id
-          ? {
-              ...c,
-              currentStage: 'WITH_CONSULTANT',
-              paymentVerified: true,
-              isCrossBorderDeidentified: true,
-              dualTokenGenerated: true,
-              egressToken: c.egressToken || 'ALO-KSA-9482',
-              consultantToken: c.consultantToken || {
-                token: 'ALO-MAGIC-REV-72H-DR-ARJUN',
-                expiresAt: new Date(Date.now() + 72 * 3600 * 1000).toISOString(),
-                otpVerified: false,
-                sessionCookieActive: false,
-                sessionExpiresAt: new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString(),
-              },
-              metadata: {
-                ...(c.metadata || {}),
-                paymentVerified: true,
-                consultantLinkSent: true,
-              },
-            }
-          : c
-      )
-    );
-    const consultantPersona = PERSONAS.find((p) => p.code === 'K') || PERSONAS[0];
-    setActivePersona(consultantPersona);
-    setIsWhatsAppDrawerOpen(true);
-  };
-
-  const handleReleaseReportToPatient = () => {
-    setCases((prev) =>
-      prev.map((c) =>
-        c.id === activeCase.id
-          ? {
-              ...c,
-              currentStage: 'PARTNER_SERVICES',
-              reportReleased: true,
-              doctorReleasedToPatient: true,
-              coordinatorForwardedToDoctor: true,
-              saudiEndorsement: c.saudiEndorsement
-                ? { ...c.saudiEndorsement, releasedToPatient: true }
-                : c.saudiEndorsement,
-              metadata: {
-                ...(c.metadata || {}),
-                pdf1Released: true,
-                pdf1Timestamp: new Date().toISOString(),
-              },
-            }
-          : c
-      )
-    );
-    const patientPersona = PERSONAS.find((p) => p.code === 'P') || PERSONAS[0];
-    setActivePersona(patientPersona);
-    setViewMode('workstation');
-    setPatientSubView('timeline');
-    setIsWhatsAppDrawerOpen(true);
-  };
-
-  const handleConfirmHandoff = () => {
-    if (!pendingHandoff) return;
-    handleUpdateCase({ currentStage: pendingHandoff.toStage });
-    handleSelectPersona(pendingHandoff.nextPersona);
-    setPendingHandoff(null);
-    setIsWhatsAppDrawerOpen(true);
-  };
-
   const handleNextCase = () => {
     const currentIndex = cases.findIndex((c) => c.id === activeCaseId);
     setActiveCaseId(cases[(currentIndex + 1) % cases.length].id);
@@ -594,7 +308,7 @@ export function useClinicalWorkflowState() {
   const handleSelectCaseFromPipeline = (selectedCase: ClinicalCase, heroPersonaCode: string) => {
     setActiveCaseId(selectedCase.id);
     const targetPersona = PERSONAS.find((p) => p.code === heroPersonaCode) || PERSONAS[0];
-    handleSelectPersona(targetPersona);
+    transitions.handleSelectPersona(targetPersona);
     setIsPipelineBoardOpen(false);
   };
 
@@ -653,16 +367,6 @@ export function useClinicalWorkflowState() {
       : '⚡ Screen auto-filled with accredited clinical benchmark data (v2.4)!');
   };
 
-  const handleAutoDemoNextStage = () => {
-    const idx = STAGE_ORDER.indexOf(activeCase.currentStage);
-    handleSetStage(STAGE_ORDER[(idx + 1) % STAGE_ORDER.length]);
-  };
-
-  const handleAutoDemoPrevStage = () => {
-    const idx = STAGE_ORDER.indexOf(activeCase.currentStage);
-    handleSetStage(STAGE_ORDER[(idx - 1 + STAGE_ORDER.length) % STAGE_ORDER.length]);
-  };
-
   // ─────────────────────────────────────────────────────────────────────────
   // Public API
   // ─────────────────────────────────────────────────────────────────────────
@@ -691,21 +395,21 @@ export function useClinicalWorkflowState() {
     handleSelectPatientSubView,
     handleSelectServiceFromLanding,
     handleStartCaseToCockpit,
-    handleSelectPersona,
-    handleSetStage,
-    handleAdvanceStage,
-    handleAssignPaymentToPatient,
-    handleCompletePatientPayment,
-    handleVerifyPaymentAndDispatch,
-    handleReleaseReportToPatient,
-    handleConfirmHandoff,
+    handleSelectPersona: transitions.handleSelectPersona,
+    handleSetStage: transitions.handleSetStage,
+    handleAdvanceStage: transitions.handleAdvanceStage,
+    handleAssignPaymentToPatient: transitions.handleAssignPaymentToPatient,
+    handleCompletePatientPayment: transitions.handleCompletePatientPayment,
+    handleVerifyPaymentAndDispatch: transitions.handleVerifyPaymentAndDispatch,
+    handleReleaseReportToPatient: transitions.handleReleaseReportToPatient,
+    handleConfirmHandoff: transitions.handleConfirmHandoff,
     handleNextCase,
     handleSelectCaseFromPipeline,
     handleResetDemo,
     handleResetActiveCase,
     handleAddNewCase,
     handleAutoFill,
-    handleAutoDemoNextStage,
-    handleAutoDemoPrevStage,
+    handleAutoDemoNextStage: transitions.handleAutoDemoNextStage,
+    handleAutoDemoPrevStage: transitions.handleAutoDemoPrevStage,
   };
 }
