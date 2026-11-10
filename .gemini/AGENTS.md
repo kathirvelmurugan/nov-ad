@@ -96,3 +96,31 @@ When assigning coding tasks to multiple concurrent AI agents:
 
 - **Strict Name Scrubbing**: Never mention "Kathirvel" anywhere in code, commits, comments, or UI. Use real field names: `Adrian Lewis (Operations Lead)`, `Emmanuel Arcon Gonzalez`, `David Nunez`, `Marcus Vance`, `V. Prasanth`.
 - **Pricing Neutralization**: Apply ±5% variance to all prices, quotes, and wages.
+
+---
+
+## ⚡ 8. Execution Velocity & Anti-Waiting Standard (Learned Protocol)
+
+*Adopted post Universal PIN Auth session to guarantee sub-30-minute turnarounds and eliminate LLM timeout latency.*
+
+### 1. The Context Bloat & Compaction Threshold
+- **Problem**: When a conversation thread exceeds 50 tool calls / 1M tokens, every subsequent tool call suffers a 90–120s round-trip delay and risks a `stream idle timeout (5m0s)` API failure.
+- **Rule**: Never run more than 30 sequential tool calls in a single thread without running `/compact` or delegating to a fresh subagent.
+
+### 2. Two-Stage Execution Protocol (Plan All-In-One, Execute in 2 Slices)
+When the user requests a multi-step or multi-role feature:
+- **Slice 1 (Code & Compile — Target: 10–12 mins)**:
+  - Design data schemas (`src/data/`, `src/types.ts`).
+  - Implement components & hooks honoring the `< 500 lines` limit.
+  - Run `npm run build` immediately. Fix any TypeScript prop errors.
+  - STOP and report compile success with diff metrics.
+- **Slice 2 (Verify & Deploy — Target: 10–12 mins)**:
+  - Run fast Tier-1/Tier-2 logic tests first (`node` unit scripts in 1s).
+  - Run Puppeteer browser E2E with explicit `data-testid` attributes and synthetic keyboard events for React inputs.
+  - Run atomic git commit & push to `feature-sarat`.
+
+### 3. Tiered Testing Architecture (Zero Headless Browser Friction)
+- **Tier 1 (Instant)**: `tsc` / `npm run build` (3s) — catches 90% of missing props, types, and broken imports.
+- **Tier 2 (Fast Logic)**: Node.js in-memory verification (1s) — test state reducers, role resolvers, and PIN hashing directly without opening a browser.
+- **Tier 3 (Targeted E2E)**: Puppeteer smoke test (10–15s) — verify critical user journeys only. Always ensure target components have explicit `data-testid` attributes BEFORE launching Puppeteer to avoid timeout loops.
+
