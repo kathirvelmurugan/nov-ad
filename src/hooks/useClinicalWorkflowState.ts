@@ -377,7 +377,11 @@ export function useClinicalWorkflowState() {
     if (!lockedLang) setLang(p.lang);
 
     if (p.code === 'N') handleUpdateCase({ currentStage: 'NURSE_CHECK' });
-    else if (p.code === 'D') handleUpdateCase({ currentStage: 'DOCTOR_REVIEW' });
+    else if (p.code === 'D') {
+      if (['INTAKE_RECEIVED', 'NURSE_CHECK'].includes(activeCase.currentStage)) {
+        handleUpdateCase({ currentStage: 'DOCTOR_REVIEW' });
+      }
+    }
     else if (p.code === 'C') {
       if (['INTAKE_RECEIVED', 'NURSE_CHECK', 'DOCTOR_REVIEW'].includes(activeCase.currentStage)) {
         handleUpdateCase({ currentStage: 'AWAITING_PAYMENT' });
@@ -389,7 +393,7 @@ export function useClinicalWorkflowState() {
     else if (['L', 'PH', 'REC', 'H', 'T', 'V'].includes(p.code)) handleUpdateCase({ currentStage: 'PARTNER_SERVICES' });
     else if (p.code === 'AD' || p.code === 'HA') handleUpdateCase({ currentStage: 'CLOSED' });
     else if (p.code === 'P' || p.code === 'F') {
-      if (activeCase.currentStage === 'CLOSED' || activeCase.currentStage === 'PARTNER_SERVICES') {
+      if (activeCase.currentStage === 'CLOSED') {
         handleUpdateCase({ currentStage: 'INTAKE_RECEIVED' });
       }
     }
@@ -545,6 +549,35 @@ export function useClinicalWorkflowState() {
     setIsWhatsAppDrawerOpen(true);
   };
 
+  const handleReleaseReportToPatient = () => {
+    setCases((prev) =>
+      prev.map((c) =>
+        c.id === activeCase.id
+          ? {
+              ...c,
+              currentStage: 'PARTNER_SERVICES',
+              reportReleased: true,
+              doctorReleasedToPatient: true,
+              coordinatorForwardedToDoctor: true,
+              saudiEndorsement: c.saudiEndorsement
+                ? { ...c.saudiEndorsement, releasedToPatient: true }
+                : c.saudiEndorsement,
+              metadata: {
+                ...(c.metadata || {}),
+                pdf1Released: true,
+                pdf1Timestamp: new Date().toISOString(),
+              },
+            }
+          : c
+      )
+    );
+    const patientPersona = PERSONAS.find((p) => p.code === 'P') || PERSONAS[0];
+    setActivePersona(patientPersona);
+    setViewMode('workstation');
+    setPatientSubView('timeline');
+    setIsWhatsAppDrawerOpen(true);
+  };
+
   const handleConfirmHandoff = () => {
     if (!pendingHandoff) return;
     handleUpdateCase({ currentStage: pendingHandoff.toStage });
@@ -594,7 +627,7 @@ export function useClinicalWorkflowState() {
         invoiceIssued: false, allowedPaymentMethods: [], paymentAssignedAt: undefined,
         paymentVerified: false, paymentDetails: undefined, reportReleased: false,
         verdicts: [], secondOpinionSubmitted: false, consultantAnswers: [],
-        consultantNotes: '', coordinatorForwardedToDoctor: false,
+        consultantNotes: '', saudiEndorsement: undefined, coordinatorForwardedToDoctor: false,
         doctorReleasedToPatient: false, isCrossBorderDeidentified: false,
         dualTokenGenerated: false, egressToken: '', files: [],
         pricing: { ...activeCase.pricing, paid: false, invoiceNumber: undefined },
@@ -664,6 +697,7 @@ export function useClinicalWorkflowState() {
     handleAssignPaymentToPatient,
     handleCompletePatientPayment,
     handleVerifyPaymentAndDispatch,
+    handleReleaseReportToPatient,
     handleConfirmHandoff,
     handleNextCase,
     handleSelectCaseFromPipeline,

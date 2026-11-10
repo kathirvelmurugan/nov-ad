@@ -2,6 +2,7 @@ import React from 'react';
 import { ClinicalCase } from '../../types';
 import { Stethoscope, HelpCircle, Check, Timer, UserCheck, ShieldCheck, FileCheck2, ArrowRight } from 'lucide-react';
 import { useSlaCountdown } from '../../hooks/useSlaCountdown';
+import { DoctorOpinionEndorsementPanel } from './doctor/DoctorOpinionEndorsementPanel';
 
 interface Props {
   activeCase: ClinicalCase;
@@ -68,6 +69,18 @@ export const DoctorReviewView: React.FC<Props> = ({
   };
 
   const questions = localQuestions;
+  const hasConsultantOpinion =
+    activeCase.currentStage === 'OPINION_READY' ||
+    !!activeCase.secondOpinionSubmitted ||
+    ['PARTNER_SERVICES', 'FOLLOW_UP_21_DAYS', 'CLOSED'].includes(activeCase.currentStage);
+
+  const [viewTab, setViewTab] = React.useState<'opinion' | 'referral'>(
+    hasConsultantOpinion ? 'opinion' : 'referral'
+  );
+
+  React.useEffect(() => {
+    setViewTab(hasConsultantOpinion ? 'opinion' : 'referral');
+  }, [hasConsultantOpinion, activeCase.id]);
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -123,6 +136,42 @@ export const DoctorReviewView: React.FC<Props> = ({
         </div>
       </div>
 
+      {hasConsultantOpinion && (
+        <div className="flex flex-wrap items-center gap-2 bg-white dark:bg-alo-darkCard p-2 rounded-2xl border border-slate-200 dark:border-alo-darkBorder shadow-2xs">
+          <button
+            type="button"
+            onClick={() => setViewTab('opinion')}
+            className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+              viewTab === 'opinion'
+                ? 'bg-alo-teal text-white shadow-sm'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            {isAr ? 'D11–D12 · رأي الاستشاري الدولي والاعتماد' : 'D11–D12 · Indian Consultant Opinion & Approval'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewTab('referral')}
+            className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+              viewTab === 'referral'
+                ? 'bg-alo-teal text-white shadow-sm'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            {isAr ? 'D01–D10 · بيانات الإحالة الأصلية' : 'D01–D10 · Original Referral Details'}
+          </button>
+        </div>
+      )}
+
+      {hasConsultantOpinion && viewTab === 'opinion' ? (
+        <DoctorOpinionEndorsementPanel
+          activeCase={activeCase}
+          onAdvanceStage={onAdvanceStage}
+          onUpdateCase={onUpdateCase}
+          lang={lang}
+        />
+      ) : (
+      <>
       {/* Patient Symptoms & Chief Complaint Dossier Card */}
       <div className="card-clinical p-5 space-y-3 bg-gradient-to-r from-slate-50 to-teal-50/30 dark:from-slate-900 dark:to-teal-950/20 border-l-4 border-l-alo-teal">
         <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
@@ -547,6 +596,8 @@ export const DoctorReviewView: React.FC<Props> = ({
           </button>
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 };

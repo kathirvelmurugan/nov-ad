@@ -105,40 +105,32 @@ export const WhatsAppToast: React.FC<Props> = ({
         };
         break;
       case 'OPINION_READY':
-        if (!activeCase.coordinatorForwardedToDoctor) {
-          payload = {
-            code: 'W12',
-            titleAr: 'استلام الرأي وجاري التعريب',
-            titleEn: 'In Localization',
-            bodyAr: `تم استلام الرأي الطبي من الهند بنجاح لحالة ${activeCase.caseNumber}. يقوم المنسق بإعداد النسخة المعربة.`,
-            bodyEn: `Second opinion received from India. Alo Coordinator localizing bilingual report.`,
-          };
-        } else if (!activeCase.doctorReleasedToPatient) {
+        payload = {
+          code: 'W12',
+          titleAr: 'وصول رأي الاستشاري للطبيب السعودي',
+          titleEn: 'Opinion Ready for Saudi Doctor Review',
+          bodyAr: `أرسل الاستشاري الدولي رأيه الطبي. يراجع ${activeCase.treatingDoctor?.name || 'الطبيب المعالج'} الرأي لاعتماده.`,
+          bodyEn: `Indian Consultant submitted opinion. Routed to ${activeCase.treatingDoctor?.name || 'Saudi Treating Doctor'} for review & approval.`,
+        };
+        break;
+      case 'PARTNER_SERVICES':
+        if (!activeCase.reportReleased && !activeCase.metadata?.pdf1Released) {
           payload = {
             code: 'W13',
-            titleAr: 'قيد مصادقة الطبيب المعالج',
-            titleEn: 'Doctor Sign-Off Pending',
-            bodyAr: `وصل التقرير المعرب إلى طبيبك السعودي المعالج (${activeCase.treatingDoctor?.name || 'د. عبدالله الشمري'}) للمصادقة السريرية.`,
-            bodyEn: `Bilingual report routed to your treating physician for clinical endorsement.`,
+            titleAr: 'اعتماد الطبيب السعودي · قيد إسناد المنسق',
+            titleEn: 'Doctor Approved · Pending Coordinator Report',
+            bodyAr: `اعتمد الطبيب السعودي الرأي وأحاله لمنسق رعاية ألو لإسناد التقرير المعتمد للمريض.`,
+            bodyEn: `Saudi Doctor endorsed the opinion. ALO Coordinator is preparing the final report (PDF 1) for the patient.`,
           };
         } else {
           payload = {
             code: 'W14',
-            titleAr: 'صدور التقرير الطبي المعتمد',
-            titleEn: 'Bilingual Report Released',
-            bodyAr: `اعتمد ${activeCase.treatingDoctor?.name || 'د. عبدالله الشمري'} الرأي الطبي الثاني وأصبح متاحاً للتحميل.`,
-            bodyEn: `Accredited bilingual second opinion report released with hospital stamps.`,
+            titleAr: 'تم إسناد وإتاحة التقرير المعتمد (PDF 1)',
+            titleEn: 'Certified Report Assigned to Patient',
+            bodyAr: `أسند منسق رعاية ألو التقرير الطبي المعتمد لحساب المريض وأصبح جاهزاً للعرض والطباعة.`,
+            bodyEn: `ALO Coordinator released certified bilingual report (PDF 1) to the patient portal.`,
           };
         }
-        break;
-      case 'PARTNER_SERVICES':
-        payload = {
-          code: 'W15',
-          titleAr: 'تفعيل الخدمات العلاجية المساندة',
-          titleEn: 'Partner Care Dispatched',
-          bodyAr: `تم توجيه طلبات المختبر والتمريض المنزلي إلى الشركاء المعتمدين.`,
-          bodyEn: `Lab & Home Nursing orders dispatched to partner network.`,
-        };
         break;
       case 'FOLLOW_UP_21_DAYS':
         payload = {
@@ -176,6 +168,8 @@ export const WhatsAppToast: React.FC<Props> = ({
     activeCase.invoiceIssued,
     activeCase.pricing?.paid,
     activeCase.paymentVerified,
+    activeCase.saudiEndorsement?.status,
+    activeCase.reportReleased,
     activeCase.coordinatorForwardedToDoctor,
     activeCase.doctorReleasedToPatient,
   ]);

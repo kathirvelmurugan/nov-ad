@@ -81,6 +81,7 @@ export const App: React.FC = () => {
         handleAssignPaymentToPatient={state.handleAssignPaymentToPatient}
         handleCompletePatientPayment={state.handleCompletePatientPayment}
         handleVerifyPaymentAndDispatch={state.handleVerifyPaymentAndDispatch}
+        handleReleaseReportToPatient={state.handleReleaseReportToPatient}
         handleUpdateCase={state.handleUpdateCase}
         handleSelectPersona={state.handleSelectPersona}
         handleSelectPatientSubView={state.handleSelectPatientSubView}

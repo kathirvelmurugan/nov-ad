@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ClinicalCase, PaymentMethodId } from '../../types';
+import { BilingualReportModal } from '../cockpit/BilingualReportModal';
 
 interface Props {
   activeCase: ClinicalCase;
@@ -9,6 +10,7 @@ interface Props {
     tierData: { tier: number; tierName: string; baseSar: number; vatSar: number; totalSar: number },
   ) => void;
   onVerifyPaymentAndDispatch?: () => void;
+  onReleaseReportToPatient?: () => void;
   onUpdateCase: (updated: Partial<ClinicalCase>) => void;
   lang: 'ar' | 'en';
 }
@@ -30,16 +32,20 @@ const CoordinatorPortalView: React.FC<Props> = ({
   onAdvanceStage,
   onAssignPaymentToPatient,
   onVerifyPaymentAndDispatch,
+  onReleaseReportToPatient,
   onUpdateCase,
   lang,
 }) => {
   const isPaid = !!activeCase.pricing?.paid || activeCase.paymentDetails?.status === 'completed';
   const isPaymentVerified = !!activeCase.paymentVerified || !!activeCase.metadata?.paymentVerified;
   const isInvoiceIssued = !!activeCase.invoiceIssued;
+  const isSaudiDoctorApproved =
+    activeCase.saudiEndorsement?.status === 'endorsed' ||
+    !!activeCase.metadata?.saudiDoctorApprovedOpinion;
 
   const getInitialTab = (): 'C01' | 'C07' | 'C08' | 'C09' | 'C10' => {
     if (activeCase.currentStage === 'AWAITING_PAYMENT' || (isPaid && !isPaymentVerified)) return 'C01';
-    if (activeCase.currentStage === 'PARTNER_SERVICES') return 'C08';
+    if (activeCase.currentStage === 'PARTNER_SERVICES' || (isSaudiDoctorApproved && !activeCase.reportReleased)) return 'C08';
     if (activeCase.currentStage === 'CLOSED') return 'C10';
     if (activeCase.currentStage === 'FOLLOW_UP_21_DAYS') return 'C09';
     if (activeCase.consultationType === 'video' && isPaid && isPaymentVerified) return 'C07';
@@ -47,6 +53,7 @@ const CoordinatorPortalView: React.FC<Props> = ({
   };
 
   const [activeTab, setActiveTab] = useState<'C01' | 'C07' | 'C08' | 'C09' | 'C10'>(getInitialTab);
+  const [isReportPreviewOpen, setIsReportPreviewOpen] = useState(false);
   const [selectedConsultationType, setSelectedConsultationType] = useState<'written' | 'video'>(
     activeCase.consultationType === 'written' ? 'written' : 'video'
   );
@@ -119,17 +126,24 @@ const CoordinatorPortalView: React.FC<Props> = ({
   };
 
   const handleReleasePDF1 = async () => {
+    if (!isSaudiDoctorApproved) return;
     setIsProcessing(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1200));
-      onUpdateCase({ 
+      await new Promise(resolve => setTimeout(resolve, 600));
+      if (onReleaseReportToPatient) {
+        onReleaseReportToPatient();
+        return;
+      }
+      onUpdateCase({
+        reportReleased: true,
+        doctorReleasedToPatient: true,
         coordinatorForwardedToDoctor: true,
-        metadata: { 
-          ...(activeCase.metadata || {}), 
+        metadata: {
+          ...(activeCase.metadata || {}),
           pdf1Released: true,
           pdf1Timestamp: new Date().toISOString(),
           stage: 'C09'
-        } 
+        }
       });
       setActiveTab('C09');
       onAdvanceStage();
@@ -719,120 +733,161 @@ const CoordinatorPortalView: React.FC<Props> = ({
 
         {/* SCREEN C08: Release Report PDF 1 */}
         {activeTab === 'C08' && (
-          <section aria-labelledby="c08-heading">
-            <h2 id="c08-heading" style={{ fontSize: '20px', color: TEAL_PRIMARY, marginBottom: '8px', fontFamily }}>
-              {t.c08_title}
-            </h2>
-            
-            <div style={{
-              backgroundColor: TEAL_BG,
-              borderRadius: '12px',
-              padding: '24px',
-              marginBottom: '24px',
-              display: 'flex',
-              flexDirection: isAr ? 'row-reverse' : 'row',
-              gap: '24px',
-              alignItems: 'center',
-              border: `1px solid ${TEAL_ACCENT}30`,
-            }}>
-              {/* QR Code Placeholder */}
-              <div style={{
-                width: '120px',
-                height: '120px',
-                backgroundColor: '#FFFFFF',
-                borderRadius: '8px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                border: `2px solid ${TEAL_ACCENT}`,
-                flexShrink: 0,
-              }}>
-                <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke={TEAL_PRIMARY} strokeWidth="1.5">
-                  <rect x="3" y="3" width="7" height="7" />
-                  <rect x="14" y="3" width="7" height="7" />
-                  <rect x="3" y="14" width="7" height="7" />
-                  <rect x="14" y="14" width="3" height="3" />
-                  <rect x="18" y="14" width="3" height="3" />
-                  <rect x="14" y="18" width="3" height="3" />
-                  <rect x="18" y="18" width="3" height="3" />
-                </svg>
-              </div>
-              
-              <div style={{ flex: 1 }}>
-                <p style={{ margin: '0 0 8px', fontWeight: 700, fontSize: '14px', color: TEAL_PRIMARY, fontFamily }}>
-                  {t.c08_qr}
-                </p>
-                <p style={{ margin: '0 0 16px', fontSize: '13px', color: '#4A5568', fontFamily }}>
-                  {isAr 
-                    ? 'امسح رمز QR للتحقق من صحة التقرير وأصالة الرأي الطبي الثاني.' 
-                    : 'Scan QR code to verify report authenticity and second opinion certification.'}
-                </p>
-                
-                <a
-                  href="#zatca-receipt"
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    color: TEAL_PRIMARY,
-                    textDecoration: 'none',
-                    fontWeight: 600,
-                    fontSize: '13px',
-                    padding: '8px 14px',
-                    backgroundColor: '#FFFFFF',
-                    borderRadius: '8px',
-                    border: `1px solid ${TEAL_ACCENT}`,
-                    fontFamily,
-                  }}
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                    <polyline points="14 2 14 8 20 8" />
-                    <line x1="16" y1="13" x2="8" y2="13" />
-                    <line x1="16" y1="17" x2="8" y2="17" />
-                  </svg>
-                  {t.c08_vat}
-                </a>
-              </div>
+          <section aria-labelledby="c08-heading" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+              <h2 id="c08-heading" style={{ fontSize: '20px', color: TEAL_PRIMARY, margin: 0, fontFamily }}>
+                {isAr ? 'اعتماد وإسناد التقرير الطبي للمريض (PDF 1)' : 'Assign & Release Certified Report to Patient (PDF 1)'}
+              </h2>
+              <button
+                type="button"
+                onClick={() => setIsReportPreviewOpen(true)}
+                style={{
+                  padding: '8px 14px',
+                  borderRadius: '8px',
+                  border: `1.5px solid ${TEAL_PRIMARY}`,
+                  backgroundColor: '#FFFFFF',
+                  color: TEAL_PRIMARY,
+                  fontSize: '12px',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  fontFamily,
+                }}
+              >
+                👁️ {isAr ? 'معاينة التقرير المعتمد (PDF)' : 'Preview Certified Report (PDF)'}
+              </button>
             </div>
 
-            {pdf1Released ? (
-              <div style={{ textAlign: 'center', padding: '24px', backgroundColor: TEAL_BG, borderRadius: '12px', border: `1px solid ${TEAL_ACCENT}` }}>
-                <span style={badgeStyle('success')}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                  {isAr 
-                    ? 'تم إصدار التقرير وتسليمه بنجاح في نفس الوقت للطبيب السعودي المعالج وللمريض' 
-                    : 'Report PDF 1 Delivered in Parallel to Both Saudi Treating Doctor & Patient'}
-                </span>
-                <p style={{ margin: '12px 0 0', fontSize: '13px', color: TEAL_PRIMARY, fontWeight: 700, fontFamily }}>
+            {!isSaudiDoctorApproved ? (
+              <div style={{
+                padding: '20px',
+                borderRadius: '12px',
+                backgroundColor: '#FFFBEB',
+                border: '2px solid #FDE68A',
+                color: '#92400E',
+              }}>
+                <div style={{ fontSize: '14px', fontWeight: 800, marginBottom: '6px' }}>
+                  🔒 {isAr ? 'بانتظار اعتماد الطبيب السعودي المعالج لرأي الاستشاري (D12)' : 'Locked — Awaiting Saudi Treating Doctor Endorsement (D12)'}
+                </div>
+                <p style={{ margin: 0, fontSize: '13px', lineHeight: 1.6 }}>
                   {isAr
-                    ? 'تم إرسال إشعار موثق للطرفين، وتفعيل نافذة المتابعة الطبية لمدة 21 يوماً.'
-                    : 'Dispatch confirmed to both parties; 21-Day Clinical Follow-Up window is now active.'}
+                    ? 'لا يمكن إسناد التقرير النهائي للمريض إلا بعد اطلاع الطبيب السعودي المعالج على رأي الاستشاري الدولي واعتماده رسمياً.'
+                    : 'The final report cannot be assigned to the patient until the Saudi Treating Doctor reviews the Indian Consultant opinion and submits endorsement.'}
                 </p>
               </div>
             ) : (
-              <button
-                onClick={handleReleasePDF1}
-                disabled={isProcessing}
-                style={primaryButtonStyle}
-                aria-busy={isProcessing}
-              >
-                {isProcessing ? (
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ animation: 'spin 1s linear infinite' }}>
-                    <circle cx="12" cy="12" r="10" strokeDasharray="32" strokeDashoffset="12" />
-                  </svg>
+              <>
+                <div style={{
+                  padding: '16px 20px',
+                  borderRadius: '12px',
+                  backgroundColor: '#F0FDF4',
+                  border: `1.5px solid ${WHATSAPP_GREEN}`,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px',
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                    <span style={{ fontSize: '13px', fontWeight: 800, color: '#166534' }}>
+                      ✓ {isAr ? 'تم اعتماد رأي الاستشاري من الطبيب السعودي المعالج' : 'Endorsed by Saudi Treating Doctor'}
+                    </span>
+                    <span style={badgeStyle('success')}>
+                      {activeCase.saudiEndorsement?.doctorName || activeCase.treatingDoctor?.name} · {activeCase.saudiEndorsement?.scfhsLicense || 'SCFHS-2024-KSA-8821'}
+                    </span>
+                  </div>
+                  {activeCase.consultantOpinion && (
+                    <div style={{ backgroundColor: '#FFFFFF', padding: '12px', borderRadius: '8px', border: '1px solid #BBF7D0', fontSize: '12px', color: '#1E293B', direction: 'ltr', textAlign: 'left', lineHeight: 1.5 }}>
+                      <strong style={{ display: 'block', marginBottom: '4px', color: TEAL_PRIMARY }}>
+                        Indian Consultant Verdict ({activeCase.consultant?.name || 'Dr. Arjun Mehta'}):
+                      </strong>
+                      {activeCase.consultantOpinion}
+                    </div>
+                  )}
+                  {activeCase.saudiEndorsement?.localClinicalNotes && (
+                    <div style={{ backgroundColor: '#FFFFFF', padding: '10px 12px', borderRadius: '8px', border: '1px solid #BBF7D0', fontSize: '12px', color: '#065F46' }}>
+                      <strong>{isAr ? 'توجيهات الطبيب السعودي: ' : 'Saudi Doctor Directives: '}</strong>
+                      {activeCase.saudiEndorsement.localClinicalNotes}
+                    </div>
+                  )}
+                </div>
+
+                <div style={{
+                  backgroundColor: TEAL_BG,
+                  borderRadius: '12px',
+                  padding: '20px',
+                  display: 'flex',
+                  flexDirection: isAr ? 'row-reverse' : 'row',
+                  gap: '20px',
+                  alignItems: 'center',
+                  border: `1px solid ${TEAL_ACCENT}30`,
+                }}>
+                  <div style={{
+                    width: '96px',
+                    height: '96px',
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: `2px solid ${TEAL_ACCENT}`,
+                    flexShrink: 0,
+                  }}>
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke={TEAL_PRIMARY} strokeWidth="1.5">
+                      <rect x="3" y="3" width="7" height="7" />
+                      <rect x="14" y="3" width="7" height="7" />
+                      <rect x="3" y="14" width="7" height="7" />
+                      <rect x="14" y="14" width="3" height="3" />
+                      <rect x="18" y="14" width="3" height="3" />
+                      <rect x="14" y="18" width="3" height="3" />
+                      <rect x="18" y="18" width="3" height="3" />
+                    </svg>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ margin: '0 0 6px', fontWeight: 700, fontSize: '14px', color: TEAL_PRIMARY, fontFamily }}>
+                      {t.c08_qr}
+                    </p>
+                    <p style={{ margin: 0, fontSize: '13px', color: '#4A5568', fontFamily }}>
+                      {isAr
+                        ? 'امسح رمز QR للتحقق من صحة التقرير وأصالة الرأي الطبي الثاني.'
+                        : 'Scan QR code to verify report authenticity and second opinion certification.'}
+                    </p>
+                  </div>
+                </div>
+
+                {pdf1Released || activeCase.reportReleased ? (
+                  <div style={{ textAlign: 'center', padding: '24px', backgroundColor: TEAL_BG, borderRadius: '12px', border: `1px solid ${TEAL_ACCENT}` }}>
+                    <span style={badgeStyle('success')}>
+                      {isAr
+                        ? '✓ تم إسناد وإتاحة التقرير المعتمد (PDF 1) للمريض بنجاح'
+                        : '✓ Certified Report (PDF 1) Assigned & Released to Patient'}
+                    </span>
+                    <p style={{ margin: '12px 0 0', fontSize: '13px', color: TEAL_PRIMARY, fontWeight: 700, fontFamily }}>
+                      {isAr
+                        ? 'أصبح بإمكان المريض الآن عرض وطباعة التقرير الطبي المعتمد من شاشته.'
+                        : 'The patient can now view and download the certified report on their portal.'}
+                    </p>
+                  </div>
                 ) : (
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                    <polyline points="7 10 12 15 17 10" />
-                    <line x1="12" y1="15" x2="12" y2="3" />
-                  </svg>
+                  <button
+                    onClick={handleReleasePDF1}
+                    disabled={isProcessing}
+                    style={primaryButtonStyle}
+                    aria-busy={isProcessing}
+                  >
+                    {isProcessing
+                      ? (isAr ? 'جارٍ إسناد التقرير للمريض...' : 'Assigning Report to Patient...')
+                      : (isAr
+                          ? 'C08 · إسناد وإرسال التقرير المعتمد (PDF 1) إلى المريض ←'
+                          : 'C08 · Assign & Release Certified Report (PDF 1) to Patient →')}
+                  </button>
                 )}
-                {t.c08_action}
-              </button>
+              </>
             )}
+
+            <BilingualReportModal
+              isOpen={isReportPreviewOpen}
+              onClose={() => setIsReportPreviewOpen(false)}
+              activeCase={activeCase}
+              lang={lang}
+            />
           </section>
         )}
 

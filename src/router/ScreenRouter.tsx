@@ -40,6 +40,7 @@ interface ScreenRouterProps {
   ) => void;
   handleCompletePatientPayment: () => void;
   handleVerifyPaymentAndDispatch: () => void;
+  handleReleaseReportToPatient: () => void;
   handleUpdateCase: (u: Partial<ClinicalCase>) => void;
   handleSelectPersona: (p: Persona) => void;
   handleSelectPatientSubView: (v: 'landing' | 'intake' | 'timeline' | 'telehealth' | 'checkout') => void;
@@ -63,6 +64,7 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
   handleAssignPaymentToPatient,
   handleCompletePatientPayment,
   handleVerifyPaymentAndDispatch,
+  handleReleaseReportToPatient,
   handleUpdateCase,
   handleSelectPersona,
   handleSelectPatientSubView,
@@ -85,6 +87,7 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
         onAdvanceStage={handleAdvanceStage}
         onAssignPaymentToPatient={handleAssignPaymentToPatient}
         onVerifyPaymentAndDispatch={handleVerifyPaymentAndDispatch}
+        onReleaseReportToPatient={handleReleaseReportToPatient}
         onUpdateCase={handleUpdateCase}
         lang={lang}
       />
@@ -229,8 +232,8 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
       );
     }
 
-    // LiveKit Telehealth room (explicit subview OR auto-route when OPINION_READY + video)
-    if (patientSubView === 'telehealth' || (activeCase.currentStage === 'OPINION_READY' && activeCase.consultationType === 'video')) {
+    // LiveKit Telehealth room (explicit subview OR after report released on video)
+    if (patientSubView === 'telehealth' || (activeCase.currentStage === 'OPINION_READY' && activeCase.consultationType === 'video' && !!activeCase.metadata?.pdf1Released)) {
       return (
         <OpinionTelehealthView
           activeCase={activeCase}

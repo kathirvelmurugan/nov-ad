@@ -71,14 +71,35 @@ const ConsultantMobileView: React.FC<Props> = ({ activeCase, onAdvanceStage, onU
   };
 
   const handleSaveOpinion = () => {
-    const combinedOpinion = `${opinionText}\n\n--- ANSWERS TO SAUDI DOCTOR FOCUS QUESTIONS ---\nQ1: ${focusQuestionsEn[0]}\nA1: ${focusAnswers[0]}\n\nQ2: ${focusQuestionsEn[1]}\nA2: ${focusAnswers[1]}\n\nQ3: ${focusQuestionsEn[2]}\nA3: ${focusAnswers[2]}`;
-    onUpdateCase({ 
-      consultantOpinion: combinedOpinion,
-      metadata: { 
-        ...(activeCase.metadata || {}), 
-        focusAnswers,
-        consultantAnswers: focusAnswers
-      } 
+    const cleanOpinion = opinionText.trim();
+    const cleanedAnswers: [string, string, string] = [
+      focusAnswers[0] || '',
+      focusAnswers[1] || '',
+      focusAnswers[2] || '',
+    ];
+    onUpdateCase({
+      secondOpinionSubmitted: true,
+      consultantOpinion: cleanOpinion,
+      consultantAnswers: cleanedAnswers,
+      reportReleased: false,
+      doctorReleasedToPatient: false,
+      consultant: {
+        ...activeCase.consultant,
+        opinionEnglish: cleanOpinion,
+      },
+      saudiEndorsement: {
+        status: 'pending',
+        requiresLocalLab: false,
+        prescriptionIssued: false,
+        releasedToPatient: false,
+      },
+      metadata: {
+        ...(activeCase.metadata || {}),
+        focusAnswers: cleanedAnswers,
+        consultantAnswers: cleanedAnswers,
+        saudiDoctorApprovedOpinion: false,
+        pdf1Released: false,
+      },
     });
     if (isWritten) {
       onAdvanceStage();
@@ -89,7 +110,12 @@ const ConsultantMobileView: React.FC<Props> = ({ activeCase, onAdvanceStage, onU
 
   const handleSaveSlots = () => {
     onUpdateCase({
+      secondOpinionSubmitted: true,
       proposedCallSlot: selectedSlot,
+      consultant: {
+        ...activeCase.consultant,
+        proposedSlot: selectedSlot,
+      },
       metadata: { ...(activeCase.metadata || {}), proposedSlots: [{ id: selectedSlot, time: selectedSlot }] },
     });
     onAdvanceStage();

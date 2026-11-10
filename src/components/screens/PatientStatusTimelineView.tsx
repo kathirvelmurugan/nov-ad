@@ -1,5 +1,6 @@
 import React from 'react';
 import { ClinicalCase, ClinicalStage } from '../../types';
+import { BilingualReportModal } from '../cockpit/BilingualReportModal';
 import { 
   ShieldCheck, 
   Clock, 
@@ -70,6 +71,11 @@ export const PatientStatusTimelineView: React.FC<Props> = ({
   const isInvoiceIssued = !!activeCase.invoiceIssued && Array.isArray(activeCase.allowedPaymentMethods) && activeCase.allowedPaymentMethods.length > 0;
   const isPaid = !!activeCase.pricing?.paid || activeCase.paymentDetails?.status === 'completed';
   const isPaymentVerified = !!activeCase.paymentVerified || !!activeCase.metadata?.paymentVerified;
+  const isReportReleased =
+    !!activeCase.reportReleased ||
+    !!activeCase.metadata?.pdf1Released ||
+    !!activeCase.doctorReleasedToPatient;
+  const [isReportModalOpen, setIsReportModalOpen] = React.useState(false);
 
   const METHOD_NAMES: Record<string, { ar: string; en: string }> = {
     mada: { ar: 'مدى', en: 'Mada' },
@@ -183,35 +189,52 @@ export const PatientStatusTimelineView: React.FC<Props> = ({
         };
       case 'OPINION_READY':
         return {
-          badgeAr: 'المرحلة 6 من 9 · الاستشارة المرئية ومراجعة التقرير',
-          badgeEn: 'Stage 6 of 9 · Telehealth Session & Draft Review',
-          titleAr: 'أنجز الاستشاري التقرير الثاني! رابط الجلسة المرئية ومراجعة التقرير',
-          titleEn: 'Consultant Opinion Ready! Live Telehealth & Report Review',
-          descAr: 'اكتملت صياغة الرأي الطبي الثاني. في حال اختيارك باقة المكالمة المرئية (الفئة 2)، يمكنك الانضمام للاتصال المرئي المشفر بحضور مترجمة التمريض الفورية للتواصل السلس مع الاستشاري.',
-          descEn: 'Second opinion formulation complete. If you selected Tier 2 (Video Consultation), join the encrypted telehealth room with your live nurse interpreter.',
-          queueStatusAr: 'الجلسة جاهزة للانعقاد مع الترجمة الطبية الفورية',
-          queueStatusEn: 'Encrypted WebRTC Session ready with live clinical translation',
-          nextRoleCode: 'P',
-          nextRoleLabelAr: 'الدخول إلى قاعة الاستشارة المرئية الآن →',
-          nextRoleLabelEn: 'Enter Video Telehealth Room Now →',
-          slaAr: 'اتصال WebRTC مشفر بالكامل',
-          slaEn: 'End-to-End Encrypted WebRTC',
+          badgeAr: 'المرحلة 6 من 9 · بانتظار اعتماد الطبيب السعودي المعالج',
+          badgeEn: 'Stage 6 of 9 · Saudi Doctor Opinion Review',
+          titleAr: 'أنهى الاستشاري الدولي رأيه — يراجع طبيبك السعودي التقرير لاعتماده',
+          titleEn: 'Indian specialist submitted opinion — awaiting Saudi Doctor endorsement',
+          descAr: 'أتم الاستشاري الدولي دراسة الحالة والإجابة على الأسئلة السريرية. يقوم طبيبك السعودي المعالج الآن بمراجعة الرأي واعتماده وإرساله لمنسق رعاية ألو قبل تسليم التقرير النهائي.',
+          descEn: 'Your Indian Consultant has completed the second opinion review. Your Saudi Treating Doctor is reviewing and endorsing the opinion before sending it to the ALO Coordinator.',
+          queueStatusAr: 'التقرير مقفل حالياً — بانتظار مراجعة واعتماد الطبيب السعودي المعالج (D11–D12)',
+          queueStatusEn: 'Report locked — awaiting Saudi Treating Doctor review & endorsement (D11–D12)',
+          nextRoleCode: 'D',
+          nextRoleLabelAr: 'الانتقال إلى شاشة الطبيب السعودي (D11–D12) لمراجعة واعتماد الرأي →',
+          nextRoleLabelEn: 'Switch to Saudi Doctor (D11–D12) to review & approve opinion →',
+          slaAr: 'مراجعة الطبيب السعودي المعالج',
+          slaEn: 'Saudi Physician Endorsement Pending',
         };
       case 'PARTNER_SERVICES':
+        if (!isReportReleased) {
+          return {
+            badgeAr: 'المرحلة 7 من 9 · قيد إسناد التقرير من منسق ألو',
+            badgeEn: 'Stage 7 of 9 · Pending Coordinator Report Assignment',
+            titleAr: 'اعتمد الطبيب السعودي الرأي — يقوم منسق ألو بتجهيز وإسناد التقرير لك',
+            titleEn: 'Saudi Doctor approved the opinion — ALO Coordinator is assigning your report',
+            descAr: 'تمت مصادقة طبيبك السعودي المعالج على رأي الاستشاري الدولي. يقوم منسق رعاية ألو الآن بتوثيق التقرير المعتمد (PDF 1) برمز QR وإتاحته في حسابك.',
+            descEn: 'Your Saudi Treating Doctor has endorsed the specialist opinion. The ALO Care Coordinator is finalizing the certified PDF report and assigning it to your account.',
+            queueStatusAr: 'التقرير مقفل حالياً — بانتظار إسناد التقرير من منسق رعاية ألو (C08)',
+            queueStatusEn: 'Report locked — awaiting ALO Coordinator report assignment (C08)',
+            nextRoleCode: 'C',
+            nextRoleLabelAr: 'الانتقال إلى منسق ألو (C08) لإسناد وإرسال التقرير للمريض →',
+            nextRoleLabelEn: 'Switch to ALO Coordinator (C08) to assign report to Patient →',
+            slaAr: 'توثيق التقرير وإتاحته للمريض',
+            slaEn: 'Coordinator Report Assignment Pending',
+          };
+        }
         return {
-          badgeAr: 'المرحلة 7 من 9 · استلام التقرير الطبي المعتمد (PDF 1)',
-          badgeEn: 'Stage 7 of 9 · Certified Report Release (PDF 1)',
-          titleAr: 'تم اعتماد وإصدار تقرير الرأي الطبي الثاني المعتمد بالتوازي! 🎉',
-          titleEn: 'Certified Second Opinion Report Released Simultaneously! 🎉',
-          descAr: 'قام منسق رعاية ألو باعتماد وختم التقرير الطبي الأول (PDF 1) وتوثيقه برمز QR الرقمي. تم تسليم التقرير في نفس اللحظة بالتوازي لكل من طبيبك السعودي المعالج ولك مباشرة.',
-          descEn: 'ALO Coordinator has audited and cryptographically sealed your certified Second Opinion Report (PDF 1). It has been released simultaneously in parallel to your Saudi doctor and to you.',
-          queueStatusAr: 'التقرير متاح الآن للتحميل، وبدأت نافذة المتابعة الطبية لـ 21 يوماً',
-          queueStatusEn: 'Report available for download; 21-Day Clinical Follow-up window activated',
-          nextRoleCode: 'C',
-          nextRoleLabelAr: 'عرض شاشة منسق الرعاية (C08) للتحقق من التسليم بالتوازي →',
-          nextRoleLabelEn: 'Switch to Coordinator View (C08) to audit parallel dispatch →',
-          slaAr: 'تسليم متزامن ثنائي الطرفين (طبيب معالج ومريض)',
-          slaEn: 'Dual-Parallel Synchronized Dispatch',
+          badgeAr: 'المرحلة 7 من 9 · تم إسناد وإصدار التقرير الطبي المعتمد (PDF 1)',
+          badgeEn: 'Stage 7 of 9 · Certified Report Assigned & Released (PDF 1)',
+          titleAr: 'تم إسناد وإتاحة تقرير الرأي الطبي الثاني المعتمد لك! 🎉',
+          titleEn: 'Certified Second Opinion Report Assigned & Ready! 🎉',
+          descAr: 'قام منسق رعاية ألو بإسناد التقرير الطبي المعتمد (PDF 1) لحسابك بعد مصادقة الطبيب السعودي. يمكنك عرض التقرير وطباعته الآن.',
+          descEn: 'The ALO Coordinator has assigned your certified Second Opinion Report (PDF 1) after Saudi Doctor endorsement. View or print your report below.',
+          queueStatusAr: 'التقرير متاح الآن للعرض والطباعة، ونافذة المتابعة جاهزة',
+          queueStatusEn: 'Report available to view & print; follow-up options ready',
+          nextRoleCode: 'P',
+          nextRoleLabelAr: 'عرض وطباعة التقرير الطبي المعتمد (PDF 1) →',
+          nextRoleLabelEn: 'View & Print Certified Report (PDF 1) →',
+          slaAr: 'معتمد من الطبيب السعودي ومنسق ألو',
+          slaEn: 'Certified & Assigned to Patient',
         };
       case 'FOLLOW_UP_21_DAYS':
         return {
@@ -419,6 +442,65 @@ export const PatientStatusTimelineView: React.FC<Props> = ({
           </div>
         </div>
 
+        {/* Released Certified Report Summary (Shown ONLY after Coordinator assigns report) */}
+        {isReportReleased && (
+          <div className="p-5 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/30 border-2 border-emerald-500/60 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-xs font-extrabold text-emerald-800 dark:text-emerald-200 flex items-center gap-1.5">
+                <FileCheck2 className="w-4 h-4 text-emerald-600" />
+                {isAr ? 'ملخص تقرير الرأي الطبي الثاني المعتمد:' : 'Certified Second Opinion Report Summary:'}
+              </span>
+              <span className="text-[11px] font-bold bg-white dark:bg-slate-900 text-emerald-700 dark:text-emerald-300 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                ✓ {isAr ? 'معتمد من الطبيب السعودي ومنسق ألو' : 'Saudi MD Endorsed & Coordinator Released'}
+              </span>
+            </div>
+
+            {activeCase.consultantOpinion && (
+              <div dir="ltr" className="text-xs text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-emerald-200/80 dark:border-emerald-800 leading-relaxed text-left">
+                <strong className="block text-alo-teal mb-1">
+                  {activeCase.consultant?.name || 'International Consultant'} ({activeCase.consultant?.center || 'Specialist Center'}):
+                </strong>
+                {activeCase.consultantOpinion}
+              </div>
+            )}
+
+            {activeCase.saudiEndorsement?.localClinicalNotes && (
+              <div className="text-xs text-emerald-900 dark:text-emerald-200 bg-white dark:bg-slate-900 p-3 rounded-xl border border-emerald-200/80 dark:border-emerald-800">
+                <strong>{isAr ? 'توجيهات طبيبك السعودي: ' : 'Saudi Doctor Directives: '}</strong>
+                {activeCase.saudiEndorsement.localClinicalNotes}
+              </div>
+            )}
+
+            <div className="flex flex-wrap gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setIsReportModalOpen(true)}
+                className="px-4 py-2 rounded-xl bg-alo-teal hover:bg-teal-800 text-white text-xs font-extrabold shadow-sm cursor-pointer"
+              >
+                📄 {isAr ? 'فتح وطباعة التقرير الطبي الكامل (PDF 1)' : 'Open & Print Full Certified Report (PDF 1)'}
+              </button>
+              {activeCase.consultationType === 'video' && onOpenTelehealth && (
+                <button
+                  type="button"
+                  onClick={onOpenTelehealth}
+                  className="px-4 py-2 rounded-xl bg-white dark:bg-slate-900 text-alo-teal border border-teal-300 text-xs font-extrabold cursor-pointer"
+                >
+                  🎥 {isAr ? 'الدخول لقاعة الاستشارة المرئية' : 'Join Video Telehealth Call'}
+                </button>
+              )}
+              {stage === 'PARTNER_SERVICES' && (
+                <button
+                  type="button"
+                  onClick={onAdvanceStage}
+                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold cursor-pointer"
+                >
+                  💬 {isAr ? 'الانتقال لمتابعة الـ 21 يوماً →' : 'Proceed to 21-Day Follow-up →'}
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Clinical Next Step Action */}
         <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="text-xs text-slate-500 dark:text-slate-400 font-bold">
@@ -428,20 +510,26 @@ export const PatientStatusTimelineView: React.FC<Props> = ({
             }
           </div>
 
-          {stage === 'AWAITING_PAYMENT' && (!isInvoiceIssued || (isPaid && !isPaymentVerified)) && !isDemoMode ? (
+          {((stage === 'AWAITING_PAYMENT' && (!isInvoiceIssued || (isPaid && !isPaymentVerified))) ||
+            (stage === 'OPINION_READY') ||
+            (stage === 'PARTNER_SERVICES' && !isReportReleased)) && !isDemoMode ? (
             <span className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-200 border border-amber-200 dark:border-amber-800 text-xs font-extrabold">
               <Clock className="w-4 h-4 animate-pulse" />
               <span>
-                {!isInvoiceIssued
+                {stage === 'AWAITING_PAYMENT' && !isInvoiceIssued
                   ? (isAr ? 'بانتظار إعداد الفاتورة وطرق الدفع من منسق رعاية ألو' : 'Awaiting ALO Coordinator payment setup')
-                  : (isAr ? 'تم السداد — بانتظار تحقق منسق ألو وتوصيل الاستشاري' : 'Paid — awaiting ALO Coordinator verification')}
+                  : stage === 'AWAITING_PAYMENT'
+                  ? (isAr ? 'تم السداد — بانتظار تحقق منسق ألو وتوصيل الاستشاري' : 'Paid — awaiting ALO Coordinator verification')
+                  : stage === 'OPINION_READY'
+                  ? (isAr ? 'بانتظار مراجعة واعتماد الطبيب السعودي المعالج' : 'Awaiting Saudi Treating Doctor endorsement')
+                  : (isAr ? 'بانتظار إسناد التقرير المعتمد من منسق رعاية ألو' : 'Awaiting ALO Coordinator report assignment')}
               </span>
             </span>
           ) : (
             <button
               onClick={() => {
-                if (stage === 'OPINION_READY' && onOpenTelehealth) {
-                  onOpenTelehealth();
+                if (stage === 'PARTNER_SERVICES' && isReportReleased) {
+                  setIsReportModalOpen(true);
                 } else if (stage === 'AWAITING_PAYMENT' && isInvoiceIssued && !isPaid && onOpenPayment) {
                   onOpenPayment();
                 } else if (onSelectRole) {
@@ -491,6 +579,12 @@ export const PatientStatusTimelineView: React.FC<Props> = ({
         </div>
       </div>
 
+      <BilingualReportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        activeCase={activeCase}
+        lang={lang}
+      />
     </div>
   );
 };
