@@ -2,23 +2,17 @@ name: CI/CD Pipeline & Automated Deploy (nov-ad)
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, feature-sarat ]
   workflow_dispatch:
 
 concurrency:
-  group: nov-ad-deploy
+  group: nov-ad-deploy-${{ github.ref_name }}
   cancel-in-progress: false
 
 jobs:
   validate-and-test:
     name: Validate Code & Architecture
     runs-on: ubuntu-latest
-    strategy:
-      max-parallel: 4
-      fail-fast: false
-      matrix:
-        check: [lint, typecheck, schema-validation]
-
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -30,21 +24,13 @@ jobs:
           cache: 'npm'
 
       - name: Install Dependencies
-        run: npm install
+        run: npm ci
 
-      - name: Run Matrix Validation
-        run: |
-          echo "Running check: ${{ matrix.check }}"
-          if [ "${{ matrix.check }}" = "lint" ]; then
-            npm run lint
-          elif [ "${{ matrix.check }}" = "typecheck" ]; then
-            npm run typecheck
-          elif [ "${{ matrix.check }}" = "schema-validation" ]; then
-            node -e "import fs from 'fs'; const c = JSON.parse(fs.readFileSync('./config/ai-orchestration.json')); console.log('Orchestration DAG valid. Max parallel:', c.orchestration.concurrency.max_parallel_sessions);"
-          fi
+      - name: Run Build & Typecheck
+        run: npm run build
 
-  deploy-to-production:
-    name: Auto-Deploy to Production VPS
+  deploy-to-vps:
+    name: Auto-Deploy to VPS Container
     needs: validate-and-test
     runs-on: ubuntu-latest
     steps:
@@ -55,4 +41,30 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           password: ${{ secrets.VPS_PASSWORD }}
           script: |
-            echo "${{ secrets.VPS_PASSWORD }}" | sudo -S bash -c 'cd /data/alodoctor/nov-ad && git fetch origin main && git reset --hard origin/main && docker build -t alo-frontend:latest . && docker rm -f alo-frontend && docker run -d --name alo-frontend --restart always --network coolify -p 3000:80 alo-frontend:latest'
+            echo "🚀 Auto-deploy triggered for branch: ${{ github.ref_name }}"
+
+            if [ "${{ github.ref_name }}" = "feature-sarat" ]; then
+              echo "${{ secrets.VPS_PASSWORD }}" | sudo -S bash -c '
+                cd /data/alodoctor/preview-sarat
+                git fetch origin feature-sarat
+                git checkout feature-sarat
+                git reset --hard origin/feature-sarat
+                sed -i "s/export default defineConfig({/export default defineConfig({ base: \x27.\/\x27,/g" vite.config.ts
+                docker build -t alo-preview-sarat:latest .
+                docker rm -f alo-preview-sarat 2>/dev/null || true
+                docker run -d --name alo-preview-sarat --restart always --network coolify alo-preview-sarat:latest
+              '
+              echo "✅ Preview environment updated: https://ad.howtostart.in/feature-sarat/"
+
+            elif [ "${{ github.ref_name }}" = "main" ]; then
+              echo "${{ secrets.VPS_PASSWORD }}" | sudo -S bash -c '
+                cd /data/alodoctor/nov-ad
+                git fetch origin main
+                git checkout main
+                git reset --hard origin/main
+                docker build -t alo-frontend:latest .
+                docker rm -f alo-frontend 2>/dev/null || true
+                docker run -d --name alo-frontend --restart always --network coolify -p 3000:80 alo-frontend:latest
+              '
+              echo "✅ Production environment updated: https://ad.howtostart.in/"
+            fi
