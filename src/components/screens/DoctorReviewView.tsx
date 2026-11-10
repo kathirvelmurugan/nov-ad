@@ -25,20 +25,41 @@ export const DoctorReviewView: React.FC<Props> = ({
     { name: 'Dr. Priya Ramachandran', center: 'Tata Memorial / Apollo Cancer Center', city: 'Mumbai, India' },
   ];
 
+  const [localQuestions, setLocalQuestions] = React.useState<[string, string, string]>(() => {
+    const src = isAr 
+      ? activeCase.treatingDoctor.focusQuestions 
+      : (activeCase.treatingDoctor.focusQuestionsEn || activeCase.treatingDoctor.focusQuestions);
+    return [src[0] || '', src[1] || '', src[2] || ''];
+  });
+
+  React.useEffect(() => {
+    const src = isAr 
+      ? activeCase.treatingDoctor.focusQuestions 
+      : (activeCase.treatingDoctor.focusQuestionsEn || activeCase.treatingDoctor.focusQuestions);
+    setLocalQuestions([src[0] || '', src[1] || '', src[2] || '']);
+  }, [lang, activeCase.id]);
+
   const handleQuestionChange = (index: 0 | 1 | 2, value: string) => {
-    const currentQuestions = [...activeCase.treatingDoctor.focusQuestions] as [string, string, string];
-    currentQuestions[index] = value;
+    const updated = [...localQuestions] as [string, string, string];
+    updated[index] = value;
+    setLocalQuestions(updated);
+
+    const arQs = [...activeCase.treatingDoctor.focusQuestions] as [string, string, string];
+    const enQs = [...(activeCase.treatingDoctor.focusQuestionsEn || activeCase.treatingDoctor.focusQuestions)] as [string, string, string];
+    arQs[index] = value;
+    enQs[index] = value;
+
     onUpdateCase({
+      focusQuestions: enQs,
       treatingDoctor: {
         ...activeCase.treatingDoctor,
-        focusQuestions: currentQuestions,
+        focusQuestions: arQs,
+        focusQuestionsEn: enQs,
       },
     });
   };
 
-  const questions = isAr 
-    ? activeCase.treatingDoctor.focusQuestions
-    : (activeCase.treatingDoctor.focusQuestionsEn || activeCase.treatingDoctor.focusQuestions);
+  const questions = localQuestions;
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -89,6 +110,42 @@ export const DoctorReviewView: React.FC<Props> = ({
             </span>
             <span className="text-xs font-mono font-black text-amber-900 dark:text-amber-200">
               23:42:15 {isAr ? 'متبقية' : 'Remaining'}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Patient Symptoms & Chief Complaint Dossier Card */}
+      <div className="card-clinical p-5 space-y-3 bg-gradient-to-r from-slate-50 to-teal-50/30 dark:from-slate-900 dark:to-teal-950/20 border-l-4 border-l-alo-teal">
+        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
+          <div className="flex items-center gap-2">
+            <span className="bg-alo-mint text-alo-teal font-mono text-[10px] px-2 py-0.5 rounded font-bold border border-teal-200">
+              P01-P06 · {isAr ? 'الشكوى السريرية والأعراض المسجلة' : 'Patient Symptoms & Clinical History'}
+            </span>
+          </div>
+          <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded">
+            ✓ {isAr ? 'ملف المريض مكتمل' : 'Intake Dossier Complete'}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+          <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-2xs">
+            <span className="font-bold text-slate-500 block mb-1">
+              {isAr ? 'التشخيص المبدئي المرفوع:' : 'Reported Primary Diagnosis:'}
+            </span>
+            <span className="font-extrabold text-sm text-alo-navy dark:text-slate-100">
+              {isAr ? (activeCase.diagnosisAr || activeCase.diagnosis) : (activeCase.diagnosisEn || activeCase.diagnosis)}
+            </span>
+          </div>
+
+          <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-2xs">
+            <span className="font-bold text-slate-500 block mb-1">
+              {isAr ? 'الأعراض والشكوى السريرية المفصلة:' : 'Detailed Symptoms & Complaint:'}
+            </span>
+            <span className="font-semibold text-slate-800 dark:text-slate-200 leading-relaxed">
+              {isAr 
+                ? (activeCase.symptomsAr || activeCase.symptoms || 'ألم صدري خناقي مع ضيق تنفس جهدي ونوبات دوار حديثة عند بذل أي مجهود بدني')
+                : (activeCase.symptomsEn || activeCase.symptoms || 'Exertional angina, dyspnea NYHA class III, and recent presyncope on exertion')}
             </span>
           </div>
         </div>
@@ -238,13 +295,21 @@ export const DoctorReviewView: React.FC<Props> = ({
                   <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
                     {isAr ? 'موعد الحضور الموصى به لدى الاستقبال (REC01):' : 'Scheduled In-Person Slot (REC01):'}
                   </label>
-                  <input
-                    type="text"
-                    value={activeCase.inPersonAppointmentSlot || ''}
+                  <select
+                    value={activeCase.inPersonAppointmentSlot || (isAr ? 'غداً - 10:30 صباحاً (عيادة العظام)' : 'Tomorrow - 10:30 AM (Orthopedic Clinic)')}
                     onChange={(e) => onUpdateCase({ inPersonAppointmentSlot: e.target.value })}
-                    placeholder={isAr ? 'غداً - 10:30 صباحاً' : 'Tomorrow - 10:30 AM'}
-                    className="w-full bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700 rounded-lg p-2 text-xs text-slate-800 dark:text-slate-200 font-mono"
-                  />
+                    className="w-full bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700 rounded-lg p-2 text-xs text-slate-800 dark:text-slate-200 font-bold"
+                  >
+                    <option value={isAr ? 'غداً - 10:30 صباحاً (عيادة العظام)' : 'Tomorrow - 10:30 AM (Orthopedic Clinic)'}>
+                      {isAr ? 'غداً - 10:30 صباحاً (عيادة العظام)' : 'Tomorrow - 10:30 AM (Orthopedic Clinic)'}
+                    </option>
+                    <option value={isAr ? 'غداً - 02:00 مساءً (عيادة القلب)' : 'Tomorrow - 02:00 PM (Cardiology Clinic)'}>
+                      {isAr ? 'غداً - 02:00 مساءً (عيادة القلب)' : 'Tomorrow - 02:00 PM (Cardiology Clinic)'}
+                    </option>
+                    <option value={isAr ? 'بعد غد - 11:00 صباحاً (الاستشاري المناوب)' : 'Day After Tomorrow - 11:00 AM (Attending Consultant)'}>
+                      {isAr ? 'بعد غد - 11:00 صباحاً (الاستشاري المناوب)' : 'Day After Tomorrow - 11:00 AM (Attending Consultant)'}
+                    </option>
+                  </select>
                 </div>
               </div>
             )}

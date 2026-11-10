@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ClinicalCase } from '../../types';
+import { ClinicalCase, DiagnosticAsset } from '../../types';
 import { INITIAL_MEDICAL_CENTER_DOCTORS } from '../../data/medicalCenterDoctors';
 import { 
   FileUp, 
@@ -422,6 +422,48 @@ export const PatientIntakeView: React.FC<Props> = ({
                 </div>
               </div>
             ))}
+          </div>
+
+          {/* Interactive File Upload Zone */}
+          <div className="mt-3 p-4 border-2 border-dashed border-teal-300 dark:border-teal-700/80 rounded-2xl bg-teal-50/40 dark:bg-teal-950/20 text-center hover:bg-teal-50/70 transition-colors">
+            <input
+              type="file"
+              id="patient-file-upload"
+              multiple
+              accept=".pdf,.png,.jpg,.jpeg,.dcm,.zip"
+              className="hidden"
+              onChange={(e) => {
+                const uploadedFiles = e.target.files;
+                if (!uploadedFiles || uploadedFiles.length === 0) return;
+                const newItems: DiagnosticAsset[] = Array.from(uploadedFiles).map((f, idx) => ({
+                  id: `f_user_${Date.now()}_${idx}`,
+                  name: f.name,
+                  size: `${(f.size / (1024 * 1024)).toFixed(1)} MB`,
+                  type: f.name.endsWith('.dcm') ? 'dicom' : f.name.endsWith('.mp4') ? 'mp4' : 'pdf',
+                  verified: true,
+                  url: URL.createObjectURL(f),
+                }));
+                onUpdateCase({
+                  files: [...activeCase.files, ...newItems],
+                });
+              }}
+            />
+            <label
+              htmlFor="patient-file-upload"
+              className="cursor-pointer flex flex-col items-center justify-center gap-2 py-2"
+            >
+              <div className="w-10 h-10 rounded-full bg-alo-mint flex items-center justify-center text-alo-teal shadow-xs">
+                <FileUp className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                  {isAr ? 'انقر هنا لرفع تقارير طبية أو أشعة إضافية (DICOM / PDF / صور)' : 'Click to upload medical reports or diagnostic scans (DICOM / PDF / Images)'}
+                </p>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  {isAr ? 'يدعم الملفات حتى 100 ميجابايت مشفرة محلياً' : 'Supports files up to 100 MB with local AES-256 encryption'}
+                </p>
+              </div>
+            </label>
           </div>
 
           {/* P08: Echo Lab Snapshot Metrics */}

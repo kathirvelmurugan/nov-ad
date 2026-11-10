@@ -105,7 +105,30 @@ const STAGE_ORDER: ClinicalStage[] = [
 export function useClinicalWorkflowState() {
 
   // ── Persona ──────────────────────────────────────────────────────────────
-  const [activePersona, setActivePersona] = useState<Persona>(PERSONAS[0]);
+  const [activePersona, setActivePersona] = useState<Persona>(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const search = new URLSearchParams(window.location.search);
+        const role = (search.get('role') || search.get('portal') || '').toUpperCase();
+        const token = search.get('token') || search.get('magic');
+        const pathname = window.location.pathname.toLowerCase();
+
+        if (token || role === 'K' || role === 'CONSULTANT' || pathname.includes('/consultant')) {
+          return PERSONAS.find((p) => p.code === 'K') || PERSONAS[0];
+        }
+        if (role === 'D' || role === 'DOCTOR' || pathname.includes('/doctor')) {
+          return PERSONAS.find((p) => p.code === 'D') || PERSONAS[0];
+        }
+        if (role === 'N' || role === 'NURSE' || pathname.includes('/nurse')) {
+          return PERSONAS.find((p) => p.code === 'N') || PERSONAS[0];
+        }
+        if (role === 'C' || role === 'COORDINATOR' || pathname.includes('/coordinator')) {
+          return PERSONAS.find((p) => p.code === 'C') || PERSONAS[0];
+        }
+      }
+    } catch (e) {}
+    return PERSONAS[0];
+  });
 
   // ── Cases ─────────────────────────────────────────────────────────────────
   const [cases, setCases] = useState<ClinicalCase[]>(() => {
@@ -147,8 +170,19 @@ export function useClinicalWorkflowState() {
     try {
       if (typeof window !== 'undefined') {
         const search = new URLSearchParams(window.location.search);
-        if (search.get('demo') === '1' || search.get('cockpit') === '1' || search.get('auth') === 'bypass' || window.location.hash === '#cockpit') {
-          return { isAuthenticated: true, phone: '+966501111111', personaId: 'patient', isGuest: true, expiresAt: Date.now() + 30 * 24 * 3600 * 1000, lang: 'ar' };
+        if (
+          search.get('demo') === '1' ||
+          search.get('cockpit') === '1' ||
+          search.get('auth') === 'bypass' ||
+          search.get('portal') ||
+          search.get('role') ||
+          search.get('token') ||
+          search.get('magic') ||
+          window.location.hash === '#cockpit'
+        ) {
+          const roleCode = (search.get('role') || search.get('portal') || 'P').toUpperCase();
+          const personaId = roleCode === 'D' ? 'doctor' : roleCode === 'K' ? 'consultant' : roleCode === 'N' ? 'nurse' : 'patient';
+          return { isAuthenticated: true, phone: '+966501111111', personaId, isGuest: true, expiresAt: Date.now() + 30 * 24 * 3600 * 1000, lang: 'ar' };
         }
         const saved = localStorage.getItem(USER_SESSION_KEY);
         if (saved) {
@@ -365,7 +399,7 @@ export function useClinicalWorkflowState() {
     if (currentIndex >= STAGE_ORDER.length - 1) return;
     const nextStage = STAGE_ORDER[currentIndex + 1];
     const nextPersonaMap: Partial<Record<ClinicalStage, string>> = {
-      NURSE_CHECK: 'N', DOCTOR_REVIEW: 'D', AWAITING_PAYMENT: 'C',
+      NURSE_CHECK: 'N', DOCTOR_REVIEW: 'D', AWAITING_PAYMENT: 'P',
       WITH_CONSULTANT: 'K', OPINION_READY: 'D', PARTNER_SERVICES: 'C',
       FOLLOW_UP_21_DAYS: 'P', CLOSED: 'C',
     };
@@ -373,6 +407,9 @@ export function useClinicalWorkflowState() {
     const nextP = code ? (PERSONAS.find((p) => p.code === code) || PERSONAS[0]) : PERSONAS[0];
     handleUpdateCase({ currentStage: nextStage });
     handleSelectPersona(nextP);
+    if (nextStage === 'AWAITING_PAYMENT') {
+      setPatientSubView('checkout');
+    }
     setPendingHandoff(null);
     setIsWhatsAppDrawerOpen(true);
   };

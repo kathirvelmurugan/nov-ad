@@ -908,8 +908,39 @@ export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }:
           </div>
 
           <div style={{
-            marginTop: '32px',
-            paddingTop: '20px',
+            marginTop: '24px',
+            paddingTop: '16px',
+            borderTop: `1px solid ${PALETTE.border}`,
+            textAlign: 'center'
+          }}>
+            <p style={{ fontSize: '11px', fontWeight: 800, color: PALETTE.primary, margin: '0 0 8px 0' }}>
+              {t('بوابات الكادر الطبي المعتمد · الوصول السريع:', 'Accredited Clinical Staff Portals · Direct Ingress:')}
+            </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center' }}>
+              <a
+                href="?portal=doctor"
+                style={{ fontSize: '11px', fontWeight: 700, color: PALETTE.primary, textDecoration: 'none', backgroundColor: '#E6FAF7', padding: '4px 10px', borderRadius: '8px', border: `1px solid ${PALETTE.border}` }}
+              >
+                🩺 {t('بوابة الطبيب السعودي المعالج (D01)', 'Saudi Treating Doctor Portal')}
+              </a>
+              <a
+                href="?portal=nurse"
+                style={{ fontSize: '11px', fontWeight: 700, color: PALETTE.primary, textDecoration: 'none', backgroundColor: '#E6FAF7', padding: '4px 10px', borderRadius: '8px', border: `1px solid ${PALETTE.border}` }}
+              >
+                📋 {t('بوابة فرز التمريض (N01)', 'Nurse Triage Portal')}
+              </a>
+              <a
+                href="?portal=consultant&token=ALO-TOKEN-72H-DR-ARJUN-KIMS"
+                style={{ fontSize: '11px', fontWeight: 700, color: PALETTE.primary, textDecoration: 'none', backgroundColor: '#E6FAF7', padding: '4px 10px', borderRadius: '8px', border: `1px solid ${PALETTE.border}` }}
+              >
+                🌏 {t('رابط استشاري الهند الذكي (K06)', 'Indian Specialist Magic Link')}
+              </a>
+            </div>
+          </div>
+
+          <div style={{
+            marginTop: '20px',
+            paddingTop: '16px',
             borderTop: `1px solid ${PALETTE.border}`,
             textAlign: 'center'
           }}>

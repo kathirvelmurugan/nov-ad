@@ -349,28 +349,30 @@ export const TopProfileSwitcher: React.FC<Props> = ({
               </span>
             </div>
 
-            <div className="flex items-center gap-2 text-[10px] shrink-0">
-              <span className="text-slate-500 dark:text-slate-400 hidden sm:inline">
-                {isAr ? 'تبديل الصلاحية:' : 'Switch Role:'}
-              </span>
-              <div className="flex items-center gap-1 bg-white/90 dark:bg-slate-900/90 p-0.5 rounded-lg border border-teal-300/80 dark:border-teal-700 shadow-2xs font-sans">
-                {PERSONAS.map((p) => (
-                  <button
-                    key={p.code}
-                    type="button"
-                    onClick={() => onSelectPersona(p)}
-                    className={`px-2 py-0.5 rounded-md text-[10px] font-bold transition-all cursor-pointer ${
-                      activePersona.code === p.code
-                        ? 'bg-slate-900 text-white shadow-2xs'
-                        : 'text-slate-600 dark:text-slate-300 hover:text-emerald-700'
-                    }`}
-                    title={p.title}
-                  >
-                    <span>{p.avatar} {isAr ? p.name.split(' ')[0] : p.code}</span>
-                  </button>
-                ))}
+            {isDemoMode && (
+              <div className="flex items-center gap-2 text-[10px] shrink-0">
+                <span className="text-slate-500 dark:text-slate-400 hidden sm:inline">
+                  {isAr ? 'تبديل الصلاحية:' : 'Switch Role:'}
+                </span>
+                <div className="flex items-center gap-1 bg-white/90 dark:bg-slate-900/90 p-0.5 rounded-lg border border-teal-300/80 dark:border-teal-700 shadow-2xs font-sans">
+                  {PERSONAS.map((p) => (
+                    <button
+                      key={p.code}
+                      type="button"
+                      onClick={() => onSelectPersona(p)}
+                      className={`px-2 py-0.5 rounded-md text-[10px] font-bold transition-all cursor-pointer ${
+                        activePersona.code === p.code
+                          ? 'bg-slate-900 text-white shadow-2xs'
+                          : 'text-slate-600 dark:text-slate-300 hover:text-emerald-700'
+                      }`}
+                      title={p.title}
+                    >
+                      <span>{p.avatar} {isAr ? p.name.split(' ')[0] : p.code}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         );
       })()}
