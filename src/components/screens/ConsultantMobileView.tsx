@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ClinicalCase } from '../../types';
+import { useSlaCountdown } from '../../hooks/useSlaCountdown';
 
 interface Props {
   activeCase: ClinicalCase;
@@ -12,6 +13,14 @@ type ScreenStage = 'K01_K04' | 'K05' | 'K06' | 'K07' | 'K08' | 'K09';
 const ConsultantMobileView: React.FC<Props> = ({ activeCase, onAdvanceStage, onUpdateCase }) => {
   const isWritten = activeCase.consultationType === 'written';
   const accepted = !!activeCase.metadata?.consultantAccepted;
+
+  const { formatted: consultantSlaFormatted } = useSlaCountdown({
+    storageKey: `alo_sla_consultant_${activeCase.id}`,
+    initialHours: 47,
+    initialMinutes: 58,
+    initialSeconds: 30,
+    active: accepted,
+  });
   const isOtpVerified = !!activeCase.consultantToken?.otpVerified || !!activeCase.consultantToken?.sessionCookieActive || activeCase.currentStage === 'WITH_CONSULTANT' || accepted;
   const [currentScreen, setCurrentScreen] = useState<ScreenStage>(accepted ? 'K06' : 'K05');
   const [otpCode, setOtpCode] = useState<string>('123456');
@@ -218,8 +227,8 @@ const ConsultantMobileView: React.FC<Props> = ({ activeCase, onAdvanceStage, onU
             {b.label}
           </button>
         ))}
-        <span style={{ fontSize: '12px', fontWeight: 700, color: tealPrimary }}>
-          {accepted ? '48h SLA running' : '48h SLA starts on accept'}
+        <span style={{ fontSize: '12px', fontWeight: 700, color: tealPrimary }} data-testid="consultant-sla-timer">
+          {accepted ? `48h SLA running: ${consultantSlaFormatted}` : '48h SLA starts on accept'}
         </span>
       </nav>
 
@@ -402,12 +411,13 @@ const ConsultantMobileView: React.FC<Props> = ({ activeCase, onAdvanceStage, onU
             }}
             role="status"
             aria-label="SLA Status Badge"
+            data-testid="consultant-sla-badge"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '6px' }}>
               <circle cx="12" cy="12" r="10" />
               <polyline points="12 6 12 12 16 14" />
             </svg>
-            48h SLA Active
+            48h SLA Active: {consultantSlaFormatted}
           </div>
 
           <div style={{ marginBottom: '16px' }}>

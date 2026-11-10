@@ -1,6 +1,7 @@
 import React from 'react';
 import { ClinicalCase } from '../../types';
 import { Stethoscope, HelpCircle, Check, Timer, UserCheck, ShieldCheck, FileCheck2, ArrowRight } from 'lucide-react';
+import { useSlaCountdown } from '../../hooks/useSlaCountdown';
 
 interface Props {
   activeCase: ClinicalCase;
@@ -16,6 +17,13 @@ export const DoctorReviewView: React.FC<Props> = ({
   lang = 'ar',
 }) => {
   const isAr = lang === 'ar';
+
+  const { formatted: slaFormatted } = useSlaCountdown({
+    storageKey: `alo_sla_doctor_${activeCase.id}`,
+    initialHours: 23,
+    initialMinutes: 42,
+    initialSeconds: 15,
+  });
 
   const CONSULTANT_NETWORK = [
     { name: 'Dr. Arjun Mehta', center: 'KIMS Heart Institute', city: 'Hyderabad, India' },
@@ -108,8 +116,8 @@ export const DoctorReviewView: React.FC<Props> = ({
             <span className="text-[10px] text-amber-800 dark:text-amber-300 block font-bold">
               {isAr ? 'مهلة المراجعة السريرية (SLA X09):' : 'Clinical SLA Review Window:'}
             </span>
-            <span className="text-xs font-mono font-black text-amber-900 dark:text-amber-200">
-              23:42:15 {isAr ? 'متبقية' : 'Remaining'}
+            <span className="text-xs font-mono font-black text-amber-900 dark:text-amber-200" data-testid="doctor-sla-timer">
+              {slaFormatted} {isAr ? 'متبقية' : 'Remaining'}
             </span>
           </div>
         </div>
