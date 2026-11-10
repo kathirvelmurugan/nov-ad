@@ -116,14 +116,20 @@ async function run() {
 
     // Helper: Click Role in Top Ribbon
     const switchRole = async (roleName) => {
-      await page.evaluate((name) => {
+      const clicked = await page.evaluate((name) => {
         const buttons = Array.from(document.querySelectorAll('header button'));
         const target = buttons.find(b => 
           (b.innerText && b.innerText.includes(name)) ||
           (b.title && b.title.includes(name))
         );
-        if (target) target.click();
+        if (target) { target.click(); return true; }
+        return false;
       }, roleName);
+
+      if (!clicked) {
+        const portal = roleName.includes('سارة') ? 'nurse' : (roleName.includes('د.') || roleName.includes('Doctor')) ? 'doctor' : (roleName.includes('Arjun') || roleName.includes('Consultant')) ? 'consultant' : 'patient';
+        await page.goto(`${BASE}?portal=${portal}`, { waitUntil: 'networkidle2' });
+      }
       await sleep(1200);
     };
 
@@ -207,7 +213,13 @@ async function run() {
     const hasSpecialist = consultantText.includes('Apollo') || consultantText.includes('Arjun') || consultantText.includes('Opinion') || consultantText.includes('الاستشاري');
     await page.evaluate(() => {
       const btns = Array.from(document.querySelectorAll('button'));
-      const submitOp = btns.find(b => b.innerText && (b.innerText.includes('Submit Second Opinion') || b.innerText.includes('اعتماد الرأي') || b.innerText.includes('إرسال الرأي')));
+      const submitOp = btns.find(b => b.innerText && (
+        b.innerText.includes('Submit Second Opinion') || 
+        b.innerText.includes('Save opinion') ||
+        b.innerText.includes('continue to slots') ||
+        b.innerText.includes('اعتماد الرأي') || 
+        b.innerText.includes('إرسال الرأي')
+      ));
       if (submitOp) submitOp.click();
     });
     await sleep(1200);

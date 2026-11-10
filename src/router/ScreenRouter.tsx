@@ -176,7 +176,19 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
       );
     }
 
-    // Payment checkout (explicit subview OR auto-route when AWAITING_PAYMENT and not on timeline)
+    // LiveKit Telehealth room (explicit subview OR auto-route when OPINION_READY + video)
+    if (patientSubView === 'telehealth' || (activeCase.currentStage === 'OPINION_READY' && activeCase.consultationType === 'video')) {
+      return (
+        <OpinionTelehealthView
+          activeCase={activeCase}
+          onAdvanceStage={() => { handleAdvanceStage(); handleSelectPatientSubView('timeline'); }}
+          onUpdateCase={handleUpdateCase}
+          onBackToTimeline={() => handleSelectPatientSubView('timeline')}
+        />
+      );
+    }
+
+    // Payment checkout (explicit subview OR auto-route when AWAITING_PAYMENT)
     if (patientSubView === 'checkout' || activeCase.currentStage === 'AWAITING_PAYMENT') {
       return (
         <PaymentCheckoutView
@@ -193,18 +205,6 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
           onBackToTimeline={() => handleSelectPatientSubView('timeline')}
           onUpdateCase={handleUpdateCase}
           lang={lang}
-        />
-      );
-    }
-
-    // LiveKit Telehealth room (explicit subview OR auto-route when OPINION_READY + video)
-    if (patientSubView === 'telehealth' || (activeCase.currentStage === 'OPINION_READY' && activeCase.consultationType === 'video' && patientSubView !== 'timeline')) {
-      return (
-        <OpinionTelehealthView
-          activeCase={activeCase}
-          onAdvanceStage={() => { handleAdvanceStage(); handleSelectPatientSubView('timeline'); }}
-          onUpdateCase={handleUpdateCase}
-          onBackToTimeline={() => handleSelectPatientSubView('timeline')}
         />
       );
     }
