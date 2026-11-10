@@ -90,7 +90,7 @@ export const PatientHomeView: React.FC<Props> = ({
       activeTab={activeTab}
       onSelectTab={handleTab}
     >
-      <div className="mx-auto w-full space-y-0">
+      <div data-testid="patient-home-view" className="mx-auto w-full space-y-0">
         {/* 1. Greeting + search */}
         <HomeGreeting isAr={isAr} onSelectService={onSelectService} onViewDoctors={() => setSheet('doctors')} />
 

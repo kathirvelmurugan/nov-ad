@@ -15,8 +15,43 @@ export const PALETTE = {
 };
 
 export const SESSION_KEY = 'alo_user_session_v2.4';
+export const USER_PINS_KEY = 'alo_user_pins_v2.4';
 export const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 export const DEV_OTP = '123456';
+export const DEFAULT_DEV_PIN = '1234';
+
+export const getUserPin = (rawPhone: string): string | null => {
+  try {
+    const saved = localStorage.getItem(USER_PINS_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed[rawPhone]) return parsed[rawPhone];
+    }
+  } catch {}
+  // Seeded / default fallback: any recognized phone has default PIN 1234
+  return DEFAULT_DEV_PIN;
+};
+
+export const setUserPin = (rawPhone: string, pin: string): void => {
+  try {
+    const saved = localStorage.getItem(USER_PINS_KEY);
+    const pins = saved ? JSON.parse(saved) : {};
+    pins[rawPhone] = pin;
+    localStorage.setItem(USER_PINS_KEY, JSON.stringify(pins));
+  } catch {}
+};
+
+export const hasUserPin = (rawPhone: string): boolean => {
+  try {
+    const saved = localStorage.getItem(USER_PINS_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed[rawPhone]) return true;
+    }
+  } catch {}
+  // Any known staff member or preset phone already has a PIN
+  return true;
+};
 
 export type AuthPortalTab = 'patient' | 'clinical' | 'hospital' | 'superadmin';
 

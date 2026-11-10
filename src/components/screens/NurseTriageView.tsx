@@ -38,7 +38,7 @@ export const NurseTriageView: React.FC<Props> = ({ activeCase, onAdvanceStage, o
   }, [activeCase.id, isAr]);
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div data-testid="nurse-triage-view" className="max-w-4xl mx-auto space-y-6">
       {/* N01: Triage Inbox & Case Header */}
       <div className="card-clinical p-6 flex flex-wrap items-center justify-between gap-4 border-l-4 border-l-alo-teal">
         <div>

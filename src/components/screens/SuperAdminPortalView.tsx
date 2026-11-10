@@ -61,7 +61,7 @@ export const SuperAdminPortalView: React.FC<SuperAdminPortalViewProps> = ({
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50/70 p-4 sm:p-6 lg:p-8" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div data-testid="super-admin-portal-view" className="min-h-screen bg-slate-50/70 p-4 sm:p-6 lg:p-8" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Top Header */}
       <header className="max-w-7xl mx-auto mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-3">

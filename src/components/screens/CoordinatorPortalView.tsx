@@ -248,7 +248,7 @@ const CoordinatorPortalView: React.FC<Props> = ({
   });
 
   return (
-    <div style={{
+    <div data-testid="coordinator-portal-view" style={{
       direction: dir,
       fontFamily,
       backgroundColor: '#F4F7F6',

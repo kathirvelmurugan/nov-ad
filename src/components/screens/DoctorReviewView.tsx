@@ -85,7 +85,7 @@ export const DoctorReviewView: React.FC<Props> = ({
   }, [hasConsultantOpinion, activeCase.id]);
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div data-testid="doctor-review-view" className="max-w-4xl mx-auto space-y-6">
       {/* Doctor Header & SLA Warning */}
       <div className="card-clinical p-6 flex flex-wrap items-center justify-between gap-4 border-l-4 border-l-alo-teal">
         <div>
