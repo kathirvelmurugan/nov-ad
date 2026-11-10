@@ -1,9 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { ClinicalCase } from '../../types';
+import { ClinicalCase, PaymentMethodId } from '../../types';
 
 interface Props {
   activeCase: ClinicalCase;
   onAdvanceStage: () => void;
+  onAssignPaymentToPatient?: (
+    methods: PaymentMethodId[],
+    tierData: { tier: number; tierName: string; baseSar: number; vatSar: number; totalSar: number },
+  ) => void;
+  onVerifyPaymentAndDispatch?: () => void;
   onUpdateCase: (updated: Partial<ClinicalCase>) => void;
   lang: 'ar' | 'en';
 }
@@ -13,26 +18,56 @@ const TEAL_ACCENT = '#00C6AE';
 const TEAL_BG = '#E6FAF7';
 const WHATSAPP_GREEN = '#25D366';
 
+const ALL_PAYMENT_METHODS: Array<{ id: PaymentMethodId; labelEn: string; labelAr: string; descEn: string; descAr: string }> = [
+  { id: 'mada', labelEn: 'mada', labelAr: 'مدى', descEn: 'Saudi Debit Network', descAr: 'شبكة المدفوعات السعودية' },
+  { id: 'applepay', labelEn: 'Apple Pay', labelAr: 'Apple Pay', descEn: '1-Click Express', descAr: 'دفع فوري بنقرة واحدة' },
+  { id: 'visa', labelEn: 'Visa / Mastercard', labelAr: 'فيزا / ماستركارد', descEn: 'Credit & Debit Cards', descAr: 'البطاقات الائتمانية' },
+  { id: 'tabby', labelEn: 'Tabby (4 Installments)', labelAr: 'تابي (4 دفعات)', descEn: '0% Interest Split', descAr: 'تقسيط بدون فوائد' },
+];
+
 const CoordinatorPortalView: React.FC<Props> = ({
   activeCase,
   onAdvanceStage,
+  onAssignPaymentToPatient,
+  onVerifyPaymentAndDispatch,
   onUpdateCase,
   lang,
 }) => {
+  const isPaid = !!activeCase.pricing?.paid || activeCase.paymentDetails?.status === 'completed';
+  const isPaymentVerified = !!activeCase.paymentVerified || !!activeCase.metadata?.paymentVerified;
+  const isInvoiceIssued = !!activeCase.invoiceIssued;
+
   const getInitialTab = (): 'C01' | 'C07' | 'C08' | 'C09' | 'C10' => {
-    if (activeCase.currentStage === 'AWAITING_PAYMENT') return 'C01';
+    if (activeCase.currentStage === 'AWAITING_PAYMENT' || (isPaid && !isPaymentVerified)) return 'C01';
     if (activeCase.currentStage === 'PARTNER_SERVICES') return 'C08';
     if (activeCase.currentStage === 'CLOSED') return 'C10';
     if (activeCase.currentStage === 'FOLLOW_UP_21_DAYS') return 'C09';
-    if (activeCase.consultationType === 'video' && isPaid) return 'C07';
+    if (activeCase.consultationType === 'video' && isPaid && isPaymentVerified) return 'C07';
     return 'C01';
   };
 
   const [activeTab, setActiveTab] = useState<'C01' | 'C07' | 'C08' | 'C09' | 'C10'>(getInitialTab);
+  const [selectedConsultationType, setSelectedConsultationType] = useState<'written' | 'video'>(
+    activeCase.consultationType === 'written' ? 'written' : 'video'
+  );
+  const [selectedMethods, setSelectedMethods] = useState<PaymentMethodId[]>(
+    activeCase.allowedPaymentMethods && activeCase.allowedPaymentMethods.length > 0
+      ? activeCase.allowedPaymentMethods
+      : ['mada', 'applepay', 'visa', 'tabby']
+  );
 
   useEffect(() => {
     setActiveTab(getInitialTab());
-  }, [activeCase.currentStage, activeCase.id]);
+  }, [activeCase.currentStage, activeCase.id, isPaid, isPaymentVerified]);
+
+  useEffect(() => {
+    setSelectedConsultationType(activeCase.consultationType === 'written' ? 'written' : 'video');
+    if (activeCase.allowedPaymentMethods && activeCase.allowedPaymentMethods.length > 0) {
+      setSelectedMethods(activeCase.allowedPaymentMethods);
+    } else {
+      setSelectedMethods(['mada', 'applepay', 'visa', 'tabby']);
+    }
+  }, [activeCase.id, activeCase.consultationType]);
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [relayMessage, setRelayMessage] = useState('');
@@ -143,25 +178,52 @@ const CoordinatorPortalView: React.FC<Props> = ({
     }
   };
 
-  const isPaid = !!activeCase.pricing?.paid || activeCase.paymentDetails?.status === 'completed';
-  const paymentLinkIssued = !!activeCase.metadata?.paymentLinkIssued;
+  const paymentLinkIssued = !!activeCase.metadata?.paymentLinkIssued || isInvoiceIssued;
 
-  // C01 · C03-C04: confirm referral, set price per chosen service, issue payment link -> case moves to Patient
+  const getTierData = (type: 'written' | 'video') =>
+    type === 'written'
+      ? { tier: 1, tierName: isAr ? 'رأي مكتوب فقط (Tier 1)' : 'Written opinion only (Tier 1)', baseSar: 65.22, vatSar: 9.78, totalSar: 75 }
+      : { tier: 2, tierName: isAr ? 'مرئي + رأي مكتوب (Tier 2)' : 'Video + written opinion (Tier 2)', baseSar: 130.43, vatSar: 19.57, totalSar: 150 };
+
+  const toggleMethod = (id: PaymentMethodId) => {
+    if (isPaid) return;
+    setSelectedMethods((prev) =>
+      prev.includes(id) ? prev.filter((m) => m !== id) : [...prev, id]
+    );
+  };
+
+  // Gate 1 (C01-C04): confirm package, select payment methods, issue invoice & assign to Patient
   const handleIssuePaymentLink = () => {
-    const tier =
-      activeCase.consultationType === 'written'
-        ? { tier: 1, tierName: isAr ? 'رأي مكتوب فقط (Tier 1)' : 'Written opinion only (Tier 1)', baseSar: 65.22, vatSar: 9.78, totalSar: 75 }
-        : { tier: 2, tierName: isAr ? 'مرئي + رأي مكتوب (Tier 2)' : 'Video + written opinion (Tier 2)', baseSar: 130.43, vatSar: 19.57, totalSar: 150 };
+    if (selectedMethods.length === 0) return;
+    const tierData = getTierData(selectedConsultationType);
+    if (onAssignPaymentToPatient) {
+      onAssignPaymentToPatient(selectedMethods, tierData);
+      return;
+    }
+    const invoiceNumber = activeCase.pricing?.invoiceNumber || `INV-2026-${Math.floor(100000 + Math.random() * 900000)}`;
     onUpdateCase({
-      pricing: { ...activeCase.pricing, ...tier, vatPercent: 15, tabbyInstallmentSar: tier.totalSar / 4 },
-      metadata: { ...(activeCase.metadata || {}), paymentLinkIssued: true, paymentLinkIssuedAt: new Date().toISOString() },
+      invoiceIssued: true,
+      allowedPaymentMethods: selectedMethods,
+      paymentAssignedAt: new Date().toISOString(),
+      consultationType: selectedConsultationType,
+      tier: tierData.tier,
+      pricing: { ...activeCase.pricing, ...tierData, vatPercent: 15, tabbyInstallmentSar: Number((tierData.totalSar / 4).toFixed(2)), invoiceNumber, paid: false },
+      metadata: { ...(activeCase.metadata || {}), paymentLinkIssued: true, paymentLinkIssuedAt: new Date().toISOString(), assignedPaymentMethods: selectedMethods },
     });
   };
 
-  // C05-C06: verify payment received, send consultant link, push case to the Indian consultant
+  // Gate 2 (C05-C06): verify patient payment received, dispatch to Indian consultant
   const handleConfirmPaymentAndPush = () => {
     if (!isPaid) return;
+    if (onVerifyPaymentAndDispatch) {
+      onVerifyPaymentAndDispatch();
+      return;
+    }
     onUpdateCase({
+      paymentVerified: true,
+      isCrossBorderDeidentified: true,
+      dualTokenGenerated: true,
+      egressToken: activeCase.egressToken || 'ALO-KSA-9482',
       metadata: { ...(activeCase.metadata || {}), paymentVerified: true, consultantLinkSent: true },
     });
     onAdvanceStage();
@@ -297,27 +359,6 @@ const CoordinatorPortalView: React.FC<Props> = ({
         </div>
       </header>
 
-      {/* C01-C04 / C05-C06: payment coordination hops (coordinator -> patient -> consultant) */}
-      <div style={{ ...cardStyle, marginBottom: '24px', padding: '20px' }}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
-          <button style={{ ...primaryButtonStyle, width: 'auto', flex: 1 }} onClick={handleIssuePaymentLink}>
-            C01·C03–04 · {isAr ? 'تأكيد · السعر · رابط السداد → إلى المريض' : 'Confirm · price · payment link → to Patient'}
-          </button>
-          <button
-            style={{ ...primaryButtonStyle, width: 'auto', flex: 1, opacity: isPaid ? 1 : 0.5, cursor: isPaid ? 'pointer' : 'not-allowed' }}
-            onClick={handleConfirmPaymentAndPush}
-            disabled={!isPaid}
-          >
-            C05–06 · {isAr ? 'استلام السداد · رابط الاستشاري → دفع للاستشاري' : 'Payment received · consultant link → push to Indian consultant'}
-          </button>
-        </div>
-        {paymentLinkIssued && (
-          <p style={{ margin: '12px 0 0', fontSize: '13px', color: TEAL_PRIMARY, fontWeight: 700 }}>
-            {isAr ? 'تم إصدار رابط السداد وإرساله للمريض (W05).' : 'Payment link issued and sent to the Patient (W05).'}
-          </p>
-        )}
-      </div>
-
       <nav style={tabNavStyle} role="tablist" aria-label={isAr ? 'مراحل التنسيق' : 'Coordination Stages'}>
         <button role="tab" aria-selected={activeTab === 'C01'} style={getTabStyle('C01')} onClick={() => setActiveTab('C01')}>
           C01 - {isAr ? 'الإحالة والفاتورة' : 'Referral & Invoice'}
@@ -351,25 +392,27 @@ const CoordinatorPortalView: React.FC<Props> = ({
 
       <main style={cardStyle} role="tabpanel">
         
-        {/* SCREEN C01: Referral Review & Invoicing Gateway */}
+        {/* SCREEN C01: Referral Review & 2-Gate Payment Workflow */}
         {activeTab === 'C01' && (
-          <section aria-labelledby="c01-heading">
-            <h2 id="c01-heading" style={{ fontSize: '20px', color: TEAL_PRIMARY, marginBottom: '8px', fontFamily }}>
-              {isAr ? 'مراجعة ملف الإحالة وتنسيق الفاتورة · C01–C06' : 'Referral Review & Payment Invoicing · C01–C06'}
-            </h2>
-            <p style={{ fontSize: '14px', color: '#4A5568', marginBottom: '20px', fontFamily }}>
-              {isAr 
-                ? 'استلم منسق رعاية ألو ملف الإحالة من الطبيب السعودي المعالج (D10). يتم التحقق من بيانات الفاتورة ونمط الاستشارة قبل نقل الحالة للاستشاري الهندي.'
-                : 'ALO Care Coordinator received referral pack from Saudi Treating Doctor (D10). Verify invoice and modality before routing to Indian consultant.'}
-            </p>
+          <section aria-labelledby="c01-heading" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div>
+              <h2 id="c01-heading" style={{ fontSize: '20px', color: TEAL_PRIMARY, margin: '0 0 6px', fontFamily }}>
+                {isAr ? 'مراجعة ملف الإحالة وتنسيق الفاتورة · C01–C06' : 'Referral Review & Payment Coordination · C01–C06'}
+              </h2>
+              <p style={{ fontSize: '14px', color: '#4A5568', margin: 0, fontFamily }}>
+                {isAr
+                  ? 'استلم منسق رعاية ألو ملف الإحالة من الطبيب السعودي (D10). الخطوة 1: اختر الباقة وطرق الدفع وأرسلها للمريض. الخطوة 2: تحقق من السداد ثم وصّل الحالة للاستشاري الهندي.'
+                  : 'ALO Care Coordinator received referral from Saudi Doctor (D10). Gate 1: select package & payment methods and assign to Patient. Gate 2: verify payment and connect Indian Consultant.'}
+              </p>
+            </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
               <div style={{ padding: '16px', borderRadius: '12px', border: '1px solid #E2E8F0', backgroundColor: '#F8FAFC' }}>
                 <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748B', display: 'block', marginBottom: '4px' }}>
                   {isAr ? 'بيانات المريض والمستشفى المحيل:' : 'Patient & Referring Hospital:'}
                 </span>
                 <span style={{ fontSize: '14px', fontWeight: 700, color: '#1E293B' }}>
-                  {isAr ? activeCase.patientNameAr : activeCase.patientName} (10********)
+                  {isAr ? activeCase.patientNameAr : (activeCase.patientNameEn || activeCase.patientName)} (10********)
                 </span>
                 <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#64748B' }}>
                   {activeCase.treatingDoctor.hospital} · {activeCase.treatingDoctor.name}
@@ -378,44 +421,232 @@ const CoordinatorPortalView: React.FC<Props> = ({
 
               <div style={{ padding: '16px', borderRadius: '12px', border: '1px solid #E2E8F0', backgroundColor: '#F8FAFC' }}>
                 <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748B', display: 'block', marginBottom: '4px' }}>
-                  {isAr ? 'باقة الاستشارة المختارة:' : 'Selected Consultation Tier:'}
+                  {isAr ? 'الاستشاري الدولي المرشح:' : 'Assigned International Consultant:'}
                 </span>
                 <span style={{ fontSize: '14px', fontWeight: 700, color: TEAL_PRIMARY }}>
-                  {activeCase.consultationType === 'written' 
-                    ? (isAr ? 'الفئة 1: تقرير رأي طبي مكتوب (75 ر.س)' : 'Tier 1: Written Second Opinion Report (75 SAR)')
-                    : (isAr ? 'الفئة 2: مكالمة مرئية 30 دقيقة + تقرير مكتوب (150 ر.س)' : 'Tier 2: Video Call + Written Report (150 SAR)')}
+                  {activeCase.consultant?.name || 'Dr. Arjun Mehta'}
                 </span>
                 <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#64748B' }}>
-                  {activeCase.consultationType === 'written' 
-                    ? (isAr ? 'لا يتطلب هذا النمط حجز مواعيد اتصال' : 'No call slot scheduling required')
-                    : (isAr ? 'يتطلب تأكيد موعد المكالمة في تبويب C07 بعد السداد' : 'Call slot confirmed in tab C07 after payment')}
+                  {activeCase.consultant?.center || 'KIMS Heart Institute'} · {activeCase.consultant?.city || 'India'}
                 </p>
               </div>
             </div>
 
-            {/* Payment & Next Action Card */}
-            <div style={{ padding: '20px', borderRadius: '12px', backgroundColor: isPaid ? `${TEAL_BG}` : '#FFFBEB', border: `1px solid ${isPaid ? TEAL_ACCENT : '#FDE68A'}`, display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={badgeStyle(isPaid ? 'success' : 'warning')}>
-                    {isPaid 
-                      ? (isAr ? 'تم تأكيد السداد وإصدار فاتورة ZATCA ✓' : 'Payment Confirmed & ZATCA Invoiced ✓')
-                      : (isAr ? 'بانتظار سداد المريض للفاتورة' : 'Awaiting Patient Payment')}
-                  </span>
-                  <span style={{ fontSize: '12px', color: '#64748B', fontWeight: 600 }}>
-                    {isPaid ? (isAr ? 'الرسوم مسددة بالكامل' : 'Fee Settled in Full') : (isAr ? 'رابط الدفع نشط عبر Tap Payments' : 'Tap Payments checkout active')}
-                  </span>
-                </div>
+            {/* GATE 1: Package Confirmation + Payment Methods Selection + Assign to Patient */}
+            <div style={{
+              padding: '20px',
+              borderRadius: '14px',
+              border: `2px solid ${isInvoiceIssued ? TEAL_ACCENT : '#CBD5E1'}`,
+              backgroundColor: isInvoiceIssued ? '#F0FDFA' : '#FFFFFF',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginBottom: '14px' }}>
+                <span style={{ fontSize: '13px', fontWeight: 800, color: TEAL_PRIMARY }}>
+                  {isAr ? 'الخطوة 1 (C01–C04): تحديد الباقة وطرق الدفع وإسنادها للمريض' : 'Gate 1 (C01–C04): Confirm Package, Select Payment Methods & Assign to Patient'}
+                </span>
+                <span style={badgeStyle(isInvoiceIssued ? 'success' : 'info')}>
+                  {isInvoiceIssued
+                    ? (isAr ? 'تم إسناد الفاتورة للمريض ✓' : 'Assigned to Patient ✓')
+                    : (isAr ? 'بانتظار إعداد المنسق' : 'Pending Coordinator Setup')}
+                </span>
+              </div>
 
-                {isPaid && (
-                  <button
-                    onClick={handleConfirmPaymentAndPush}
-                    style={{ ...primaryButtonStyle, padding: '10px 20px', width: 'auto' }}
-                  >
-                    {isAr ? 'C05–06 · نقل الملف للاستشاري الهندي (د. أرجون) ←' : 'C05–06 · Push Verified Case to Indian Consultant →'}
-                  </button>
+              {/* Tier Selection */}
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '8px' }}>
+                  {isAr ? 'تأكيد باقة الاستشارة:' : 'Confirm Consultation Package & Fee:'}
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px' }}>
+                  {(['written', 'video'] as const).map((typeKey) => {
+                    const active = selectedConsultationType === typeKey;
+                    const price = typeKey === 'written' ? 75 : 150;
+                    return (
+                      <button
+                        key={typeKey}
+                        type="button"
+                        disabled={isPaid}
+                        onClick={() => setSelectedConsultationType(typeKey)}
+                        style={{
+                          textAlign: isAr ? 'right' : 'left',
+                          padding: '12px 14px',
+                          borderRadius: '10px',
+                          border: `2px solid ${active ? TEAL_PRIMARY : '#E2E8F0'}`,
+                          backgroundColor: active ? TEAL_BG : '#FFFFFF',
+                          cursor: isPaid ? 'not-allowed' : 'pointer',
+                          opacity: isPaid ? 0.75 : 1,
+                          fontFamily,
+                        }}
+                      >
+                        <div style={{ fontSize: '13px', fontWeight: 800, color: active ? TEAL_PRIMARY : '#1E293B' }}>
+                          {typeKey === 'written'
+                            ? (isAr ? 'الفئة 1: رأي مكتوب فقط' : 'Tier 1: Written Opinion Only')
+                            : (isAr ? 'الفئة 2: مكالمة مرئية + رأي مكتوب' : 'Tier 2: Video Call + Written Opinion')}
+                        </div>
+                        <div style={{ fontSize: '12px', fontWeight: 700, color: '#475569', marginTop: '4px' }}>
+                          {price} {isAr ? 'ر.س (شامل 15% ضريبة)' : 'SAR (incl. 15% VAT)'}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Payment Methods Selection */}
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '8px' }}>
+                  {isAr
+                    ? 'اختر طرق الدفع المتاحة للمريض (سيظهر للمريض ما تحدده فقط):'
+                    : 'Select Allowed Payment Methods for Patient (only checked methods will appear on Checkout):'}
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
+                  {ALL_PAYMENT_METHODS.map((pm) => {
+                    const checked = selectedMethods.includes(pm.id);
+                    return (
+                      <button
+                        key={pm.id}
+                        type="button"
+                        disabled={isPaid}
+                        onClick={() => toggleMethod(pm.id)}
+                        aria-pressed={checked}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          padding: '10px 12px',
+                          borderRadius: '10px',
+                          border: `2px solid ${checked ? TEAL_PRIMARY : '#E2E8F0'}`,
+                          backgroundColor: checked ? '#FFFFFF' : '#F8FAFC',
+                          cursor: isPaid ? 'not-allowed' : 'pointer',
+                          opacity: isPaid ? 0.75 : 1,
+                          textAlign: isAr ? 'right' : 'left',
+                          fontFamily,
+                        }}
+                      >
+                        <span style={{
+                          width: '18px',
+                          height: '18px',
+                          borderRadius: '4px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          backgroundColor: checked ? TEAL_PRIMARY : '#FFFFFF',
+                          border: `2px solid ${checked ? TEAL_PRIMARY : '#CBD5E1'}`,
+                          color: '#FFFFFF',
+                          fontSize: '12px',
+                          fontWeight: 900,
+                          flexShrink: 0,
+                        }}>
+                          {checked ? '✓' : ''}
+                        </span>
+                        <div>
+                          <div style={{ fontSize: '13px', fontWeight: 800, color: checked ? TEAL_PRIMARY : '#334155' }}>
+                            {isAr ? pm.labelAr : pm.labelEn}
+                          </div>
+                          <div style={{ fontSize: '11px', color: '#64748B' }}>
+                            {isAr ? pm.descAr : pm.descEn}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+                {selectedMethods.length === 0 && (
+                  <p style={{ margin: '8px 0 0', fontSize: '12px', fontWeight: 700, color: '#DC2626' }}>
+                    {isAr ? '⚠ يرجى اختيار طريقة دفع واحدة على الأقل قبل الإرسال للمريض.' : '⚠ Please select at least one payment method before assigning to the patient.'}
+                  </p>
                 )}
               </div>
+
+              {!isPaid && (
+                <button
+                  type="button"
+                  onClick={handleIssuePaymentLink}
+                  disabled={selectedMethods.length === 0}
+                  style={{
+                    ...primaryButtonStyle,
+                    opacity: selectedMethods.length === 0 ? 0.5 : 1,
+                    cursor: selectedMethods.length === 0 ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  {isInvoiceIssued
+                    ? (isAr ? 'C04 · تحديث طرق الدفع وإعادة الإرسال للمريض →' : 'C04 · Update Methods & Re-Open Patient Checkout →')
+                    : (isAr ? 'C04 · اعتماد الفاتورة وإسناد الدفع للمريض →' : 'C04 · Assign Payment Methods & Send Invoice to Patient →')}
+                </button>
+              )}
+
+              {paymentLinkIssued && !isPaid && (
+                <p style={{ margin: '10px 0 0', fontSize: '12px', color: TEAL_PRIMARY, fontWeight: 700 }}>
+                  {isAr
+                    ? `✓ تم إسناد الفاتورة (${activeCase.pricing?.invoiceNumber || 'ZATCA'}) للمريض بطرق الدفع المحددة وبانتظار السداد.`
+                    : `✓ Invoice (${activeCase.pricing?.invoiceNumber || 'ZATCA'}) assigned to Patient with selected methods. Awaiting payment.`}
+                </p>
+              )}
+            </div>
+
+            {/* GATE 2: Payment Confirmation Verification & Indian Consultant Dispatch */}
+            <div style={{
+              padding: '20px',
+              borderRadius: '14px',
+              backgroundColor: isPaymentVerified ? '#ECFDF5' : (isPaid ? '#F0FDF4' : '#FFFBEB'),
+              border: `2px solid ${isPaid ? WHATSAPP_GREEN : '#FDE68A'}`,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                <span style={{ fontSize: '13px', fontWeight: 800, color: isPaid ? '#065F46' : '#92400E' }}>
+                  {isAr ? 'الخطوة 2 (C05–C06): التحقق من الدفع وربط الاستشاري الهندي' : 'Gate 2 (C05–C06): Verify Patient Payment & Connect Indian Consultant'}
+                </span>
+                <span style={badgeStyle(isPaymentVerified ? 'success' : (isPaid ? 'info' : 'warning'))}>
+                  {isPaymentVerified
+                    ? (isAr ? 'تم التحقق والإرسال للاستشاري ✓' : 'Verified & Sent to Consultant ✓')
+                    : isPaid
+                      ? (isAr ? 'تم الدفع من المريض · بانتظار تحقق المنسق' : 'Paid by Patient · Pending Coordinator Verification')
+                      : (isAr ? 'مقفل لحين سداد المريض' : 'Locked Until Patient Pays')}
+                </span>
+              </div>
+
+              {isPaid ? (
+                <>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px', backgroundColor: '#FFFFFF', padding: '12px', borderRadius: '10px', border: '1px solid #BBF7D0' }}>
+                    <div>
+                      <span style={{ fontSize: '11px', color: '#64748B', display: 'block' }}>{isAr ? 'المبلغ المدفوع:' : 'Amount Paid:'}</span>
+                      <strong style={{ fontSize: '14px', color: '#065F46' }}>
+                        {activeCase.paymentDetails?.amount || activeCase.pricing?.totalSar || 150} SAR
+                      </strong>
+                    </div>
+                    <div>
+                      <span style={{ fontSize: '11px', color: '#64748B', display: 'block' }}>{isAr ? 'طريقة الدفع المستخدمة:' : 'Method Used:'}</span>
+                      <strong style={{ fontSize: '14px', color: '#065F46', textTransform: 'uppercase' }}>
+                        {activeCase.paymentDetails?.method || 'mada'}
+                      </strong>
+                    </div>
+                    <div>
+                      <span style={{ fontSize: '11px', color: '#64748B', display: 'block' }}>{isAr ? 'رقم الفاتورة الضريبية:' : 'ZATCA Invoice #:'}</span>
+                      <strong style={{ fontSize: '13px', color: '#0F172A', fontFamily: 'monospace' }}>
+                        {activeCase.paymentDetails?.invoiceNumber || activeCase.pricing?.invoiceNumber || 'INV-2026-001'}
+                      </strong>
+                    </div>
+                  </div>
+
+                  {!isPaymentVerified && (
+                    <button
+                      type="button"
+                      onClick={handleConfirmPaymentAndPush}
+                      style={{ ...primaryButtonStyle, backgroundColor: WHATSAPP_GREEN }}
+                    >
+                      {isAr
+                        ? 'C05–C06 · تأكيد استلام الدفع وتوصيل الملف للاستشاري الهندي ←'
+                        : 'C05–C06 · Verify Payment & Connect to Indian Consultant →'}
+                    </button>
+                  )}
+                </>
+              ) : (
+                <p style={{ margin: 0, fontSize: '13px', color: '#78350F', fontWeight: 600 }}>
+                  {isAr
+                    ? 'لا يمكن ربط الحالة بالاستشاري الهندي إلا بعد إتمام المريض للسداد وظهور تأكيد الدفع هنا للتحقق منه.'
+                    : 'The Indian Consultant remains locked until the patient completes payment and the Coordinator verifies the confirmation here.'}
+                </p>
+              )}
             </div>
           </section>
         )}

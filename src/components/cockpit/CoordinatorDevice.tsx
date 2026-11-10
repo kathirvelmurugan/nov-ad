@@ -1,5 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { PaymentMethodId } from '../../types';
 import { CockpitDeviceProps, TEAL_PRIMARY, TEAL_SECONDARY, WHATSAPP_GREEN } from './types';
+
+const COCKPIT_PAYMENT_METHODS: Array<{ id: PaymentMethodId; label: string }> = [
+  { id: 'mada', label: 'Mada' },
+  { id: 'applepay', label: 'Apple Pay' },
+  { id: 'visa', label: 'Visa' },
+  { id: 'tabby', label: 'Tabby' },
+];
 
 const DEFAULT_CONSULTANT_ANSWERS = [
   'Based on 3D DICOM volumetric review, severe asymmetric annular calcification favors Open SAVR with a 23mm valve over TAVR to prevent paravalvular leak.',
@@ -27,6 +35,16 @@ export const CoordinatorDevice: React.FC<CockpitDeviceProps> = ({
   const isPatientPaid = !!activeCase.pricing?.paid || activeCase.paymentDetails?.status === 'completed';
   const isPaymentVerified = !!activeCase.paymentVerified;
   const currentModality = activeCase.modality || (activeCase.consultationType === 'video' ? 'Video' : 'Written');
+  const [selectedMethods, setSelectedMethods] = useState<PaymentMethodId[]>(
+    activeCase.allowedPaymentMethods && activeCase.allowedPaymentMethods.length > 0
+      ? activeCase.allowedPaymentMethods
+      : ['mada', 'applepay', 'visa', 'tabby']
+  );
+
+  const toggleMethod = (id: PaymentMethodId) => {
+    if (isInvoiceIssued) return;
+    setSelectedMethods((prev) => (prev.includes(id) ? prev.filter((m) => m !== id) : [...prev, id]));
+  };
 
   const cardInnerStyle: React.CSSProperties = {
     backgroundColor: '#ffffff',
@@ -83,17 +101,44 @@ export const CoordinatorDevice: React.FC<CockpitDeviceProps> = ({
             </div>
           </div>
 
-          {/* C02–C04: Set Pricing & Issue Invoice (Coordinator Gate 1) */}
+          {/* C02–C04: Set Pricing, Payment Methods & Issue Invoice (Coordinator Gate 1) */}
           <div style={cardInnerStyle}>
-            <span style={labelStyle}>C02–C04 · {isAr ? 'التسعير وإصدار فاتورة ZATCA' : 'Pricing & ZATCA Invoice'}</span>
+            <span style={labelStyle}>C02–C04 · {isAr ? 'طرق الدفع وإصدار فاتورة ZATCA' : 'Payment Methods & ZATCA Invoice'}</span>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px', marginBottom: '8px' }}>
+              {COCKPIT_PAYMENT_METHODS.map((pm) => {
+                const active = selectedMethods.includes(pm.id);
+                return (
+                  <button
+                    key={pm.id}
+                    type="button"
+                    disabled={isInvoiceIssued}
+                    onClick={() => toggleMethod(pm.id)}
+                    style={{
+                      fontSize: '10px',
+                      fontWeight: 700,
+                      padding: '3px 8px',
+                      borderRadius: '6px',
+                      border: `1px solid ${active ? TEAL_PRIMARY : '#cbd5e1'}`,
+                      backgroundColor: active ? '#e6faf7' : '#f8fafc',
+                      color: active ? TEAL_PRIMARY : '#64748b',
+                      cursor: isInvoiceIssued ? 'not-allowed' : 'pointer',
+                    }}
+                  >
+                    {active ? '✓ ' : ''}{pm.label}
+                  </button>
+                );
+              })}
+            </div>
             <button
               type="button"
-              disabled={isInvoiceIssued || !isReferralApproved}
+              disabled={isInvoiceIssued || !isReferralApproved || selectedMethods.length === 0}
               onClick={() => {
                 const prescribedTier = activeCase.tier || (activeCase.modality === 'Video' ? 2 : 1);
                 const prescribedAmount = prescribedTier === 2 ? 450 : 250;
                 onUpdateCase({
                   invoiceIssued: true,
+                  allowedPaymentMethods: selectedMethods,
+                  paymentAssignedAt: new Date().toISOString(),
                   tier: prescribedTier,
                   pricing: {
                     ...(activeCase.pricing || {}),
@@ -117,10 +162,10 @@ export const CoordinatorDevice: React.FC<CockpitDeviceProps> = ({
                 padding: '10px',
                 fontWeight: 800,
                 fontSize: '11px',
-                cursor: isInvoiceIssued ? 'not-allowed' : (!isReferralApproved ? 'not-allowed' : 'pointer'),
+                cursor: (isInvoiceIssued || !isReferralApproved || selectedMethods.length === 0) ? 'not-allowed' : 'pointer',
                 marginTop: '6px',
-                opacity: (!isReferralApproved || isInvoiceIssued) ? 0.8 : 1,
-                boxShadow: (!isReferralApproved || isInvoiceIssued) ? 'none' : '0 4px 12px rgba(0, 123, 110, 0.3)',
+                opacity: (!isReferralApproved || isInvoiceIssued || selectedMethods.length === 0) ? 0.8 : 1,
+                boxShadow: (!isReferralApproved || isInvoiceIssued || selectedMethods.length === 0) ? 'none' : '0 4px 12px rgba(0, 123, 110, 0.3)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',

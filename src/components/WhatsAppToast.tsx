@@ -66,15 +66,35 @@ export const WhatsAppToast: React.FC<Props> = ({
           bodyEn: `${activeCase.treatingDoctor?.name || 'Dr. Al-Shammari'} reviewed case and formulated clinical focus questions.`,
         };
         break;
-      case 'AWAITING_PAYMENT':
-        payload = {
-          code: 'W06',
-          titleAr: 'فاتورة سداد الرأي الطبي الثاني',
-          titleEn: 'Payment Invoice Ready',
-          bodyAr: `صدرت فاتورة الباقة (${activeCase.pricing.totalSar} ر.س شامل الضريبة). ادفع عبر Tap / مدى.`,
-          bodyEn: `Invoice generated (${activeCase.pricing.totalSar} SAR incl. VAT). Pay via Tap / mada.`,
-        };
+      case 'AWAITING_PAYMENT': {
+        const isPaidNow = !!activeCase.pricing?.paid || activeCase.paymentDetails?.status === 'completed';
+        if (!activeCase.invoiceIssued) {
+          payload = {
+            code: 'W05',
+            titleAr: 'إحالة لمنسق رعاية ألو',
+            titleEn: 'Routed to ALO Coordinator',
+            bodyAr: `اعتمد الطبيب المعالج الإحالة. يقوم منسق رعاية ألو بإعداد الفاتورة وتحديد طرق الدفع.`,
+            bodyEn: `Doctor approved referral. ALO Coordinator is preparing your invoice and payment options.`,
+          };
+        } else if (!isPaidNow) {
+          payload = {
+            code: 'W06',
+            titleAr: 'فاتورة سداد الرأي الطبي الثاني',
+            titleEn: 'Payment Invoice & Options Ready',
+            bodyAr: `صدرت فاتورة الباقة (${activeCase.pricing.totalSar} ر.س شامل الضريبة) بطرق الدفع المحددة.`,
+            bodyEn: `Invoice issued (${activeCase.pricing.totalSar} SAR incl. VAT) with your assigned payment options.`,
+          };
+        } else {
+          payload = {
+            code: 'W07',
+            titleAr: 'تم استلام الدفع · بانتظار تحقق المنسق',
+            titleEn: 'Payment Received · Verification Pending',
+            bodyAr: `تم استلام سدادك بنجاح. يتحقق منسق ألو من العملية قبل إرسال الملف للاستشاري الدولي.`,
+            bodyEn: `Payment received. ALO Coordinator is verifying payment before connecting the Indian specialist.`,
+          };
+        }
         break;
+      }
       case 'WITH_CONSULTANT':
         payload = {
           code: 'W08',
@@ -153,6 +173,9 @@ export const WhatsAppToast: React.FC<Props> = ({
   }, [
     activeCase.currentStage,
     activeCase.caseNumber,
+    activeCase.invoiceIssued,
+    activeCase.pricing?.paid,
+    activeCase.paymentVerified,
     activeCase.coordinatorForwardedToDoctor,
     activeCase.doctorReleasedToPatient,
   ]);

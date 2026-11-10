@@ -526,6 +526,16 @@ export const DoctorReviewView: React.FC<Props> = ({
             onClick={() => {
               onUpdateCase({
                 referralApproved: true,
+                invoiceIssued: false,
+                allowedPaymentMethods: [],
+                paymentAssignedAt: undefined,
+                paymentVerified: false,
+                pricing: { ...activeCase.pricing, paid: false, invoiceNumber: undefined },
+                metadata: {
+                  ...(activeCase.metadata || {}),
+                  paymentLinkIssued: false,
+                  paymentVerified: false,
+                },
               });
               onAdvanceStage();
             }}

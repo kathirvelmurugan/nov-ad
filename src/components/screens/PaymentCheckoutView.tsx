@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { ClinicalCase } from '../../types';
+import React, { useState, useMemo, useEffect } from 'react';
+import { ClinicalCase, PaymentMethodId } from '../../types';
 import { CreditCard, CheckCircle2, ShieldCheck, Receipt, ArrowRight, Zap, QrCode, Sparkles, Video, FileText } from 'lucide-react';
 
 interface Props {
@@ -10,7 +10,7 @@ interface Props {
   lang?: 'ar' | 'en';
 }
 
-type PaymentMethod = 'mada' | 'applepay' | 'tabby' | 'visa';
+type PaymentMethod = PaymentMethodId;
 
 interface TierConfig {
   id: number;
@@ -57,11 +57,13 @@ const PAYMENT_METHODS = {
     { id: 'mada' as PaymentMethod, label: 'mada', sublabel: 'Saudi Most Popular', icon: CreditCard },
     { id: 'applepay' as PaymentMethod, label: 'Apple Pay', sublabel: '1-Click', icon: Zap },
     { id: 'visa' as PaymentMethod, label: 'Visa / Mastercard', sublabel: 'Global Secure', icon: CreditCard },
+    { id: 'tabby' as PaymentMethod, label: 'Tabby (4 Installments)', sublabel: '0% Interest Split', icon: Sparkles },
   ],
   ar: [
     { id: 'mada' as PaymentMethod, label: 'مدى', sublabel: 'الأكثر شعبية في السعودية', icon: CreditCard },
     { id: 'applepay' as PaymentMethod, label: 'Apple Pay', sublabel: 'بنقرة واحدة', icon: Zap },
     { id: 'visa' as PaymentMethod, label: 'فيزا / ماستركارد', sublabel: 'دفع عالمي آمن', icon: CreditCard },
+    { id: 'tabby' as PaymentMethod, label: 'تابي (4 دفعات)', sublabel: 'تقسيط بدون فوائد', icon: Sparkles },
   ],
 };
 
@@ -121,13 +123,27 @@ export const PaymentCheckoutView: React.FC<Props> = ({
 }) => {
   const isRTL = lang === 'ar';
   const t = UI_STRINGS[lang];
-  const methods = PAYMENT_METHODS[lang];
+  const allowedIds = activeCase.allowedPaymentMethods && activeCase.allowedPaymentMethods.length > 0
+    ? activeCase.allowedPaymentMethods
+    : [];
+  const methods = PAYMENT_METHODS[lang].filter((m) => allowedIds.includes(m.id));
+  const isCoordinatorAssigned = !!activeCase.invoiceIssued && methods.length > 0;
 
   const [selectedTierId, setSelectedTierId] = useState<number>(
     activeCase.consultationType === 'written' ? 1 : 2
   );
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('mada');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(methods[0]?.id || 'mada');
   const [isProcessing, setIsProcessing] = useState(false);
+
+  useEffect(() => {
+    setSelectedTierId(activeCase.consultationType === 'written' ? 1 : 2);
+  }, [activeCase.consultationType, activeCase.id]);
+
+  useEffect(() => {
+    if (methods.length > 0 && !methods.some((m) => m.id === paymentMethod)) {
+      setPaymentMethod(methods[0].id);
+    }
+  }, [activeCase.allowedPaymentMethods, lang]);
 
   const selectedTier = useMemo(
     () => TIERS.find((tier) => tier.id === selectedTierId) || TIERS[1],
@@ -142,6 +158,8 @@ export const PaymentCheckoutView: React.FC<Props> = ({
   const handleTierSelect = (tier: TierConfig) => {
     setSelectedTierId(tier.id);
     onUpdateCase({
+      consultationType: tier.id === 1 ? 'written' : 'video',
+      tier: tier.id,
       pricing: {
         ...activeCase.pricing,
         tier: tier.id,
@@ -154,25 +172,27 @@ export const PaymentCheckoutView: React.FC<Props> = ({
   };
 
   const handlePayment = async () => {
+    if (!isCoordinatorAssigned) return;
     setIsProcessing(true);
-    
+
     // Simulate network delay for payment gateway
-    await new Promise((resolve) => setTimeout(resolve, 2200));
+    await new Promise((resolve) => setTimeout(resolve, 1600));
 
     const tapChargeId = `chg_tap_ksa_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 9)}`;
-    const invoiceNumber = `INV-2026-${Math.floor(100000 + Math.random() * 900000)}`;
+    const invoiceNumber = activeCase.pricing?.invoiceNumber || `INV-2026-${Math.floor(100000 + Math.random() * 900000)}`;
 
     onUpdateCase({
+      paymentVerified: false,
       pricing: {
         ...activeCase.pricing,
+        tier: selectedTier.id,
+        baseSar: selectedTier.baseSar,
+        vatSar: selectedTier.vatSar,
+        totalSar: selectedTier.totalSar,
+        tierName: isRTL ? selectedTier.tierNameAr : selectedTier.tierNameEn,
+        invoiceNumber,
+        tapChargeId,
         paid: true,
-      },
-      consultantToken: activeCase.consultantToken || {
-        token: 'ALO-MAGIC-REV-72H-DR-ARJUN',
-        expiresAt: new Date(Date.now() + 72 * 3600 * 1000).toISOString(),
-        otpVerified: false,
-        sessionCookieActive: false,
-        sessionExpiresAt: new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString(),
       },
       paymentDetails: {
         ...activeCase.paymentDetails,
@@ -182,6 +202,10 @@ export const PaymentCheckoutView: React.FC<Props> = ({
         status: 'completed',
         amount: selectedTier.totalSar,
         currency: 'SAR',
+      },
+      metadata: {
+        ...(activeCase.metadata || {}),
+        paymentVerified: false,
       },
     });
 
@@ -301,11 +325,25 @@ export const PaymentCheckoutView: React.FC<Props> = ({
           
           {/* Payment Methods */}
           <div className="lg:col-span-3 bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100">
-            <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-              <CreditCard className="text-[#007B6E]" size={24} />
-              {t.paymentMethodTitle}
-            </h2>
-            
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-6">
+              <h2 className="text-xl font-bold text-gray-900 flex items-center gap-3">
+                <CreditCard className="text-[#007B6E]" size={24} />
+                {t.paymentMethodTitle}
+              </h2>
+              {isCoordinatorAssigned && (
+                <span className="text-xs font-bold text-[#007B6E] bg-[#E6FAF7] px-3 py-1 rounded-full border border-[#00C6AE]/40">
+                  {isRTL ? 'معتمدة من منسق ألو' : 'Assigned by ALO Coordinator'}
+                </span>
+              )}
+            </div>
+
+            {!isCoordinatorAssigned ? (
+              <div className="p-5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-sm font-semibold">
+                {isRTL
+                  ? 'الدفع مقفل حالياً — بانتظار قيام منسق رعاية ألو باعتماد الفاتورة وتحديد طرق الدفع المتاحة لك.'
+                  : 'Payment is locked — waiting for the ALO Coordinator to issue your invoice and assign available payment methods.'}
+              </div>
+            ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {methods.map((method) => {
                 const isActive = paymentMethod === method.id;
@@ -340,6 +378,7 @@ export const PaymentCheckoutView: React.FC<Props> = ({
                 );
               })}
             </div>
+            )}
 
             {/* Dynamic Tabby Info if Tabby Selected */}
             {paymentMethod === 'tabby' && (
@@ -411,10 +450,10 @@ export const PaymentCheckoutView: React.FC<Props> = ({
           <button
             type="button"
             onClick={handlePayment}
-            disabled={isProcessing}
+            disabled={isProcessing || !isCoordinatorAssigned}
             className={`group relative inline-flex items-center justify-center gap-3 w-full sm:w-auto sm:min-w-[420px] px-10 py-5 rounded-2xl text-lg font-bold text-white transition-all duration-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#00C6AE]/50 ${
-              isProcessing
-                ? 'bg-[#007B6E]/80 cursor-not-allowed'
+              isProcessing || !isCoordinatorAssigned
+                ? 'bg-[#007B6E]/50 cursor-not-allowed'
                 : 'bg-gradient-to-r from-[#007B6E] to-[#00C6AE] hover:shadow-[0_10px_30px_-5px_rgba(0,123,110,0.5)] hover:-translate-y-0.5 active:translate-y-0'
             }`}
           >

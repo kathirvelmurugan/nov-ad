@@ -67,6 +67,18 @@ export const PatientStatusTimelineView: React.FC<Props> = ({
   const currentIndex = STAGES.findIndex((s) => s.stage === stage);
   const isDemoMode = typeof window !== 'undefined' && (new URLSearchParams(window.location.search).get('demo') === '1' || window.location.hash === '#cockpit');
   const isCustomCase = activeCase.id.startsWith('TEST-') || activeCase.id.startsWith('REAL-');
+  const isInvoiceIssued = !!activeCase.invoiceIssued && Array.isArray(activeCase.allowedPaymentMethods) && activeCase.allowedPaymentMethods.length > 0;
+  const isPaid = !!activeCase.pricing?.paid || activeCase.paymentDetails?.status === 'completed';
+  const isPaymentVerified = !!activeCase.paymentVerified || !!activeCase.metadata?.paymentVerified;
+
+  const METHOD_NAMES: Record<string, { ar: string; en: string }> = {
+    mada: { ar: 'مدى', en: 'Mada' },
+    applepay: { ar: 'Apple Pay', en: 'Apple Pay' },
+    visa: { ar: 'فيزا / ماستركارد', en: 'Visa' },
+    tabby: { ar: 'تابي', en: 'Tabby' },
+  };
+  const assignedMethodsLabelEn = (activeCase.allowedPaymentMethods || []).map((m) => METHOD_NAMES[m]?.en || m).join(' · ');
+  const assignedMethodsLabelAr = (activeCase.allowedPaymentMethods || []).map((m) => METHOD_NAMES[m]?.ar || m).join(' · ');
 
   // Stage-specific Dynamic Timeline Content
   const getStageContent = () => {
@@ -104,20 +116,54 @@ export const PatientStatusTimelineView: React.FC<Props> = ({
           slaEn: 'Treating Doctor SLA: 24 hours',
         };
       case 'AWAITING_PAYMENT':
+        if (!isInvoiceIssued) {
+          return {
+            badgeAr: 'المرحلة 4 من 9 · قيد إعداد منسق رعاية ألو',
+            badgeEn: 'Stage 4 of 9 · Pending ALO Coordinator',
+            titleAr: 'تمت موافقة الطبيب السعودي — يقوم منسق رعاية ألو بإعداد فاتورتك وطرق الدفع',
+            titleEn: 'Your referral is approved — ALO Coordinator is preparing your invoice and payment options.',
+            descAr: 'اعتمد طبيبك السعودي الإحالة الطبية بنجاح. يقوم منسق رعاية ألو الآن بمراجعة الطلب وتحديد طرق الدفع المتاحة وإصدار فاتورة ZATCA قبل فتح بوابة الدفع.',
+            descEn: 'Your Saudi treating doctor has approved your referral. The ALO Care Coordinator is preparing your ZATCA invoice and selecting your payment options. Payment remains locked until assigned.',
+            queueStatusAr: 'بوابة الدفع مقفلة حالياً — بانتظار إسناد منسق رعاية ألو (C01–C04)',
+            queueStatusEn: 'Payment locked — awaiting ALO Coordinator invoice & payment method assignment',
+            nextRoleCode: 'C',
+            nextRoleLabelAr: 'الانتقال إلى منسق رعاية ألو (C01) لتحديد طرق الدفع وإسناد الفاتورة →',
+            nextRoleLabelEn: 'Switch to ALO Coordinator (C01) to select payment methods & assign →',
+            slaAr: 'الدفع مقفل لحين إسناد المنسق',
+            slaEn: 'Payment Locked Until Assigned',
+          };
+        }
+        if (isPaid && !isPaymentVerified) {
+          return {
+            badgeAr: 'المرحلة 4 من 9 · تم السداد وبانتظار تحقق المنسق',
+            badgeEn: 'Stage 4 of 9 · Payment Received — Verification Pending',
+            titleAr: 'تم استلام الدفع — يتحقق منسق رعاية ألو من السداد ويرسل ملفك للاستشاري الدولي',
+            titleEn: 'Payment received — ALO Coordinator is verifying your payment and sending your file to the international specialist.',
+            descAr: 'تم تسجيل دفعتك بنجاح وإصدار الفاتورة الضريبية. يقوم منسق رعاية ألو حالياً بالتحقق من العملية وتجهيل الهوية وفق اشتراطات سدايا قبل توصيل ملفك للاستشاري الدولي.',
+            descEn: 'Your payment has been received. The ALO Care Coordinator is verifying the payment confirmation and applying SDAIA de-identification before connecting your case to the Indian specialist.',
+            queueStatusAr: 'تم تأكيد السداد · الاستشاري مقفل لحين تحقق منسق رعاية ألو (C05–C06)',
+            queueStatusEn: 'Consultant locked until ALO Coordinator verifies payment (C05–C06)',
+            nextRoleCode: 'C',
+            nextRoleLabelAr: 'الانتقال إلى منسق رعاية ألو (C05–C06) للتحقق من الدفع وتوصيل الاستشاري →',
+            nextRoleLabelEn: 'Switch to ALO Coordinator (C05–C06) to verify payment & connect specialist →',
+            slaAr: 'تحقق منسق ألو وتجهيل الهوية',
+            slaEn: 'Coordinator Verification Pending',
+          };
+        }
         return {
           badgeAr: 'المرحلة 4 من 9 · الفاتورة الإلكترونية وبوابة السداد',
           badgeEn: 'Stage 4 of 9 · Invoice & Secure Checkout',
-          titleAr: 'اعتمد الطبيب المعالج الإحالة! يرجى سداد رسوم الاستشارة للمتابعة',
-          titleEn: 'Referral Approved! Please complete payment to initiate specialist review',
-          descAr: 'أصدر منسق رعاية ألو الفاتورة الضريبية المعتمدة (ZATCA Phase-2). يمكنك اختيار باقة الرأي الطبي الثاني المناسبة (الفئة 1 تقرير مكتوب أو الفئة 2 مكالمة مرئية ومكتوب) وإتمام الدفع الآمن عبر مدى أو Apple Pay.',
-          descEn: 'ALO Care Coordinator has generated your certified ZATCA tax invoice. Select your preferred tier (Tier 1 written only or Tier 2 video call + written) and pay securely via Mada or Apple Pay.',
-          queueStatusAr: 'بانتظار تأكيد الدفع عبر بوابة Tap المعتمدة من ساما',
-          queueStatusEn: 'Awaiting payment confirmation via SAMA-compliant Tap Gateway',
+          titleAr: 'أصدر منسق ألو الفاتورة! يرجى إتمام السداد للمتابعة',
+          titleEn: 'Invoice & Payment Options Ready! Please complete payment to proceed',
+          descAr: 'أصدر منسق رعاية ألو الفاتورة الضريبية المعتمدة (ZATCA Phase-2) وحدد طرق الدفع المتاحة لك لإتمام رسوم الاستشارة بأمان.',
+          descEn: 'ALO Care Coordinator has issued your certified ZATCA tax invoice and enabled your assigned payment options. Complete checkout to proceed.',
+          queueStatusAr: 'بانتظار إتمام الدفع عبر طرق الدفع المعتمدة من المنسق',
+          queueStatusEn: 'Awaiting payment via your Coordinator-assigned payment options',
           nextRoleCode: 'P',
           nextRoleLabelAr: 'الانتقال إلى بوابة الدفع وسداد الفاتورة الآن →',
           nextRoleLabelEn: 'Open Payment Checkout & Complete Payment Now →',
-          slaAr: 'الدفع الآمن: مدى · فيزا · أبل باي · تابي',
-          slaEn: 'Payment Options: Mada · Visa · Apple Pay · Tabby',
+          slaAr: `طرق الدفع المتاحة: ${assignedMethodsLabelAr}`,
+          slaEn: `Payment Options: ${assignedMethodsLabelEn}`,
         };
       case 'WITH_CONSULTANT':
         return {
@@ -382,22 +428,33 @@ export const PatientStatusTimelineView: React.FC<Props> = ({
             }
           </div>
 
-          <button
-            onClick={() => {
-              if (stage === 'OPINION_READY' && onOpenTelehealth) {
-                onOpenTelehealth();
-              } else if (stage === 'AWAITING_PAYMENT' && onOpenPayment) {
-                onOpenPayment();
-              } else if (onSelectRole) {
-                onSelectRole(content.nextRoleCode);
-              } else {
-                onAdvanceStage();
-              }
-            }}
-            className="w-full sm:w-auto bg-gradient-to-r from-alo-teal to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white font-extrabold py-3 px-6 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-xs active:scale-95"
-          >
-            <span>{isAr ? content.nextRoleLabelAr : content.nextRoleLabelEn}</span>
-          </button>
+          {stage === 'AWAITING_PAYMENT' && (!isInvoiceIssued || (isPaid && !isPaymentVerified)) && !isDemoMode ? (
+            <span className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-200 border border-amber-200 dark:border-amber-800 text-xs font-extrabold">
+              <Clock className="w-4 h-4 animate-pulse" />
+              <span>
+                {!isInvoiceIssued
+                  ? (isAr ? 'بانتظار إعداد الفاتورة وطرق الدفع من منسق رعاية ألو' : 'Awaiting ALO Coordinator payment setup')
+                  : (isAr ? 'تم السداد — بانتظار تحقق منسق ألو وتوصيل الاستشاري' : 'Paid — awaiting ALO Coordinator verification')}
+              </span>
+            </span>
+          ) : (
+            <button
+              onClick={() => {
+                if (stage === 'OPINION_READY' && onOpenTelehealth) {
+                  onOpenTelehealth();
+                } else if (stage === 'AWAITING_PAYMENT' && isInvoiceIssued && !isPaid && onOpenPayment) {
+                  onOpenPayment();
+                } else if (onSelectRole) {
+                  onSelectRole(content.nextRoleCode);
+                } else {
+                  onAdvanceStage();
+                }
+              }}
+              className="w-full sm:w-auto bg-gradient-to-r from-alo-teal to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white font-extrabold py-3 px-6 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-xs active:scale-95"
+            >
+              <span>{isAr ? content.nextRoleLabelAr : content.nextRoleLabelEn}</span>
+            </button>
+          )}
         </div>
       </div>
 

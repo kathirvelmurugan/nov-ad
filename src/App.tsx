@@ -78,6 +78,9 @@ export const App: React.FC = () => {
         setActivePersona={state.setActivePersona}
         setIsWhatsAppDrawerOpen={state.setIsWhatsAppDrawerOpen}
         handleAdvanceStage={state.handleAdvanceStage}
+        handleAssignPaymentToPatient={state.handleAssignPaymentToPatient}
+        handleCompletePatientPayment={state.handleCompletePatientPayment}
+        handleVerifyPaymentAndDispatch={state.handleVerifyPaymentAndDispatch}
         handleUpdateCase={state.handleUpdateCase}
         handleSelectPersona={state.handleSelectPersona}
         handleSelectPatientSubView={state.handleSelectPatientSubView}

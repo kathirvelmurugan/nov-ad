@@ -332,6 +332,11 @@ export const PatientDevice: React.FC<CockpitDeviceProps> = ({
                 ? 'Video Telehealth Consultation + Certified Written Report (Tier 2)' 
                 : 'Certified Written Second Opinion Report (Tier 1)';
 
+              const allowedLabels = (activeCase.allowedPaymentMethods && activeCase.allowedPaymentMethods.length > 0
+                ? activeCase.allowedPaymentMethods
+                : ['mada', 'applepay']
+              ).map((m) => m === 'mada' ? (isAr ? 'مدى' : 'Mada') : m === 'applepay' ? 'Apple Pay' : m === 'visa' ? 'Visa' : 'Tabby').join(' / ');
+
               return (
                 <>
                   <div
@@ -376,6 +381,7 @@ export const PatientDevice: React.FC<CockpitDeviceProps> = ({
                     onClick={() => {
                       onUpdateCase({
                         tier: prescribedTier,
+                        paymentVerified: false,
                         pricing: {
                           ...(activeCase.pricing || {}),
                           tier: prescribedTier,
@@ -386,6 +392,14 @@ export const PatientDevice: React.FC<CockpitDeviceProps> = ({
                           tierName: prescribedTier === 1 ? 'Written' : 'Video',
                           invoiceNumber: activeCase.pricing?.invoiceNumber || 'INV-2026-001',
                           paid: true,
+                        },
+                        paymentDetails: {
+                          ...(activeCase.paymentDetails || {}),
+                          method: (activeCase.allowedPaymentMethods && activeCase.allowedPaymentMethods[0]) || 'mada',
+                          status: 'completed',
+                          amount: prescribedAmount,
+                          invoiceNumber: activeCase.pricing?.invoiceNumber || 'INV-2026-001',
+                          currency: 'SAR',
                         },
                       });
                     }}
@@ -409,8 +423,8 @@ export const PatientDevice: React.FC<CockpitDeviceProps> = ({
                     <span>💳</span>
                     <span>
                       {isAr
-                        ? `سداد ${prescribedAmount} ر.س عبر مدى / Apple Pay`
-                        : `Pay ${prescribedAmount} SAR via Mada / Apple Pay`}
+                        ? `سداد ${prescribedAmount} ر.س عبر ${allowedLabels}`
+                        : `Pay ${prescribedAmount} SAR via ${allowedLabels}`}
                     </span>
                   </button>
                 </>

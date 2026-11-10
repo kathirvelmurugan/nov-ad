@@ -18,6 +18,8 @@ export type TenantTier = 'ALO_MASTER' | 'MEDICAL_CENTER_TENANT';
 
 export type DoctorSelectionPreference = 'need_assistance' | 'specific_doctor';
 
+export type PaymentMethodId = 'mada' | 'applepay' | 'visa' | 'tabby';
+
 export type ClinicalFocusQuestions = [string, string, string];
 
 export interface Persona {
@@ -212,6 +214,8 @@ export interface ClinicalCase {
   modality?: string;
   referralApproved?: boolean;
   invoiceIssued?: boolean;
+  allowedPaymentMethods?: PaymentMethodId[];
+  paymentAssignedAt?: string;
   paymentVerified?: boolean;
   reportReleased?: boolean;
   verdicts?: string[];

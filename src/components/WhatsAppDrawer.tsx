@@ -78,7 +78,7 @@ export const WhatsAppDrawer: React.FC<Props> = ({
       list.push({
         code: 'W05',
         title: 'موافقة الطبيب المعالج وصياغة الأسئلة (Doctor Approved)',
-        body: `اعتمد ${activeCase.treatingDoctor?.name || 'د. عبدالله الشمري'} في ${activeCase.treatingDoctor?.hospital || 'مستشفى رعاية الرياض'} إحالة حالتك للاستشاري الدولي وصاغ الأسئلة السريرية التخصصية. الفاتورة الضريبية جاهزة للسداد.`,
+        body: `اعتمد ${activeCase.treatingDoctor?.name || 'د. عبدالله الشمري'} في ${activeCase.treatingDoctor?.hospital || 'مستشفى رعاية الرياض'} إحالة حالتك. أُرسل الطلب إلى منسق رعاية ألو لإعداد الفاتورة وطرق الدفع.`,
         button: 'عرض الأسئلة السريرية الموجهة للاستشاري',
         time: '10:20 AM',
       });
@@ -91,14 +91,23 @@ export const WhatsAppDrawer: React.FC<Props> = ({
       !!activeCase.paymentVerified ||
       ['WITH_CONSULTANT', 'OPINION_READY', 'PARTNER_SERVICES', 'FOLLOW_UP_21_DAYS', 'CLOSED'].includes(activeCase.currentStage);
 
-    if (doctorApproved) {
+    const isVerified =
+      !!activeCase.paymentVerified ||
+      !!activeCase.metadata?.paymentVerified ||
+      ['WITH_CONSULTANT', 'OPINION_READY', 'PARTNER_SERVICES', 'FOLLOW_UP_21_DAYS', 'CLOSED'].includes(activeCase.currentStage);
+
+    if (doctorApproved && (activeCase.invoiceIssued || isPaid)) {
       list.push({
         code: 'W06',
-        title: isPaid ? 'تأكيد السداد وتفعيل الإرسال السيادي (Payment & Egress)' : 'رابط سداد باقة الرأي الطبي الثاني (Invoice Ready)',
+        title: isPaid
+          ? (isVerified ? 'تأكيد السداد وتفعيل الإرسال السيادي (Payment Verified)' : 'تم استلام الدفع · بانتظار تحقق المنسق (Pending Verification)')
+          : 'رابط سداد باقة الرأي الطبي الثاني (Invoice Ready)',
         body: isPaid
-          ? `تم استلام سداد باقة الرأي الطبي الثاني (${activeCase.pricing?.totalSar || 250} ر.س شامل 15% ضريبة). تم تفعيل الرمز السيادي المشفّر (${activeCase.egressToken || 'ALO-KSA-9482'}) وتوجيه الملف للاستشاري الدولي.`
-          : `أصدرت إدارة الرعاية فاتورة الباقة (${activeCase.pricing?.totalSar || 250} ر.س شامل ضريبة القيمة المضافة 15%). يُرجى السداد عبر مدى أو أبل باي لمتابعة الإرسال الدولي.`,
-        button: isPaid ? 'تحميل الفاتورة الضريبية المعتمدة (ZATCA)' : 'ادفع بأمان عبر Tap Payments (Mada / Apple Pay)',
+          ? (isVerified
+              ? `تم التحقق من سداد باقة الرأي الطبي الثاني (${activeCase.pricing?.totalSar || 150} ر.س شامل 15% ضريبة). تم تفعيل الرمز السيادي المشفّر (${activeCase.egressToken || 'ALO-KSA-9482'}) وتوجيه الملف للاستشاري الدولي.`
+              : `تم استلام سدادك (${activeCase.pricing?.totalSar || 150} ر.س). يقوم منسق رعاية ألو بالتحقق من العملية قبل إرسال الملف للاستشاري الدولي.`)
+          : `أصدر منسق رعاية ألو فاتورة الباقة (${activeCase.pricing?.totalSar || 150} ر.س شامل ضريبة القيمة المضافة 15%) وحدد طرق الدفع المتاحة لك.`,
+        button: isPaid ? 'تحميل الفاتورة الضريبية المعتمدة (ZATCA)' : 'ادفع بأمان عبر بوابة السداد المعتمدة',
         time: '11:05 AM',
       });
     }
@@ -106,6 +115,7 @@ export const WhatsAppDrawer: React.FC<Props> = ({
     // Stage 5 (W08) - Indian Consultant Reviewing 3D Scans
     const withConsultant =
       isPaid &&
+      isVerified &&
       ((activeCase.stage && activeCase.stage >= 5) ||
         ['WITH_CONSULTANT', 'OPINION_READY', 'PARTNER_SERVICES', 'FOLLOW_UP_21_DAYS', 'CLOSED'].includes(activeCase.currentStage));
 
