@@ -1,6 +1,9 @@
 import React from 'react';
 import { ClinicalCase } from '../../types';
-import { TEAL_PRIMARY, TEAL_SECONDARY, WHATSAPP_GREEN } from './types';
+import { TEAL_PRIMARY } from './types';
+import { ReportDemographicsHeader } from '../report/ReportDemographicsHeader';
+import { ReportQuestionsSection, QuestionAndAnswerItem } from '../report/ReportQuestionsSection';
+import { ReportSignaturesFooter } from '../report/ReportSignaturesFooter';
 
 interface Props {
   isOpen: boolean;
@@ -27,7 +30,7 @@ export const BilingualReportModal: React.FC<Props> = ({
   const customAnswers = activeCase.consultantAnswers || [];
   const customQuestions = activeCase.focusQuestions || activeCase.treatingDoctor?.focusQuestions || [];
 
-  const questionsAndAnswers = [
+  const questionsAndAnswers: QuestionAndAnswerItem[] = [
     {
       num: 1,
       qAr: customQuestions[0] || 'هل توصي بإجراء استبدال الصمام بالقسطرة (TAVR) أم الجراحة المفتوحة (SAVR) بناءً على نتائج الإيكو ومستوى التكلس؟',
@@ -170,370 +173,27 @@ export const BilingualReportModal: React.FC<Props> = ({
             gap: '20px',
           }}
         >
-          {/* Document Official Header */}
-          <div
-            style={{
-              backgroundColor: '#ffffff',
-              borderRadius: '12px',
-              padding: '20px 24px',
-              border: '1px solid #e2e8f0',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              flexWrap: 'wrap',
-              gap: '16px',
-            }}
-          >
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span
-                  style={{
-                    backgroundColor: TEAL_PRIMARY,
-                    color: '#ffffff',
-                    padding: '3px 8px',
-                    borderRadius: '4px',
-                    fontWeight: 900,
-                    fontSize: '13px',
-                    letterSpacing: '1px',
-                  }}
-                >
-                  ALO DOCTOR
-                </span>
-                <span style={{ fontSize: '13px', fontWeight: 800, color: '#0f172a' }}>
-                  {isAr ? 'منصة الاستشارات الطبية الدولية المعتمدة' : 'Certified International Second Opinion Service'}
-                </span>
-              </div>
-              <div style={{ fontSize: '11px', color: '#64748b', marginTop: '6px' }}>
-                المملكة العربية السعودية · المركز السعودي للرعاية الصحية الاتصالية وحجب الهوية (SDAIA Clean Room)
-              </div>
-            </div>
+          <ReportDemographicsHeader
+            activeCase={activeCase}
+            isAr={isAr}
+            patientName={patientName}
+            patientNameEn={patientNameEn}
+            treatingDocName={treatingDocName}
+            consultantName={consultantName}
+            invoiceNum={invoiceNum}
+          />
 
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <span
-                style={{
-                  backgroundColor: '#dcfce7',
-                  color: '#166534',
-                  border: '1px solid #86efac',
-                  borderRadius: '6px',
-                  padding: '4px 8px',
-                  fontSize: '10px',
-                  fontWeight: 800,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                }}
-              >
-                <span>✓</span>
-                <span>SDAIA Art. 29 Tokenized ({activeCase.egressToken || 'ALO-KSA-9482'})</span>
-              </span>
-              <span
-                style={{
-                  backgroundColor: '#f0fdfa',
-                  color: TEAL_PRIMARY,
-                  border: `1px solid ${TEAL_SECONDARY}`,
-                  borderRadius: '6px',
-                  padding: '4px 8px',
-                  fontSize: '10px',
-                  fontWeight: 800,
-                }}
-              >
-                MOH Telehealth Certified
-              </span>
-            </div>
-          </div>
+          <ReportQuestionsSection
+            questionsAndAnswers={questionsAndAnswers}
+            isAr={isAr}
+          />
 
-          {/* Patient & Referring Facility Demographics */}
-          <div
-            style={{
-              backgroundColor: '#ffffff',
-              borderRadius: '12px',
-              padding: '16px 20px',
-              border: '1px solid #e2e8f0',
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-              gap: '12px',
-              fontSize: '11px',
-            }}
-          >
-            <div>
-              <span style={{ color: '#64748b', display: 'block' }}>{isAr ? 'اسم المريض:' : 'Patient Name:'}</span>
-              <strong style={{ color: '#0f172a', fontSize: '13px' }}>{patientName}</strong>
-              <div style={{ color: '#94a3b8', fontSize: '10px' }}>{patientNameEn} · 48Y / Male</div>
-            </div>
-
-            <div>
-              <span style={{ color: '#64748b', display: 'block' }}>{isAr ? 'الطبيب السعودي المعالج (المملكة):' : 'Saudi Treating Doctor (KSA):'}</span>
-              <strong style={{ color: '#0f172a', fontSize: '12px' }}>{treatingDocName}</strong>
-              <div style={{ color: '#94a3b8', fontSize: '10px' }}>مستشفى رعاية الرياض / KFSHRC</div>
-            </div>
-
-            <div>
-              <span style={{ color: '#64748b', display: 'block' }}>{isAr ? 'الاستشاري الدولي المعين (الهند):' : 'Assigned Senior Consultant (India):'}</span>
-              <strong style={{ color: TEAL_PRIMARY, fontSize: '12px' }}>{consultantName}</strong>
-              <div style={{ color: '#94a3b8', fontSize: '10px' }}>{activeCase.consultant?.center || 'Apollo Hospitals'} · {activeCase.consultant?.city || 'India'}</div>
-            </div>
-
-            <div>
-              <span style={{ color: '#64748b', display: 'block' }}>{isAr ? 'نمط الاستشارة والفاتورة:' : 'Modality & ZATCA Invoice:'}</span>
-              <strong style={{ color: '#0f172a', fontSize: '12px' }}>
-                {activeCase.modality === 'Video' ? 'Video + Written (Tier 2)' : 'Written Opinion (Tier 1)'}
-              </strong>
-              <div style={{ color: WHATSAPP_GREEN, fontSize: '10px', fontWeight: 700 }}>
-                ✓ {invoiceNum} · مدفوعة بالكامل عبر مدى
-              </div>
-            </div>
-          </div>
-
-          {/* Diagnostic Imaging Audit Summary */}
-          <div
-            style={{
-              backgroundColor: '#f0fdf4',
-              borderRadius: '12px',
-              padding: '14px 18px',
-              border: `1.5px solid ${WHATSAPP_GREEN}`,
-            }}
-          >
-            <div style={{ fontSize: '12px', fontWeight: 800, color: '#166534', marginBottom: '4px' }}>
-              🔬 {isAr ? 'فحص التصوير الطبي ثلاثي الأبعاد (3D Volumetric DICOM Audit)' : '3D Volumetric DICOM Audit'}
-            </div>
-            <div style={{ fontSize: '11px', color: '#334155', lineHeight: 1.5 }}>
-              {isAr
-                ? 'تمت معاينة ومطابقة مقاطع الأشعة المقطعية متعددة الشرائح ورنين القلب المغناطيسي (سلسلة ٤: تكلسات الشرفة وحلقة الصمام الأبهري) من قبل د. براديب كومار في مستشفى أبولو بالهند.'
-                : 'Multi-slice CT cardiac volumetric imaging and transesophageal echocardiography (Series #4: Annular and leaflet calcification) thoroughly reviewed by Dr. Pradeep Kumar at Apollo Hospitals.'}
-            </div>
-          </div>
-
-          {/* The 3 Specific Focus Questions & Answers (Dual-Language English + Certified Arabic) */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <div style={{ fontSize: '13px', fontWeight: 800, color: TEAL_PRIMARY, display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span>❓</span>
-              <span>
-                {isAr
-                  ? 'إجابة الأسئلة السريرية الثلاثة الموجهة من الطبيب السعودي (مترجمة ومعتمدة)'
-                  : 'Answers to the 3 Treating Physician Focus Questions (Bilingual Certified)'}
-              </span>
-            </div>
-
-            {questionsAndAnswers.map((qa) => (
-              <div
-                key={qa.num}
-                style={{
-                  backgroundColor: '#ffffff',
-                  borderRadius: '12px',
-                  border: '1.5px solid #cbd5e1',
-                  overflow: 'hidden',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.03)',
-                }}
-              >
-                {/* Question Header */}
-                <div
-                  style={{
-                    backgroundColor: '#f1f5f9',
-                    padding: '10px 16px',
-                    borderBottom: '1px solid #e2e8f0',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    flexWrap: 'wrap',
-                    gap: '8px',
-                  }}
-                >
-                  <div style={{ fontSize: '12px', fontWeight: 800, color: '#0f172a' }}>
-                    <span style={{ color: TEAL_PRIMARY, fontWeight: 900 }}>Q{qa.num}: </span>
-                    <span>{qa.qAr}</span>
-                  </div>
-                  <span
-                    style={{
-                      backgroundColor: '#e0f2fe',
-                      color: '#0369a1',
-                      padding: '3px 8px',
-                      borderRadius: '999px',
-                      fontSize: '10px',
-                      fontWeight: 700,
-                    }}
-                  >
-                    {qa.clinicalRecommendation}
-                  </span>
-                </div>
-
-                {/* Question English Subtitle */}
-                <div style={{ padding: '6px 16px', backgroundColor: '#f8fafc', borderBottom: '1px solid #f1f5f9', fontSize: '10px', color: '#64748b', fontStyle: 'italic' }}>
-                  English Query: {qa.qEn}
-                </div>
-
-                {/* Dual-Column Answers (English Original + Certified Arabic Translation) */}
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-                    gap: '12px',
-                    padding: '14px 16px',
-                  }}
-                >
-                  {/* English Original */}
-                  <div
-                    style={{
-                      backgroundColor: '#f8fafc',
-                      borderRadius: '8px',
-                      padding: '12px',
-                      border: '1px solid #e2e8f0',
-                      direction: 'ltr',
-                      textAlign: 'left',
-                    }}
-                  >
-                    <div style={{ fontSize: '10px', fontWeight: 800, color: '#475569', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                      🇬🇧 Indian Consultant Clinical Opinion (English):
-                    </div>
-                    <div style={{ fontSize: '11px', color: '#0f172a', lineHeight: 1.5 }}>
-                      {qa.ansEn}
-                    </div>
-                  </div>
-
-                  {/* Certified Arabic Localization */}
-                  <div
-                    style={{
-                      backgroundColor: '#f0fdfa',
-                      borderRadius: '8px',
-                      padding: '12px',
-                      border: `1px solid ${TEAL_SECONDARY}`,
-                      direction: 'rtl',
-                      textAlign: 'right',
-                    }}
-                  >
-                    <div style={{ fontSize: '10px', fontWeight: 800, color: TEAL_PRIMARY, marginBottom: '4px' }}>
-                      🇸🇦 الترجمة الطبية والتعريب السريري المعتمد (منسق رعاية ألو):
-                    </div>
-                    <div style={{ fontSize: '11px', color: '#0f172a', lineHeight: 1.5 }}>
-                      {qa.ansAr}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Holistic Clinical Notes & Observations (Free-text Relay) */}
-          <div
-            style={{
-              backgroundColor: '#ffffff',
-              borderRadius: '12px',
-              border: `1.5px solid ${TEAL_SECONDARY}`,
-              overflow: 'hidden',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.03)',
-            }}
-          >
-            <div
-              style={{
-                backgroundColor: '#f0fdfa',
-                padding: '10px 16px',
-                borderBottom: `1px solid ${TEAL_SECONDARY}`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-              }}
-            >
-              <div style={{ fontSize: '12px', fontWeight: 800, color: TEAL_PRIMARY }}>
-                📝 {isAr ? 'الملاحظات السريرية الإضافية والتوصيات الجراحية (الاستشاري الدولي)' : 'Senior Consultant Additional Clinical Impressions & Notes'}
-              </div>
-              <span style={{ fontSize: '10px', color: '#166534', fontWeight: 700 }}>
-                {activeCase.consultant?.center || 'Apollo Hospitals'}
-              </span>
-            </div>
-
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-                gap: '12px',
-                padding: '14px 16px',
-              }}
-            >
-              <div
-                style={{
-                  backgroundColor: '#f8fafc',
-                  borderRadius: '8px',
-                  padding: '12px',
-                  border: '1px solid #e2e8f0',
-                  direction: 'ltr',
-                  textAlign: 'left',
-                }}
-              >
-                <div style={{ fontSize: '10px', fontWeight: 800, color: '#475569', marginBottom: '4px', textTransform: 'uppercase' }}>
-                  🇬🇧 English Clinical Observations:
-                </div>
-                <div style={{ fontSize: '11px', color: '#0f172a', lineHeight: 1.5 }}>
-                  {activeCase.consultantNotes ||
-                    'Patient presents with severe symptomatic calcific aortic stenosis. Correlating 3D DICOM reconstructions with clinical hemodynamics, standalone SAVR 23mm valve replacement is strongly endorsed. Intraoperative transesophageal echocardiography (TEE) should guide seating and verify clearance from coronary ostia.'}
-                </div>
-              </div>
-
-              <div
-                style={{
-                  backgroundColor: '#f0fdfa',
-                  borderRadius: '8px',
-                  padding: '12px',
-                  border: `1px solid ${TEAL_SECONDARY}`,
-                  direction: 'rtl',
-                  textAlign: 'right',
-                }}
-              >
-                <div style={{ fontSize: '10px', fontWeight: 800, color: TEAL_PRIMARY, marginBottom: '4px' }}>
-                  🇸🇦 التعريب والتدقيق السريري المعتمد (منسق رعاية ألو):
-                </div>
-                <div style={{ fontSize: '11px', color: '#0f172a', lineHeight: 1.5 }}>
-                  تأكيد استبدال الصمام الأبهري جراحياً بصمام 23 ملم بناءً على تطابق الأشعة المقطعية ثلاثية الأبعاد مع القياسات الديناميكية للقلب. يُوصى بالاستعانة بالإيكو عبر المريء أثناء الجراحة لمراقبة تثبيت الصمام وضمان كفاءة التروية التاجية.
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Official Signatures & Digital Certification Seals */}
-          <div
-            style={{
-              backgroundColor: '#ffffff',
-              borderRadius: '12px',
-              padding: '18px 20px',
-              border: '1px solid #e2e8f0',
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-              gap: '16px',
-              alignItems: 'center',
-            }}
-          >
-            {/* Signature 1: Treating Doctor */}
-            <div style={{ textAlign: 'center', padding: '10px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-              <div style={{ fontSize: '10px', color: '#64748b' }}>اعتماد ومصادقة الطبيب السعودي المعالج</div>
-              <div style={{ fontSize: '12px', fontWeight: 800, color: '#0f172a', marginTop: '4px' }}>{treatingDocName}</div>
-              <div style={{ fontSize: '9px', color: '#94a3b8' }}>استشاري أمراض القلب · مستشفى رعاية الرياض</div>
-              <div style={{ marginTop: '6px', fontSize: '10px', color: '#166534', fontWeight: 700 }}>
-                {activeCase.doctorReleasedToPatient ? '✓ مصادق عليه وسُلّم للمريض رسمياً' : '✓ اعتمد التحويل والأسئلة السريرية'}
-              </div>
-            </div>
-
-            {/* Signature 2: Indian Consultant */}
-            <div style={{ textAlign: 'center', padding: '10px', backgroundColor: '#f0fdfa', borderRadius: '8px', border: `1px solid ${TEAL_SECONDARY}` }}>
-              <div style={{ fontSize: '10px', color: TEAL_PRIMARY }}>اعتماد الاستشاري الدولي بالهند</div>
-              <div style={{ fontSize: '12px', fontWeight: 800, color: TEAL_PRIMARY, marginTop: '4px' }}>{consultantName}</div>
-              <div style={{ fontSize: '9px', color: '#64748b' }}>Senior Cardiothoracic Surgeon · Apollo Hospitals</div>
-              <div style={{ marginTop: '6px', fontSize: '10px', color: '#166534', fontWeight: 700 }}>✓ Signed & Sealed via DICOM Hash</div>
-            </div>
-
-            {/* Signature 3: Alo Coordinator & Medical Translator */}
-            <div style={{ textAlign: 'center', padding: '10px', backgroundColor: '#f0fdf4', borderRadius: '8px', border: `1px solid ${WHATSAPP_GREEN}` }}>
-              <div style={{ fontSize: '10px', color: '#166534' }}>التدقيق اللغوي والتعريب السريري</div>
-              <div style={{ fontSize: '12px', fontWeight: 800, color: '#166534', marginTop: '4px' }}>عبدالرحمن الشهري</div>
-              <div style={{ fontSize: '9px', color: '#64748b' }}>منسق رعاية ألو ومترجم طبي معتمد</div>
-              <div style={{ marginTop: '6px', fontSize: '10px', color: '#166534', fontWeight: 700 }}>✓ مصادقة الترجمة والتوجيه للطبيب</div>
-            </div>
-          </div>
-
-          {/* Legal & Regulatory Compliance Footer */}
-          <div style={{ textAlign: 'center', fontSize: '10px', color: '#94a3b8', lineHeight: 1.5, padding: '4px 0 12px 0' }}>
-            تم إصدار هذا الرأي الطبي الثاني وفقاً لمعايير المجلس الصحي السعودي وحجب البيانات المعتمد من سدايا (SDAIA).
-            <br />
-            ALO DOCTOR CLINICAL DOSSIER · SECURE DIGITAL ID: SHA-256: 8f4a1c92e071... · ZATCA CERTIFIED
-          </div>
+          <ReportSignaturesFooter
+            activeCase={activeCase}
+            isAr={isAr}
+            treatingDocName={treatingDocName}
+            consultantName={consultantName}
+          />
         </div>
       </div>
     </div>
