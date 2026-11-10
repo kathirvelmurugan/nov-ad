@@ -1,4 +1,4 @@
-import { ClinicalCase, ClinicalStage } from '../types';
+import { ClinicalCase, ClinicalStage, RoleCode } from '../types';
 
 // ─── Storage Keys ───────────────────────────────────────────────────────────
 export const STORAGE_KEY       = 'alo_cases_v2.4';
@@ -7,12 +7,19 @@ export const THEME_KEY         = 'alo_theme_v2.4';
 export const LANG_KEY          = 'alo_lang_v2.4';
 export const VIEW_MODE_KEY     = 'alo_view_mode_v2.4';
 export const USER_SESSION_KEY  = 'alo_user_session_v2.4';
+export const TENANTS_KEY       = 'alo_tenants_v2.4';
+export const PLATFORM_USERS_KEY = 'alo_platform_users_v2.4';
+export const CATALOGS_KEY      = 'alo_catalogs_v2.4';
+export const AUDIT_LOGS_KEY    = 'alo_audit_logs_v2.4';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 export interface UserSession {
   isAuthenticated: boolean;
   phone: string;
   personaId: string | null;
+  roleCode?: RoleCode;
+  hospitalId?: string;
+  fullName?: string;
   isGuest: boolean;
   expiresAt: number;
   lang: 'ar' | 'en';

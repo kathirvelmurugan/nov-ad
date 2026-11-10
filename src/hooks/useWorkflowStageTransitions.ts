@@ -68,7 +68,7 @@ export function useWorkflowStageTransitions({
       handleUpdateCase({ currentStage: 'WITH_CONSULTANT' });
     }
     else if (['L', 'PH', 'REC', 'H', 'T', 'V'].includes(p.code)) handleUpdateCase({ currentStage: 'PARTNER_SERVICES' });
-    else if (p.code === 'AD' || p.code === 'HA') handleUpdateCase({ currentStage: 'CLOSED' });
+    // Note: AD and HA governance logins must NEVER force-mutate clinical case stages to CLOSED
     else if (p.code === 'P' || p.code === 'F') {
       if (activeCase.currentStage === 'CLOSED') {
         handleUpdateCase({ currentStage: 'INTAKE_RECEIVED' });

@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { RoleCode } from '../../types';
+
 export const PALETTE = {
   primary: '#007B6E',
   secondary: '#00C6AE',
@@ -16,26 +18,35 @@ export const SESSION_KEY = 'alo_user_session_v2.4';
 export const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 export const DEV_OTP = '123456';
 
+export type AuthPortalTab = 'patient' | 'clinical' | 'hospital' | 'superadmin';
+
 export interface PersonaPreset {
   id: string;
   nameAr: string;
   nameEn: string;
   phone: string;
   role: string;
+  roleCode?: RoleCode;
+  hospitalId?: string;
 }
 
 export const PERSONA_PRESETS: PersonaPreset[] = [
-  { id: 'patient', nameAr: 'سالم العامري', nameEn: 'Salem Al Ameri', phone: '+966501111111', role: 'Patient / مريض' },
-  { id: 'doctor', nameAr: 'د. عبد الله العتيبي', nameEn: 'Dr. Abdullah Al Otaibi', phone: '+966502222222', role: 'Saudi Treating Doctor / طبيب معالج' },
-  { id: 'nurse', nameAr: 'نورة الشهري', nameEn: 'Noura Al Shehri', phone: '+966503333333', role: 'ALO Triage Nurse / ممرضة فرز' },
-  { id: 'admin', nameAr: 'ريان الغامدي', nameEn: 'Rayan Al Ghamdi', phone: '+966504444444', role: 'Medical Center Admin / مدير مركز طبي' },
-  { id: 'consultant', nameAr: 'د. راجيش شارما', nameEn: 'Dr. Rajesh Sharma', phone: '+966506666666', role: 'International Consultant / استشاري دولي' }
+  { id: 'patient', nameAr: 'سالم العامري', nameEn: 'Salem Al Ameri', phone: '+966501111111', role: 'Patient / مريض', roleCode: 'P' },
+  { id: 'doctor', nameAr: 'د. عبد الله الشمري', nameEn: 'Dr. Abdullah Al Shammari', phone: '+966502222222', role: 'Saudi Treating Doctor / طبيب معالج', roleCode: 'D', hospitalId: 'hosp-riyadh-care' },
+  { id: 'nurse', nameAr: 'سارة الدوسري', nameEn: 'Sara Al Dossary', phone: '+966503333333', role: 'ALO Triage Nurse / ممرضة فرز', roleCode: 'N' },
+  { id: 'coordinator', nameAr: 'عبدالرحمن الشهري', nameEn: 'Abdulrahman Al Shehri', phone: '+966505555555', role: 'ALO Coordinator / منسق رعاية ألو', roleCode: 'C' },
+  { id: 'hospital_admin', nameAr: 'د. فهد العتيبي', nameEn: 'Dr. Fahad Al Otaibi', phone: '+966504444444', role: 'Medical Center Admin / مدير مركز طبي', roleCode: 'HA', hospitalId: 'hosp-riyadh-care' },
+  { id: 'super_admin', nameAr: 'المشرف العام', nameEn: 'Platform Super Admin', phone: '+966500000001', role: 'Super Admin / المشرف العام', roleCode: 'AD' },
+  { id: 'consultant', nameAr: 'د. أرجون ميهتا', nameEn: 'Dr. Arjun Mehta', phone: '+966506666666', role: 'International Consultant / استشاري دولي', roleCode: 'K' }
 ];
 
 export interface SessionData {
   isAuthenticated: boolean;
   phone: string;
   personaId: string | null;
+  roleCode?: RoleCode;
+  hospitalId?: string;
+  fullName?: string;
   isGuest: boolean;
   expiresAt: number;
   lang: 'ar' | 'en';

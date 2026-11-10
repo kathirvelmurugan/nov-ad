@@ -24,6 +24,8 @@ import { AutoDemoController }      from '../components/AutoDemoController';
 import { PatientPipelineBoard }    from '../components/PatientPipelineBoard';
 import { FiveDeviceCockpitView }   from '../components/FiveDeviceCockpitView';
 import { NewCaseModal }            from '../components/NewCaseModal';
+import { ActAsBanner }             from '../components/layout/ActAsBanner';
+import { useAdminGovernanceState } from '../hooks/useAdminGovernanceState';
 import UnifiedAuthGate             from '../components/auth/UnifiedAuthGate';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -104,6 +106,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   const isPureLandingPage = activePersona.code === 'P' && patientSubView === 'landing' && viewMode !== 'studio';
   const isDemoMode = typeof window !== 'undefined' && (new URLSearchParams(window.location.search).get('demo') === '1' || window.location.hash === '#cockpit');
 
+  const { impersonationSession, stopActAs } = useAdminGovernanceState(activePersona, handleSelectPersona);
+
   // ── Authentication gate ──────────────────────────────────────────────────
   if (!userSession) {
     return (
@@ -111,13 +115,23 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         initialLang={lang}
         onAuthenticated={(session) => {
           setUserSession(session);
-          if (session.personaId) {
-            const personaCodeMap: Record<string, string> = {
-              patient: 'P', doctor: 'D', nurse: 'N', admin: 'C', consultant: 'K',
-            };
-            const targetCode = personaCodeMap[session.personaId] || 'P';
-            const matched = PERSONAS.find((p) => p.code === targetCode);
-            if (matched) handleSelectPersona(matched);
+          const personaCodeMap: Record<string, string> = {
+            patient: 'P',
+            doctor: 'D',
+            nurse: 'N',
+            coordinator: 'C',
+            hospital_admin: 'HA',
+            super_admin: 'AD',
+            admin: 'HA',
+            consultant: 'K',
+          };
+          const targetCode = session.roleCode || (session.personaId ? personaCodeMap[session.personaId] : 'P') || 'P';
+          const matched = PERSONAS.find((p) => p.code === targetCode);
+          if (matched) {
+            handleSelectPersona({
+              ...matched,
+              hospitalId: session.hospitalId || matched.hospitalId,
+            });
           }
         }}
       />
@@ -130,6 +144,13 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
       dir={isAr ? 'rtl' : 'ltr'}
       lang={lang}
     >
+      {/* 0. Top Act-As Impersonation Preview Banner */}
+      <ActAsBanner
+        isRTL={isAr}
+        session={impersonationSession}
+        onExitPreview={() => stopActAs()}
+      />
+
       {/* 1. Top Utility Ribbon & Persona Switcher */}
       {!isPureLandingPage && (
         <TopProfileSwitcher

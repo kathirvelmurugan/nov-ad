@@ -19,6 +19,8 @@ import { OpinionTelehealthView }     from '../components/screens/OpinionTeleheal
 import { PartnerServicesView }       from '../components/screens/PartnerServicesView';
 import { FollowUpChatView }          from '../components/screens/FollowUpChatView';
 import { AdminSettingsView }         from '../components/screens/AdminSettingsView';
+import { SuperAdminPortalView }      from '../components/screens/SuperAdminPortalView';
+import { HospitalAdminPortalView }   from '../components/screens/HospitalAdminPortalView';
 import { CoordinatorPortalView }     from '../components/screens/CoordinatorPortalView';
 import { PatientStatusTimelineView } from '../components/screens/PatientStatusTimelineView';
 import { PatientHomeView }           from '../components/screens/PatientHomeView';
@@ -74,9 +76,27 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
   handleLogout,
 }) => {
 
-  // ── Admin / Health Authority ─────────────────────────────────────────────
-  if (activePersona.code === 'AD' || activePersona.code === 'HA') {
-    return <AdminSettingsView />;
+  // ── Super Admin (ALO Master) ─────────────────────────────────────────────
+  if (activePersona.code === 'AD') {
+    return (
+      <SuperAdminPortalView
+        lang={lang}
+        onSelectPersona={handleSelectPersona}
+        activePersona={activePersona}
+      />
+    );
+  }
+
+  // ── Hospital / Medical Center Admin ───────────────────────────────────────
+  if (activePersona.code === 'HA') {
+    return (
+      <HospitalAdminPortalView
+        lang={lang}
+        activePersona={activePersona}
+        activeCase={activeCase}
+        onSelectPersona={handleSelectPersona}
+      />
+    );
   }
 
   // ── ALO Coordinator ──────────────────────────────────────────────────────
@@ -164,13 +184,14 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
     );
   }
 
-  // ── Partner Roles (Lab, Home Nursing, Travel, Insurance) ─────────────────
-  if (['L', 'H', 'T', 'V'].includes(activePersona.code)) {
+  // ── Hospital Department & Partner Roles (Lab, Pharmacy, Reception, etc.) ───
+  if (['L', 'PH', 'REC', 'H', 'T', 'V'].includes(activePersona.code)) {
     return (
       <PartnerServicesView
         activeCase={activeCase}
         onAdvanceStage={handleAdvanceStage}
         onUpdateCase={handleUpdateCase}
+        roleFilter={['L', 'PH', 'REC'].includes(activePersona.code) ? (activePersona.code as 'L' | 'PH' | 'REC') : undefined}
       />
     );
   }

@@ -9,7 +9,8 @@ export const PERSONAS: Persona[] = [
     avatar: '👨‍💼',
     surface: 'patient-mobile',
     isRtl: true,
-    lang: 'ar'
+    lang: 'ar',
+    tenantTier: 'PATIENT_SELF',
   },
   {
     code: 'N',
@@ -19,7 +20,8 @@ export const PERSONAS: Persona[] = [
     avatar: '👩‍⚕️',
     surface: 'portal-web',
     isRtl: true,
-    lang: 'ar'
+    lang: 'ar',
+    tenantTier: 'ALO_MASTER',
   },
   {
     code: 'D',
@@ -29,7 +31,9 @@ export const PERSONAS: Persona[] = [
     avatar: '👨‍⚕️',
     surface: 'portal-web',
     isRtl: true,
-    lang: 'ar'
+    lang: 'ar',
+    tenantTier: 'MEDICAL_CENTER_TENANT',
+    hospitalId: 'hosp-riyadh-care',
   },
   {
     code: 'C',
@@ -39,16 +43,82 @@ export const PERSONAS: Persona[] = [
     avatar: '👔',
     surface: 'portal-web',
     isRtl: true,
-    lang: 'ar'
+    lang: 'ar',
+    tenantTier: 'ALO_MASTER',
   },
   {
     code: 'K',
     name: 'Dr. Arjun Mehta',
-    title: 'الاستشاري الهندي (Indian consultant: Dr. Arjun)',
-    badge: '🇮🇳 Indian consultant',
+    title: 'الاستشاري الدولي (Senior Consultant: Dr. Arjun)',
+    badge: '🇮🇳 Senior consultant',
     avatar: '👨‍⚕️',
     surface: 'consultant-mobile',
     isRtl: false,
-    lang: 'en'
-  }
+    lang: 'en',
+    tenantTier: 'EXTERNAL_SPECIALIST',
+  },
+  {
+    code: 'HA',
+    name: 'د. فهد العتيبي',
+    title: 'مدير المجمع الطبي (Medical Center Admin)',
+    badge: '🏥 Hospital Admin',
+    avatar: '🏢',
+    surface: 'admin-portal',
+    isRtl: true,
+    lang: 'ar',
+    tenantTier: 'MEDICAL_CENTER_TENANT',
+    hospitalId: 'hosp-riyadh-care',
+  },
+  {
+    code: 'L',
+    name: 'أخصائي المختبر (مستشفى رعاية الرياض)',
+    title: 'المختبر التشخيصي (Diagnostic Lab)',
+    badge: '🔬 Facility Lab',
+    avatar: '🧪',
+    surface: 'partner-portal',
+    isRtl: true,
+    lang: 'ar',
+    tenantTier: 'MEDICAL_CENTER_TENANT',
+    hospitalId: 'hosp-riyadh-care',
+  },
+  {
+    code: 'PH',
+    name: 'صيدلي المجمع الطبي',
+    title: 'الصيدلية السريرية (Facility Pharmacy)',
+    badge: '💊 Pharmacy',
+    avatar: '💊',
+    surface: 'partner-portal',
+    isRtl: true,
+    lang: 'ar',
+    tenantTier: 'MEDICAL_CENTER_TENANT',
+    hospitalId: 'hosp-riyadh-care',
+  },
+  {
+    code: 'REC',
+    name: 'موظف الاستقبال والمواعيد',
+    title: 'استقبال العيادات (Hospital Reception)',
+    badge: '📋 Reception',
+    avatar: '🛎️',
+    surface: 'partner-portal',
+    isRtl: true,
+    lang: 'ar',
+    tenantTier: 'MEDICAL_CENTER_TENANT',
+    hospitalId: 'hosp-riyadh-care',
+  },
+  {
+    code: 'AD',
+    name: 'مدير المنصة العام (Super Admin)',
+    title: 'المشرف العام لمنصة ألو دكتور (Platform Super Admin)',
+    badge: '🛡️ Super Admin',
+    avatar: '⚡',
+    surface: 'admin-portal',
+    isRtl: true,
+    lang: 'ar',
+    tenantTier: 'ALO_MASTER',
+  },
 ];
+
+export const PERSONA_BY_CODE: Record<string, Persona> = PERSONAS.reduce(
+  (acc, p) => ({ ...acc, [p.code]: p }),
+  {} as Record<string, Persona>
+);

@@ -7,13 +7,21 @@ import {
   PersonaPreset,
   PERSONA_PRESETS,
   SessionData,
+  AuthPortalTab,
   formatPhoneDisplay,
   extractRawPhone,
   validateSaudiMobile,
+  getPrimaryButtonStyle,
+  getInputStyle,
+  labelStyle,
 } from './authTypesAndUtils';
+import { PortalSelectorBar } from './PortalSelectorBar';
+import { HospitalStaffLoginForm } from './HospitalStaffLoginForm';
 import { PhoneEntryStep } from './steps/PhoneEntryStep';
 import { OtpVerificationStep } from './steps/OtpVerificationStep';
 import { PinSetupStep } from './steps/PinSetupStep';
+import { ShieldCheck, Lock } from 'lucide-react';
+import { RoleCode } from '../../types';
 
 export type { SessionData, PersonaPreset };
 export { PERSONA_PRESETS, SESSION_KEY };
@@ -25,10 +33,21 @@ interface UnifiedAuthGateProps {
 
 type AuthStep = 'phone' | 'otp' | 'setup';
 
+const getInitialPortal = (): AuthPortalTab => {
+  if (typeof window === 'undefined') return 'patient';
+  const searchParams = new URLSearchParams(window.location.search);
+  const portal = searchParams.get('portal');
+  if (portal === 'super-admin' || portal === 'superadmin' || window.location.pathname.endsWith('/admin')) return 'superadmin';
+  if (portal === 'hospital' || window.location.pathname.endsWith('/hospital')) return 'hospital';
+  if (portal === 'coordinator' || portal === 'nurse' || portal === 'doctor' || portal === 'clinical') return 'clinical';
+  return 'patient';
+};
+
 export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }: UnifiedAuthGateProps) {
   const [lang, setLang] = useState<'ar' | 'en'>(initialLang);
   const isRTL = lang === 'ar';
   
+  const [activePortal, setActivePortal] = useState<AuthPortalTab>(getInitialPortal);
   const [step, setStep] = useState<AuthStep>('phone');
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
@@ -38,6 +57,11 @@ export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }:
   const [isLoading, setIsLoading] = useState(false);
   const [deliveryMethod, setDeliveryMethod] = useState<'sms' | 'whatsapp'>('sms');
   const [countdown, setCountdown] = useState(0);
+
+  // Super Admin Credentials
+  const [superAdminPhone, setSuperAdminPhone] = useState('+966 50 000 0001');
+  const [superAdminPasscode, setSuperAdminPasscode] = useState('123456');
+
   const isDemoMode = typeof window !== 'undefined' && (new URLSearchParams(window.location.search).get('demo') === '1' || window.location.hash === '#cockpit');
 
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -82,41 +106,44 @@ export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }:
       return;
     }
     setIsLoading(true);
-    await new Promise(r => setTimeout(r, 800));
+    await new Promise(r => setTimeout(r, 600));
     setIsLoading(false);
     setCountdown(60);
     setStep('otp');
     setTimeout(() => otpRefs.current[0]?.focus(), 100);
   };
 
-  const completeAuth = (isGuest: boolean) => {
-    const matchedPersona = PERSONA_PRESETS.find(p => p.phone === extractRawPhone(phone));
+  const completeAuth = (isGuest: boolean, customRole?: RoleCode, customHospitalId?: string, customFullName?: string) => {
+    const rawPhone = isGuest ? '' : extractRawPhone(phone);
+    const matchedPersona = PERSONA_PRESETS.find(p => p.phone === rawPhone);
     const session: SessionData = {
       isAuthenticated: true,
-      phone: isGuest ? '' : extractRawPhone(phone),
-      personaId: matchedPersona?.id || null,
+      phone: rawPhone,
+      personaId: matchedPersona?.id || (customRole ? customRole.toLowerCase() : null),
+      roleCode: customRole || matchedPersona?.roleCode || 'P',
+      hospitalId: customHospitalId || matchedPersona?.hospitalId,
+      fullName: customFullName || (matchedPersona ? (isRTL ? matchedPersona.nameAr : matchedPersona.nameEn) : undefined),
       isGuest,
       expiresAt: Date.now() + THIRTY_DAYS_MS,
       lang
     };
-    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    try {
+      localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    } catch (e) {}
     setIsLoading(false);
     onAuthenticated(session);
   };
 
   const handlePersonaQuickLogin = async (persona: PersonaPreset) => {
     setIsLoading(true);
-    setPhone(formatPhoneDisplay(persona.phone));
-    setOtp(['1', '2', '3', '4', '5', '6']);
-    await new Promise(r => setTimeout(r, 200));
-    setIsLoading(false);
-    
-    // Instant 1-click authentication for QA Presets
     const rawPhone = extractRawPhone(persona.phone);
     const session: SessionData = {
       isAuthenticated: true,
       phone: rawPhone,
       personaId: persona.id,
+      roleCode: persona.roleCode || 'P',
+      hospitalId: persona.hospitalId,
+      fullName: isRTL ? persona.nameAr : persona.nameEn,
       isGuest: false,
       expiresAt: Date.now() + THIRTY_DAYS_MS,
       lang
@@ -124,7 +151,21 @@ export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }:
     try {
       localStorage.setItem(SESSION_KEY, JSON.stringify(session));
     } catch (e) {}
+    setIsLoading(false);
     onAuthenticated(session);
+  };
+
+  const handleHospitalStaffLoginSuccess = (staff: { phone: string; roleCode: RoleCode; hospitalId: string; fullName: string }) => {
+    completeAuth(false, staff.roleCode, staff.hospitalId, staff.fullName);
+  };
+
+  const handleSuperAdminSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (superAdminPasscode.trim() !== '123456') {
+      setError(t('رمز المرور غير صحيح (الرمز التجريبي 123456)', 'Invalid Super Admin Passcode (Demo: 123456)'));
+      return;
+    }
+    completeAuth(false, 'AD', undefined, 'Adrian Lewis (Super Admin)');
   };
 
   const handleOtpChange = (index: number, value: string) => {
@@ -150,117 +191,51 @@ export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }:
   const handleOtpPaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
     const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
-    if (pasted.length > 0) {
-      const newOtp = [...otp];
-      for (let i = 0; i < 6; i++) {
-        newOtp[i] = pasted[i] || '';
-      }
-      setOtp(newOtp);
-      const focusIdx = Math.min(pasted.length, 5);
-      otpRefs.current[focusIdx]?.focus();
+    if (pasted.length === 6) {
+      setOtp(pasted.split(''));
+      otpRefs.current[5]?.focus();
     }
   };
 
   const handleOtpSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const otpString = otp.join('');
-    if (otpString.length !== 6) {
-      setError(t('يرجى إدخال رمز التحقق المكون من 6 أرقام', 'Please enter the 6-digit verification code'));
+    const entered = otp.join('');
+    if (entered.length < 6) {
+      setError(t('يرجى إدخال رمز التحقق كاملاً (6 أرقام)', 'Please enter the complete 6-digit code'));
       return;
     }
-    if (otpString !== DEV_OTP) {
-      setError(t('رمز التحقق غير صحيح. استخدم 123456 للتجربة', 'Invalid OTP. Use 123456 for testing'));
+    if (entered !== DEV_OTP) {
+      setError(t('رمز التحقق غير صحيح (استخدم 123456)', 'Invalid verification code (use 123456)'));
       return;
     }
     setIsLoading(true);
     await new Promise(r => setTimeout(r, 600));
     setIsLoading(false);
-    setStep('setup');
+    completeAuth(false);
   };
 
-  const handleResendOtp = async () => {
-    if (countdown > 0) return;
-    setIsLoading(true);
-    await new Promise(r => setTimeout(r, 800));
-    setIsLoading(false);
+  const handleResendOtp = (method: 'sms' | 'whatsapp') => {
+    setDeliveryMethod(method);
     setCountdown(60);
     setOtp(['', '', '', '', '', '']);
     setError('');
-    otpRefs.current[0]?.focus();
-  };
-
-  const handleSetupSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (pin.length < 4) {
-      setError(t('يجب أن يتكون الرمز من 4 أرقام على الأقل', 'PIN must be at least 4 digits'));
-      return;
-    }
-    if (pin !== confirmPin) {
-      setError(t('الرمزان غير متطابقين', 'PINs do not match'));
-      return;
-    }
-    setIsLoading(true);
-    await new Promise(r => setTimeout(r, 500));
-    completeAuth(false);
-  };
-
-  const handleSkipSetup = () => {
-    completeAuth(false);
+    setTimeout(() => otpRefs.current[0]?.focus(), 100);
   };
 
   const handleGuestBypass = () => {
-    completeAuth(true);
+    completeAuth(true, 'P', undefined, isRTL ? 'زائر' : 'Guest Patient');
   };
 
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap');
-        
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-        
         @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(16px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+          from { opacity: 0; transform: translateY(12px); }
+          to { opacity: 1; transform: translateY(0); }
         }
-        
-        * { box-sizing: border-box; }
-        
-        body {
-          margin: 0;
-          padding: 0;
-          font-family: 'Cairo', sans-serif;
-          -webkit-font-smoothing: antialiased;
-          -moz-osx-font-smoothing: grayscale;
-        }
-        
-        input::placeholder {
-          color: #A0AEC0;
-          font-weight: 500;
-        }
-        
         button:focus-visible, input:focus-visible, [role="button"]:focus-visible {
           outline: 3px solid ${PALETTE.secondary};
           outline-offset: 2px;
-        }
-        
-        ::-webkit-scrollbar {
-          width: 6px;
-        }
-        ::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        ::-webkit-scrollbar-thumb {
-          background: ${PALETTE.border};
-          border-radius: 3px;
         }
       `}</style>
 
@@ -281,7 +256,7 @@ export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }:
           boxShadow: '0 20px 60px rgba(0, 123, 110, 0.08), 0 4px 20px rgba(0, 0, 0, 0.04)',
           width: '100%',
           maxWidth: '480px',
-          padding: '40px 32px',
+          padding: '36px 32px',
           position: 'relative',
           overflow: 'hidden'
         }}>
@@ -291,7 +266,9 @@ export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }:
             left: 0,
             right: 0,
             height: '4px',
-            background: `linear-gradient(90deg, ${PALETTE.primary}, ${PALETTE.secondary})`
+            background: activePortal === 'superadmin'
+              ? 'linear-gradient(90deg, #0f172a, #334155)'
+              : `linear-gradient(90deg, ${PALETTE.primary}, ${PALETTE.secondary})`
           }} />
           
           <button
@@ -310,104 +287,179 @@ export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }:
               color: PALETTE.textMuted,
               cursor: 'pointer',
               fontFamily: "'Cairo', sans-serif",
-              transition: 'all 0.2s ease'
             }}
-            onMouseEnter={e => {
-              (e.target as HTMLButtonElement).style.borderColor = PALETTE.secondary;
-              (e.target as HTMLButtonElement).style.color = PALETTE.primary;
-            }}
-            onMouseLeave={e => {
-              (e.target as HTMLButtonElement).style.borderColor = PALETTE.border;
-              (e.target as HTMLButtonElement).style.color = PALETTE.textMuted;
-            }}
-            aria-label={t('تبديل اللغة إلى الإنجليزية', 'Switch language to English')}
           >
             {isRTL ? 'EN' : 'عربي'}
           </button>
 
-          <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+          {/* Header */}
+          <div style={{ textAlign: 'center', marginBottom: '20px' }}>
             <div style={{
-              width: '64px',
-              height: '64px',
-              borderRadius: '18px',
-              background: `linear-gradient(135deg, ${PALETTE.primary}, ${PALETTE.secondary})`,
+              width: '54px',
+              height: '54px',
+              borderRadius: '16px',
+              background: activePortal === 'superadmin'
+                ? '#0f172a'
+                : `linear-gradient(135deg, ${PALETTE.primary}, ${PALETTE.secondary})`,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              margin: '0 auto 16px auto',
-              boxShadow: `0 8px 24px ${PALETTE.primary}33`
+              margin: '0 auto 12px auto',
+              color: '#ffffff',
             }}>
-              <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M16 4C9.373 4 4 9.373 4 16s5.373 12 12 12 12-5.373 12-12S22.627 4 16 4zm0 2c5.523 0 10 4.477 10 10s-4.477 10-10 10S6 21.523 6 16 10.477 6 16 6z" fill="white" opacity="0.3"/>
-                <path d="M16 8a2 2 0 012 2v4.586l2.707 2.707a2 2 0 01-2.828 2.828l-3.293-3.293A2 2 0 0114 15.414V10a2 2 0 012-2z" fill="white"/>
-                <circle cx="16" cy="22" r="2" fill="white"/>
-              </svg>
+              {activePortal === 'superadmin' ? <ShieldCheck style={{ width: 28, height: 28 }} /> : <Lock style={{ width: 26, height: 26 }} />}
             </div>
             <h1 style={{
-              fontSize: '28px',
+              fontSize: '24px',
               fontWeight: 800,
-              color: PALETTE.primary,
+              color: activePortal === 'superadmin' ? '#0f172a' : PALETTE.primary,
               margin: 0,
-              letterSpacing: isRTL ? '0' : '1px'
             }}>ALO DOCTOR</h1>
             <p style={{
-              fontSize: '14px',
+              fontSize: '13px',
               color: PALETTE.textMuted,
               margin: '4px 0 0 0',
               fontWeight: 500
             }}>v2.4 Saudi Edition</p>
           </div>
 
-          <div style={{ animation: 'fadeInUp 0.3s ease-out' }} key={step}>
-            {step === 'phone' && (
-              <PhoneEntryStep
+          {/* 4-Segment Portal Selector */}
+          <PortalSelectorBar
+            activePortal={activePortal}
+            onSelectPortal={(p) => {
+              setActivePortal(p);
+              setStep('phone');
+              setError('');
+            }}
+            isRTL={isRTL}
+            t={t}
+          />
+
+          <div style={{ animation: 'fadeInUp 0.3s ease-out' }} key={`${activePortal}-${step}`}>
+            {/* PORTAL A: Hospital Staff / Department Login */}
+            {activePortal === 'hospital' ? (
+              <HospitalStaffLoginForm
                 isRTL={isRTL}
-                phone={phone}
-                error={error}
                 isLoading={isLoading}
-                isDemoMode={isDemoMode}
-                phoneRef={phoneRef as React.RefObject<HTMLInputElement>}
-                onPhoneChange={handlePhoneChange}
-                onPhoneSubmit={handlePhoneSubmit}
-                onPersonaQuickLogin={handlePersonaQuickLogin}
-                onGuestBypass={handleGuestBypass}
+                onStaffLoginSuccess={handleHospitalStaffLoginSuccess}
                 t={t}
               />
-            )}
-            {step === 'otp' && (
-              <OtpVerificationStep
-                isRTL={isRTL}
-                phone={phone}
-                otp={otp}
-                error={error}
-                isLoading={isLoading}
-                isDemoMode={isDemoMode}
-                deliveryMethod={deliveryMethod}
-                setDeliveryMethod={setDeliveryMethod}
-                countdown={countdown}
-                otpRefs={otpRefs}
-                onBackToPhone={() => { setStep('phone'); setOtp(['', '', '', '', '', '']); setError(''); }}
-                onOtpChange={handleOtpChange}
-                onOtpKeyDown={handleOtpKeyDown}
-                onOtpPaste={handleOtpPaste}
-                onOtpSubmit={handleOtpSubmit}
-                onResendOtp={handleResendOtp}
-                t={t}
-              />
-            )}
-            {step === 'setup' && (
-              <PinSetupStep
-                isRTL={isRTL}
-                pin={pin}
-                confirmPin={confirmPin}
-                error={error}
-                isLoading={isLoading}
-                onPinChange={e => { setPin(e.target.value.replace(/\D/g, '')); setError(''); }}
-                onConfirmPinChange={e => { setConfirmPin(e.target.value.replace(/\D/g, '')); setError(''); }}
-                onSetupSubmit={handleSetupSubmit}
-                onSkipSetup={handleSkipSetup}
-                t={t}
-              />
+            ) : activePortal === 'superadmin' ? (
+              /* PORTAL B: Platform Super Admin Dedicated Card */
+              <form onSubmit={handleSuperAdminSubmit} style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
+                <div style={{
+                  backgroundColor: '#0f172a',
+                  color: '#ffffff',
+                  padding: '16px',
+                  borderRadius: '14px',
+                  marginBottom: '16px',
+                  border: '1px solid #334155',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                    <ShieldCheck style={{ width: 18, height: 18, color: '#38bdf8' }} />
+                    <span style={{ fontSize: '12px', fontWeight: 800, color: '#f8fafc' }}>
+                      {t('بوابة الإشراف والرقابة العليا (ALO Master)', 'Platform Super Admin Gateway')}
+                    </span>
+                  </div>
+                  <p style={{ fontSize: '11px', color: '#94a3b8', margin: 0, lineHeight: 1.5 }}>
+                    {t('صلاحية مشفرة لإدارة المستشفيات الشريكة وسجلات الحوكمة.', 'Master administrative access for hospital tenants & audit logs.')}
+                  </p>
+                </div>
+
+                <div style={{ marginBottom: '14px' }}>
+                  <label style={{ ...labelStyle, textAlign: isRTL ? 'right' : 'left', display: 'block' }}>{t('جوال المشرف العام', 'Super Admin Phone')}</label>
+                  <input
+                    type="text"
+                    value={superAdminPhone}
+                    onChange={(e) => setSuperAdminPhone(e.target.value)}
+                    style={getInputStyle(isRTL)}
+                  />
+                </div>
+
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{ ...labelStyle, textAlign: isRTL ? 'right' : 'left', display: 'block' }}>{t('رمز التحقق / Passcode (123456)', 'Admin Passcode / OTP (123456)')}</label>
+                  <input
+                    type="password"
+                    value={superAdminPasscode}
+                    onChange={(e) => setSuperAdminPasscode(e.target.value)}
+                    placeholder="123456"
+                    style={getInputStyle(isRTL)}
+                  />
+                </div>
+
+                {error && (
+                  <div style={{ color: PALETTE.error, fontSize: '12px', fontWeight: 700, marginBottom: '12px' }}>
+                    ⚠️ {error}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  style={{
+                    ...getPrimaryButtonStyle(),
+                    backgroundColor: '#0f172a',
+                    opacity: isLoading ? 0.7 : 1,
+                  }}
+                >
+                  <ShieldCheck style={{ width: 16, height: 16 }} />
+                  <span>{t('الدخول كمشرف عام للمنصة', 'Sign In as Super Admin')}</span>
+                </button>
+              </form>
+            ) : (
+              /* PORTAL C & D: Patient & ALO Clinical Operations */
+              <>
+                {step === 'phone' && (
+                  <PhoneEntryStep
+                    isRTL={isRTL}
+                    phone={phone}
+                    error={error}
+                    isLoading={isLoading}
+                    isDemoMode={isDemoMode}
+                    phoneRef={phoneRef as React.RefObject<HTMLInputElement>}
+                    onPhoneChange={handlePhoneChange}
+                    onPhoneSubmit={handlePhoneSubmit}
+                    onPersonaQuickLogin={handlePersonaQuickLogin}
+                    onGuestBypass={handleGuestBypass}
+                    t={t}
+                  />
+                )}
+                {step === 'otp' && (
+                  <OtpVerificationStep
+                    isRTL={isRTL}
+                    phone={phone}
+                    otp={otp}
+                    error={error}
+                    isLoading={isLoading}
+                    isDemoMode={isDemoMode}
+                    deliveryMethod={deliveryMethod}
+                    setDeliveryMethod={setDeliveryMethod}
+                    countdown={countdown}
+                    otpRefs={otpRefs}
+                    onBackToPhone={() => { setStep('phone'); setOtp(['', '', '', '', '', '']); setError(''); }}
+                    onOtpChange={handleOtpChange}
+                    onOtpKeyDown={handleOtpKeyDown}
+                    onOtpPaste={handleOtpPaste}
+                    onOtpSubmit={handleOtpSubmit}
+                    onResendOtp={() => handleResendOtp(deliveryMethod)}
+                    t={t}
+                  />
+                )}
+                {step === 'setup' && (
+                  <PinSetupStep
+                    isRTL={isRTL}
+                    pin={pin}
+                    confirmPin={confirmPin}
+                    error={error}
+                    isLoading={isLoading}
+                    onPinChange={e => { setPin(e.target.value.replace(/\D/g, '')); setError(''); }}
+                    onConfirmPinChange={e => { setConfirmPin(e.target.value.replace(/\D/g, '')); setError(''); }}
+                    onSetupSubmit={() => completeAuth(false)}
+                    onSkipSetup={() => completeAuth(false)}
+                    t={t}
+                  />
+                )}
+              </>
             )}
           </div>
 

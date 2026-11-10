@@ -14,7 +14,78 @@ export type RoleCode =
   | 'HA'  // Medical Center Partner Admin (Riyadh Care)
   | 'AD'; // ALO Platform Super Admin
 
-export type TenantTier = 'ALO_MASTER' | 'MEDICAL_CENTER_TENANT';
+export type TenantTier = 
+  | 'ALO_MASTER' 
+  | 'MEDICAL_CENTER_TENANT' 
+  | 'EXTERNAL_SPECIALIST' 
+  | 'PATIENT_SELF';
+
+export interface TenantHospital {
+  id: string;
+  nameAr: string;
+  nameEn: string;
+  city: string;
+  cityAr?: string;
+  mciLicenseNumber: string;
+  status: 'active' | 'pending' | 'suspended';
+  hospitalAdminName: string;
+  hospitalAdminPhone: string;
+  doctorCount: number;
+  createdAt: string;
+}
+
+export interface StaffAccountRecord {
+  id: string;
+  staffCode: string; // e.g. 5-digit login ID '10401'
+  fullName: string;
+  fullNameAr?: string;
+  roleCode: RoleCode;
+  hospitalId?: string;
+  phone: string;
+  pin: string;
+  scfhsLicense?: string;
+  department?: string;
+  status: 'active' | 'pending_approval' | 'inactive';
+  createdAt: string;
+}
+
+export interface AuditLogEntry {
+  id: string;
+  timestamp: string;
+  actorName: string;
+  actorRole: RoleCode;
+  hospitalId?: string;
+  actionType: string;
+  target: string;
+  details: string;
+  ipAddress?: string;
+}
+
+export interface AdminCatalogsState {
+  specialties: string[];
+  labTests: string[];
+  medications: string[];
+}
+
+export interface ImpersonationSession {
+  originalPersona: Persona;
+  originalHospitalId?: string;
+  actingAs: Persona;
+  actingHospitalId?: string;
+}
+
+export interface RolePermissionSpec {
+  roleCode: RoleCode;
+  roleNameAr: string;
+  roleNameEn: string;
+  tenantTier: TenantTier;
+  dataPrivacyBoundary: 'FULL_PHI' | 'SDAIA_DEIDENTIFIED' | 'OPERATIONAL_ONLY' | 'RECEPTION_ONLY';
+  descriptionAr: string;
+  descriptionEn: string;
+  allowedStages: ClinicalStage[];
+  allowedCapabilities: string[];
+  restrictedActions: string[];
+}
 
 export type DoctorSelectionPreference = 'need_assistance' | 'specific_doctor';
 
@@ -32,6 +103,7 @@ export interface Persona {
   isRtl: boolean;
   lang: 'ar' | 'en';
   tenantTier?: TenantTier;
+  hospitalId?: string;
 }
 
 export type ClinicalStage = 

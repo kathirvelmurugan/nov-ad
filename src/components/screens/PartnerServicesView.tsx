@@ -17,14 +17,18 @@ interface Props {
   activeCase: ClinicalCase;
   onAdvanceStage: () => void;
   onUpdateCase: (updated: Partial<ClinicalCase>) => void;
+  roleFilter?: 'L' | 'PH' | 'REC';
 }
 
 export const PartnerServicesView: React.FC<Props> = ({
   activeCase,
   onAdvanceStage,
   onUpdateCase,
+  roleFilter,
 }) => {
-  const [activeTab, setActiveTab] = useState<'all' | 'lab' | 'pharmacy' | 'reception'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'lab' | 'pharmacy' | 'reception'>(
+    roleFilter === 'L' ? 'lab' : roleFilter === 'PH' ? 'pharmacy' : roleFilter === 'REC' ? 'reception' : 'all'
+  );
 
   const internalOrders: MedicalCenterInternalOrders = activeCase.internalOrders || {
     medicalCenterId: 'mc-riyadh-01',
@@ -368,33 +372,35 @@ export const PartnerServicesView: React.FC<Props> = ({
       </div>
 
       {/* Phase 6 Final Milestone Gate: Deliver Endorsed Report & Activate 21-Day Window (D13) */}
-      <div className="bg-gradient-to-l from-slate-900 via-teal-950/30 to-slate-900 border-2 border-teal-500/50 p-6 rounded-2xl shadow-2xl space-y-4">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-2">
-              <span className="bg-teal-500/20 text-teal-300 border border-teal-500/40 text-[11px] font-bold px-2.5 py-0.5 rounded-md">
-                D13 • الإجراء الختامي للمرحلة 6
-              </span>
-              <span className="text-xs text-slate-300 font-semibold">تسليم التقرير السريري المعتمد وتفعيل قناة الـ 21 يوماً</span>
+      {!roleFilter && (
+        <div className="bg-gradient-to-l from-slate-900 via-teal-950/30 to-slate-900 border-2 border-teal-500/50 p-6 rounded-2xl shadow-2xl space-y-4">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2">
+                <span className="bg-teal-500/20 text-teal-300 border border-teal-500/40 text-[11px] font-bold px-2.5 py-0.5 rounded-md">
+                  D13 • الإجراء الختامي للمرحلة 6
+                </span>
+                <span className="text-xs text-slate-300 font-semibold">تسليم التقرير السريري المعتمد وتفعيل قناة الـ 21 يوماً</span>
+              </div>
+              <h3 className="text-lg font-bold text-white">
+                اعتماد إنجاز طوابير المركز ونقل الحالة لنافذة المتابعة الطبية (Follow-Up 21 Days)
+              </h3>
+              <p className="text-xs text-slate-400 max-w-2xl leading-relaxed">
+                عند الضغط، سيتم إشعار المريض رسميًا بتوفر التقرير النهائي المعتمد بترخيص الهيئة وتفعيل قناة التواصل السريري المباشرة لمدة 21 يوماً للإجابة على أية استفسارات متابعة.
+              </p>
             </div>
-            <h3 className="text-lg font-bold text-white">
-              اعتماد إنجاز طوابير المركز ونقل الحالة لنافذة المتابعة الطبية (Follow-Up 21 Days)
-            </h3>
-            <p className="text-xs text-slate-400 max-w-2xl leading-relaxed">
-              عند الضغط، سيتم إشعار المريض رسميًا بتوفر التقرير النهائي المعتمد بترخيص الهيئة وتفعيل قناة التواصل السريري المباشرة لمدة 21 يوماً للإجابة على أية استفسارات متابعة.
-            </p>
-          </div>
 
-          <button
-            onClick={handleDeliverReportAndActivate21Days}
-            className="w-full md:w-auto bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white font-extrabold px-6 py-3.5 rounded-xl shadow-lg hover:shadow-teal-500/20 transition-all flex items-center justify-center gap-2.5 text-sm shrink-0"
-          >
-            <MessageSquare className="w-5 h-5" />
-            <span>تسليم التقرير وتفعيل متابعة الـ 21 يوماً</span>
-            <ArrowRight className="w-4 h-4 rotate-180" />
-          </button>
+            <button
+              onClick={handleDeliverReportAndActivate21Days}
+              className="w-full md:w-auto bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white font-extrabold px-6 py-3.5 rounded-xl shadow-lg hover:shadow-teal-500/20 transition-all flex items-center justify-center gap-2.5 text-sm shrink-0"
+            >
+              <MessageSquare className="w-5 h-5" />
+              <span>تسليم التقرير وتفعيل متابعة الـ 21 يوماً</span>
+              <ArrowRight className="w-4 h-4 rotate-180" />
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
