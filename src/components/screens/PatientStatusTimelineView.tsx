@@ -28,6 +28,7 @@ interface Props {
   onSelectRole?: (roleCode: string) => void;
   onBackToLanding?: () => void;
   onOpenTelehealth?: () => void;
+  onOpenPayment?: () => void;
   lang?: 'ar' | 'en';
 }
 
@@ -58,6 +59,7 @@ export const PatientStatusTimelineView: React.FC<Props> = ({
   onSelectRole,
   onBackToLanding,
   onOpenTelehealth,
+  onOpenPayment,
   lang = 'ar',
 }) => {
   const isAr = lang === 'ar';
@@ -384,6 +386,8 @@ export const PatientStatusTimelineView: React.FC<Props> = ({
             onClick={() => {
               if (stage === 'OPINION_READY' && onOpenTelehealth) {
                 onOpenTelehealth();
+              } else if (stage === 'AWAITING_PAYMENT' && onOpenPayment) {
+                onOpenPayment();
               } else if (onSelectRole) {
                 onSelectRole(content.nextRoleCode);
               } else {

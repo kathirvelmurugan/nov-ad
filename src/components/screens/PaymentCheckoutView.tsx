@@ -6,6 +6,7 @@ interface Props {
   activeCase: ClinicalCase;
   onAdvanceStage: () => void;
   onUpdateCase: (updated: Partial<ClinicalCase>) => void;
+  onBackToTimeline?: () => void;
   lang?: 'ar' | 'en';
 }
 
@@ -115,6 +116,7 @@ export const PaymentCheckoutView: React.FC<Props> = ({
   activeCase,
   onAdvanceStage,
   onUpdateCase,
+  onBackToTimeline,
   lang = 'en',
 }) => {
   const isRTL = lang === 'ar';
@@ -204,6 +206,18 @@ export const PaymentCheckoutView: React.FC<Props> = ({
     >
       <div className="max-w-6xl mx-auto space-y-8">
         
+        {onBackToTimeline && (
+          <div className="flex items-center justify-start">
+            <button
+              onClick={onBackToTimeline}
+              className="inline-flex items-center gap-2 text-sm font-bold text-[#007B6E] hover:text-[#005a50] transition-colors bg-white/80 hover:bg-white px-4 py-2 rounded-xl border border-[#00C6AE]/30 shadow-sm"
+            >
+              <span>{isRTL ? '→' : '←'}</span>
+              <span>{isRTL ? 'العودة إلى متابعة الطلب' : 'Back to Case Timeline'}</span>
+            </button>
+          </div>
+        )}
+
         {/* Header */}
         <div className="text-center space-y-3">
           <h1 className="text-3xl md:text-4xl font-extrabold text-[#007B6E] tracking-tight">

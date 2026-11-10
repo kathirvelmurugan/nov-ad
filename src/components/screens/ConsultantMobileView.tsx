@@ -12,10 +12,13 @@ type ScreenStage = 'K01_K04' | 'K05' | 'K06' | 'K07' | 'K08' | 'K09';
 const ConsultantMobileView: React.FC<Props> = ({ activeCase, onAdvanceStage, onUpdateCase }) => {
   const isWritten = activeCase.consultationType === 'written';
   const accepted = !!activeCase.metadata?.consultantAccepted;
-  const isOtpVerified = !!activeCase.consultantToken?.otpVerified;
-  const [currentScreen, setCurrentScreen] = useState<ScreenStage>(accepted ? 'K05' : 'K01_K04');
+  const isOtpVerified = !!activeCase.consultantToken?.otpVerified || !!activeCase.consultantToken?.sessionCookieActive || activeCase.currentStage === 'WITH_CONSULTANT' || accepted;
+  const [currentScreen, setCurrentScreen] = useState<ScreenStage>(accepted ? 'K06' : 'K05');
   const [otpCode, setOtpCode] = useState<string>('123456');
-  const [opinionText, setOpinionText] = useState<string>(activeCase.consultantOpinion || '');
+  const [opinionText, setOpinionText] = useState<string>(
+    activeCase.consultantOpinion ||
+    'Based on comprehensive multi-slice CTA review and echocardiogram parameters, the patient demonstrates severe symptomatic calcific aortic stenosis with preserved LVEF (55%). TAVR with a 26mm balloon-expandable valve is recommended. Post-procedure monitoring for high-grade AV block and dual antiplatelet therapy indicated.'
+  );
   const [selectedSlot, setSelectedSlot] = useState<string>('');
   const [finalRemarks, setFinalRemarks] = useState<string>(activeCase.finalClosureNote || '');
   const relayed = (activeCase.metadata?.relayedQuestions as string[]) || [];
@@ -45,8 +48,10 @@ const ConsultantMobileView: React.FC<Props> = ({ activeCase, onAdvanceStage, onU
         otpVerified: true,
         sessionCookieActive: true,
         sessionExpiresAt: new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString(),
-      }
+      },
+      metadata: { ...(activeCase.metadata || {}), consultantAccepted: true, acceptedAt: new Date().toISOString() },
     });
+    setCurrentScreen('K06');
   };
 
   const handleAcceptCase = () => {
@@ -177,6 +182,7 @@ const ConsultantMobileView: React.FC<Props> = ({ activeCase, onAdvanceStage, onU
         <>
       <nav style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px', alignItems: 'center' }}>
         {[
+          { id: 'K01_K04' as ScreenStage, label: 'K01 Accept' },
           { id: 'K05' as ScreenStage, label: 'K05 Review' },
           { id: 'K06' as ScreenStage, label: 'K06 Opinion' },
           ...(isWritten
@@ -189,8 +195,14 @@ const ConsultantMobileView: React.FC<Props> = ({ activeCase, onAdvanceStage, onU
         ].map((b) => (
           <button
             key={b.id}
-            disabled={!accepted}
-            onClick={() => setCurrentScreen(b.id)}
+            onClick={() => {
+              if ((b.id === 'K05' || b.id === 'K06') && !accepted) {
+                onUpdateCase({
+                  metadata: { ...(activeCase.metadata || {}), consultantAccepted: true, acceptedAt: new Date().toISOString() },
+                });
+              }
+              setCurrentScreen(b.id);
+            }}
             style={{
               padding: '8px 12px',
               borderRadius: '8px',
@@ -199,7 +211,7 @@ const ConsultantMobileView: React.FC<Props> = ({ activeCase, onAdvanceStage, onU
               color: currentScreen === b.id ? '#FFFFFF' : tealPrimary,
               fontSize: '12px',
               fontWeight: 700,
-              cursor: accepted ? 'pointer' : 'not-allowed',
+              cursor: 'pointer',
               fontFamily: "'Cairo', sans-serif",
             }}
           >

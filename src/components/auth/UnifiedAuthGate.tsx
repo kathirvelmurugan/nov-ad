@@ -489,11 +489,11 @@ export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }:
         )}
         <button
           type="submit"
-          disabled={isLoading || phone.replace(/\D/g, '').length < 11}
+          disabled={isLoading || !validateSaudiMobile(phone)}
           style={{
             ...primaryButtonStyle,
-            opacity: isLoading || phone.replace(/\D/g, '').length < 11 ? 0.6 : 1,
-            cursor: isLoading || phone.replace(/\D/g, '').length < 11 ? 'not-allowed' : 'pointer'
+            opacity: isLoading || !validateSaudiMobile(phone) ? 0.6 : 1,
+            cursor: isLoading || !validateSaudiMobile(phone) ? 'not-allowed' : 'pointer'
           }}
           onMouseEnter={e => { if (!isLoading) (e.target as HTMLButtonElement).style.backgroundColor = '#00655A'; }}
           onMouseLeave={e => { (e.target as HTMLButtonElement).style.backgroundColor = PALETTE.primary; }}

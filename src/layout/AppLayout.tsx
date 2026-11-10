@@ -41,7 +41,7 @@ interface AppLayoutProps {
   setActiveCaseId: (id: string) => void;
   // View
   viewMode: 'workstation' | 'studio';
-  patientSubView: 'landing' | 'intake' | 'timeline' | 'telehealth';
+  patientSubView: 'landing' | 'intake' | 'timeline' | 'telehealth' | 'checkout';
   theme: 'light' | 'dark';
   // UI flags
   isWhatsAppDrawerOpen: boolean;

@@ -28,7 +28,7 @@ interface ScreenRouterProps {
   activePersona: Persona;
   activeCase: ClinicalCase;
   lang: 'ar' | 'en';
-  patientSubView: 'landing' | 'intake' | 'timeline' | 'telehealth';
+  patientSubView: 'landing' | 'intake' | 'timeline' | 'telehealth' | 'checkout';
   selectedServiceId: string;
   setSelectedServiceId: (id: string) => void;
   setActivePersona: (p: Persona) => void;
@@ -36,7 +36,7 @@ interface ScreenRouterProps {
   handleAdvanceStage: () => void;
   handleUpdateCase: (u: Partial<ClinicalCase>) => void;
   handleSelectPersona: (p: Persona) => void;
-  handleSelectPatientSubView: (v: 'landing' | 'intake' | 'timeline' | 'telehealth') => void;
+  handleSelectPatientSubView: (v: 'landing' | 'intake' | 'timeline' | 'telehealth' | 'checkout') => void;
   handleSelectServiceFromLanding: (id: string) => void;
   handleResetActiveCase: () => void;
   handleToggleLang: () => void;
@@ -170,6 +170,28 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
           onSelectRole={(code) => { const p = PERSONAS.find((x) => x.code === code); if (p) handleSelectPersona(p); }}
           onBackToLanding={() => handleSelectPatientSubView('landing')}
           onOpenTelehealth={() => handleSelectPatientSubView('telehealth')}
+          onOpenPayment={() => handleSelectPatientSubView('checkout')}
+          lang={lang}
+        />
+      );
+    }
+
+    // Payment checkout (explicit subview OR auto-route when AWAITING_PAYMENT and not on timeline)
+    if (patientSubView === 'checkout' || activeCase.currentStage === 'AWAITING_PAYMENT') {
+      return (
+        <PaymentCheckoutView
+          activeCase={activeCase}
+          onAdvanceStage={() => {
+            handleUpdateCase({
+              pricing: { ...activeCase.pricing, paid: true },
+              paymentDetails: { ...activeCase.paymentDetails, status: 'completed' },
+              metadata: { ...(activeCase.metadata || {}), paymentVerified: true },
+            });
+            handleAdvanceStage();
+            handleSelectPatientSubView('timeline');
+          }}
+          onBackToTimeline={() => handleSelectPatientSubView('timeline')}
+          onUpdateCase={handleUpdateCase}
           lang={lang}
         />
       );
@@ -183,26 +205,6 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
           onAdvanceStage={() => { handleAdvanceStage(); handleSelectPatientSubView('timeline'); }}
           onUpdateCase={handleUpdateCase}
           onBackToTimeline={() => handleSelectPatientSubView('timeline')}
-        />
-      );
-    }
-
-    // Payment checkout
-    if (activeCase.currentStage === 'AWAITING_PAYMENT') {
-      return (
-        <PaymentCheckoutView
-          activeCase={activeCase}
-          onAdvanceStage={() => {
-            handleUpdateCase({
-              pricing: { ...activeCase.pricing, paid: true },
-              paymentDetails: { ...activeCase.paymentDetails, status: 'completed' },
-              metadata: { ...(activeCase.metadata || {}), paymentVerified: true },
-            });
-            const coord = PERSONAS.find((p) => p.code === 'C') || PERSONAS[0];
-            setActivePersona(coord);
-          }}
-          onUpdateCase={handleUpdateCase}
-          lang={lang}
         />
       );
     }
@@ -228,6 +230,7 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
         onSelectRole={(code) => { const p = PERSONAS.find((x) => x.code === code); if (p) handleSelectPersona(p); }}
         onBackToLanding={() => handleSelectPatientSubView('landing')}
         onOpenTelehealth={() => handleSelectPatientSubView('telehealth')}
+        onOpenPayment={() => handleSelectPatientSubView('checkout')}
         lang={lang}
       />
     );

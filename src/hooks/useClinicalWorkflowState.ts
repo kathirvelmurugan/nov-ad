@@ -182,16 +182,17 @@ export function useClinicalWorkflowState() {
   });
 
   // ── Patient Sub-View ──────────────────────────────────────────────────────
-  const [patientSubView, setPatientSubView] = useState<'landing' | 'intake' | 'timeline' | 'telehealth'>(() => {
+  const [patientSubView, setPatientSubView] = useState<'landing' | 'intake' | 'timeline' | 'telehealth' | 'checkout'>(() => {
     try {
       if (typeof window !== 'undefined') {
         const search = new URLSearchParams(window.location.search);
+        if (search.get('checkout') === '1' || search.get('payment') === '1' || search.get('subview') === 'checkout') return 'checkout';
         if (search.get('intake') === '1') return 'intake';
         if (search.get('telehealth') === '1' || search.get('subview') === 'telehealth') return 'telehealth';
         if (search.get('timeline') === '1' || search.get('subview') === 'timeline') return 'timeline';
       }
       const saved = localStorage.getItem('alo_patient_subview_v2.4');
-      if (saved === 'landing' || saved === 'intake' || saved === 'timeline' || saved === 'telehealth') return saved;
+      if (saved === 'landing' || saved === 'intake' || saved === 'timeline' || saved === 'telehealth' || saved === 'checkout') return saved;
     } catch (e) {}
     return 'landing';
   });
@@ -281,7 +282,7 @@ export function useClinicalWorkflowState() {
     });
   };
 
-  const handleSelectPatientSubView = (subView: 'landing' | 'intake' | 'timeline' | 'telehealth') => {
+  const handleSelectPatientSubView = (subView: 'landing' | 'intake' | 'timeline' | 'telehealth' | 'checkout') => {
     setPatientSubView(subView);
     setViewMode('workstation');
     const p = PERSONAS.find((x) => x.code === 'P') || PERSONAS[0];
