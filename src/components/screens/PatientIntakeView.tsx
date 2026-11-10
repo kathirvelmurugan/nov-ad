@@ -1,26 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { ClinicalCase, DiagnosticAsset } from '../../types';
-import { INITIAL_MEDICAL_CENTER_DOCTORS } from '../../data/medicalCenterDoctors';
+import { ClinicalCase } from '../../types';
 import { 
-  FileUp, 
   Shield, 
-  Stethoscope, 
-  Video, 
-  FileText, 
-  CheckCircle2, 
   UserCheck, 
-  Heart, 
-  AlertTriangle, 
-  Activity, 
-  Pill, 
-  Check, 
-  Eye,
+  CheckCircle2, 
   ArrowLeft,
   ArrowRight,
+  Sparkles,
+  FileText,
+  Video,
   FlaskConical,
+  Pill,
   Building2,
-  Sparkles
+  Activity,
 } from 'lucide-react';
+import { IntakeDoctorSelectionCard } from '../intake/IntakeDoctorSelectionCard';
+import { IntakeSymptomsAndDiagnosisSection } from '../intake/IntakeSymptomsAndDiagnosisSection';
+import { IntakeUploadZone } from '../intake/IntakeUploadZone';
 
 interface Props {
   activeCase: ClinicalCase;
@@ -50,7 +46,7 @@ export const PatientIntakeView: React.FC<Props> = ({
   onSelectService,
   onBackToLanding,
 }) => {
-  const [selectedFileForPreview, setSelectedFileForPreview] = useState<string | null>(null);
+  const [, setSelectedFileForPreview] = useState<string | null>(null);
   const [isCaregiverMode, setIsCaregiverMode] = useState<boolean>(activeCase.caregiver?.isProxy ?? true);
   const [privacyAgreed, setPrivacyAgreed] = useState<boolean>(true);
   const [activeServiceId, setActiveServiceId] = useState<string>(selectedService);
@@ -97,7 +93,7 @@ export const PatientIntakeView: React.FC<Props> = ({
         </div>
       )}
 
-      {/* 6-Service Selection Bar (Allows seamless switching of services) */}
+      {/* 6-Service Selection Bar */}
       <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-2.5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -136,6 +132,7 @@ export const PatientIntakeView: React.FC<Props> = ({
           })}
         </div>
       </div>
+
       {/* P01 & P02: Patient Identity Banner */}
       <div className="bg-gradient-to-r from-teal-900 via-slate-900 to-teal-950 p-6 rounded-2xl border border-teal-800/60 shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-4 text-white">
         <div>
@@ -241,329 +238,29 @@ export const PatientIntakeView: React.FC<Props> = ({
         )}
       </div>
 
-      {/* P04-B · Choose Saudi Treating Doctor */}
-      <div className="card-clinical p-5 space-y-3">
-        <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
-          <div className="flex items-center gap-2">
-            <span className="bg-alo-mint text-alo-teal px-2 py-0.5 rounded text-[10px] font-mono font-bold border border-teal-200">
-              P04-B · {isAr ? 'الطبيب المعالج' : 'Saudi treating doctor'}
-            </span>
-            <Stethoscope className="w-4 h-4 text-alo-teal" />
-            <h3 className="text-sm font-extrabold text-alo-navy dark:text-slate-100">
-              {isAr ? 'اختيار الطبيب السعودي المعالج المشرف على الحالة بالمملكة' : 'Select the Saudi treating doctor within KSA'}
-            </h3>
-          </div>
-          <span className="text-[11px] text-slate-500 font-medium">
-            {isAr ? 'مستشفى مرجعي شريك' : 'Accredited Partner Hospital'}
-          </span>
-        </div>
+      {/* P04-B: Saudi Treating Doctor Selection */}
+      <IntakeDoctorSelectionCard
+        activeCase={activeCase}
+        isAr={isAr}
+        onUpdateCase={onUpdateCase}
+      />
 
-        <div className="space-y-2">
-          <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-            {isAr ? 'تحديد خيار الطبيب المعالج المشرف بالمملكة:' : 'Select Saudi Treating Doctor Assignment:'}
-          </label>
-          <select
-            value={activeCase.doctorSelectionPreference === 'need_assistance' ? 'need_assistance' : activeCase.treatingDoctor.name}
-            onChange={(e) => {
-              const val = e.target.value;
-              if (val === 'need_assistance') {
-                onUpdateCase({
-                  doctorSelectionPreference: 'need_assistance',
-                  treatingDoctor: {
-                    ...activeCase.treatingDoctor,
-                    name: 'بانتظار فرز التمريض (ألو تختار الأنسب)',
-                    hospital: 'شبكة المستشفيات المعتمدة (ALO Accredited Network)',
-                    city: 'الرياض / المملكة'
-                  }
-                });
-                return;
-              }
-
-              const selectedDoc = INITIAL_MEDICAL_CENTER_DOCTORS.find((d) => d.name === val || d.nameEn === val);
-              if (selectedDoc) {
-                onUpdateCase({
-                  doctorSelectionPreference: 'specific_doctor',
-                  tier: selectedDoc.tier,
-                  treatingDoctor: {
-                    ...activeCase.treatingDoctor,
-                    name: selectedDoc.name,
-                    hospital: selectedDoc.hospital,
-                    city: selectedDoc.city,
-                  }
-                });
-              }
-            }}
-            className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-alo-teal outline-none font-bold shadow-sm cursor-pointer"
-          >
-            <option value="need_assistance">✨ {isAr ? 'أحتاج مساعدة ألو في الاختيار (موصى به - مطابقة التمريض السريري)' : 'Need ALO Assistance to Choose (Recommended - Clinical Nurse Match)'}</option>
-            {INITIAL_MEDICAL_CENTER_DOCTORS.map((doc) => (
-              <option key={doc.id} value={doc.name}>
-                {isAr
-                  ? `${doc.name} — ${doc.hospital} · ${doc.specialty} (${doc.license})`
-                  : `${doc.nameEn} — ${doc.hospitalEn} · ${doc.specialtyEn} (${doc.license})`}
-              </option>
-            ))}
-          </select>
-
-          <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-normal">
-            {isAr
-              ? '💡 الخيار الافتراضي يتيح لممرضة ألو فرز تقاريرك وتعيين الطبيب الاستشاري الأنسب في مدينتك، مع إمكانية تحديد طبيب معين إذا رغبت.'
-              : '💡 Default option enables ALO Nurse triage to match the best-suited Saudi consultant based on your clinical records and location.'}
-          </p>
-        </div>
-      </div>
-
-      {/* P05 & P06: Clinical Symptoms & Condition */}
+      {/* P05-P12: Clinical Symptoms, Medications, Scans & MOH Consent */}
       <div className="card-clinical p-6 space-y-5">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
-          <div className="flex items-center gap-2">
-            <span className="bg-alo-mint text-alo-teal px-2 py-0.5 rounded text-[10px] font-mono font-bold border border-teal-200">
-              P05 · {isAr ? 'التوصيف السريري' : 'Clinical Diagnosis'}
-            </span>
-            <Heart className="w-4 h-4 text-alo-teal" />
-            <h3 className="text-base font-extrabold text-alo-navy dark:text-slate-100">
-              {isAr ? 'التشخيص ووصف الأعراض الحالية' : 'Diagnosis & Clinical Symptoms'}
-            </h3>
-          </div>
-          <span className="text-xs text-alo-teal font-bold bg-alo-mint px-3 py-1 rounded-lg border border-teal-200">
-            {isAr ? (activeCase.specialtyAr || activeCase.specialty) : (activeCase.specialtyEn || activeCase.specialty)}
-          </span>
-        </div>
+        <IntakeSymptomsAndDiagnosisSection
+          activeCase={activeCase}
+          isAr={isAr}
+          privacyAgreed={privacyAgreed}
+          setPrivacyAgreed={setPrivacyAgreed}
+          onUpdateCase={onUpdateCase}
+        />
 
-        <div>
-          <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-            {isAr ? 'التشخيص الطبي الحالي:' : 'Confirmed Medical Diagnosis:'}
-          </label>
-          <input
-            type="text"
-            value={isAr ? (activeCase.diagnosisAr || activeCase.diagnosis) : (activeCase.diagnosisEn || activeCase.diagnosis)}
-            onChange={(e) => onUpdateCase(isAr ? { diagnosisAr: e.target.value, diagnosis: e.target.value } : { diagnosisEn: e.target.value, diagnosis: e.target.value })}
-            className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-alo-teal outline-none font-bold shadow-sm"
-          />
-        </div>
-
-        <div>
-          <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-            {isAr ? 'الأعراض والشكوى السريرية الحالية:' : 'Symptoms & Patient History:'}
-          </label>
-          <textarea
-            rows={3}
-            value={isAr ? (activeCase.symptomsAr || activeCase.symptoms) : (activeCase.symptomsEn || activeCase.symptoms)}
-            onChange={(e) => onUpdateCase(isAr ? { symptomsAr: e.target.value, symptoms: e.target.value } : { symptomsEn: e.target.value, symptoms: e.target.value })}
-            className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl p-3 text-sm text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-alo-teal outline-none leading-relaxed shadow-sm font-medium"
-          />
-        </div>
-
-        {/* P06: Symptom Severity & Red Flags Checklist */}
-        <div className="bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 p-4 rounded-xl space-y-2">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-[10px] text-amber-800 bg-amber-100 px-2 py-0.5 rounded font-mono font-bold">
-              P06 · {isAr ? 'مؤشرات الخطورة' : 'Red-Flag Tags'}
-            </span>
-            <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
-            <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
-              {isAr ? 'العلامات السريرية الحرجة المصاحبة للحالة:' : 'Critical Associated Clinical Signs:'}
-            </span>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-            <div className="bg-white dark:bg-slate-900 border border-amber-300 p-2 rounded-lg flex items-center gap-1.5 text-amber-800 dark:text-amber-300 font-bold shadow-sm">
-              <Check className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-              <span>{isAr ? 'ضيق تنفس جهدي (NYHA III)' : 'Exertional Dyspnea (NYHA III)'}</span>
-            </div>
-            <div className="bg-white dark:bg-slate-900 border border-amber-300 p-2 rounded-lg flex items-center gap-1.5 text-amber-800 dark:text-amber-300 font-bold shadow-sm">
-              <Check className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-              <span>{isAr ? 'نوبة إغماء حديثة (Syncope)' : 'Recent Syncope Episode'}</span>
-            </div>
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2 rounded-lg flex items-center gap-1.5 text-slate-700 dark:text-slate-300 shadow-sm">
-              <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-              <span>{isAr ? 'ألم ضاغط في الصدر (Angina)' : 'Exertional Angina'}</span>
-            </div>
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2 rounded-lg flex items-center gap-1.5 text-slate-700 dark:text-slate-300 shadow-sm">
-              <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-              <span>{isAr ? 'تسارع خفقان القلب' : 'Palpitations'}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* P07 & P08: Diagnostic Scans & Echo Metrics */}
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <span className="bg-alo-mint text-alo-teal px-2 py-0.5 rounded text-[10px] font-mono font-bold border border-teal-200">
-                P07 · {isAr ? 'الفحوصات والأشعة' : 'Diagnostic Scans'}
-              </span>
-              <FileUp className="w-4 h-4 text-alo-teal" />
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                {isAr ? 'الملفات المرفوعة (Echo · CINE Loops · DICOM):' : 'Uploaded Diagnostic Scans & DICOM Files:'}
-              </label>
-            </div>
-            <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold">
-              ✓ 3 {isAr ? 'ملفات مكتملة' : 'Files Verified'}
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {activeCase.files.map((file) => (
-              <div
-                key={file.id}
-                onClick={() => setSelectedFileForPreview(file.name)}
-                className="bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 hover:border-alo-teal p-3.5 rounded-xl flex items-center justify-between text-xs cursor-pointer transition-all hover:shadow-sm"
-              >
-                <div className="flex items-center gap-2.5 overflow-hidden">
-                  <FileUp className="w-4 h-4 text-alo-teal shrink-0" />
-                  <div className="truncate">
-                    <p className="font-bold text-slate-800 dark:text-slate-200 truncate">{file.name}</p>
-                    <p className="text-[10px] text-slate-500 font-mono">{file.size} · {file.type.toUpperCase()}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <Eye className="w-3.5 h-3.5 text-slate-400 hover:text-alo-teal" />
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Interactive File Upload Zone */}
-          <div className="mt-3 p-4 border-2 border-dashed border-teal-300 dark:border-teal-700/80 rounded-2xl bg-teal-50/40 dark:bg-teal-950/20 text-center hover:bg-teal-50/70 transition-colors">
-            <input
-              type="file"
-              id="patient-file-upload"
-              multiple
-              accept=".pdf,.png,.jpg,.jpeg,.dcm,.zip"
-              className="hidden"
-              onChange={(e) => {
-                const uploadedFiles = e.target.files;
-                if (!uploadedFiles || uploadedFiles.length === 0) return;
-                const newItems: DiagnosticAsset[] = Array.from(uploadedFiles).map((f, idx) => ({
-                  id: `f_user_${Date.now()}_${idx}`,
-                  name: f.name,
-                  size: `${(f.size / (1024 * 1024)).toFixed(1)} MB`,
-                  type: f.name.endsWith('.dcm') ? 'dicom' : f.name.endsWith('.mp4') ? 'mp4' : 'pdf',
-                  verified: true,
-                  url: URL.createObjectURL(f),
-                }));
-                onUpdateCase({
-                  files: [...activeCase.files, ...newItems],
-                });
-              }}
-            />
-            <label
-              htmlFor="patient-file-upload"
-              className="cursor-pointer flex flex-col items-center justify-center gap-2 py-2"
-            >
-              <div className="w-10 h-10 rounded-full bg-alo-mint flex items-center justify-center text-alo-teal shadow-xs">
-                <FileUp className="w-5 h-5" />
-              </div>
-              <div>
-                <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                  {isAr ? 'انقر هنا لرفع تقارير طبية أو أشعة إضافية (DICOM / PDF / صور)' : 'Click to upload medical reports or diagnostic scans (DICOM / PDF / Images)'}
-                </p>
-                <p className="text-[11px] text-slate-500 mt-0.5">
-                  {isAr ? 'يدعم الملفات حتى 100 ميجابايت مشفرة محلياً' : 'Supports files up to 100 MB with local AES-256 encryption'}
-                </p>
-              </div>
-            </label>
-          </div>
-
-          {/* P08: Echo Lab Snapshot Metrics */}
-          <div className="mt-3 bg-alo-mint/60 dark:bg-alo-mintDark/30 border border-teal-200 dark:border-teal-800 p-3.5 rounded-xl text-xs flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5 text-alo-teal dark:text-alo-aqua font-extrabold">
-              <Activity className="w-4 h-4 text-alo-teal" />
-              <span>P08 · {isAr ? 'قياسات الإيكو السريرية المعتمدة:' : 'Echo Lab Approved Metrics:'}</span>
-            </div>
-            <div className="flex items-center gap-3 font-mono text-[11px] text-slate-800 dark:text-slate-200">
-              <span>{isAr ? 'مساحة الصمام:' : 'Valve Area:'} <strong className="medical-term text-alo-teal font-extrabold">0.65 cm²</strong></span>
-              <span>{isAr ? 'تدرج الضغط:' : 'Mean Gradient:'} <strong className="medical-term text-alo-teal font-extrabold">48 mmHg</strong></span>
-              <span>{isAr ? 'سرعة التدفق:' : 'Peak Velocity:'} <strong className="medical-term text-alo-teal font-extrabold">4.4 m/s</strong></span>
-              <span>{isAr ? 'كفاءة الضخ:' : 'LVEF:'} <strong className="medical-term text-emerald-700 dark:text-emerald-400 font-extrabold">55%</strong></span>
-            </div>
-          </div>
-        </div>
-
-        {/* P09 & P10: Medications & Allergy Tags */}
-        <div className="bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 p-3.5 rounded-xl space-y-2 text-xs">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] text-alo-teal bg-alo-mint px-2 py-0.5 rounded font-mono font-bold">
-                P09 · {isAr ? 'الأدوية الحالية' : 'Current Medications'}
-              </span>
-              <Pill className="w-3.5 h-3.5 text-alo-teal" />
-              <span className="font-bold text-slate-800 dark:text-slate-200">
-                {isAr ? 'الأدوية الموصوفة للمريض:' : 'Patient Prescriptions:'}
-              </span>
-            </div>
-            <span className="text-[10px] text-rose-700 bg-rose-50 border border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 px-2 py-0.5 rounded font-bold">
-              P10 · {isAr ? 'حساسية: البنسلين' : 'Allergy: Penicillin (Rash)'}
-            </span>
-          </div>
-          <div className="flex flex-wrap gap-2 pt-1 font-mono text-[11px]">
-            <span className="medical-term bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 px-2.5 py-1 rounded text-slate-800 dark:text-slate-200 font-semibold shadow-sm">
-              Atorvastatin 40mg (OD)
-            </span>
-            <span className="medical-term bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 px-2.5 py-1 rounded text-slate-800 dark:text-slate-200 font-semibold shadow-sm">
-              Aspirin 100mg (OD)
-            </span>
-            <span className="medical-term bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 px-2.5 py-1 rounded text-slate-800 dark:text-slate-200 font-semibold shadow-sm">
-              Ramipril 5mg (OD)
-            </span>
-            <span className="medical-term bg-amber-50 border border-amber-300 px-2.5 py-1 rounded text-amber-800 font-semibold">
-              {isAr ? 'حاصرات بيتا (موقفة)' : 'Beta-blockers (Held)'}
-            </span>
-          </div>
-        </div>
-
-        {/* P11 & P12: Consultation Format & Legal MOH Consent */}
-        <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-              P11 · {isAr ? 'صيغة الاستشارة المرغوبة:' : 'Consultation Format:'}
-            </span>
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={() => onUpdateCase({ consultationType: 'written' })}
-                className={`text-xs px-3 py-1 rounded-lg font-extrabold flex items-center gap-1.5 shadow-sm border transition-colors ${
-                  activeCase.consultationType === 'written'
-                    ? 'bg-alo-mint border-teal-300 text-alo-teal'
-                    : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400'
-                }`}
-              >
-                <FileText className="w-3.5 h-3.5" />
-                <span>{isAr ? 'رأي مكتوب فقط' : 'Written opinion only'}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => onUpdateCase({ consultationType: 'video' })}
-                className={`text-xs px-3 py-1 rounded-lg font-extrabold flex items-center gap-1.5 shadow-sm border transition-colors ${
-                  activeCase.consultationType === 'video'
-                    ? 'bg-alo-mint border-teal-300 text-alo-teal'
-                    : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400'
-                }`}
-              >
-                <Video className="w-3.5 h-3.5" />
-                <span>{isAr ? 'مرئي + رأي مكتوب' : 'Video + written opinion'}</span>
-              </button>
-            </div>
-          </div>
-
-          <label className="flex items-start gap-2.5 cursor-pointer bg-slate-50 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
-            <input
-              type="checkbox"
-              checked={privacyAgreed}
-              onChange={(e) => setPrivacyAgreed(e.target.checked)}
-              className="mt-0.5 rounded border-slate-300 text-alo-teal focus:ring-alo-teal"
-            />
-            <span className="text-[11px] text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
-              <strong className="text-alo-teal font-extrabold">
-                P12 · {isAr ? 'إقرار الخصوصية والمشاركة الطبية:' : 'MOH Health Data Privacy Consent:'}
-              </strong>{' '}
-              {isAr
-                ? 'أوافق على مشاركة ملفاتي الطبية مع منسقي التمريض في منصة ألو دكتور والاستشاري الدولي المعتمد لغرض إعداد الرأي الطبي الثاني، وفقاً لنظام حماية البيانات الصحية في المملكة العربية السعودية.'
-                : 'I consent to sharing diagnostic records with ALO DOCTOR triage nurses and the accredited international consultant for the second opinion evaluation in compliance with Saudi Health Information Privacy Law.'}
-            </span>
-          </label>
-        </div>
+        <IntakeUploadZone
+          activeCase={activeCase}
+          isAr={isAr}
+          onUpdateCase={onUpdateCase}
+          setSelectedFileForPreview={setSelectedFileForPreview}
+        />
 
         {/* P13 & P14: Submission & WhatsApp Trigger Notification */}
         <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
