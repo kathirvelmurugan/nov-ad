@@ -102,6 +102,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
 }) => {
   const isAr = lang === 'ar';
   const isPureLandingPage = activePersona.code === 'P' && patientSubView === 'landing' && viewMode !== 'studio';
+  const isDemoMode = typeof window !== 'undefined' && (new URLSearchParams(window.location.search).get('demo') === '1' || window.location.hash === '#cockpit');
 
   // ── Authentication gate ──────────────────────────────────────────────────
   if (!userSession) {
@@ -185,8 +186,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         />
       ) : (
         <>
-          {/* Stage Progress Bar (hidden on Patient landing) */}
-          {!(activePersona.code === 'P' && patientSubView === 'landing') && (
+          {/* Stage Progress Bar (strictly gated behind ?demo=1) */}
+          {isDemoMode && !(activePersona.code === 'P' && patientSubView === 'landing') && (
             <StageProgressBar
               currentStage={activeCase.currentStage}
               onSetStage={handleSetStage}
