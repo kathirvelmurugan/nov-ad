@@ -52,11 +52,19 @@ jobs:
                 sed -i "s/export default defineConfig({/export default defineConfig({ base: \x27.\/\x27,/g" vite.config.ts
                 docker build -t alo-preview-sarat:latest .
                 docker rm -f alo-preview-sarat 2>/dev/null || true
-                ENV_OPT=""
-                if [ -f /data/alodoctor/.env ]; then
-                  ENV_OPT="--env-file /data/alodoctor/.env"
-                fi
-                docker run -d --name alo-preview-sarat --restart always --network coolify $ENV_OPT -e DB_HOST=alo-postgres -e MINIO_ENDPOINT=alo-minio alo-preview-sarat:latest
+                PG_PASS=$(docker inspect alo-postgres --format '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null | grep POSTGRES_PASSWORD | cut -d= -f2- || true)
+                MINIO_USER=$(docker inspect alo-minio --format '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null | grep MINIO_ROOT_USER | cut -d= -f2- || true)
+                MINIO_PASS=$(docker inspect alo-minio --format '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null | grep MINIO_ROOT_PASSWORD | cut -d= -f2- || true)
+
+                docker run -d --name alo-preview-sarat --restart always --network coolify \
+                  -e DB_HOST=alo-postgres \
+                  -e POSTGRES_USER=alo_admin \
+                  -e POSTGRES_DB=alodoctor \
+                  -e POSTGRES_PASSWORD="$PG_PASS" \
+                  -e MINIO_ENDPOINT=alo-minio \
+                  -e MINIO_ROOT_USER="${MINIO_USER:-alo_storage_admin}" \
+                  -e MINIO_ROOT_PASSWORD="$MINIO_PASS" \
+                  alo-preview-sarat:latest
                 sleep 3
                 docker logs --tail 30 alo-preview-sarat
               '
@@ -70,11 +78,19 @@ jobs:
                 git reset --hard origin/main
                 docker build -t alo-frontend:latest .
                 docker rm -f alo-frontend 2>/dev/null || true
-                ENV_OPT=""
-                if [ -f /data/alodoctor/.env ]; then
-                  ENV_OPT="--env-file /data/alodoctor/.env"
-                fi
-                docker run -d --name alo-frontend --restart always --network coolify -p 3000:80 $ENV_OPT -e DB_HOST=alo-postgres -e MINIO_ENDPOINT=alo-minio alo-frontend:latest
+                PG_PASS=$(docker inspect alo-postgres --format '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null | grep POSTGRES_PASSWORD | cut -d= -f2- || true)
+                MINIO_USER=$(docker inspect alo-minio --format '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null | grep MINIO_ROOT_USER | cut -d= -f2- || true)
+                MINIO_PASS=$(docker inspect alo-minio --format '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null | grep MINIO_ROOT_PASSWORD | cut -d= -f2- || true)
+
+                docker run -d --name alo-frontend --restart always --network coolify -p 3000:80 \
+                  -e DB_HOST=alo-postgres \
+                  -e POSTGRES_USER=alo_admin \
+                  -e POSTGRES_DB=alodoctor \
+                  -e POSTGRES_PASSWORD="$PG_PASS" \
+                  -e MINIO_ENDPOINT=alo-minio \
+                  -e MINIO_ROOT_USER="${MINIO_USER:-alo_storage_admin}" \
+                  -e MINIO_ROOT_PASSWORD="$MINIO_PASS" \
+                  alo-frontend:latest
               '
               echo "✅ Production environment updated: https://ad.howtostart.in/"
             fi
