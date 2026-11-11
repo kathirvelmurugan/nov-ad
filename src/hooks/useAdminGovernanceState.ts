@@ -17,7 +17,7 @@ import {
   AUDIT_LOGS_KEY,
 } from './workflowConstants';
 
-const IMPERSONATION_KEY = 'alo_impersonation_session_v2.4';
+const IMPERSONATION_KEY = 'alo_impersonation_session_v3.0';
 
 export const DEFAULT_ADMIN_CATALOGS: AdminCatalogsState = {
   specialties: [
@@ -81,20 +81,7 @@ export function useAdminGovernanceState(
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>(() => {
     try {
       const saved = localStorage.getItem(AUDIT_LOGS_KEY);
-      return saved
-        ? JSON.parse(saved)
-        : [
-            {
-              id: 'log-seed-01',
-              timestamp: new Date().toISOString(),
-              actorName: 'Platform Super Admin',
-              actorRole: 'AD',
-              hospitalId: undefined,
-              actionType: 'SYSTEM_BOOT',
-              target: 'TENANTS_AND_RBAC',
-              details: 'System initialized with 4 hospital tenants and 11 RBAC roles',
-            },
-          ];
+      return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
     }

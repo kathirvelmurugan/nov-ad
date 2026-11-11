@@ -35,6 +35,8 @@ export const App: React.FC = () => {
       patientSubView={state.patientSubView}
       theme={state.theme}
       // UI flags
+      isAuthModalOpen={state.isAuthModalOpen}
+      setIsAuthModalOpen={state.setIsAuthModalOpen}
       isWhatsAppDrawerOpen={state.isWhatsAppDrawerOpen}
       setIsWhatsAppDrawerOpen={state.setIsWhatsAppDrawerOpen}
       isGuideOpen={state.isGuideOpen}
@@ -89,6 +91,8 @@ export const App: React.FC = () => {
         handleResetActiveCase={state.handleResetActiveCase}
         handleToggleLang={state.handleToggleLang}
         handleLogout={state.handleLogout}
+        userSession={state.userSession}
+        onOpenLogin={() => state.setIsAuthModalOpen(true)}
       />
     </AppLayout>
   );

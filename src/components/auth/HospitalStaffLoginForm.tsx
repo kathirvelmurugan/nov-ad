@@ -25,7 +25,7 @@ export const HospitalStaffLoginForm: React.FC<HospitalStaffLoginFormProps> = ({
   // Read dynamic hospitals from localStorage or fall back to seed
   const [hospitals, setHospitals] = useState<TenantHospital[]>(() => {
     try {
-      const saved = localStorage.getItem('alo_tenants_v2.4');
+      const saved = localStorage.getItem('alo_tenants_v3.0');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
@@ -56,7 +56,7 @@ export const HospitalStaffLoginForm: React.FC<HospitalStaffLoginFormProps> = ({
   // Read staff accounts dynamically
   const getDynamicStaff = (): StaffAccountRecord[] => {
     try {
-      const stored = localStorage.getItem('alo_platform_users_v2.4');
+      const stored = localStorage.getItem('alo_platform_users_v3.0');
       if (stored) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed)) return parsed;

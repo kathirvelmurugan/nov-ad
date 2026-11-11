@@ -169,6 +169,16 @@ export const DoctorsRosterList: React.FC<{ isAr: boolean; onSelectService: (id: 
   isAr,
   onSelectService,
 }) => {
+  if (HOME_CONSULTANTS.length === 0) {
+    return (
+      <div className="rounded-2xl border border-slate-200/80 bg-white p-6 text-center text-xs text-slate-500">
+        {isAr
+          ? 'سيتم إدراج قائمة الاستشاريين الدوليين المعتمدين قريباً.'
+          : 'Accredited international consultants roster will be listed soon.'}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-1.5">
       {HOME_CONSULTANTS.map((doctor) => (

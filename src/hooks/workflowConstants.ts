@@ -1,16 +1,17 @@
 import { ClinicalCase, ClinicalStage, RoleCode } from '../types';
 
-// ─── Storage Keys ───────────────────────────────────────────────────────────
-export const STORAGE_KEY       = 'alo_cases_v2.4';
-export const ACTIVE_CASE_KEY   = 'alo_active_case_id_v2.4';
-export const THEME_KEY         = 'alo_theme_v2.4';
-export const LANG_KEY          = 'alo_lang_v2.4';
-export const VIEW_MODE_KEY     = 'alo_view_mode_v2.4';
-export const USER_SESSION_KEY  = 'alo_user_session_v2.4';
-export const TENANTS_KEY       = 'alo_tenants_v2.4';
-export const PLATFORM_USERS_KEY = 'alo_platform_users_v2.4';
-export const CATALOGS_KEY      = 'alo_catalogs_v2.4';
-export const AUDIT_LOGS_KEY    = 'alo_audit_logs_v2.4';
+// ─── Storage Keys (v3.0 Clean Slate) ─────────────────────────────────────────
+export const STORAGE_KEY        = 'alo_cases_v3.0';
+export const ACTIVE_CASE_KEY    = 'alo_active_case_id_v3.0';
+export const THEME_KEY          = 'alo_theme_preference';
+export const LANG_KEY           = 'alo_lang_preference';
+export const VIEW_MODE_KEY      = 'alo_view_mode_v3.0';
+export const USER_SESSION_KEY   = 'alo_user_session_v3.0';
+export const TENANTS_KEY        = 'alo_tenants_v3.0';
+export const PLATFORM_USERS_KEY = 'alo_platform_users_v3.0';
+export const CATALOGS_KEY       = 'alo_catalogs_v3.0';
+export const AUDIT_LOGS_KEY     = 'alo_audit_logs_v3.0';
+export const USER_PINS_KEY      = 'alo_user_pins_v3.0';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 export interface UserSession {
@@ -25,63 +26,54 @@ export interface UserSession {
   lang: 'ar' | 'en';
 }
 
-// ─── Seed Data ───────────────────────────────────────────────────────────────
+// ─── Clean-Slate Initial Case (Zero Pre-Filled Data) ─────────────────────────
 export const FRESH_PRIMARY_CASE: ClinicalCase = {
-  id: 'case-test-01',
-  caseNumber: 'ALO-2026-8812',
-  patientName: 'سالم العامري',
-  patientNameAr: 'سالم العامري',
-  patientNameEn: 'Salem Al-Ameri',
-  nationalIdMasked: '1088****92',
-  age: 48,
+  id: 'case-initial-01',
+  caseNumber: '',
+  patientName: '',
+  patientNameAr: '',
+  patientNameEn: '',
+  nationalIdMasked: '',
+  age: 0,
   gender: 'M',
-  city: 'الرياض (Riyadh)',
-  cityAr: 'الرياض',
-  cityEn: 'Riyadh',
-  specialty: 'أمراض القلب والشرايين (Cardiology)',
-  specialtyAr: 'أمراض القلب والشرايين',
-  specialtyEn: 'Cardiology',
+  city: '',
+  cityAr: '',
+  cityEn: '',
+  specialty: '',
+  specialtyAr: '',
+  specialtyEn: '',
   diagnosis: '',
   diagnosisAr: '',
   diagnosisEn: '',
   symptoms: '',
   symptomsAr: '',
   symptomsEn: '',
-  consultationType: 'video',
+  consultationType: 'written',
   currentStage: 'INTAKE_RECEIVED',
   stage: 1,
   doctorSelectionPreference: 'need_assistance',
   treatingDoctor: {
-    name: 'بانتظار فرز التمريض (ألو تختار الأنسب)',
-    hospital: 'شبكة المستشفيات المعتمدة (ALO Accredited Network)',
-    city: 'الرياض / المملكة',
+    name: '',
+    hospital: '',
+    city: '',
     focusQuestions: ['', '', ''],
     focusQuestionsEn: ['', '', ''],
   },
-  consultant: {
-    name: 'Dr. Arjun Menon',
-    center: 'Apollo Hospitals',
-    city: 'Chennai',
-  },
+  consultant: undefined,
   pricing: {
-    tier: 2,
-    tierName: 'Video',
-    baseSar: 450,
+    tier: 1,
+    tierName: 'Written',
+    baseSar: 0,
     vatPercent: 15,
-    vatSar: 67.5,
-    totalSar: 517.5,
+    vatSar: 0,
+    totalSar: 0,
     paid: false,
   },
   files: [],
   invoiceIssued: false,
   allowedPaymentMethods: [],
   paymentVerified: false,
-  partnerOrders: {
-    lab: { test: 'Troponin & Lipid Panel', status: 'pending' },
-    pharmacy: { meds: ['Atorvastatin 40mg', 'Aspirin 81mg'], substituteAllowed: false, status: 'pending' },
-    homeNurse: { area: 'Riyadh - Al Malqa', visits: 2, status: 'scheduled' },
-    physio: { sessions: 4, status: 'planned' },
-  },
+  partnerOrders: undefined,
   metadata: { isFreshTest: true },
 };
 

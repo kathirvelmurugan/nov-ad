@@ -67,47 +67,9 @@ export interface ConsultantProfile {
 }
 
 /**
- * Names and centres already exist in the app (DoctorReviewView.tsx).
- * PLACEHOLDER - specialties were inferred from each centre; the client has not
- * supplied the consultant roster yet.
+ * Consultant roster - populated dynamically from active platform staff.
  */
-export const HOME_CONSULTANTS: ConsultantProfile[] = [
-  {
-    id: 'arjun-mehta',
-    name: 'Dr. Arjun Mehta',
-    specialty: { en: 'Interventional Cardiology', ar: 'طب القلب التداخلي' },
-    center: 'KIMS Heart Institute',
-    city: { en: 'Hyderabad', ar: 'حيدر أباد' },
-  },
-  {
-    id: 'suresh-rao',
-    name: 'Dr. Suresh Rao',
-    specialty: { en: 'Cardiothoracic Surgery', ar: 'جراحة القلب والصدر' },
-    center: 'Apollo Hospitals',
-    city: { en: 'Chennai', ar: 'تشيناي' },
-  },
-  {
-    id: 'rajesh-deshmukh',
-    name: 'Dr. Rajesh Deshmukh',
-    specialty: { en: 'Orthopaedics & Spine', ar: 'جراحة العظام والعمود الفقري' },
-    center: 'Fortis Memorial Research Institute',
-    city: { en: 'Delhi', ar: 'دلهي' },
-  },
-  {
-    id: 'alok-sharma',
-    name: 'Dr. Alok Sharma',
-    specialty: { en: 'Neurology', ar: 'طب الأعصاب' },
-    center: 'NIMHANS / Manipal',
-    city: { en: 'Bengaluru', ar: 'بنغالورو' },
-  },
-  {
-    id: 'priya-ramachandran',
-    name: 'Dr. Priya Ramachandran',
-    specialty: { en: 'Medical Oncology', ar: 'الأورام الطبية' },
-    center: 'Tata Memorial / Apollo Cancer Centre',
-    city: { en: 'Mumbai', ar: 'مومباي' },
-  },
-];
+export const HOME_CONSULTANTS: ConsultantProfile[] = [];
 
 /* -------------------------------------------------------------------------- */
 /* 3. Destinations - India live, everything else "Coming soon"                */
@@ -122,19 +84,14 @@ export interface HomeDestination {
 }
 
 export const HOME_DESTINATIONS: HomeDestination[] = [
-  { id: 'india', name: { en: 'India', ar: 'الهند' }, flag: '🇮🇳', status: 'active', hospitalCount: 12 },
+  { id: 'india', name: { en: 'India', ar: 'الهند' }, flag: '🇮🇳', status: 'active', hospitalCount: 0 },
   { id: 'thailand', name: { en: 'Thailand', ar: 'تايلاند' }, flag: '🇹🇭', status: 'comingSoon' },
 ];
 
 /**
- * PLACEHOLDER - the client confirmed 12 Indian hospitals under MOU but the names
- * have not been supplied yet. Replace `name` for all 12 entries; the layout does
- * not need to change (one scrolling line on mobile).
+ * MOU Hospitals - populated dynamically from accredited network partners.
  */
-export const HOME_MOU_HOSPITALS: string[] = Array.from(
-  { length: 12 },
-  (_, i) => `MOU Hospital ${String(i + 1).padStart(2, '0')}`,
-);
+export const HOME_MOU_HOSPITALS: string[] = [];
 
 /* -------------------------------------------------------------------------- */
 /* 4. Services 3x3                                                            */

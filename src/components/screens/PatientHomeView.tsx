@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowRight, CheckCircle2, ChevronRight } from 'lucide-react';
 import { ClinicalCase } from '../../types';
+import { UserSession } from '../../hooks/workflowConstants';
 import {
   HOME_MOU_HOSPITALS,
   HOME_NEXT_PHASE_NOTE,
@@ -22,6 +23,8 @@ interface Props {
   onOpenMyCases: () => void;
   onOpenWhatsApp?: () => void;
   onLogout?: () => void;
+  userSession?: UserSession | null;
+  onOpenLogin?: () => void;
 }
 
 export const PatientHomeView: React.FC<Props> = ({
@@ -32,6 +35,8 @@ export const PatientHomeView: React.FC<Props> = ({
   onOpenMyCases,
   onOpenWhatsApp,
   onLogout,
+  userSession,
+  onOpenLogin,
 }) => {
   const isAr = lang === 'ar';
   const [activeTab, setActiveTab] = useState<HomeTab>('home');
@@ -45,8 +50,14 @@ export const PatientHomeView: React.FC<Props> = ({
   };
 
   const handleTab = (tab: HomeTab) => {
-    // No new screens in this phase: requests reuse the existing timeline,
-    // everything else opens an inline sheet on the home page.
+    // If not authenticated, prompt login for private tabs
+    if (!userSession && (tab === 'requests' || tab === 'account' || tab === 'medical-file' || tab === 'messages')) {
+      if (onOpenLogin) {
+        onOpenLogin();
+        return;
+      }
+    }
+
     if (tab === 'requests') {
       onOpenMyCases();
       return;
@@ -64,6 +75,14 @@ export const PatientHomeView: React.FC<Props> = ({
       return;
     }
     setActiveTab('home');
+  };
+
+  const handleStartService = (serviceId: string) => {
+    if (!userSession && onOpenLogin) {
+      onOpenLogin();
+      return;
+    }
+    onSelectService(serviceId);
   };
 
   const patientName =
@@ -89,13 +108,16 @@ export const PatientHomeView: React.FC<Props> = ({
       unreadCount={HOME_NOTIFICATIONS.length}
       activeTab={activeTab}
       onSelectTab={handleTab}
+      userSession={userSession}
+      onOpenLogin={onOpenLogin}
+      onLogout={onLogout}
     >
       <div data-testid="patient-home-view" className="mx-auto w-full space-y-0">
         {/* 1. Greeting + search */}
-        <HomeGreeting isAr={isAr} onSelectService={onSelectService} onViewDoctors={() => setSheet('doctors')} />
+        <HomeGreeting isAr={isAr} onSelectService={handleStartService} onViewDoctors={() => setSheet('doctors')} />
 
         {/* 2. Medical opinion - strongest element, on top */}
-        <MedicalOpinionCard isAr={isAr} onStartRequest={() => onSelectService('second-opinion')} />
+        <MedicalOpinionCard isAr={isAr} onStartRequest={() => handleStartService('second-opinion')} />
 
         {/* 3. Doctors and their specialties */}
         <DoctorsStrip isAr={isAr} onViewAll={() => setSheet('doctors')} />

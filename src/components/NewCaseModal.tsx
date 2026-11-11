@@ -70,13 +70,7 @@ export const NewCaseModal: React.FC<Props> = ({
         focusQuestions: ['', '', ''], // Blank slate!
         focusQuestionsEn: ['', '', ''],
       },
-      consultant: {
-        name: 'Dr. Arjun Mehta',
-        center: 'Fortis Memorial Research Institute',
-        city: 'Gurugram, India',
-        opinionEnglish: '', // Blank slate!
-        opinionArabic: '',
-      },
+      consultant: undefined,
       pricing: {
         tier: 1,
         tierName: isAr ? 'الرأي الطبي المكتوب (Tier 1)' : 'Written Second Opinion Report (Tier 1)',
@@ -86,22 +80,8 @@ export const NewCaseModal: React.FC<Props> = ({
         totalSar: 75,
         paid: false,
       },
-      files: [
-        {
-          id: 'f_test_01',
-          name: 'Lumbar_Spine_MRI_DICOM.zip',
-          type: 'dicom',
-          size: '48.2 MB',
-          verified: true,
-          url: 'https://alodoctor.com/storage/dicom/test-01.dcm',
-        },
-      ],
-      partnerOrders: {
-        lab: { test: 'CRP & ESR Biomarkers', status: 'pending' },
-        pharmacy: { meds: [], substituteAllowed: true, status: 'pending' },
-        homeNurse: { area: 'Riyadh Central', visits: 1, status: 'scheduled' },
-        physio: { sessions: 6, status: 'planned' },
-      },
+      files: [],
+      partnerOrders: undefined,
       metadata: {
         isTestPatient: true,
         createdAt: new Date().toISOString(),

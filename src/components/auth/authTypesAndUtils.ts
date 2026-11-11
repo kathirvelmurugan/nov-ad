@@ -14,8 +14,8 @@ export const PALETTE = {
   border: '#D1E3E1'
 };
 
-export const SESSION_KEY = 'alo_user_session_v2.4';
-export const USER_PINS_KEY = 'alo_user_pins_v2.4';
+export const SESSION_KEY = 'alo_user_session_v3.0';
+export const USER_PINS_KEY = 'alo_user_pins_v3.0';
 export const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 export const DEV_OTP = '123456';
 export const DEFAULT_DEV_PIN = '1234';

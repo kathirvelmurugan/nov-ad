@@ -116,8 +116,8 @@ export const TopProfileSwitcher: React.FC<Props> = ({
   const isDemoMode = typeof window !== 'undefined' && (new URLSearchParams(window.location.search).get('demo') === '1' || window.location.hash === '#cockpit');
 
   const cleanPatientName = isAr
-    ? (activeCase.patientNameAr || activeCase.patientName || 'سالم العامري')
-    : (activeCase.patientNameEn || activeCase.patientName || 'Salem Al-Ameri');
+    ? (activeCase.patientNameAr || activeCase.patientName || '')
+    : (activeCase.patientNameEn || activeCase.patientName || '');
 
   return (
     <header className="sticky top-0 z-50 bg-white/95 dark:bg-alo-darkCard/95 backdrop-blur-md border-b border-slate-200/80 dark:border-alo-darkBorder shadow-sm transition-colors">
@@ -129,7 +129,7 @@ export const TopProfileSwitcher: React.FC<Props> = ({
             <HeartPulse className="w-4 h-4 text-alo-teal animate-pulse" />
             <span className="text-sm font-extrabold tracking-wider">ALO DOCTOR</span>
             <span className="bg-alo-mint text-alo-teal dark:bg-alo-mintDark dark:text-alo-aqua text-[10px] px-2 py-0.5 rounded-full font-bold border border-teal-200 dark:border-teal-700">
-              v2.4 Saudi
+              v3.0 Saudi
             </span>
           </div>
 
@@ -141,12 +141,16 @@ export const TopProfileSwitcher: React.FC<Props> = ({
               {isAr ? 'ملف الحالة:' : 'Case File:'}
             </span>
             <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-teal-400 dark:border-teal-700 text-slate-800 dark:text-slate-100 rounded-lg px-2.5 py-1 font-bold text-xs shadow-sm">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>{activeCase.caseNumber || 'ALO-2026-8812'}</span>
-              <span className="text-slate-400">·</span>
-              <span className="text-alo-teal font-extrabold">
-                {cleanPatientName}
-              </span>
+              <span className={`w-2 h-2 rounded-full ${activeCase.caseNumber ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
+              <span>{activeCase.caseNumber || (isAr ? 'لا توجد حالة نشطة' : 'No Active Case')}</span>
+              {cleanPatientName && (
+                <>
+                  <span className="text-slate-400">·</span>
+                  <span className="text-alo-teal font-extrabold">
+                    {cleanPatientName}
+                  </span>
+                </>
+              )}
             </div>
 
             {/* QA-Only: Next Case Rotator & Reset */}

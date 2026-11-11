@@ -232,6 +232,7 @@ interface DoctorsProps {
 }
 
 export const DoctorsStrip: React.FC<DoctorsProps> = ({ isAr, onViewAll }) => {
+  if (HOME_CONSULTANTS.length === 0) return null;
   return (
     <section className="pt-5">
       <div className="mb-2.5 flex items-end justify-between">

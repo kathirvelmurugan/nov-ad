@@ -33,7 +33,6 @@ export const PERSONAS: Persona[] = [
     isRtl: true,
     lang: 'ar',
     tenantTier: 'MEDICAL_CENTER_TENANT',
-    hospitalId: 'hosp-riyadh-care',
   },
   {
     code: 'C',
@@ -67,7 +66,6 @@ export const PERSONAS: Persona[] = [
     isRtl: true,
     lang: 'ar',
     tenantTier: 'MEDICAL_CENTER_TENANT',
-    hospitalId: 'hosp-riyadh-care',
   },
   {
     code: 'L',
@@ -79,7 +77,6 @@ export const PERSONAS: Persona[] = [
     isRtl: true,
     lang: 'ar',
     tenantTier: 'MEDICAL_CENTER_TENANT',
-    hospitalId: 'hosp-riyadh-care',
   },
   {
     code: 'PH',
@@ -91,7 +88,6 @@ export const PERSONAS: Persona[] = [
     isRtl: true,
     lang: 'ar',
     tenantTier: 'MEDICAL_CENTER_TENANT',
-    hospitalId: 'hosp-riyadh-care',
   },
   {
     code: 'REC',
@@ -103,7 +99,6 @@ export const PERSONAS: Persona[] = [
     isRtl: true,
     lang: 'ar',
     tenantTier: 'MEDICAL_CENTER_TENANT',
-    hospitalId: 'hosp-riyadh-care',
   },
   {
     code: 'AD',

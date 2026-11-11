@@ -21,12 +21,12 @@ export const IntakeDoctorSelectionCard: React.FC<Props> = ({
     let allHospitals: TenantHospital[] = SEEDED_TENANT_HOSPITALS;
 
     try {
-      const storedUsers = localStorage.getItem('alo_platform_users_v2.4');
+      const storedUsers = localStorage.getItem('alo_platform_users_v3.0');
       if (storedUsers) {
         const parsed = JSON.parse(storedUsers);
         if (Array.isArray(parsed)) allStaff = parsed;
       }
-      const storedHospitals = localStorage.getItem('alo_tenants_v2.4');
+      const storedHospitals = localStorage.getItem('alo_tenants_v3.0');
       if (storedHospitals) {
         const parsedH = JSON.parse(storedHospitals);
         if (Array.isArray(parsedH)) allHospitals = parsedH;

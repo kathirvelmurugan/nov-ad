@@ -98,7 +98,7 @@ export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }:
     (rawPhone: string) => {
       let allStaff: StaffAccountRecord[] = SEEDED_STAFF_DIRECTORY;
       try {
-        const stored = localStorage.getItem('alo_platform_users_v2.4');
+        const stored = localStorage.getItem('alo_platform_users_v3.0');
         if (stored) {
           allStaff = JSON.parse(stored);
         }

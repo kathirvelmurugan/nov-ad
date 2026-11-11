@@ -10,6 +10,7 @@
 import React from 'react';
 import { PERSONAS } from '../data/personas';
 import { Persona, ClinicalCase, PaymentMethodId } from '../types';
+import { UserSession } from '../hooks/workflowConstants';
 import { PatientIntakeView }         from '../components/screens/PatientIntakeView';
 import { NurseTriageView }           from '../components/screens/NurseTriageView';
 import { DoctorReviewView }          from '../components/screens/DoctorReviewView';
@@ -50,6 +51,8 @@ interface ScreenRouterProps {
   handleResetActiveCase: () => void;
   handleToggleLang: () => void;
   handleLogout: () => void;
+  userSession?: UserSession | null;
+  onOpenLogin?: () => void;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -74,6 +77,8 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
   handleResetActiveCase,
   handleToggleLang,
   handleLogout,
+  userSession,
+  onOpenLogin,
 }) => {
 
   // ── Super Admin (ALO Master) ─────────────────────────────────────────────
@@ -210,6 +215,8 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
           onOpenMyCases={() => handleSelectPatientSubView('timeline')}
           onOpenWhatsApp={() => setIsWhatsAppDrawerOpen(true)}
           onLogout={handleLogout}
+          userSession={userSession}
+          onOpenLogin={onOpenLogin}
         />
       );
     }

@@ -11,6 +11,7 @@
  */
 
 import React from 'react';
+import { X } from 'lucide-react';
 import { Persona, ClinicalCase, ClinicalStage } from '../types';
 import { PERSONAS }                from '../data/personas';
 import { UserSession }             from '../hooks/useClinicalWorkflowState';
@@ -48,6 +49,8 @@ interface AppLayoutProps {
   // UI flags
   isWhatsAppDrawerOpen: boolean;
   setIsWhatsAppDrawerOpen: (v: boolean) => void;
+  isAuthModalOpen?: boolean;
+  setIsAuthModalOpen?: (v: boolean) => void;
   isGuideOpen: boolean;
   setIsGuideOpen: (v: boolean) => void;
   isPipelineBoardOpen: boolean;
@@ -87,6 +90,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   lang,
   activePersona, activeCase, cases, activeCaseId, setActiveCaseId,
   viewMode, patientSubView, theme,
+  isAuthModalOpen, setIsAuthModalOpen,
   isWhatsAppDrawerOpen, setIsWhatsAppDrawerOpen,
   isGuideOpen, setIsGuideOpen,
   isPipelineBoardOpen, setIsPipelineBoardOpen,
@@ -108,32 +112,36 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
 
   const { impersonationSession, stopActAs } = useAdminGovernanceState(activePersona, handleSelectPersona);
 
-  // ── Authentication gate ──────────────────────────────────────────────────
-  if (!userSession) {
+  // ── Authentication Handler ───────────────────────────────────────────────
+  const handleAuthSuccess = (session: UserSession) => {
+    setUserSession(session);
+    if (setIsAuthModalOpen) setIsAuthModalOpen(false);
+    const personaCodeMap: Record<string, string> = {
+      patient: 'P',
+      doctor: 'D',
+      nurse: 'N',
+      coordinator: 'C',
+      hospital_admin: 'HA',
+      super_admin: 'AD',
+      admin: 'HA',
+      consultant: 'K',
+    };
+    const targetCode = session.roleCode || (session.personaId ? personaCodeMap[session.personaId] : 'P') || 'P';
+    const matched = PERSONAS.find((p) => p.code === targetCode);
+    if (matched) {
+      handleSelectPersona({
+        ...matched,
+        hospitalId: session.hospitalId || matched.hospitalId,
+      });
+    }
+  };
+
+  // If unauthenticated user tries to enter a restricted staff/admin portal directly, show full gate
+  if (!userSession && activePersona.code !== 'P') {
     return (
       <UnifiedAuthGate
         initialLang={lang}
-        onAuthenticated={(session) => {
-          setUserSession(session);
-          const personaCodeMap: Record<string, string> = {
-            patient: 'P',
-            doctor: 'D',
-            nurse: 'N',
-            coordinator: 'C',
-            hospital_admin: 'HA',
-            super_admin: 'AD',
-            admin: 'HA',
-            consultant: 'K',
-          };
-          const targetCode = session.roleCode || (session.personaId ? personaCodeMap[session.personaId] : 'P') || 'P';
-          const matched = PERSONAS.find((p) => p.code === targetCode);
-          if (matched) {
-            handleSelectPersona({
-              ...matched,
-              hospitalId: session.hospitalId || matched.hospitalId,
-            });
-          }
-        }}
+        onAuthenticated={handleAuthSuccess}
       />
     );
   }
@@ -294,6 +302,26 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         existingCount={cases.filter((c) => c.id.startsWith('TEST-')).length}
         lang={lang}
       />
+
+      {/* 10. Contextual Auth Modal for Public Visitors */}
+      {!userSession && isAuthModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="relative w-full max-w-lg my-8">
+            <button
+              type="button"
+              onClick={() => setIsAuthModalOpen?.(false)}
+              className="absolute -top-3 end-0 z-50 p-2 rounded-full bg-white dark:bg-slate-800 text-slate-500 hover:text-slate-800 shadow-md border border-slate-200 transition-transform active:scale-90 cursor-pointer"
+              title={isAr ? 'إغلاق' : 'Close'}
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <UnifiedAuthGate
+              initialLang={lang}
+              onAuthenticated={handleAuthSuccess}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

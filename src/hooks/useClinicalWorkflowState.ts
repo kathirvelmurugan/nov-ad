@@ -155,6 +155,7 @@ export function useClinicalWorkflowState() {
   });
 
   // ── UI Flags ──────────────────────────────────────────────────────────────
+  const [isAuthModalOpen, setIsAuthModalOpen]           = useState(false);
   const [isWhatsAppDrawerOpen, setIsWhatsAppDrawerOpen] = useState(false);
   const [isGuideOpen, setIsGuideOpen]                   = useState(false);
   const [isPipelineBoardOpen, setIsPipelineBoardOpen]   = useState(false);
@@ -185,7 +186,7 @@ export function useClinicalWorkflowState() {
         if (search.get('telehealth') === '1' || search.get('subview') === 'telehealth') return 'telehealth';
         if (search.get('timeline') === '1' || search.get('subview') === 'timeline') return 'timeline';
       }
-      const saved = localStorage.getItem('alo_patient_subview_v2.4');
+      const saved = localStorage.getItem('alo_patient_subview_v3.0');
       if (saved === 'landing' || saved === 'intake' || saved === 'timeline' || saved === 'telehealth' || saved === 'checkout') return saved;
     } catch (e) {}
     return 'landing';
@@ -194,7 +195,7 @@ export function useClinicalWorkflowState() {
   // ── Selected Service ──────────────────────────────────────────────────────
   const [selectedServiceId, setSelectedServiceId] = useState<string>(() => {
     try {
-      const saved = localStorage.getItem('alo_selected_service_v2.4');
+      const saved = localStorage.getItem('alo_selected_service_v3.0');
       if (saved) return saved;
     } catch (e) {}
     return 'second-opinion';
@@ -207,31 +208,61 @@ export function useClinicalWorkflowState() {
   useEffect(() => { try { localStorage.setItem(ACTIVE_CASE_KEY, activeCaseId); } catch (e) {} }, [activeCaseId]);
   useEffect(() => { try { localStorage.setItem(THEME_KEY, theme); } catch (e) {} }, [theme]);
   useEffect(() => { try { localStorage.setItem(LANG_KEY, lang); } catch (e) {} }, [lang]);
-  useEffect(() => { try { localStorage.setItem('alo_patient_subview_v2.4', patientSubView); } catch (e) {} }, [patientSubView]);
-  useEffect(() => { try { localStorage.setItem('alo_selected_service_v2.4', selectedServiceId); } catch (e) {} }, [selectedServiceId]);
+  useEffect(() => { try { localStorage.setItem('alo_patient_subview_v3.0', patientSubView); } catch (e) {} }, [patientSubView]);
+  useEffect(() => { try { localStorage.setItem('alo_selected_service_v3.0', selectedServiceId); } catch (e) {} }, [selectedServiceId]);
 
   // Dark mode HTML class sync
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark');
   }, [theme]);
 
-  // Browser back/forward navigation sync for 5-Role Demo Cockpit
+  // Initial history state seed
   useEffect(() => {
-    const handlePopState = () => {
+    if (typeof window !== 'undefined' && !window.history.state) {
+      window.history.replaceState({ subView: patientSubView, viewMode }, '', window.location.href);
+    }
+  }, []);
+
+  // Browser back/forward navigation sync
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
       if (typeof window === 'undefined') return;
+
+      // Close open modals on back navigation
+      setIsAuthModalOpen(false);
+      setIsGuideOpen(false);
+      setIsNewCaseModalOpen(false);
+      setIsPipelineBoardOpen(false);
+
       if (window.location.hash === '#cockpit') {
         setViewMode('studio');
         const p = PERSONAS.find((x) => x.code === 'P') || PERSONAS[0];
         setActivePersona(p);
-      } else if (window.location.hash !== '#cockpit') {
-        setViewMode('workstation');
+        return;
       }
+
+      // Restore subview from history state or URL param
+      const stateSubView = e.state?.subView;
+      const searchSubView = new URLSearchParams(window.location.search).get('subview');
+      const validSubViews = ['landing', 'intake', 'timeline', 'telehealth', 'checkout'];
+      const targetSubView = (validSubViews.includes(stateSubView)
+        ? stateSubView
+        : validSubViews.includes(searchSubView || '')
+        ? searchSubView
+        : 'landing') as 'landing' | 'intake' | 'timeline' | 'telehealth' | 'checkout';
+
+      setViewMode('workstation');
+      setPatientSubView(targetSubView);
+      try {
+        localStorage.setItem('alo_patient_subview_v3.0', targetSubView);
+      } catch (err) {}
     };
+
     window.addEventListener('popstate', handlePopState);
-    window.addEventListener('hashchange', handlePopState);
+    window.addEventListener('hashchange', handlePopState as any);
     return () => {
       window.removeEventListener('popstate', handlePopState);
-      window.removeEventListener('hashchange', handlePopState);
+      window.removeEventListener('hashchange', handlePopState as any);
     };
   }, []);
 
@@ -290,17 +321,27 @@ export function useClinicalWorkflowState() {
     });
   };
 
-  const handleSelectPatientSubView = (subView: 'landing' | 'intake' | 'timeline' | 'telehealth' | 'checkout') => {
+  const handleSelectPatientSubView = (subView: 'landing' | 'intake' | 'timeline' | 'telehealth' | 'checkout', skipPush?: boolean) => {
     setPatientSubView(subView);
     setViewMode('workstation');
     const p = PERSONAS.find((x) => x.code === 'P') || PERSONAS[0];
     setActivePersona(p);
     try {
-      localStorage.setItem('alo_patient_subview_v2.4', subView);
+      localStorage.setItem('alo_patient_subview_v3.0', subView);
       localStorage.setItem(VIEW_MODE_KEY, 'workstation');
     } catch (e) {}
-    if (typeof window !== 'undefined' && window.location.hash === '#cockpit') {
-      window.history.pushState({ viewMode: 'workstation' }, '', window.location.pathname + window.location.search);
+
+    if (typeof window !== 'undefined' && !skipPush) {
+      try {
+        const url = new URL(window.location.href);
+        if (subView === 'landing') {
+          url.searchParams.delete('subview');
+        } else {
+          url.searchParams.set('subview', subView);
+        }
+        if (url.hash === '#cockpit') url.hash = '';
+        window.history.pushState({ subView, viewMode: 'workstation' }, '', url.pathname + url.search);
+      } catch (err) {}
     }
   };
 
@@ -398,6 +439,7 @@ export function useClinicalWorkflowState() {
     activeCase,
     theme, lang,
     userSession, setUserSession,
+    isAuthModalOpen, setIsAuthModalOpen,
     isWhatsAppDrawerOpen, setIsWhatsAppDrawerOpen,
     isGuideOpen, setIsGuideOpen,
     isPipelineBoardOpen, setIsPipelineBoardOpen,
