@@ -57,6 +57,8 @@ jobs:
                   ENV_OPT="--env-file /data/alodoctor/.env"
                 fi
                 docker run -d --name alo-preview-sarat --restart always --network coolify $ENV_OPT -e DB_HOST=alo-postgres -e MINIO_ENDPOINT=alo-minio alo-preview-sarat:latest
+                sleep 3
+                docker logs --tail 30 alo-preview-sarat
               '
               echo "✅ Preview environment updated: https://ad.howtostart.in/feature-sarat/"
 
