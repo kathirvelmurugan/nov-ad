@@ -159,6 +159,9 @@ export function useAdminGovernanceState(
     apiClient.fetchUsers().then((fetched) => {
       if (Array.isArray(fetched) && fetched.length > 0) setStaffDirectory(fetched);
     });
+    apiClient.fetchAuditLogs().then((fetched) => {
+      if (Array.isArray(fetched) && fetched.length > 0) setAuditLogs(fetched);
+    });
   }, []);
 
   // Logging Helper
@@ -169,6 +172,7 @@ export function useAdminGovernanceState(
       timestamp: new Date().toISOString(),
     };
     setAuditLogs((prev) => [newLog, ...prev.slice(0, 99)]);
+    apiClient.appendAuditLog(newLog);
   }, []);
 
   // Tenant Actions

@@ -3,6 +3,7 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { pool, initDatabase } from './db.js';
+import { initStorage, saveFile, getFile } from './storage.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -11,9 +12,10 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// ── In-Memory In-Process Fallback Store (Syncs across all network clients if DB is provisioning) ──
+// ── In-Memory In-Process Fallback Store ──────────────────────────────────────
 let memoryTenants = [];
 let memoryUsers = [
   {
@@ -30,6 +32,7 @@ let memoryUsers = [
   },
 ];
 let memoryCases = [];
+let memoryAudit = [];
 
 const apiRouter = express.Router();
 
@@ -164,6 +167,93 @@ apiRouter.post('/cases', async (req, res) => {
   return res.json({ success: true, data: c });
 });
 
+// ── API Routes: Audit Logs ───────────────────────────────────────────────────
+apiRouter.get('/audit', async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT * FROM audit_logs ORDER BY timestamp DESC LIMIT 200');
+    const mapped = rows.map((r) => ({
+      id: r.id,
+      timestamp: r.timestamp,
+      actorName: r.actor_name,
+      actorRole: r.actor_role,
+      hospitalId: r.hospital_id,
+      actionType: r.action_type,
+      target: r.target,
+      details: r.details,
+      ipAddress: r.ip_address,
+    }));
+    return res.json({ success: true, data: mapped });
+  } catch (err) {
+    return res.json({ success: true, data: memoryAudit, isFallback: true });
+  }
+});
+
+apiRouter.post('/audit', async (req, res) => {
+  const a = req.body;
+  if (!a.actionType) return res.status(400).json({ error: 'Action type required' });
+  const entry = {
+    id: a.id || `log-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    timestamp: a.timestamp || new Date().toISOString(),
+    actorName: a.actorName || 'System',
+    actorRole: a.actorRole || 'AD',
+    hospitalId: a.hospitalId || null,
+    actionType: a.actionType,
+    target: a.target || '',
+    details: a.details || '',
+    ipAddress: req.ip || '',
+  };
+  try {
+    await pool.query(
+      `INSERT INTO audit_logs (id, timestamp, actor_name, actor_role, hospital_id, action_type, target, details, ip_address)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [entry.id, entry.timestamp, entry.actorName, entry.actorRole, entry.hospitalId, entry.actionType, entry.target, entry.details, entry.ipAddress]
+    );
+  } catch (err) {
+    memoryAudit = [entry, ...memoryAudit.slice(0, 99)];
+  }
+  return res.json({ success: true, data: entry });
+});
+
+// ── API Routes: Storage & File Uploads (MinIO S3) ─────────────────────────────
+apiRouter.post('/upload', async (req, res) => {
+  try {
+    const { fileName, fileType, fileData } = req.body;
+    if (!fileName || !fileData) {
+      return res.status(400).json({ error: 'fileName and fileData required' });
+    }
+    const cleanBase64 = fileData.replace(/^data:.*,/, '');
+    const buffer = Buffer.from(cleanBase64, 'base64');
+    const safeKey = `${Date.now()}-${fileName.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+    const result = await saveFile(safeKey, buffer, fileType || 'application/octet-stream');
+    return res.json({
+      success: true,
+      key: safeKey,
+      url: `/api/storage/${safeKey}`,
+      storage: result.storage,
+      size: `${(buffer.length / (1024 * 1024)).toFixed(2)} MB`,
+    });
+  } catch (err) {
+    return res.status(500).json({ error: 'Upload failed: ' + err.message });
+  }
+});
+
+apiRouter.get('/storage/:key', async (req, res) => {
+  try {
+    const file = await getFile(req.params.key);
+    if (!file) return res.status(404).send('File not found');
+    res.setHeader('Content-Type', file.contentType || 'application/octet-stream');
+    if (typeof file.stream.pipe === 'function') {
+      file.stream.pipe(res);
+    } else {
+      const chunks = [];
+      for await (const chunk of file.stream) chunks.push(chunk);
+      res.send(Buffer.concat(chunks));
+    }
+  } catch (err) {
+    res.status(500).send('Storage retrieval error: ' + err.message);
+  }
+});
+
 // Mount API router for both direct /api and prefixed /:prefix/api (e.g. /feature-sarat/api)
 app.use('/api', apiRouter);
 app.use('/:prefix/api', apiRouter);
@@ -180,4 +270,5 @@ app.use((req, res) => {
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 ALO DOCTOR Unified Backend Server running on port ${PORT}`);
   initDatabase().catch((e) => console.warn('Database init warning:', e.message));
+  initStorage().catch((e) => console.warn('Storage init warning:', e.message));
 });

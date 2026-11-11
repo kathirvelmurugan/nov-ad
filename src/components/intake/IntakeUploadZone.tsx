@@ -1,6 +1,7 @@
 import React from 'react';
 import { FileUp, Eye, CheckCircle2, Activity } from 'lucide-react';
 import { ClinicalCase, DiagnosticAsset } from '../../types';
+import { apiClient } from '../../services/apiClient';
 
 interface Props {
   activeCase: ClinicalCase;
@@ -65,7 +66,8 @@ export const IntakeUploadZone: React.FC<Props> = ({
           onChange={(e) => {
             const uploadedFiles = e.target.files;
             if (!uploadedFiles || uploadedFiles.length === 0) return;
-            const newItems: DiagnosticAsset[] = Array.from(uploadedFiles).map((f, idx) => ({
+            const filesArray = Array.from(uploadedFiles);
+            const newItems: DiagnosticAsset[] = filesArray.map((f, idx) => ({
               id: `f_user_${Date.now()}_${idx}`,
               name: f.name,
               size: `${(f.size / (1024 * 1024)).toFixed(1)} MB`,
@@ -75,6 +77,15 @@ export const IntakeUploadZone: React.FC<Props> = ({
             }));
             onUpdateCase({
               files: [...activeCase.files, ...newItems],
+            });
+            filesArray.forEach(async (f, idx) => {
+              const uploaded = await apiClient.uploadFile(f);
+              if (uploaded?.url) {
+                newItems[idx].url = uploaded.url;
+                onUpdateCase({
+                  files: [...activeCase.files, ...newItems],
+                });
+              }
             });
           }}
         />

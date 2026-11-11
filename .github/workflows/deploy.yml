@@ -52,7 +52,11 @@ jobs:
                 sed -i "s/export default defineConfig({/export default defineConfig({ base: \x27.\/\x27,/g" vite.config.ts
                 docker build -t alo-preview-sarat:latest .
                 docker rm -f alo-preview-sarat 2>/dev/null || true
-                docker run -d --name alo-preview-sarat --restart always --network coolify alo-preview-sarat:latest
+                ENV_OPT=""
+                if [ -f /data/alodoctor/.env ]; then
+                  ENV_OPT="--env-file /data/alodoctor/.env"
+                fi
+                docker run -d --name alo-preview-sarat --restart always --network coolify $ENV_OPT -e DB_HOST=alo-postgres -e MINIO_ENDPOINT=alo-minio alo-preview-sarat:latest
               '
               echo "✅ Preview environment updated: https://ad.howtostart.in/feature-sarat/"
 
@@ -64,7 +68,11 @@ jobs:
                 git reset --hard origin/main
                 docker build -t alo-frontend:latest .
                 docker rm -f alo-frontend 2>/dev/null || true
-                docker run -d --name alo-frontend --restart always --network coolify -p 3000:80 alo-frontend:latest
+                ENV_OPT=""
+                if [ -f /data/alodoctor/.env ]; then
+                  ENV_OPT="--env-file /data/alodoctor/.env"
+                fi
+                docker run -d --name alo-frontend --restart always --network coolify -p 3000:80 $ENV_OPT -e DB_HOST=alo-postgres -e MINIO_ENDPOINT=alo-minio alo-frontend:latest
               '
               echo "✅ Production environment updated: https://ad.howtostart.in/"
             fi

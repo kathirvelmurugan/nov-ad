@@ -1,4 +1,4 @@
-import { TenantHospital, StaffAccountRecord, ClinicalCase } from '../types';
+import { TenantHospital, StaffAccountRecord, ClinicalCase, AuditLogEntry } from '../types';
 
 function getApiBase(): string {
   if (typeof window === 'undefined') return '';
@@ -126,5 +126,71 @@ export const apiClient = {
     } catch (e) {
       console.warn('[API] Failed to sync case to backend:', e);
     }
+  },
+
+  // ── Audit Logs ────────────────────────────────────────────────────────────
+  async fetchAuditLogs(): Promise<AuditLogEntry[]> {
+    try {
+      const res = await safeFetch('/api/audit', { headers: { 'Content-Type': 'application/json' } });
+      if (res.ok) {
+        const json = await res.json();
+        if (Array.isArray(json.data) && json.data.length > 0) {
+          localStorage.setItem('alo_audit_logs_v3.0', JSON.stringify(json.data));
+          return json.data;
+        }
+      }
+    } catch (e) {
+      console.warn('[API] Failed to fetch audit logs from backend:', e);
+    }
+    try {
+      const saved = localStorage.getItem('alo_audit_logs_v3.0');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  },
+
+  async appendAuditLog(entry: AuditLogEntry): Promise<void> {
+    try {
+      await safeFetch('/api/audit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(entry),
+      });
+    } catch (e) {
+      console.warn('[API] Failed to save audit log to backend:', e);
+    }
+  },
+
+  // ── File Storage (MinIO) ──────────────────────────────────────────────────
+  async uploadFile(file: File): Promise<{ url: string; size: string; storage: string } | null> {
+    try {
+      const reader = new FileReader();
+      const base64Promise = new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+      });
+      reader.readAsDataURL(file);
+      const fileData = await base64Promise;
+
+      const res = await safeFetch('/api/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fileName: file.name,
+          fileType: file.type || 'application/octet-stream',
+          fileData,
+        }),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.url) {
+          return { url: `${getApiBase()}${json.url}`, size: json.size, storage: json.storage };
+        }
+      }
+    } catch (e) {
+      console.warn('[API] MinIO upload failed, using fallback:', e);
+    }
+    return null;
   },
 };

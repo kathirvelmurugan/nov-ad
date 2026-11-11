@@ -4,12 +4,16 @@ dotenv.config();
 
 const { Pool } = pg;
 
+const pgUser = process.env.POSTGRES_USER || 'alo_admin';
+const pgPassword = process.env.POSTGRES_PASSWORD || 'alo_secure_postgres_pass_2026';
+const pgDb = process.env.POSTGRES_DB || 'alodoctor';
 const pgHost = process.env.DB_HOST || (process.env.NODE_ENV === 'production' ? 'alo-postgres' : '127.0.0.1');
+const pgPort = process.env.DB_PORT || '5432';
 
 export const pool = new Pool({
   connectionString:
     process.env.DATABASE_URL ||
-    `postgresql://alo_admin:alo_secure_postgres_pass_2026@${pgHost}:5432/alodoctor?schema=public`,
+    `postgresql://${pgUser}:${encodeURIComponent(pgPassword)}@${pgHost}:${pgPort}/${pgDb}?schema=public`,
   max: 10,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 3000,
@@ -60,6 +64,26 @@ export async function initDatabase() {
           case_data JSONB NOT NULL DEFAULT '{}'::jsonb,
           updated_at TIMESTAMPTZ DEFAULT NOW(),
           created_at TIMESTAMPTZ DEFAULT NOW()
+        );
+
+        CREATE TABLE IF NOT EXISTS audit_logs (
+          id VARCHAR(100) PRIMARY KEY,
+          timestamp TIMESTAMPTZ DEFAULT NOW(),
+          actor_name VARCHAR(255) NOT NULL,
+          actor_role VARCHAR(50) NOT NULL,
+          hospital_id VARCHAR(100),
+          action_type VARCHAR(100) NOT NULL,
+          target VARCHAR(255),
+          details TEXT,
+          ip_address VARCHAR(100)
+        );
+
+        CREATE TABLE IF NOT EXISTS admin_catalogs (
+          id VARCHAR(50) PRIMARY KEY,
+          specialties JSONB NOT NULL DEFAULT '[]'::jsonb,
+          lab_tests JSONB NOT NULL DEFAULT '[]'::jsonb,
+          medications JSONB NOT NULL DEFAULT '[]'::jsonb,
+          updated_at TIMESTAMPTZ DEFAULT NOW()
         );
       `);
       console.log('✅ PostgreSQL database tables initialized successfully.');
