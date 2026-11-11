@@ -43,7 +43,7 @@ export function useClinicalWorkflowState() {
     try {
       if (typeof window !== 'undefined') {
         const search = new URLSearchParams(window.location.search);
-        const role = (search.get('role') || search.get('portal') || '').toUpperCase();
+        const role = (search.get('role') || '').toUpperCase();
         const token = search.get('token') || search.get('magic');
         const pathname = window.location.pathname.toLowerCase();
 
@@ -58,6 +58,27 @@ export function useClinicalWorkflowState() {
         }
         if (role === 'C' || role === 'COORDINATOR' || pathname.includes('/coordinator')) {
           return PERSONAS.find((p) => p.code === 'C') || PERSONAS[0];
+        }
+        if (role === 'HA' || role === 'HOSPITAL' || pathname.includes('/hospital')) {
+          return PERSONAS.find((p) => p.code === 'HA') || PERSONAS[0];
+        }
+        if (role === 'AD' || role === 'SUPERADMIN' || pathname.includes('/admin')) {
+          return PERSONAS.find((p) => p.code === 'AD') || PERSONAS[0];
+        }
+
+        // Check stored session on page refresh to keep active persona!
+        const savedSession = localStorage.getItem(USER_SESSION_KEY);
+        if (savedSession) {
+          const parsed = JSON.parse(savedSession);
+          if (parsed.isAuthenticated && parsed.roleCode) {
+            const matched = PERSONAS.find((p) => p.code === parsed.roleCode);
+            if (matched) {
+              return {
+                ...matched,
+                hospitalId: parsed.hospitalId || matched.hospitalId,
+              };
+            }
+          }
         }
       }
     } catch (e) {}
@@ -108,18 +129,18 @@ export function useClinicalWorkflowState() {
           search.get('demo') === '1' ||
           search.get('cockpit') === '1' ||
           search.get('auth') === 'bypass' ||
-          search.get('portal') ||
-          search.get('role') ||
           search.get('token') ||
           search.get('magic') ||
           window.location.hash === '#cockpit'
         ) {
-          const roleCode = (search.get('role') || search.get('portal') || 'P').toUpperCase();
+          const roleCode = (search.get('role') || 'P').toUpperCase();
           const personaId =
             roleCode === 'D' || roleCode === 'DOCTOR' ? 'doctor'
             : roleCode === 'K' || roleCode === 'CONSULTANT' ? 'consultant'
             : roleCode === 'N' || roleCode === 'NURSE' ? 'nurse'
             : roleCode === 'C' || roleCode === 'COORDINATOR' ? 'coordinator'
+            : roleCode === 'HA' || roleCode === 'HOSPITAL' ? 'hospital_admin'
+            : roleCode === 'AD' || roleCode === 'SUPERADMIN' ? 'super_admin'
             : 'patient';
           return { isAuthenticated: true, phone: '+966501111111', personaId, isGuest: true, expiresAt: Date.now() + 30 * 24 * 3600 * 1000, lang: 'ar' };
         }

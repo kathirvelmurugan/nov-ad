@@ -236,7 +236,12 @@ export const HospitalStaffAndDoctorsTab: React.FC<HospitalStaffAndDoctorsTabProp
                     </td>
                     <td className="py-3.5 px-4 text-right">
                       <button
-                        onClick={() => onToggleActive(staff.id)}
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          onToggleActive(staff.id);
+                        }}
                         className="text-xs font-bold px-3 py-1 rounded-lg border border-slate-200 hover:bg-slate-100 transition-colors"
                       >
                         {isActive ? (isRTL ? 'تعطيل' : 'Deactivate') : (isRTL ? 'تفعيل' : 'Activate')}

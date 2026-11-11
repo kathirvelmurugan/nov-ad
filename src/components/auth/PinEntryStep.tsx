@@ -47,6 +47,17 @@ export const PinEntryStep: React.FC<PinEntryStepProps> = ({
   }, []);
 
   const handleDigitChange = (index: number, val: string) => {
+    const cleaned = val.replace(/\D/g, '');
+    if (cleaned.length > 1) {
+      const nextPin = [...pin];
+      cleaned.slice(0, 4).split('').forEach((ch, idx) => {
+        if (idx < 4) nextPin[idx] = ch;
+      });
+      setPin(nextPin);
+      pinRefs.current[Math.min(cleaned.length - 1, 3)]?.focus();
+      return;
+    }
+
     if (val.length > 1) val = val.slice(-1);
     if (!/^\d*$/.test(val)) return;
 
@@ -62,6 +73,19 @@ export const PinEntryStep: React.FC<PinEntryStepProps> = ({
   const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Backspace' && !pin[index] && index > 0) {
       pinRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 4);
+    if (pasted.length > 0) {
+      const nextPin = ['', '', '', ''];
+      pasted.split('').forEach((ch, idx) => {
+        if (idx < 4) nextPin[idx] = ch;
+      });
+      setPin(nextPin);
+      pinRefs.current[Math.min(pasted.length - 1, 3)]?.focus();
     }
   };
 
@@ -160,6 +184,7 @@ export const PinEntryStep: React.FC<PinEntryStepProps> = ({
             value={pin[idx] || ''}
             onChange={(e) => handleDigitChange(idx, e.target.value)}
             onKeyDown={(e) => handleKeyDown(idx, e)}
+            onPaste={handlePaste}
             autoComplete="one-time-code"
             style={{
               width: '54px',

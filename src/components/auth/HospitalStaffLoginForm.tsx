@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PALETTE, getInputStyle, getPrimaryButtonStyle, labelStyle } from './authTypesAndUtils';
 import { SEEDED_TENANT_HOSPITALS, SEEDED_STAFF_DIRECTORY } from '../../data/platformSeed';
-import { RoleCode } from '../../types';
-import { Building2, KeyRound, Phone, CheckCircle2 } from 'lucide-react';
+import { RoleCode, TenantHospital, StaffAccountRecord } from '../../types';
+import { Building2, KeyRound, Phone, CheckCircle2, AlertCircle } from 'lucide-react';
 
 interface HospitalStaffLoginFormProps {
   isRTL: boolean;
@@ -22,19 +22,64 @@ export const HospitalStaffLoginForm: React.FC<HospitalStaffLoginFormProps> = ({
   onStaffLoginSuccess,
   t,
 }) => {
-  const [selectedHospitalId, setSelectedHospitalId] = useState('hosp-riyadh-care');
+  // Read dynamic hospitals from localStorage or fall back to seed
+  const [hospitals, setHospitals] = useState<TenantHospital[]>(() => {
+    try {
+      const saved = localStorage.getItem('alo_tenants_v2.4');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return SEEDED_TENANT_HOSPITALS;
+  });
+
+  const [selectedHospitalId, setSelectedHospitalId] = useState<string>(() => hospitals[0]?.id || '');
   const [loginMethod, setLoginMethod] = useState<'admin_otp' | 'staff_pin'>('staff_pin');
-  const [staffCode, setStaffCode] = useState('10201'); // Default Saudi Doctor
+  const [staffCode, setStaffCode] = useState('');
   const [staffPin, setStaffPin] = useState('1234');
-  const [adminPhone, setAdminPhone] = useState('+966 50 444 4444');
+  const [adminPhone, setAdminPhone] = useState('');
   const [adminOtp, setAdminOtp] = useState('123456');
   const [error, setError] = useState('');
+
+  // Auto-select first hospital or update admin phone if changed
+  useEffect(() => {
+    if (!selectedHospitalId && hospitals.length > 0) {
+      setSelectedHospitalId(hospitals[0].id);
+      setAdminPhone(hospitals[0].hospitalAdminPhone || '');
+    } else if (selectedHospitalId) {
+      const h = hospitals.find((item) => item.id === selectedHospitalId);
+      if (h) setAdminPhone(h.hospitalAdminPhone || '');
+    }
+  }, [hospitals, selectedHospitalId]);
+
+  // Read staff accounts dynamically
+  const getDynamicStaff = (): StaffAccountRecord[] => {
+    try {
+      const stored = localStorage.getItem('alo_platform_users_v2.4');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch {}
+    return SEEDED_STAFF_DIRECTORY;
+  };
 
   const handleHospitalSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    const hospital = SEEDED_TENANT_HOSPITALS.find((h) => h.id === selectedHospitalId);
+    if (hospitals.length === 0) {
+      setError(
+        t(
+          'لا توجد مستشفيات مسجلة حالياً. يرجى تسجيل الدخول كمشرف عام لإنشاء أول مستشفى.',
+          'No partner hospitals enrolled yet. Please login as Super Admin to add the first hospital.'
+        )
+      );
+      return;
+    }
+
+    const hospital = hospitals.find((h) => h.id === selectedHospitalId);
     if (!hospital) {
       setError(t('المجمع الطبي غير موجود', 'Hospital not found'));
       return;
@@ -52,9 +97,9 @@ export const HospitalStaffLoginForm: React.FC<HospitalStaffLoginFormProps> = ({
         fullName: hospital.hospitalAdminName,
       });
     } else {
-      // Find staff in directory
       const cleanCode = staffCode.trim();
-      const matched = SEEDED_STAFF_DIRECTORY.find(
+      const allStaff = getDynamicStaff();
+      const matched = allStaff.find(
         (s) => s.staffCode === cleanCode && (s.hospitalId === selectedHospitalId || !s.hospitalId)
       );
 
@@ -67,10 +112,41 @@ export const HospitalStaffLoginForm: React.FC<HospitalStaffLoginFormProps> = ({
         phone: matched.phone,
         roleCode: matched.roleCode,
         hospitalId: selectedHospitalId,
-        fullName: isRTL ? (matched.fullNameAr || matched.fullName) : matched.fullName,
+        fullName: isRTL ? matched.fullNameAr || matched.fullName : matched.fullName,
       });
     }
   };
+
+  if (hospitals.length === 0) {
+    return (
+      <div style={{ textAlign: 'center', padding: '24px 12px', direction: isRTL ? 'rtl' : 'ltr' }}>
+        <div
+          style={{
+            width: '48px',
+            height: '48px',
+            borderRadius: '16px',
+            backgroundColor: '#fef3c7',
+            color: '#b45309',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 12px auto',
+          }}
+        >
+          <AlertCircle style={{ width: 24, height: 24 }} />
+        </div>
+        <h3 style={{ fontSize: '15px', fontWeight: 800, color: PALETTE.textDark, margin: '0 0 6px 0' }}>
+          {t('لا توجد مستشفيات مسجلة حالياً', 'No Partner Hospitals Registered Yet')}
+        </h3>
+        <p style={{ fontSize: '12px', color: PALETTE.textMuted, lineHeight: 1.6, margin: '0 0 16px 0' }}>
+          {t(
+            'النظام مهيأ في حالة بداية جديدة (Clean Slate). يرجى التبديل لتبويب "المشرف العام" لإضافة أول مستشفى وكوادره الطبية.',
+            'System is in clean-slate state. Please switch to the "Super Admin" tab to onboard the first hospital and its staff.'
+          )}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleHospitalSubmit} style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
@@ -90,9 +166,9 @@ export const HospitalStaffLoginForm: React.FC<HospitalStaffLoginFormProps> = ({
             fontWeight: 700,
           }}
         >
-          {SEEDED_TENANT_HOSPITALS.map((h) => (
+          {hospitals.map((h) => (
             <option key={h.id} value={h.id}>
-              {isRTL ? h.nameAr : h.nameEn} ({isRTL ? h.cityAr : h.city})
+              {isRTL ? h.nameAr : h.nameEn} ({isRTL ? h.cityAr || h.city : h.city})
             </option>
           ))}
         </select>
@@ -143,17 +219,21 @@ export const HospitalStaffLoginForm: React.FC<HospitalStaffLoginFormProps> = ({
       {loginMethod === 'staff_pin' ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
           <div>
-            <label style={{ ...labelStyle, textAlign: isRTL ? 'right' : 'left', display: 'block' }}>{t('رقم الموظف (Staff ID)', 'Staff ID (5-Digit)')}</label>
+            <label style={{ ...labelStyle, textAlign: isRTL ? 'right' : 'left', display: 'block' }}>
+              {t('رقم الموظف (Staff ID)', 'Staff ID (5-Digit)')}
+            </label>
             <input
               type="text"
               value={staffCode}
               onChange={(e) => setStaffCode(e.target.value)}
-              placeholder="e.g. 10201 (Doctor) / 10501 (Lab)"
+              placeholder="e.g. 10201 (Doctor) / 10001 (Admin)"
               style={getInputStyle(isRTL)}
             />
           </div>
           <div>
-            <label style={{ ...labelStyle, textAlign: isRTL ? 'right' : 'left', display: 'block' }}>{t('رمز المرور السري (PIN)', 'Passcode / PIN')}</label>
+            <label style={{ ...labelStyle, textAlign: isRTL ? 'right' : 'left', display: 'block' }}>
+              {t('رمز المرور السري (PIN)', 'Passcode / PIN')}
+            </label>
             <input
               type="password"
               value={staffPin}
@@ -166,7 +246,9 @@ export const HospitalStaffLoginForm: React.FC<HospitalStaffLoginFormProps> = ({
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
           <div>
-            <label style={{ ...labelStyle, textAlign: isRTL ? 'right' : 'left', display: 'block' }}>{t('جوال مدير المجمع الطبي', 'Hospital Admin Mobile')}</label>
+            <label style={{ ...labelStyle, textAlign: isRTL ? 'right' : 'left', display: 'block' }}>
+              {t('جوال مدير المجمع الطبي', 'Hospital Admin Mobile')}
+            </label>
             <input
               type="text"
               value={adminPhone}
@@ -175,7 +257,9 @@ export const HospitalStaffLoginForm: React.FC<HospitalStaffLoginFormProps> = ({
             />
           </div>
           <div>
-            <label style={{ ...labelStyle, textAlign: isRTL ? 'right' : 'left', display: 'block' }}>{t('رمز التحقق المرسل (OTP)', 'Verification Code (OTP)')}</label>
+            <label style={{ ...labelStyle, textAlign: isRTL ? 'right' : 'left', display: 'block' }}>
+              {t('رمز التحقق المرسل (OTP)', 'Verification Code (OTP)')}
+            </label>
             <input
               type="text"
               value={adminOtp}

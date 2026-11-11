@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Stethoscope } from 'lucide-react';
-import { ClinicalCase } from '../../types';
+import { ClinicalCase, StaffAccountRecord, TenantHospital } from '../../types';
 import { INITIAL_MEDICAL_CENTER_DOCTORS } from '../../data/medicalCenterDoctors';
+import { SEEDED_STAFF_DIRECTORY, SEEDED_TENANT_HOSPITALS } from '../../data/platformSeed';
 
 interface Props {
   activeCase: ClinicalCase;
@@ -14,6 +15,46 @@ export const IntakeDoctorSelectionCard: React.FC<Props> = ({
   isAr,
   onUpdateCase,
 }) => {
+  // Dynamically retrieve enrolled treating doctors (roleCode === 'D')
+  const availableDoctors = useMemo(() => {
+    let allStaff: StaffAccountRecord[] = SEEDED_STAFF_DIRECTORY;
+    let allHospitals: TenantHospital[] = SEEDED_TENANT_HOSPITALS;
+
+    try {
+      const storedUsers = localStorage.getItem('alo_platform_users_v2.4');
+      if (storedUsers) {
+        const parsed = JSON.parse(storedUsers);
+        if (Array.isArray(parsed)) allStaff = parsed;
+      }
+      const storedHospitals = localStorage.getItem('alo_tenants_v2.4');
+      if (storedHospitals) {
+        const parsedH = JSON.parse(storedHospitals);
+        if (Array.isArray(parsedH)) allHospitals = parsedH;
+      }
+    } catch {}
+
+    const dynamicDoctors = allStaff
+      .filter((s) => s.roleCode === 'D' && s.status === 'active')
+      .map((s) => {
+        const hospital = allHospitals.find((h) => h.id === s.hospitalId);
+        return {
+          id: s.id,
+          name: isAr && s.fullNameAr ? s.fullNameAr : s.fullName,
+          nameEn: s.fullName,
+          specialty: s.department || 'استشاري أمراض القلب',
+          specialtyEn: s.department || 'Cardiology Consultant',
+          hospital: hospital ? (isAr ? hospital.nameAr : hospital.nameEn) : 'المجمع الطبي الشريك',
+          hospitalEn: hospital ? hospital.nameEn : 'Partner Medical Center',
+          city: hospital ? hospital.city : 'الرياض',
+          license: s.scfhsLicense || 'SCFHS-CERTIFIED',
+          tier: (2 as const),
+          isOnDuty: true,
+        };
+      });
+
+    return [...dynamicDoctors, ...INITIAL_MEDICAL_CENTER_DOCTORS];
+  }, [isAr]);
+
   return (
     <div className="card-clinical p-5 space-y-3">
       <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
@@ -44,15 +85,15 @@ export const IntakeDoctorSelectionCard: React.FC<Props> = ({
                 doctorSelectionPreference: 'need_assistance',
                 treatingDoctor: {
                   ...activeCase.treatingDoctor,
-                  name: 'بانتظار فرز التمريض (ألو تختار الأنسب)',
-                  hospital: 'شبكة المستشفيات المعتمدة (ALO Accredited Network)',
-                  city: 'الرياض / المملكة'
-                }
+                  name: isAr ? 'بانتظار فرز التمريض (ألو تختار الأنسب)' : 'Awaiting Nurse Triage Selection',
+                  hospital: isAr ? 'شبكة المستشفيات المعتمدة (ALO Accredited Network)' : 'ALO Accredited Network',
+                  city: isAr ? 'الرياض / المملكة' : 'Riyadh / KSA',
+                },
               });
               return;
             }
 
-            const selectedDoc = INITIAL_MEDICAL_CENTER_DOCTORS.find((d) => d.name === val || d.nameEn === val);
+            const selectedDoc = availableDoctors.find((d) => d.name === val || d.nameEn === val);
             if (selectedDoc) {
               onUpdateCase({
                 doctorSelectionPreference: 'specific_doctor',
@@ -62,14 +103,16 @@ export const IntakeDoctorSelectionCard: React.FC<Props> = ({
                   name: selectedDoc.name,
                   hospital: selectedDoc.hospital,
                   city: selectedDoc.city,
-                }
+                },
               });
             }
           }}
           className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-alo-teal outline-none font-bold shadow-sm cursor-pointer"
         >
-          <option value="need_assistance">✨ {isAr ? 'أحتاج مساعدة ألو في الاختيار (موصى به - مطابقة التمريض السريري)' : 'Need ALO Assistance to Choose (Recommended - Clinical Nurse Match)'}</option>
-          {INITIAL_MEDICAL_CENTER_DOCTORS.map((doc) => (
+          <option value="need_assistance">
+            ✨ {isAr ? 'أحتاج مساعدة ألو في الاختيار (موصى به - مطابقة التمريض السريري)' : 'Need ALO Assistance to Choose (Recommended - Clinical Nurse Match)'}
+          </option>
+          {availableDoctors.map((doc) => (
             <option key={doc.id} value={doc.name}>
               {isAr
                 ? `${doc.name} — ${doc.hospital} · ${doc.specialty} (${doc.license})`
@@ -87,3 +130,5 @@ export const IntakeDoctorSelectionCard: React.FC<Props> = ({
     </div>
   );
 };
+
+export default IntakeDoctorSelectionCard;
