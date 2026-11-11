@@ -242,7 +242,7 @@ export const NurseTriageView: React.FC<Props> = ({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             {INITIAL_MEDICAL_CENTER_DOCTORS.map((doc) => {
-              const isSelected = activeCase.treatingDoctor.name === doc.name;
+              const isSelected = activeCase.treatingDoctor?.name === doc.name;
               return (
                 <div
                   key={doc.id}
@@ -318,7 +318,7 @@ export const NurseTriageView: React.FC<Props> = ({
             <span className="bg-alo-mint text-alo-teal font-mono text-[10px] px-2 py-0.5 rounded font-bold">
               N06 · {isAr ? 'الطبيب المعالج' : 'Assigned Doctor'}
             </span>
-            <span>{isAr ? 'المحال إليه:' : 'Assigned to:'} <strong className="text-alo-teal font-bold">{activeCase.treatingDoctor.name}</strong> ({activeCase.treatingDoctor.hospital})</span>
+            <span>{isAr ? 'المحال إليه:' : 'Assigned to:'} <strong className="text-alo-teal font-bold">{activeCase.treatingDoctor?.name || (isAr ? 'قيد التحديد السريري' : 'Pending Selection')}</strong> ({activeCase.treatingDoctor?.hospital || referenceHospital})</span>
           </div>
 
           <button

@@ -64,8 +64,8 @@ export const LandingAccountModal: React.FC<Props> = ({
           </div>
           <p className="text-base font-black">
             {isAr
-              ? (activeCase.patientNameAr || activeCase.patientName || 'سالم العامري')
-              : (activeCase.patientNameEn || activeCase.patientName || 'Salem Al-Ameri')}
+              ? (activeCase.patientNameAr || activeCase.patientName || 'مريض معتمد')
+              : (activeCase.patientNameEn || activeCase.patientName || 'Verified Patient')}
           </p>
           <p className="text-[11px] text-slate-300">
             {isAr ? 'الهوية الوطنية:' : 'National ID:'} <span className="font-mono text-emerald-300">{activeCase.nationalIdMasked || '1089****10'}</span> · {isAr ? 'المدينة:' : 'City:'} {isAr ? (activeCase.cityAr || 'الرياض') : (activeCase.cityEn || 'Riyadh')}

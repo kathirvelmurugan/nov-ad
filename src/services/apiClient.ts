@@ -79,8 +79,19 @@ export const apiClient = {
       if (res.ok) {
         const json = await res.json();
         if (Array.isArray(json.data)) {
-          localStorage.setItem(PLATFORM_USERS_KEY, JSON.stringify(json.data));
-          return json.data;
+          // Preserve local activation flags across remote sync
+          const existing = (() => {
+            try {
+              const saved = localStorage.getItem(PLATFORM_USERS_KEY);
+              return saved ? JSON.parse(saved) : [];
+            } catch { return []; }
+          })();
+          const merged = json.data.map((u: StaffAccountRecord) => {
+            const loc = existing.find((e: any) => e.id === u.id || e.phone === u.phone || e.phone?.replace(/\D/g, '') === u.phone?.replace(/\D/g, ''));
+            return loc?.hasCustomPin ? { ...u, hasCustomPin: true, pin: loc.pin || u.pin } : u;
+          });
+          localStorage.setItem(PLATFORM_USERS_KEY, JSON.stringify(merged));
+          return merged;
         }
       }
     } catch (e) {
@@ -99,6 +110,19 @@ export const apiClient = {
       const res = await safeFetch('/api/admin/clean-slate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  },
+
+  async updateUserPin(phone: string, pin: string): Promise<boolean> {
+    try {
+      const res = await safeFetch('/api/users/pin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, pin }),
       });
       return res.ok;
     } catch {

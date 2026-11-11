@@ -30,8 +30,8 @@ export const GuideToolsTab: React.FC<GuideToolsTabProps> = ({ isAr }) => {
           </div>
           <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
             {isAr
-              ? 'زر تدوير الحالات في الشريط العلوي يتيح لك التنقل السلس بين 10 حالات لمرضى سعوديين مختلفين (سالم، فاطمة، طارق، ريم، نوف، خالد، عبد الله، مشعل، زياد، منى) بمختلف التخصصات.'
-              : 'Cycles through 10 distinct Saudi patient cases (Salem, Fatima, Tariq, Reem, Nouf, Khalid, Abdullah, Mishal, Ziyad, Mona) across various medical sub-specialties.'}
+              ? 'زر تدوير الحالات في الشريط العلوي يتيح لك التنقل السلس بين حالات مرضية سريرية معتمدة بمختلف التخصصات.'
+              : 'Cycles through distinct Saudi patient clinical cases across various medical sub-specialties.'}
           </p>
         </div>
 

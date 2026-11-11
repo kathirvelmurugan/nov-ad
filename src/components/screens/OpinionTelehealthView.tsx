@@ -37,8 +37,8 @@ const OpinionTelehealthView: React.FC<Props> = ({ activeCase, onAdvanceStage, on
     }
   }, []);
 
-  const patientNameAr = activeCase.patientNameAr || activeCase.patientName || 'سالم';
-  const patientNameEn = activeCase.patientNameEn || activeCase.patientName || 'Salem';
+  const patientNameAr = activeCase.patientNameAr || activeCase.patientName || 'المريض';
+  const patientNameEn = activeCase.patientNameEn || activeCase.patientName || 'Patient';
   const isRtl = typeof document !== 'undefined' ? document.dir === 'rtl' : true;
   const patientDisplayName = isRtl ? patientNameAr : patientNameEn;
 

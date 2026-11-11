@@ -1,5 +1,5 @@
 export type RoleCode = 
-  | 'P'   // Patient (Salem / Fatima / etc.)
+  | 'P'   // Patient (Registered Patient / Guest Intake)
   | 'F'   // Family Member / Caregiver Proxy
   | 'N'   // ALO nurse (Sara N.)
   | 'D'   // Saudi treating doctor (Dr. Abdullah)

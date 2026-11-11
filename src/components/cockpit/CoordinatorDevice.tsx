@@ -193,8 +193,8 @@ export const CoordinatorDevice: React.FC<CockpitDeviceProps> = ({
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#334155' }}>
                 <span>
                   {isAr
-                    ? `• الهوية المحلية (محفوظة بالمملكة): ${activeCase.patientName || activeCase.patientNameAr || 'سالم العامري'}`
-                    : `• Domestic Identity (Escrowed in KSA): ${activeCase.patientName || activeCase.patientNameEn || 'Salem Al-Ameri'}`}
+                    ? `• الهوية المحلية (محفوظة بالمملكة): ${activeCase.patientName || activeCase.patientNameAr || 'المريض المستفيد'}`
+                    : `• Domestic Identity (Escrowed in KSA): ${activeCase.patientName || activeCase.patientNameEn || 'Beneficiary Patient'}`}
                 </span>
                 <span style={{ fontWeight: 800, color: TEAL_PRIMARY }}>
                   ➔ {isAr ? 'رمز التصدير للهند: ALO-KSA-9482' : 'Egress Token: ALO-KSA-9482'}

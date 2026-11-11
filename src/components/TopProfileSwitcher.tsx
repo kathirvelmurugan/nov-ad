@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 
 const PATIENT_FIRST_NAMES: Record<string, { ar: string; en: string }> = {
-  'case-001': { ar: 'سالم', en: 'Salem' },
+  'case-001': { ar: 'مريض', en: 'Patient' },
   'case-002': { ar: 'فاطمة', en: 'Fatima' },
   'case-003': { ar: 'طارق', en: 'Tariq' },
   'case-004': { ar: 'ريم', en: 'Reem' },

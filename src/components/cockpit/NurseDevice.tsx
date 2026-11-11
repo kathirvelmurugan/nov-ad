@@ -49,7 +49,7 @@ export const NurseDevice: React.FC<CockpitDeviceProps> = ({
           <div style={{ ...cardInnerStyle, backgroundColor: '#f0fdfa', borderColor: TEAL_SECONDARY }}>
             <span style={labelStyle}>{isAr ? 'ملف المريض المستلم حديثاً' : 'Live Patient Intake Dossier'}</span>
             <div style={{ fontSize: '13px', fontWeight: 800, color: '#0f172a' }}>
-              {activeCase.patientName || (isAr ? 'سالم العامري' : 'Salem Al-Ameri')}
+              {activeCase.patientName || (isAr ? 'مريض مسجل حديثاً' : 'Registered Patient')}
             </div>
             <div style={{ fontSize: '11px', color: '#475569', marginTop: '3px' }}>
               <span style={{ fontWeight: 700 }}>{isAr ? 'التخصص المطلوب:' : 'Specialty:'}</span> {activeCase.specialtyAr || activeCase.specialty || 'Cardiology'}
@@ -126,7 +126,7 @@ export const NurseDevice: React.FC<CockpitDeviceProps> = ({
                   {isAr ? '🇸🇦 الهوية المحلية (داخل المملكة):' : '🇸🇦 Domestic Identity (In-Kingdom):'}
                 </div>
                 <div style={{ fontSize: '11px', fontWeight: 800, color: '#0f172a', marginTop: '3px' }}>
-                  {activeCase.patientName || (isAr ? activeCase.patientNameAr : activeCase.patientNameEn) || (isAr ? 'سالم العامري' : 'Salem Al-Ameri')}
+                  {activeCase.patientName || (isAr ? activeCase.patientNameAr : activeCase.patientNameEn) || (isAr ? 'مريض معتمد' : 'Verified Patient')}
                 </div>
                 <div style={{ fontSize: '10px', color: '#64748b', marginTop: '1px' }}>
                   {isAr ? 'هوية / إقامة' : 'ID / Iqama'}: {activeCase.nationalIdMasked || '1089345210'} · {isAr ? 'ملف' : 'File'}: RC-{activeCase.caseNumber?.slice(-4) || '8821'}

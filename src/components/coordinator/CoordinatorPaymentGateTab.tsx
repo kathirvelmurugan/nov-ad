@@ -63,7 +63,7 @@ export const CoordinatorPaymentGateTab: React.FC<Props> = ({
             {isAr ? activeCase.patientNameAr : (activeCase.patientNameEn || activeCase.patientName)} (10********)
           </span>
           <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#64748B' }}>
-            {activeCase.treatingDoctor.hospital} · {activeCase.treatingDoctor.name}
+            {activeCase.treatingDoctor?.hospital || (isAr ? 'المستشفى المعتمد' : 'Partner Hospital')} · {activeCase.treatingDoctor?.name || (isAr ? 'طبيب معالج' : 'Treating Physician')}
           </p>
         </div>
 

@@ -78,7 +78,7 @@ export const IntakeDoctorSelectionCard: React.FC<Props> = ({
           {isAr ? 'تحديد خيار الطبيب المعالج المشرف بالمملكة:' : 'Select Saudi Treating Doctor Assignment:'}
         </label>
         <select
-          value={activeCase.doctorSelectionPreference === 'need_assistance' ? 'need_assistance' : activeCase.treatingDoctor.name}
+          value={activeCase.doctorSelectionPreference === 'need_assistance' ? 'need_assistance' : (activeCase.treatingDoctor?.name || 'need_assistance')}
           onChange={(e) => {
             const val = e.target.value;
             if (val === 'need_assistance') {

@@ -36,8 +36,8 @@ export const TimelinePhysicalExamAlert: React.FC<TimelinePhysicalExamAlertProps>
 
       <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
         {isAr
-          ? `قرر طبيبك المعالج (${activeCase.treatingDoctor.name} - ${activeCase.treatingDoctor.hospital}) ضرورة الحضور لإجراء الفحص البدني السريري: ${activeCase.inPersonExamReason || 'تقييم العلامات الحيوية والمدى الحركي وموضع الألم'}. تم حجز مقعدك بالاستقبال.`
-          : `Your treating physician (${activeCase.treatingDoctor.name} at ${activeCase.treatingDoctor.hospital}) requires a hands-on physical exam: ${activeCase.inPersonExamReason || 'Assessment of vitals, ROM, and palpation'}. Reception slot booked.`}
+          ? `قرر طبيبك المعالج (${activeCase.treatingDoctor?.name || 'الطبيب المعالج'} - ${activeCase.treatingDoctor?.hospital || 'المستشفى الشريك'}) ضرورة الحضور لإجراء الفحص البدني السريري: ${activeCase.inPersonExamReason || 'تقييم العلامات الحيوية والمدى الحركي وموضع الألم'}. تم حجز مقعدك بالاستقبال.`
+          : `Your treating physician (${activeCase.treatingDoctor?.name || 'Treating Physician'} at ${activeCase.treatingDoctor?.hospital || 'Partner Hospital'}) requires a hands-on physical exam: ${activeCase.inPersonExamReason || 'Assessment of vitals, ROM, and palpation'}. Reception slot booked.`}
       </p>
 
       <div className="flex flex-wrap items-center justify-between gap-3 pt-1 border-t border-amber-200 dark:border-amber-800/60">

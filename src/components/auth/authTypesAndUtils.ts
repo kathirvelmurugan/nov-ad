@@ -27,17 +27,23 @@ export const getUserPin = (rawPhone: string): string | null => {
   if (clean === '966500000001' || clean === '0500000001' || clean === '500000001') {
     return '1234';
   }
+  const variants = [rawPhone, clean, clean.startsWith('966') ? '+' + clean : '+966' + clean, clean.startsWith('966') ? '0' + clean.slice(3) : '0' + clean];
   try {
     const saved = localStorage.getItem(USER_PINS_KEY);
     if (saved) {
       const parsed = JSON.parse(saved);
-      if (parsed[rawPhone] || parsed[clean]) return parsed[rawPhone] || parsed[clean];
+      for (const v of variants) {
+        if (parsed[v]) return parsed[v];
+      }
     }
-    const staffSaved = localStorage.getItem('alo_platform_users_v4.0_clean');
+    const staffSaved = localStorage.getItem(PLATFORM_USERS_KEY);
     if (staffSaved) {
       const staffList = JSON.parse(staffSaved);
       if (Array.isArray(staffList)) {
-        const found = staffList.find((s: any) => s.phone?.replace(/\D/g, '') === clean);
+        const found = staffList.find((s: any) => {
+          const sc = s.phone?.replace(/\D/g, '') || '';
+          return sc === clean || variants.includes(s.phone);
+        });
         if (found && found.hasCustomPin && found.pin) return found.pin;
       }
     }
@@ -47,25 +53,26 @@ export const getUserPin = (rawPhone: string): string | null => {
 
 export const setUserPin = (rawPhone: string, pin: string): void => {
   const clean = rawPhone.replace(/\D/g, '');
+  const variants = [rawPhone, clean, clean.startsWith('966') ? '+' + clean : '+966' + clean, clean.startsWith('966') ? '0' + clean.slice(3) : '0' + clean];
   try {
     const saved = localStorage.getItem(USER_PINS_KEY);
     const pins = saved ? JSON.parse(saved) : {};
-    pins[rawPhone] = pin;
-    pins[clean] = pin;
+    variants.forEach((v) => { pins[v] = pin; });
     localStorage.setItem(USER_PINS_KEY, JSON.stringify(pins));
 
     // Also update staff directory
-    const staffSaved = localStorage.getItem('alo_platform_users_v4.0_clean');
+    const staffSaved = localStorage.getItem(PLATFORM_USERS_KEY);
     if (staffSaved) {
       const staffList = JSON.parse(staffSaved);
       if (Array.isArray(staffList)) {
         const updated = staffList.map((s: any) => {
-          if (s.phone?.replace(/\D/g, '') === clean || s.phone === rawPhone) {
+          const sc = s.phone?.replace(/\D/g, '') || '';
+          if (sc === clean || variants.includes(s.phone)) {
             return { ...s, pin, hasCustomPin: true };
           }
           return s;
         });
-        localStorage.setItem('alo_platform_users_v4.0_clean', JSON.stringify(updated));
+        localStorage.setItem(PLATFORM_USERS_KEY, JSON.stringify(updated));
       }
     }
   } catch {}
@@ -76,17 +83,21 @@ export const hasUserPin = (rawPhone: string): boolean => {
   if (clean === '966500000001' || clean === '0500000001' || clean === '500000001') {
     return true; // Super Admin has default PIN 1234
   }
+  const variants = [rawPhone, clean, clean.startsWith('966') ? '+' + clean : '+966' + clean, clean.startsWith('966') ? '0' + clean.slice(3) : '0' + clean];
   try {
     const saved = localStorage.getItem(USER_PINS_KEY);
     if (saved) {
       const parsed = JSON.parse(saved);
-      if (parsed[rawPhone] || parsed[clean]) return true;
+      if (variants.some((v) => !!parsed[v])) return true;
     }
-    const staffSaved = localStorage.getItem('alo_platform_users_v4.0_clean');
+    const staffSaved = localStorage.getItem(PLATFORM_USERS_KEY);
     if (staffSaved) {
       const staffList = JSON.parse(staffSaved);
       if (Array.isArray(staffList)) {
-        const found = staffList.find((s: any) => s.phone?.replace(/\D/g, '') === clean);
+        const found = staffList.find((s: any) => {
+          const sc = s.phone?.replace(/\D/g, '') || '';
+          return sc === clean || variants.includes(s.phone);
+        });
         if (found && found.hasCustomPin) return true;
       }
     }

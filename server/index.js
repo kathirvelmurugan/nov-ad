@@ -113,12 +113,26 @@ apiRouter.get('/users', async (req, res) => {
       hospitalId: r.hospital_id,
       department: r.department,
       status: r.status,
+      hasCustomPin: !!r.has_custom_pin,
       createdAt: r.created_at,
     }));
     return res.json({ success: true, data: mapped });
   } catch (err) {
     return res.json({ success: true, data: memoryUsers, isFallback: true });
   }
+});
+
+apiRouter.post('/users/pin', async (req, res) => {
+  const { phone, pin } = req.body;
+  if (!phone || !pin) return res.status(400).json({ error: 'Missing phone or pin' });
+  const clean = phone.replace(/\D/g, '');
+  try {
+    await pool.query(
+      `UPDATE platform_users SET pin = $1, has_custom_pin = TRUE WHERE REPLACE(phone, '+', '') = $2 OR REPLACE(phone, ' ', '') = $2`,
+      [pin, clean]
+    );
+  } catch (err) {}
+  return res.json({ success: true, phone, hasCustomPin: true });
 });
 
 apiRouter.post('/users', async (req, res) => {

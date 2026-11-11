@@ -38,7 +38,7 @@ export const TimelineDossierSummaryCard: React.FC<TimelineDossierSummaryCardProp
             {isAr ? 'المستشفى الشريك والطبيب المعالج المختار:' : 'Selected Partner Hospital & Doctor:'}
           </span>
           <span className="font-semibold text-slate-800 dark:text-slate-200">
-            {activeCase.treatingDoctor.hospital} · {activeCase.treatingDoctor.name} ({activeCase.treatingDoctor.city})
+            {activeCase.treatingDoctor?.hospital || (isAr ? 'المستشفى الشريك' : 'Partner Hospital')} · {activeCase.treatingDoctor?.name || (isAr ? 'الطبيب المعالج' : 'Treating Doctor')} ({activeCase.treatingDoctor?.city || (isAr ? 'الرياض' : 'Riyadh')})
           </span>
         </div>
       </div>

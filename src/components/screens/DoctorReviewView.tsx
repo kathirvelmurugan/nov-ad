@@ -125,7 +125,7 @@ export const DoctorReviewView: React.FC<Props> = ({
             </span>
             <span className="text-xs text-slate-400">·</span>
             <span className="text-xs text-slate-500 dark:text-slate-400">
-              {isAr ? (activeCase.specialtyAr || activeCase.specialty) : (activeCase.specialtyEn || activeCase.specialty)} · {activeCase.treatingDoctor.city}
+              {isAr ? (activeCase.specialtyAr || activeCase.specialty) : (activeCase.specialtyEn || activeCase.specialty)} · {activeCase.treatingDoctor?.city || (isAr ? 'الرياض' : 'Riyadh')}
             </span>
           </div>
         </div>
@@ -315,7 +315,7 @@ export const DoctorReviewView: React.FC<Props> = ({
                       internalOrders: {
                         ...(activeCase.internalOrders || {
                           medicalCenterId: 'mc_riyadh_care',
-                          medicalCenterName: activeCase.treatingDoctor.hospital,
+                          medicalCenterName: activeCase.treatingDoctor?.hospital || partnerHospital,
                           lab: { ordered: false, tests: [], status: 'none' },
                           pharmacy: { ordered: false, medications: [], status: 'none' },
                         }),

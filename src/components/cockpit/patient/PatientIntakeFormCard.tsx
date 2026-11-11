@@ -38,7 +38,7 @@ export const PatientIntakeFormCard: React.FC<PatientIntakeFormCardProps> = ({
   }, [activeCase.id, activeCase.patientName, activeCase.nationalIdMasked, activeCase.symptoms, activeCase.stage]);
 
   const handleLoadSampleData = () => {
-    setPatientName(isAr ? 'سالم بن عبد العزيز العامري' : 'Salem Abdulaziz Al-Ameri');
+    setPatientName(isAr ? 'عبدالعزيز العتيبي' : 'Abdulaziz Al-Otaibi');
     setNationalId('1089345210');
     setSpecialty(isAr ? 'أمراض القلب وجراحة الصمامات' : 'Cardiology & Valvular Heart Disease');
     setSymptoms(
@@ -52,7 +52,7 @@ export const PatientIntakeFormCard: React.FC<PatientIntakeFormCardProps> = ({
 
   const handleSubmitIntake = () => {
     onUpdateCase({
-      patientName: patientName || (isAr ? 'سالم العامري' : 'Salem Al-Ameri'),
+      patientName: patientName || (isAr ? 'مريض جديد' : 'New Patient'),
       nationalIdMasked: nationalId ? `${nationalId.slice(0, 4)}****${nationalId.slice(-2)}` : '1089****10',
       specialty: specialty || 'Cardiology',
       specialtyAr: specialty || 'أمراض القلب والشرايين',
@@ -95,7 +95,7 @@ export const PatientIntakeFormCard: React.FC<PatientIntakeFormCardProps> = ({
               type="text"
               value={patientName}
               onChange={(e) => setPatientName(e.target.value)}
-              placeholder={isAr ? 'مثال: سالم العامري' : 'e.g. Salem Al-Ameri'}
+              placeholder={isAr ? 'مثال: الاسم الثلاثي للمريض' : 'e.g. Patient Full Name'}
               style={{ width: '100%', padding: '8px', fontSize: '12px', border: '1px solid #cbd5e1', borderRadius: '6px', outline: 'none' }}
             />
           </div>

@@ -21,8 +21,8 @@ export const BilingualReportModal: React.FC<Props> = ({
   if (!isOpen) return null;
 
   const isAr = lang === 'ar';
-  const patientName = activeCase.patientName || activeCase.patientNameAr || (isAr ? 'سالم العامري' : 'Salem Al-Ameri');
-  const patientNameEn = activeCase.patientName || activeCase.patientNameEn || 'Salem Al-Ameri';
+  const patientName = activeCase.patientName || activeCase.patientNameAr || (isAr ? 'المريض' : 'Patient');
+  const patientNameEn = activeCase.patientName || activeCase.patientNameEn || 'Patient';
   const treatingDocName = activeCase.treatingDoctor?.name || 'د. عبدالله الشمري';
   const consultantName = activeCase.consultant?.name || 'Dr. Pradeep Kumar, MBBS, MS, MCh (CTVS)';
   const invoiceNum = activeCase.pricing?.invoiceNumber || 'INV-2026-001';

@@ -34,6 +34,7 @@ import { SuperAdminAuthCard } from './SuperAdminAuthCard';
 import { AuthHeader } from './AuthHeader';
 import { FirstTimeActivationStep } from './FirstTimeActivationStep';
 import { ConsultantMagicLinkStep } from './ConsultantMagicLinkStep';
+import { apiClient } from '../../services/apiClient';
 
 interface UnifiedAuthGateProps {
   onAuthenticated: (session: SessionData) => void;
@@ -455,6 +456,7 @@ export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }:
                 onActivationSuccess={(newPin) => {
                   const raw = extractRawPhone(phone);
                   setUserPin(raw, newPin);
+                  apiClient.updateUserPin(raw, newPin).catch(() => {});
                   completeAuth(false);
                 }}
                 onBack={() => setStep('phone')}

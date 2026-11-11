@@ -48,8 +48,13 @@ export async function initDatabase() {
           hospital_id VARCHAR(100) REFERENCES tenants(id) ON DELETE SET NULL,
           department VARCHAR(100),
           status VARCHAR(50) DEFAULT 'active',
+          has_custom_pin BOOLEAN DEFAULT FALSE,
           created_at TIMESTAMPTZ DEFAULT NOW()
         );
+
+        try {
+          await client.query('ALTER TABLE platform_users ADD COLUMN IF NOT EXISTS has_custom_pin BOOLEAN DEFAULT FALSE;');
+        } catch (e) {}
 
         CREATE TABLE IF NOT EXISTS clinical_cases (
           id VARCHAR(100) PRIMARY KEY,

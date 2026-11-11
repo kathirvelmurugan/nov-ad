@@ -1,17 +1,17 @@
 import { ClinicalCase, ClinicalStage, RoleCode } from '../types';
 
-// ─── Storage Keys (v3.0 Clean Slate) ─────────────────────────────────────────
-export const STORAGE_KEY        = 'alo_cases_v3.0';
-export const ACTIVE_CASE_KEY    = 'alo_active_case_id_v3.0';
+// ─── Storage Keys (v4.0 Clean Slate) ─────────────────────────────────────────
+export const STORAGE_KEY        = 'alo_cases_v4.0_clean';
+export const ACTIVE_CASE_KEY    = 'alo_active_case_id_v4.0_clean';
 export const THEME_KEY          = 'alo_theme_preference';
 export const LANG_KEY           = 'alo_lang_preference';
-export const VIEW_MODE_KEY      = 'alo_view_mode_v3.0';
-export const USER_SESSION_KEY   = 'alo_user_session_v3.0';
+export const VIEW_MODE_KEY      = 'alo_view_mode_v4.0_clean';
+export const USER_SESSION_KEY   = 'alo_user_session_v4.0_clean';
 export const TENANTS_KEY        = 'alo_tenants_v4.0_clean';
 export const PLATFORM_USERS_KEY = 'alo_platform_users_v4.0_clean';
-export const CATALOGS_KEY       = 'alo_catalogs_v3.0';
-export const AUDIT_LOGS_KEY     = 'alo_audit_logs_v3.0';
-export const USER_PINS_KEY      = 'alo_user_pins_v3.0';
+export const CATALOGS_KEY       = 'alo_catalogs_v4.0_clean';
+export const AUDIT_LOGS_KEY     = 'alo_audit_logs_v4.0_clean';
+export const USER_PINS_KEY      = 'alo_user_pins_v4.0_clean';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 export interface UserSession {
