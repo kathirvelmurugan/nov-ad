@@ -14,6 +14,8 @@ import { CoordinatorCaseClosureTab } from '../coordinator/CoordinatorCaseClosure
 
 interface Props {
   activeCase: ClinicalCase;
+  cases?: ClinicalCase[];
+  onSelectCase?: (caseId: string) => void;
   onAdvanceStage: () => void;
   onAssignPaymentToPatient?: (
     methods: PaymentMethodId[],
@@ -27,6 +29,8 @@ interface Props {
 
 const CoordinatorPortalView: React.FC<Props> = ({
   activeCase,
+  cases = [],
+  onSelectCase,
   onAdvanceStage,
   onAssignPaymentToPatient,
   onVerifyPaymentAndDispatch,
@@ -303,6 +307,52 @@ const CoordinatorPortalView: React.FC<Props> = ({
           )}
         </div>
       </header>
+
+      {cases && cases.length > 1 && (
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          borderRadius: '12px',
+          padding: '12px 16px',
+          marginBottom: '20px',
+          border: '1px solid #E2E8F0',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px',
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '12px', fontWeight: 800, color: TEAL_PRIMARY }}>
+              {isAr ? `قائمة حالات التنسيق الطبي (${cases.length} حالات)` : `Coordinator Cases Queue (${cases.length} cases)`}
+            </span>
+            <span style={{ fontSize: '11px', color: '#718096' }}>
+              {isAr ? 'انقر للتبديل بين ملفات التنسيق الطبي' : 'Click to switch active coordination dossier'}
+            </span>
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+            {cases.map((c) => {
+              const isSelected = c.id === activeCase.id;
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => onSelectCase?.(c.id)}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    border: isSelected ? `2px solid ${TEAL_PRIMARY}` : '1px solid #CBD5E0',
+                    backgroundColor: isSelected ? TEAL_PRIMARY : '#FFFFFF',
+                    color: isSelected ? '#FFFFFF' : '#2D3748',
+                  }}
+                >
+                  {c.caseNumber || c.id} · {isAr ? c.specialtyAr || c.specialty : c.specialtyEn || c.specialty}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <nav style={{ display: 'flex', gap: '8px', marginBottom: '32px', flexWrap: 'wrap' }} role="tablist" aria-label={isAr ? 'مراحل التنسيق' : 'Coordination Stages'}>
         <button role="tab" aria-selected={activeTab === 'C01'} style={getTabStyle('C01')} onClick={() => setActiveTab('C01')}>

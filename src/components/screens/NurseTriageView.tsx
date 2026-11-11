@@ -88,12 +88,17 @@ export const NurseTriageView: React.FC<Props> = ({
     return [...dynamicDoctors, ...INITIAL_MEDICAL_CENTER_DOCTORS];
   }, [isAr]);
 
+  const pendingTriageCases = useMemo(() => {
+    return cases.filter((c) => c.currentStage === 'NURSE_CHECK' || c.currentStage === 'INTAKE_RECEIVED');
+  }, [cases]);
+
   useEffect(() => {
     setTriageNotes(generateDefaultNotes());
   }, [activeCase?.id, isAr]);
 
   // Zero-Case Dedicated Empty State
-  if (!activeCase || !activeCase.caseNumber || (cases && cases.length === 0)) {
+  const isCurrentStageTriage = activeCase?.currentStage === 'NURSE_CHECK' || activeCase?.currentStage === 'INTAKE_RECEIVED';
+  if (!activeCase || !activeCase.caseNumber || (!isCurrentStageTriage && pendingTriageCases.length === 0)) {
     return (
       <div data-testid="nurse-triage-empty" className="max-w-2xl mx-auto my-12 text-center p-10 card-clinical space-y-4">
         <div className="w-16 h-16 rounded-2xl bg-teal-50 dark:bg-teal-950/50 text-alo-teal flex items-center justify-center mx-auto text-2xl border border-teal-200 dark:border-teal-800 shadow-inner">
@@ -114,13 +119,13 @@ export const NurseTriageView: React.FC<Props> = ({
   return (
     <div data-testid="nurse-triage-view" className="max-w-4xl mx-auto space-y-6">
       {/* Multi-Case Triage Queue Switcher */}
-      {cases && cases.length > 1 && (
+      {pendingTriageCases.length > 0 && (
         <div className="card-clinical p-4 bg-gradient-to-r from-slate-50 to-teal-50/40 dark:from-slate-900/80 dark:to-teal-950/30 border border-slate-200 dark:border-slate-800">
           <div className="flex items-center justify-between mb-2.5">
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
               <h4 className="text-xs font-black text-slate-800 dark:text-slate-200 tracking-wide uppercase">
-                {isAr ? `قائمة حالات الفرز التمريضي (${cases.length} حالات)` : `Triage Case Queue (${cases.length} cases)`}
+                {isAr ? `قائمة حالات الفرز التمريضي (${pendingTriageCases.length} حالات)` : `Triage Case Queue (${pendingTriageCases.length} cases)`}
               </h4>
             </div>
             <span className="text-[11px] text-slate-500">
@@ -128,7 +133,7 @@ export const NurseTriageView: React.FC<Props> = ({
             </span>
           </div>
           <div className="flex flex-wrap gap-2">
-            {cases.map((c) => {
+            {pendingTriageCases.map((c) => {
               const isSelected = c.id === activeCase.id;
               const patName = isAr ? c.patientNameAr || c.patientName : c.patientNameEn || c.patientName;
               return (
@@ -142,7 +147,7 @@ export const NurseTriageView: React.FC<Props> = ({
                       : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:border-alo-teal hover:bg-teal-50/50 dark:hover:bg-slate-700'
                   }`}
                 >
-                  <span className="font-mono">{c.caseNumber}</span>
+                  <span className="font-mono">{c.caseNumber || c.id}</span>
                   <span>·</span>
                   <span className="truncate max-w-[140px]">{patName}</span>
                   <span className={`text-[10px] px-1.5 py-0.5 rounded ${isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>
@@ -434,7 +439,9 @@ export const NurseTriageView: React.FC<Props> = ({
                   deidentifiedAt: new Date().toISOString(),
                 },
               });
+              const nextPending = pendingTriageCases.find((c) => c.id !== activeCase.id);
               onAdvanceStage();
+              if (nextPending && onSelectCase) onSelectCase(nextPending.id);
             }}
             className="w-full sm:w-auto bg-gradient-to-r from-alo-teal to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white font-extrabold py-3 px-8 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-sm active:scale-95 cursor-pointer"
           >

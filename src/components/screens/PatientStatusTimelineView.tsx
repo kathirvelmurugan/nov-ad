@@ -17,6 +17,8 @@ import { TimelineDossierSummaryCard } from '../timeline/TimelineDossierSummaryCa
 
 interface Props {
   activeCase: ClinicalCase;
+  cases?: ClinicalCase[];
+  onSelectCase?: (caseId: string) => void;
   onAdvanceStage: () => void;
   onUpdateCase: (updated: Partial<ClinicalCase>) => void;
   onResetActiveCase?: () => void;
@@ -29,6 +31,8 @@ interface Props {
 
 export const PatientStatusTimelineView: React.FC<Props> = ({
   activeCase,
+  cases = [],
+  onSelectCase,
   onAdvanceStage,
   onUpdateCase: _onUpdateCase,
   onResetActiveCase,
@@ -76,6 +80,41 @@ export const PatientStatusTimelineView: React.FC<Props> = ({
         </div>
       )}
       
+      {/* Patient Own Cases Switcher */}
+      {cases && cases.length > 1 && (
+        <div className="card-clinical p-3.5 bg-gradient-to-r from-teal-50/60 to-slate-50 dark:from-slate-900/80 dark:to-teal-950/30 border border-teal-200 dark:border-teal-800">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-black text-alo-navy dark:text-slate-200">
+              {isAr ? `ملفاتي الطبية المسجلة (${cases.length} حالات)` : `My Registered Cases (${cases.length} cases)`}
+            </span>
+            <span className="text-[11px] text-slate-500">
+              {isAr ? 'انقر للتبديل بين حالاتك السريرية' : 'Click to switch between your cases'}
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {cases.map((c) => {
+              const isSelected = c.id === activeCase.id;
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => onSelectCase?.(c.id)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                    isSelected
+                      ? 'bg-alo-teal text-white border-teal-600 shadow-sm'
+                      : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:border-alo-teal'
+                  }`}
+                >
+                  <span className="font-mono">{c.caseNumber || c.id}</span>
+                  <span>·</span>
+                  <span>{isAr ? c.specialtyAr || c.specialty : c.specialtyEn || c.specialty}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* 1. Header: Patient Journey Banner */}
       <div className="bg-gradient-to-r from-teal-900 via-slate-900 to-teal-950 p-6 rounded-2xl border border-teal-800/60 shadow-lg text-white">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">

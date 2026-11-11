@@ -134,6 +134,8 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
     return (
       <CoordinatorPortalView
         activeCase={activeCase}
+        cases={cases}
+        onSelectCase={onSelectCase}
         onAdvanceStage={handleAdvanceStage}
         onAssignPaymentToPatient={handleAssignPaymentToPatient}
         onVerifyPaymentAndDispatch={handleVerifyPaymentAndDispatch}
@@ -268,6 +270,7 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
           selectedService={selectedServiceId}
           onSelectService={setSelectedServiceId}
           onBackToLanding={() => handleSelectPatientSubView('landing')}
+          userSession={userSession}
         />
       );
     }
@@ -284,6 +287,8 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
       return (
         <PatientStatusTimelineView
           activeCase={activeCase}
+          cases={cases}
+          onSelectCase={onSelectCase}
           onAdvanceStage={handleAdvanceStage}
           onUpdateCase={handleUpdateCase}
           onResetActiveCase={handleResetActiveCase}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ClinicalCase } from '../../types';
+import { UserSession } from '../../hooks/workflowConstants';
 import { 
   Shield, 
   UserCheck, 
@@ -26,6 +27,7 @@ interface Props {
   selectedService?: string;
   onSelectService?: (serviceId: string) => void;
   onBackToLanding?: () => void;
+  userSession?: UserSession | null;
 }
 
 const INTAKE_SERVICES = [
@@ -45,6 +47,7 @@ export const PatientIntakeView: React.FC<Props> = ({
   selectedService = 'second-opinion',
   onSelectService,
   onBackToLanding,
+  userSession,
 }) => {
   const [, setSelectedFileForPreview] = useState<string | null>(null);
   const [isCaregiverMode, setIsCaregiverMode] = useState<boolean>(activeCase.caregiver?.isProxy ?? true);
@@ -276,11 +279,16 @@ export const PatientIntakeView: React.FC<Props> = ({
 
           <button
             onClick={() => {
-              const freshId = activeCase.id && !activeCase.id.startsWith('seed-') ? activeCase.id : `case-${Date.now()}`;
+              const freshId = activeCase.id && !activeCase.id.startsWith('seed-') && !activeCase.id.startsWith('case-initial-') ? activeCase.id : `case-${Date.now()}`;
               const freshCaseNum = activeCase.caseNumber || `CASE-2026-${Math.floor(1000 + Math.random() * 9000)}`;
+              const patPhone = userSession?.phone || activeCase.patientPhone || '';
               onUpdateCase({
                 id: freshId,
                 caseNumber: freshCaseNum,
+                patientPhone: patPhone,
+                patientName: activeCase.patientName || userSession?.fullName || (isAr ? 'مريض ألو' : 'ALO Patient'),
+                patientNameAr: activeCase.patientNameAr || (isAr ? (activeCase.patientName || userSession?.fullName || 'مريض ألو') : undefined),
+                patientNameEn: activeCase.patientNameEn || (!isAr ? (activeCase.patientName || userSession?.fullName || 'ALO Patient') : undefined),
                 currentStage: 'NURSE_CHECK',
                 stage: 2,
                 createdAt: activeCase.createdAt || new Date().toISOString(),

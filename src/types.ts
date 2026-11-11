@@ -210,6 +210,8 @@ export interface ConsultantMagicToken {
 export interface ClinicalCase {
   id: string;
   caseNumber: string;
+  patientPhone?: string;
+  patientId?: string;
   patientName: string;
   patientNameAr?: string;
   patientNameEn?: string;

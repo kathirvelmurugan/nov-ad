@@ -56,6 +56,23 @@ export function useWorkflowStageTransitions({
     }
     const lockedLang = localStorage.getItem(LANG_KEY);
     if (!lockedLang) setLang(p.lang);
+
+    if (typeof window !== 'undefined') {
+      try {
+        const portalMap: Record<string, string> = {
+          P: 'patient', N: 'nurse', D: 'doctor', C: 'coordinator',
+          K: 'consultant', HA: 'hospital', AD: 'superadmin',
+        };
+        const portal = portalMap[p.code] || 'patient';
+        const url = new URL(window.location.href);
+        url.searchParams.set('portal', portal);
+        if (p.code !== 'P') {
+          url.searchParams.delete('subview');
+          if (activeCase?.id) url.searchParams.set('caseId', activeCase.id);
+        }
+        window.history.pushState({ portal, caseId: activeCase?.id, viewMode }, '', url.pathname + url.search);
+      } catch (e) {}
+    }
   };
 
   const handleSetStage = (stage: ClinicalStage) => {

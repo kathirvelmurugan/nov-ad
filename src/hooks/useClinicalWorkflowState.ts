@@ -12,6 +12,7 @@ import { useState, useEffect } from 'react';
 import { PERSONAS } from '../data/personas';
 import { Persona, ClinicalCase, ClinicalStage } from '../types';
 import { apiClient } from '../services/apiClient';
+import { matchesSaudiPhone } from '../components/auth/authTypesAndUtils';
 import {
   STORAGE_KEY,
   ACTIVE_CASE_KEY,
@@ -25,15 +26,7 @@ import {
 import { useWorkflowStageTransitions } from './useWorkflowStageTransitions';
 
 export type { UserSession };
-export {
-  STORAGE_KEY,
-  ACTIVE_CASE_KEY,
-  THEME_KEY,
-  LANG_KEY,
-  VIEW_MODE_KEY,
-  USER_SESSION_KEY,
-  FRESH_PRIMARY_CASE,
-};
+export { STORAGE_KEY, ACTIVE_CASE_KEY, THEME_KEY, LANG_KEY, VIEW_MODE_KEY, USER_SESSION_KEY, FRESH_PRIMARY_CASE };
 
 // ─── Hook ────────────────────────────────────────────────────────────────────
 export function useClinicalWorkflowState() {
@@ -140,15 +133,13 @@ export function useClinicalWorkflowState() {
   });
 
   // ── UI Flags ──────────────────────────────────────────────────────────────
-  const [isAuthModalOpen, setIsAuthModalOpen]           = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isWhatsAppDrawerOpen, setIsWhatsAppDrawerOpen] = useState(false);
-  const [isGuideOpen, setIsGuideOpen]                   = useState(false);
-  const [isPipelineBoardOpen, setIsPipelineBoardOpen]   = useState(false);
-  const [isNewCaseModalOpen, setIsNewCaseModalOpen]     = useState(false);
-  const [isAutoDemoActive, setIsAutoDemoActive]         = useState(false);
-  const [pendingHandoff, setPendingHandoff]             = useState<{
-    fromStage: ClinicalStage; toStage: ClinicalStage; nextPersona: Persona;
-  } | null>(null);
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
+  const [isPipelineBoardOpen, setIsPipelineBoardOpen] = useState(false);
+  const [isNewCaseModalOpen, setIsNewCaseModalOpen] = useState(false);
+  const [isAutoDemoActive, setIsAutoDemoActive] = useState(false);
+  const [pendingHandoff, setPendingHandoff] = useState<{ fromStage: ClinicalStage; toStage: ClinicalStage; nextPersona: Persona } | null>(null);
 
   // ── View Mode ─────────────────────────────────────────────────────────────
   const [viewMode, setViewMode] = useState<'workstation' | 'studio'>(() => {
@@ -280,33 +271,44 @@ export function useClinicalWorkflowState() {
     };
   }, []);
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // Derived State
-  // ─────────────────────────────────────────────────────────────────────────
-  const activeCase = cases.find((c) => c.id === activeCaseId) || cases[0] || FRESH_PRIMARY_CASE;
+  // ── Derived State (Patient Data Scoping) ─────────────────────────────────
+  const isPatientUser = userSession?.roleCode === 'P';
+  const effectiveCases = isPatientUser
+    ? cases.filter((c) => matchesSaudiPhone(c.patientPhone, userSession.phone))
+    : cases;
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // Handlers
-  // ─────────────────────────────────────────────────────────────────────────
+  const activeCase = (isPatientUser
+    ? (effectiveCases.find((c) => c.id === activeCaseId) || effectiveCases[0])
+    : (cases.find((c) => c.id === activeCaseId) || cases[0])) || {
+      ...FRESH_PRIMARY_CASE,
+      id: isPatientUser ? `case-${Date.now()}` : FRESH_PRIMARY_CASE.id,
+      patientPhone: isPatientUser ? userSession?.phone : undefined,
+      patientName: isPatientUser ? (userSession?.fullName || '') : '',
+      patientNameAr: isPatientUser ? (userSession?.fullName || '') : '',
+      patientNameEn: isPatientUser ? (userSession?.fullName || '') : '',
+    };
+
+  // ── Handlers ─────────────────────────────────────────────────────────────
   const handleUpdateCase = (updated: Partial<ClinicalCase>) => {
     setCases((prev) => {
       const targetId = updated.id || activeCase.id || `case-${Date.now()}`;
       const exists = prev.some((c) => c.id === targetId);
+      const phoneToSet = updated.patientPhone || (isPatientUser ? userSession?.phone : activeCase.patientPhone);
       let updatedCase: ClinicalCase;
       let nextCases: ClinicalCase[];
       if (!exists) {
-        updatedCase = { ...activeCase, ...updated, id: targetId };
+        updatedCase = { ...activeCase, ...updated, id: targetId, ...(phoneToSet ? { patientPhone: phoneToSet } : {}) };
         setActiveCaseId(updatedCase.id);
         nextCases = [updatedCase, ...prev];
       } else {
         nextCases = prev.map((c) => {
           if (c.id === targetId || c.id === activeCase.id) {
-            updatedCase = { ...c, ...updated, id: targetId };
+            updatedCase = { ...c, ...updated, id: targetId, ...(phoneToSet ? { patientPhone: phoneToSet } : {}) };
             return updatedCase;
           }
           return c;
         });
-        if (!updatedCase!) updatedCase = { ...activeCase, ...updated, id: targetId };
+        if (!updatedCase!) updatedCase = { ...activeCase, ...updated, id: targetId, ...(phoneToSet ? { patientPhone: phoneToSet } : {}) };
       }
       apiClient.saveCase(updatedCase).catch(() => {});
       return nextCases;
@@ -385,13 +387,16 @@ export function useClinicalWorkflowState() {
     if (typeof window !== 'undefined' && !skipPush) {
       try {
         const url = new URL(window.location.href);
+        url.searchParams.set('portal', 'patient');
         if (subView === 'landing') {
           url.searchParams.delete('subview');
+          url.searchParams.delete('caseId');
         } else {
           url.searchParams.set('subview', subView);
+          if (activeCase?.id) url.searchParams.set('caseId', activeCase.id);
         }
         if (url.hash === '#cockpit') url.hash = '';
-        window.history.pushState({ subView, viewMode: 'workstation' }, '', url.pathname + url.search);
+        window.history.pushState({ portal: 'patient', subView, caseId: activeCase?.id, viewMode: 'workstation' }, '', url.pathname + url.search);
       } catch (err) {}
     }
   };
@@ -434,18 +439,17 @@ export function useClinicalWorkflowState() {
   };
 
   const handleResetActiveCase = () => {
-    const confirmMsg = lang === 'ar'
-      ? `هل أنت متأكد من تصفير هذه الحالة (${activeCase.caseNumber || activeCase.id}) والبدء من جديد؟`
-      : `Reset this case (${activeCase.caseNumber || activeCase.id}) back to a clean slate?`;
+    const confirmMsg = lang === 'ar' ? `هل أنت متأكد من تصفير هذه الحالة (${activeCase.caseNumber || activeCase.id})؟` : `Reset this case (${activeCase.caseNumber || activeCase.id})?`;
     if (window.confirm(confirmMsg)) {
       handleUpdateCase({
         currentStage: 'INTAKE_RECEIVED', stage: 1, patientName: '', patientNameAr: '', patientNameEn: '', nationalIdMasked: '',
-        symptoms: '', symptomsAr: '', symptomsEn: '', diagnosis: '', diagnosisAr: '', diagnosisEn: '',
-        consultantOpinion: '', proposedCallSlot: '', finalClosureNote: '', vitals: undefined, piiMasked: false, triageComplete: false,
-        focusQuestions: ['', '', ''], referralApproved: false, invoiceIssued: false, allowedPaymentMethods: [], paymentAssignedAt: undefined,
-        paymentVerified: false, paymentDetails: undefined, reportReleased: false, verdicts: [], secondOpinionSubmitted: false, consultantAnswers: [],
-        consultantNotes: '', saudiEndorsement: undefined, coordinatorForwardedToDoctor: false, doctorReleasedToPatient: false, isCrossBorderDeidentified: false,
-        dualTokenGenerated: false, egressToken: '', files: [], pricing: { ...activeCase.pricing, paid: false, invoiceNumber: undefined },
+        symptoms: '', symptomsAr: '', symptomsEn: '', diagnosis: '', diagnosisAr: '', diagnosisEn: '', consultantOpinion: '',
+        proposedCallSlot: '', finalClosureNote: '', vitals: undefined, piiMasked: false, triageComplete: false, focusQuestions: ['', '', ''],
+        referralApproved: false, invoiceIssued: false, allowedPaymentMethods: [], paymentAssignedAt: undefined, paymentVerified: false,
+        paymentDetails: undefined, reportReleased: false, verdicts: [], secondOpinionSubmitted: false, consultantAnswers: [],
+        consultantNotes: '', saudiEndorsement: undefined, coordinatorForwardedToDoctor: false, doctorReleasedToPatient: false,
+        isCrossBorderDeidentified: false, dualTokenGenerated: false, egressToken: '', files: [],
+        pricing: { ...activeCase.pricing, paid: false, invoiceNumber: undefined },
         metadata: { isFreshTest: true, pdf1Released: false, pdf2Released: false, paymentVerified: false, paymentLinkIssued: false },
       });
       setActivePersona(PERSONAS[0]); setPatientSubView('landing'); setSelectedServiceId('second-opinion');
@@ -469,7 +473,7 @@ export function useClinicalWorkflowState() {
   // ─────────────────────────────────────────────────────────────────────────
   return {
     // State
-    activePersona, setActivePersona, cases, activeCaseId, setActiveCaseId, activeCase,
+    activePersona, setActivePersona, cases: effectiveCases, allCases: cases, activeCaseId, setActiveCaseId, activeCase,
     theme, lang, userSession, setUserSession,
     isAuthModalOpen, setIsAuthModalOpen, isWhatsAppDrawerOpen, setIsWhatsAppDrawerOpen,
     isGuideOpen, setIsGuideOpen, isPipelineBoardOpen, setIsPipelineBoardOpen,
