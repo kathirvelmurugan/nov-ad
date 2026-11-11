@@ -31,45 +31,6 @@ let memoryUsers = [
     status: 'active',
     createdAt: '2026-01-01T00:00:00Z',
   },
-  {
-    id: 'staff-n-01',
-    staffCode: '00301',
-    fullName: 'Sara Al-Dossary, RN',
-    fullNameAr: 'سارة الدوسري (تمريض ألو)',
-    roleCode: 'N',
-    phone: '+966503333333',
-    pin: '1234',
-    hasCustomPin: false,
-    department: 'Clinical Triage',
-    status: 'active',
-    createdAt: '2026-01-05T08:00:00Z',
-  },
-  {
-    id: 'staff-c-01',
-    staffCode: '00501',
-    fullName: 'Abdulrahman Al-Shehri',
-    fullNameAr: 'عبدالرحمن الشهري',
-    roleCode: 'C',
-    phone: '+966505555555',
-    pin: '1234',
-    hasCustomPin: false,
-    department: 'Care Coordination',
-    status: 'active',
-    createdAt: '2026-01-05T08:00:00Z',
-  },
-  {
-    id: 'staff-d-01',
-    staffCode: '10201',
-    fullName: 'Dr. Abdullah Al-Shammari',
-    fullNameAr: 'د. عبدالله الشمري',
-    roleCode: 'D',
-    phone: '+966502222222',
-    pin: '1234',
-    hasCustomPin: false,
-    department: 'Cardiology',
-    status: 'active',
-    createdAt: '2026-01-15T08:00:00Z',
-  },
 ];
 let memoryCases = [];
 let memoryAudit = [];
@@ -250,11 +211,11 @@ apiRouter.post('/admin/clean-slate', async (req, res) => {
     try { await pool.query('TRUNCATE TABLE audit_logs CASCADE'); } catch {}
     // 3. Remove all users except Super Admin
     await pool.query("DELETE FROM platform_users WHERE role_code != 'AD'");
-    // 4. Ensure Super Admin Adrian Lewis exists
+    // 4. Ensure Super Admin Adrian Lewis exists with active PIN
     await pool.query(`
-      INSERT INTO platform_users (id, staff_code, full_name, full_name_ar, role_code, phone, pin, department, status, created_at)
-      VALUES ('staff-ad-01', '00001', 'Adrian Lewis', 'المشرف العام أدريان لويس', 'AD', '+966500000001', '1234', 'Platform Operations', 'active', NOW())
-      ON CONFLICT (id) DO NOTHING
+      INSERT INTO platform_users (id, staff_code, full_name, full_name_ar, role_code, phone, pin, department, status, has_custom_pin, created_at)
+      VALUES ('staff-ad-01', '00001', 'Adrian Lewis', 'المشرف العام أدريان لويس', 'AD', '+966500000001', '1234', 'Platform Operations', 'active', TRUE, NOW())
+      ON CONFLICT (id) DO UPDATE SET has_custom_pin = TRUE
     `);
     memoryTenants = [];
     memoryCases = [];
@@ -268,6 +229,7 @@ apiRouter.post('/admin/clean-slate', async (req, res) => {
         roleCode: 'AD',
         phone: '+966500000001',
         pin: '1234',
+        hasCustomPin: true,
         department: 'Platform Operations',
         status: 'active',
         createdAt: new Date().toISOString(),

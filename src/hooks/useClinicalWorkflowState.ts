@@ -91,15 +91,15 @@ export function useClinicalWorkflowState() {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        if (Array.isArray(parsed)) {
           return parsed;
         }
       }
     } catch (e) { console.warn('Failed to parse cases from localStorage:', e); }
-    return [FRESH_PRIMARY_CASE];
+    return [];
   });
 
-  const [activeCaseId, setActiveCaseId] = useState<string>(FRESH_PRIMARY_CASE.id);
+  const [activeCaseId, setActiveCaseId] = useState<string>('');
 
   // ── Theme ─────────────────────────────────────────────────────────────────
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -274,7 +274,16 @@ export function useClinicalWorkflowState() {
   // Handlers
   // ─────────────────────────────────────────────────────────────────────────
   const handleUpdateCase = (updated: Partial<ClinicalCase>) => {
-    setCases((prev) => prev.map((c) => (c.id === activeCase.id ? { ...c, ...updated } : c)));
+    setCases((prev) => {
+      const targetId = activeCase.id || FRESH_PRIMARY_CASE.id;
+      const exists = prev.some((c) => c.id === targetId);
+      if (!exists) {
+        const createdCase = { ...activeCase, ...updated, id: targetId };
+        setActiveCaseId(createdCase.id);
+        return [createdCase, ...prev];
+      }
+      return prev.map((c) => (c.id === activeCase.id ? { ...c, ...updated } : c));
+    });
   };
 
   const transitions = useWorkflowStageTransitions({
@@ -422,18 +431,14 @@ export function useClinicalWorkflowState() {
         pricing: { ...activeCase.pricing, paid: false, invoiceNumber: undefined },
         metadata: { isFreshTest: true, pdf1Released: false, pdf2Released: false, paymentVerified: false, paymentLinkIssued: false },
       });
-      setActivePersona(PERSONAS[0]);
-      setPatientSubView('landing');
-      setSelectedServiceId('second-opinion');
+      setActivePersona(PERSONAS[0]); setPatientSubView('landing'); setSelectedServiceId('second-opinion');
     }
   };
 
   const handleAddNewCase = (newCase: ClinicalCase) => {
     setCases((prev) => [newCase, ...prev]);
     setActiveCaseId(newCase.id);
-    setActivePersona(PERSONAS[0]);
-    setPatientSubView('landing');
-    setSelectedServiceId('second-opinion');
+    setActivePersona(PERSONAS[0]); setPatientSubView('landing'); setSelectedServiceId('second-opinion');
   };
 
   const handleAutoFill = () => {

@@ -99,6 +99,7 @@ export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }:
   }, [onAuthenticated, lang]);
 
   useEffect(() => {
+    apiClient.fetchUsers().catch(() => {});
     const storedSession = localStorage.getItem(SESSION_KEY);
     if (storedSession) {
       try {
@@ -137,7 +138,7 @@ export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }:
       return;
     }
     setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 400));
+    await apiClient.fetchUsers().catch(() => {});
     setIsLoading(false);
 
     const raw = extractRawPhone(phone);
