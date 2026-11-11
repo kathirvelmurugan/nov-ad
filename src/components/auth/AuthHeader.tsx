@@ -50,7 +50,7 @@ export const AuthHeader: React.FC<AuthHeaderProps> = ({ activePortal }) => {
           fontWeight: 500,
         }}
       >
-        v2.4 Saudi Edition
+        v3.0 Saudi Edition
       </p>
     </div>
   );

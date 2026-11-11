@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowRight, ArrowLeft } from 'lucide-react';
 import { ClinicalCase } from '../../types';
+import { UserSession } from '../../hooks/workflowConstants';
 import { HEALTHCARE_SERVICES, LANDING_FAQ_ITEMS } from '../../data/healthcareServices';
 import { LandingHeader } from '../landing/LandingHeader';
 import { LandingHeroSection } from '../landing/LandingHeroSection';
@@ -26,6 +27,8 @@ interface Props {
   onToggleTheme?: () => void;
   onStartCase?: () => void;
   onLogout?: () => void;
+  userSession?: UserSession | null;
+  onOpenLogin?: () => void;
 }
 
 export const PatientLandingView: React.FC<Props> = ({
@@ -36,6 +39,8 @@ export const PatientLandingView: React.FC<Props> = ({
   onOpenMyCases,
   onStartCase,
   onLogout,
+  userSession,
+  onOpenLogin,
 }) => {
   const isAr = lang === 'ar';
   const ArrowIcon = isAr ? ArrowLeft : ArrowRight;
@@ -51,7 +56,20 @@ export const PatientLandingView: React.FC<Props> = ({
 
   const handleServiceClick = (serviceId: string) => {
     setSelectedServiceId(serviceId);
+    if (!userSession && onOpenLogin) {
+      onOpenLogin();
+      return;
+    }
     onSelectService(serviceId);
+  };
+
+  const handleStartConsultation = () => {
+    if (!userSession && onOpenLogin) {
+      onOpenLogin();
+      return;
+    }
+    if (onStartCase) onStartCase();
+    else onSelectService('second-opinion');
   };
 
   return (
@@ -59,14 +77,17 @@ export const PatientLandingView: React.FC<Props> = ({
       <LandingHeader
         isAr={isAr}
         onToggleLang={onToggleLang}
-        onOpenAccountModal={() => setAccountModalOpen(true)}
+        onOpenAccountModal={() => {
+          if (!userSession && onOpenLogin) onOpenLogin();
+          else setAccountModalOpen(true);
+        }}
         onScrollToSection={scrollToSection}
       />
 
       <LandingHeroSection
         isAr={isAr}
         ArrowIcon={ArrowIcon}
-        onStartCase={onStartCase}
+        onStartCase={handleStartConsultation}
         onScrollToSection={scrollToSection}
       />
 
@@ -85,7 +106,10 @@ export const PatientLandingView: React.FC<Props> = ({
       <LandingManagementSection
         isAr={isAr}
         ArrowIcon={ArrowIcon}
-        onOpenMyCases={onOpenMyCases}
+        onOpenMyCases={() => {
+          if (!userSession && onOpenLogin) onOpenLogin();
+          else onOpenMyCases();
+        }}
         onServiceClick={handleServiceClick}
       />
 
@@ -100,7 +124,7 @@ export const PatientLandingView: React.FC<Props> = ({
         isOpen={accountModalOpen}
         onClose={() => setAccountModalOpen(false)}
         onOpenMyCases={onOpenMyCases}
-        onStartCase={onStartCase}
+        onStartCase={handleStartConsultation}
         onScrollToSection={scrollToSection}
         onLogout={onLogout}
       />

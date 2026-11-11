@@ -42,6 +42,35 @@ export const HospitalStaffLoginForm: React.FC<HospitalStaffLoginFormProps> = ({
   const [adminOtp, setAdminOtp] = useState('123456');
   const [error, setError] = useState('');
 
+  // Re-sync dynamic hospitals from localStorage on mount and window focus
+  useEffect(() => {
+    const refresh = () => {
+      try {
+        const saved = localStorage.getItem('alo_tenants_v3.0');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setHospitals(parsed);
+            if (!selectedHospitalId) {
+              setSelectedHospitalId(parsed[0].id);
+              setAdminPhone(parsed[0].hospitalAdminPhone || '');
+            }
+            return;
+          }
+        }
+      } catch {}
+      setHospitals(SEEDED_TENANT_HOSPITALS);
+    };
+
+    refresh();
+    window.addEventListener('storage', refresh);
+    window.addEventListener('focus', refresh);
+    return () => {
+      window.removeEventListener('storage', refresh);
+      window.removeEventListener('focus', refresh);
+    };
+  }, [selectedHospitalId]);
+
   // Auto-select first hospital or update admin phone if changed
   useEffect(() => {
     if (!selectedHospitalId && hospitals.length > 0) {

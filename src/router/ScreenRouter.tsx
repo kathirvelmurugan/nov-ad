@@ -25,6 +25,7 @@ import { HospitalAdminPortalView }   from '../components/screens/HospitalAdminPo
 import { CoordinatorPortalView }     from '../components/screens/CoordinatorPortalView';
 import { PatientStatusTimelineView } from '../components/screens/PatientStatusTimelineView';
 import { PatientHomeView }           from '../components/screens/PatientHomeView';
+import { PatientLandingView }        from '../components/screens/PatientLandingView';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 interface ScreenRouterProps {
@@ -204,16 +205,22 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
   // ── Patient ───────────────────────────────────────────────────────────────
   if (activePersona.code === 'P') {
 
-    // Landing page
+    // Landing page - Full Business Marketing Landing Page
     if (patientSubView === 'landing') {
       return (
-        <PatientHomeView
+        <PatientLandingView
           activeCase={activeCase}
           lang={lang}
           onToggleLang={handleToggleLang}
           onSelectService={handleSelectServiceFromLanding}
-          onOpenMyCases={() => handleSelectPatientSubView('timeline')}
-          onOpenWhatsApp={() => setIsWhatsAppDrawerOpen(true)}
+          onOpenMyCases={() => {
+            if (!userSession && onOpenLogin) onOpenLogin();
+            else handleSelectPatientSubView('timeline');
+          }}
+          onStartCase={() => {
+            if (!userSession && onOpenLogin) onOpenLogin();
+            else handleSelectPatientSubView('intake');
+          }}
           onLogout={handleLogout}
           userSession={userSession}
           onOpenLogin={onOpenLogin}
