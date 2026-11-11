@@ -52,9 +52,7 @@ export async function initDatabase() {
           created_at TIMESTAMPTZ DEFAULT NOW()
         );
 
-        try {
-          await client.query('ALTER TABLE platform_users ADD COLUMN IF NOT EXISTS has_custom_pin BOOLEAN DEFAULT FALSE;');
-        } catch (e) {}
+        ALTER TABLE platform_users ADD COLUMN IF NOT EXISTS has_custom_pin BOOLEAN DEFAULT FALSE;
 
         CREATE TABLE IF NOT EXISTS clinical_cases (
           id VARCHAR(100) PRIMARY KEY,

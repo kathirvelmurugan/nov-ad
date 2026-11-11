@@ -209,6 +209,7 @@ apiRouter.post('/admin/clean-slate', async (req, res) => {
     try { await pool.query('TRUNCATE TABLE clinical_cases CASCADE'); } catch {}
     try { await pool.query('TRUNCATE TABLE cases CASCADE'); } catch {}
     try { await pool.query('TRUNCATE TABLE audit_logs CASCADE'); } catch {}
+    try { await pool.query('ALTER TABLE platform_users ADD COLUMN IF NOT EXISTS has_custom_pin BOOLEAN DEFAULT FALSE;'); } catch {}
     // 3. Remove all users except Super Admin
     await pool.query("DELETE FROM platform_users WHERE role_code != 'AD'");
     // 4. Ensure Super Admin Adrian Lewis exists with active PIN
