@@ -2,8 +2,7 @@ import React, { useMemo } from 'react';
 import { Stethoscope } from 'lucide-react';
 import { ClinicalCase, StaffAccountRecord, TenantHospital } from '../../types';
 import { INITIAL_MEDICAL_CENTER_DOCTORS } from '../../data/medicalCenterDoctors';
-const SEEDED_STAFF_DIRECTORY: StaffAccountRecord[] = [];
-const SEEDED_TENANT_HOSPITALS: TenantHospital[] = [];
+import { DEFAULT_TENANT_HOSPITALS, DEFAULT_STAFF_DIRECTORY } from '../../data/accreditedStaffAndTenants';
 import { TENANTS_KEY, PLATFORM_USERS_KEY } from '../../hooks/workflowConstants';
 
 interface Props {
@@ -19,8 +18,8 @@ export const IntakeDoctorSelectionCard: React.FC<Props> = ({
 }) => {
   // Dynamically retrieve enrolled treating doctors (roleCode === 'D')
   const availableDoctors = useMemo(() => {
-    let allStaff: StaffAccountRecord[] = SEEDED_STAFF_DIRECTORY;
-    let allHospitals: TenantHospital[] = SEEDED_TENANT_HOSPITALS;
+    let allStaff: StaffAccountRecord[] = DEFAULT_STAFF_DIRECTORY;
+    let allHospitals: TenantHospital[] = DEFAULT_TENANT_HOSPITALS;
 
     try {
       const storedUsers = localStorage.getItem(PLATFORM_USERS_KEY);

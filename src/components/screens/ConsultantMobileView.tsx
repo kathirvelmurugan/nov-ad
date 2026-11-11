@@ -9,13 +9,15 @@ import { ConsultantFollowUpSection } from '../consultant/ConsultantFollowUpSecti
 
 interface Props {
   activeCase: ClinicalCase;
+  cases?: ClinicalCase[];
+  onSelectCase?: (caseId: string) => void;
   onAdvanceStage: () => void;
   onUpdateCase: (updated: Partial<ClinicalCase>) => void;
 }
 
 type ScreenStage = 'K01_K04' | 'K05' | 'K06' | 'K07' | 'K08' | 'K09';
 
-const ConsultantMobileView: React.FC<Props> = ({ activeCase, onAdvanceStage, onUpdateCase }) => {
+const ConsultantMobileView: React.FC<Props> = ({ activeCase, cases = [], onSelectCase, onAdvanceStage, onUpdateCase }) => {
   const isWritten = activeCase.consultationType === 'written';
   const accepted = !!activeCase.metadata?.consultantAccepted;
 
@@ -169,6 +171,52 @@ const ConsultantMobileView: React.FC<Props> = ({ activeCase, onAdvanceStage, onU
           Case Ref: {activeCase.caseNumber || activeCase.id || 'N/A'} · Tokenized Access
         </p>
       </header>
+
+      {cases && cases.length > 1 && (
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          borderRadius: '12px',
+          padding: '12px 16px',
+          marginBottom: '20px',
+          border: '1px solid #D1E3E1',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px',
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '12px', fontWeight: 700, color: tealPrimary }}>
+              Assigned Specialist Cases ({cases.length})
+            </span>
+            <span style={{ fontSize: '11px', color: '#5F6368' }}>
+              Select dossier to review
+            </span>
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+            {cases.map((c) => {
+              const isSelected = c.id === activeCase.id;
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => onSelectCase?.(c.id)}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    border: isSelected ? `2px solid ${tealPrimary}` : '1px solid #CBD5E0',
+                    backgroundColor: isSelected ? tealPrimary : '#FFFFFF',
+                    color: isSelected ? '#FFFFFF' : '#2D3748',
+                  }}
+                >
+                  {c.caseNumber || c.id} · {c.specialtyEn || c.specialty}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {!isOtpVerified ? (
         <ConsultantOtpChallenge

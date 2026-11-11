@@ -1,6 +1,6 @@
 import React from 'react';
 import { RoleCode, StaffAccountRecord } from '../../types';
-const SEEDED_STAFF_DIRECTORY: StaffAccountRecord[] = [];
+import { DEFAULT_STAFF_DIRECTORY } from '../../data/accreditedStaffAndTenants';
 import { PLATFORM_USERS_KEY } from '../../hooks/workflowConstants';
 
 export const PALETTE = {
@@ -256,7 +256,7 @@ export const resolveAccountByPhone = (
   isRTL: boolean = true,
   freshStaffList?: StaffAccountRecord[]
 ) => {
-  let allStaff: StaffAccountRecord[] = freshStaffList || SEEDED_STAFF_DIRECTORY;
+  let allStaff: StaffAccountRecord[] = freshStaffList || DEFAULT_STAFF_DIRECTORY;
   if (!freshStaffList) {
     try {
       const stored = localStorage.getItem(PLATFORM_USERS_KEY);

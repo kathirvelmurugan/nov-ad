@@ -15,6 +15,8 @@ import {
 
 interface Props {
   activeCase: ClinicalCase;
+  cases?: ClinicalCase[];
+  onSelectCase?: (caseId: string) => void;
   onAdvanceStage: () => void;
   onUpdateCase: (updated: Partial<ClinicalCase>) => void;
   roleFilter?: 'L' | 'PH' | 'REC';
@@ -22,6 +24,8 @@ interface Props {
 
 export const PartnerServicesView: React.FC<Props> = ({
   activeCase,
+  cases = [],
+  onSelectCase,
   onAdvanceStage,
   onUpdateCase,
   roleFilter,
@@ -127,6 +131,41 @@ export const PartnerServicesView: React.FC<Props> = ({
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-12 font-sans" dir="rtl">
+      {/* Multi-Case Facility Queue Switcher */}
+      {cases && cases.length > 1 && (
+        <div className="card-clinical p-4 bg-slate-900 border border-teal-500/30 text-white rounded-2xl">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-bold text-teal-300">
+              قائمة الحالات السريرية للمركز الطبي ({cases.length} حالات)
+            </span>
+            <span className="text-[11px] text-slate-400">
+              انقر لاختيار الحالة ومتابعة خدماتها
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {cases.map((c) => {
+              const isSelected = c.id === activeCase.id;
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => onSelectCase?.(c.id)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                    isSelected
+                      ? 'bg-teal-600 text-white border-teal-400 shadow'
+                      : 'bg-slate-800 text-slate-300 border-slate-700 hover:border-teal-500'
+                  }`}
+                >
+                  <span className="font-mono">{c.caseNumber || c.id}</span>
+                  <span>·</span>
+                  <span>{c.patientNameAr || c.patientName}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Header Banner */}
       <div className="bg-slate-900 border border-teal-500/30 p-6 rounded-2xl flex flex-wrap items-center justify-between gap-4 shadow-xl">
         <div className="space-y-1">

@@ -62,6 +62,7 @@ export function useWorkflowStageTransitions({
         const portalMap: Record<string, string> = {
           P: 'patient', N: 'nurse', D: 'doctor', C: 'coordinator',
           K: 'consultant', HA: 'hospital', AD: 'superadmin',
+          L: 'lab', PH: 'pharmacy', REC: 'reception',
         };
         const portal = portalMap[p.code] || 'patient';
         const url = new URL(window.location.href);

@@ -148,12 +148,18 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
 
   // ── International Consultant ─────────────────────────────────────────────
   if (effectiveRole === 'K') {
-    const isPaid = !!activeCase.pricing?.paid || activeCase.paymentDetails?.status === 'completed';
-    const isVerified = !!activeCase.paymentVerified || !!activeCase.metadata?.paymentVerified;
-    const isInConsultantStage = ['WITH_CONSULTANT', 'OPINION_READY', 'PARTNER_SERVICES', 'FOLLOW_UP_21_DAYS', 'CLOSED'].includes(activeCase.currentStage);
-    const isConsultantUnlocked = (isPaid && isVerified) || isInConsultantStage;
+    const isCaseUnlocked = (c: ClinicalCase) => {
+      const isPaid = !!c.pricing?.paid || c.paymentDetails?.status === 'completed';
+      const isVerified = !!c.paymentVerified || !!c.metadata?.paymentVerified;
+      const isInConsultantStage = ['WITH_CONSULTANT', 'OPINION_READY', 'PARTNER_SERVICES', 'FOLLOW_UP_21_DAYS', 'CLOSED'].includes(c.currentStage);
+      return (isPaid && isVerified) || isInConsultantStage;
+    };
 
-    if (!isConsultantUnlocked) {
+    const eligibleCases = cases.filter(isCaseUnlocked);
+    const consultantCase = isCaseUnlocked(activeCase) ? activeCase : (eligibleCases[0] || activeCase);
+    const isUnlocked = isCaseUnlocked(consultantCase);
+
+    if (!isUnlocked && eligibleCases.length === 0) {
       const isAr = lang === 'ar';
       return (
         <div className="max-w-xl mx-auto mt-10 p-6 bg-white dark:bg-alo-darkCard rounded-2xl border border-amber-300 dark:border-amber-800 shadow-md text-center space-y-4">
@@ -162,9 +168,9 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
             {isAr ? 'شاشة الاستشاري الدولي مقفلة حالياً' : 'International Consultant Portal Locked'}
           </h2>
           <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-            {!isPaid
-              ? (isAr ? 'لا يمكن فتح الحالة للاستشاري الهندي قبل إتمام المريض للسداد ثم تحقق منسق رعاية ألو.' : 'This case cannot be accessed by the Indian Consultant until the patient completes payment and ALO Coordinator verifies it.')
-              : (isAr ? 'تم استلام سداد المريض، وبانتظار تحقق منسق رعاية ألو (C05–C06) لإرسال الملف للاستشاري.' : 'Patient payment has been received. Awaiting ALO Coordinator verification (C05–C06) before connecting the Indian Consultant.')}
+            {isAr
+              ? 'لا يمكن فتح الحالة للاستشاري الهندي قبل إتمام المريض للسداد ثم تحقق منسق رعاية ألو (C05–C06).'
+              : 'This case cannot be accessed by the Indian Consultant until the patient completes payment and ALO Coordinator verifies it (C05–C06).'}
           </p>
           <button
             type="button"
@@ -182,7 +188,9 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
 
     return (
       <ConsultantMobileView
-        activeCase={activeCase}
+        activeCase={consultantCase}
+        cases={eligibleCases.length > 0 ? eligibleCases : cases}
+        onSelectCase={onSelectCase}
         onAdvanceStage={handleAdvanceStage}
         onUpdateCase={handleUpdateCase}
       />
@@ -226,6 +234,8 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
     return (
       <PartnerServicesView
         activeCase={activeCase}
+        cases={cases}
+        onSelectCase={onSelectCase}
         onAdvanceStage={handleAdvanceStage}
         onUpdateCase={handleUpdateCase}
         roleFilter={['L', 'PH', 'REC'].includes(effectiveRole) ? (effectiveRole as 'L' | 'PH' | 'REC') : undefined}

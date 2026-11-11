@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ClinicalCase, Persona, UserSession, StaffAccountRecord, TenantHospital } from '../../types';
 import { INITIAL_MEDICAL_CENTER_DOCTORS } from '../../data/medicalCenterDoctors';
+import { DEFAULT_TENANT_HOSPITALS, DEFAULT_STAFF_DIRECTORY } from '../../data/accreditedStaffAndTenants';
 import { PLATFORM_USERS_KEY, TENANTS_KEY } from '../../hooks/workflowConstants';
 import { 
   ShieldAlert, 
@@ -51,8 +52,8 @@ export const NurseTriageView: React.FC<Props> = ({
   const [triageNotes, setTriageNotes] = useState<string>(generateDefaultNotes);
 
   const availableDoctors = useMemo(() => {
-    let allStaff: StaffAccountRecord[] = [];
-    let allHospitals: TenantHospital[] = [];
+    let allStaff: StaffAccountRecord[] = DEFAULT_STAFF_DIRECTORY;
+    let allHospitals: TenantHospital[] = DEFAULT_TENANT_HOSPITALS;
     try {
       const storedUsers = localStorage.getItem(PLATFORM_USERS_KEY);
       if (storedUsers) {

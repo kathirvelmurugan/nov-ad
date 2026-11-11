@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../../services/apiClient';
 import { PALETTE, getInputStyle, getPrimaryButtonStyle, labelStyle } from './authTypesAndUtils';
-const SEEDED_TENANT_HOSPITALS: TenantHospital[] = [];
-const SEEDED_STAFF_DIRECTORY: StaffAccountRecord[] = [];
+import { DEFAULT_TENANT_HOSPITALS, DEFAULT_STAFF_DIRECTORY } from '../../data/accreditedStaffAndTenants';
 import { TENANTS_KEY, PLATFORM_USERS_KEY } from '../../hooks/workflowConstants';
 import { RoleCode, TenantHospital, StaffAccountRecord } from '../../types';
 import { Building2, KeyRound, Phone, CheckCircle2, AlertCircle } from 'lucide-react';
@@ -34,7 +33,7 @@ export const HospitalStaffLoginForm: React.FC<HospitalStaffLoginFormProps> = ({
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
     } catch {}
-    return SEEDED_TENANT_HOSPITALS;
+    return DEFAULT_TENANT_HOSPITALS;
   });
 
   const [selectedHospitalId, setSelectedHospitalId] = useState<string>(() => hospitals[0]?.id || '');
@@ -88,7 +87,7 @@ export const HospitalStaffLoginForm: React.FC<HospitalStaffLoginFormProps> = ({
         if (Array.isArray(parsed)) return parsed;
       }
     } catch {}
-    return SEEDED_STAFF_DIRECTORY;
+    return DEFAULT_STAFF_DIRECTORY;
   };
 
   const handleHospitalSubmit = (e: React.FormEvent) => {

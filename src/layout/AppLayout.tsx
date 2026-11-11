@@ -113,14 +113,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
     setUserSession(session);
     if (setIsAuthModalOpen) setIsAuthModalOpen(false);
     const personaCodeMap: Record<string, string> = {
-      patient: 'P',
-      doctor: 'D',
-      nurse: 'N',
-      coordinator: 'C',
-      hospital_admin: 'HA',
-      super_admin: 'AD',
-      admin: 'HA',
-      consultant: 'K',
+      patient: 'P', doctor: 'D', nurse: 'N', coordinator: 'C',
+      hospital_admin: 'HA', super_admin: 'AD', admin: 'HA', consultant: 'K',
+      lab: 'L', pharmacy: 'PH', reception: 'REC', l: 'L', ph: 'PH', rec: 'REC',
     };
     const targetCode = session.roleCode || (session.personaId ? personaCodeMap[session.personaId] : 'P') || 'P';
     const matched = PERSONAS.find((p) => p.code === targetCode);

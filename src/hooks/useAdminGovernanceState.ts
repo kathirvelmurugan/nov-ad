@@ -8,8 +8,7 @@ import {
   Persona,
   AdminCatalogsState,
 } from '../types';
-const SEEDED_TENANT_HOSPITALS: TenantHospital[] = [];
-const SEEDED_STAFF_DIRECTORY: StaffAccountRecord[] = [];
+import { DEFAULT_TENANT_HOSPITALS, DEFAULT_STAFF_DIRECTORY } from '../data/accreditedStaffAndTenants';
 import { PERSONAS } from '../data/personas';
 import {
   TENANTS_KEY,
@@ -50,20 +49,24 @@ export function useAdminGovernanceState(
   const [tenants, setTenants] = useState<TenantHospital[]>(() => {
     try {
       const saved = localStorage.getItem(TENANTS_KEY);
-      return saved ? JSON.parse(saved) : SEEDED_TENANT_HOSPITALS;
-    } catch {
-      return SEEDED_TENANT_HOSPITALS;
-    }
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return DEFAULT_TENANT_HOSPITALS;
   });
 
   // 2. Staff Directory State
   const [staffDirectory, setStaffDirectory] = useState<StaffAccountRecord[]>(() => {
     try {
       const saved = localStorage.getItem(PLATFORM_USERS_KEY);
-      return saved ? JSON.parse(saved) : SEEDED_STAFF_DIRECTORY;
-    } catch {
-      return SEEDED_STAFF_DIRECTORY;
-    }
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return DEFAULT_STAFF_DIRECTORY;
   });
 
   // 3. Catalogs State

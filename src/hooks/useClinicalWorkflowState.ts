@@ -41,12 +41,15 @@ export function useClinicalWorkflowState() {
         const token = search.get('token') || search.get('magic');
         const pathname = window.location.pathname.toLowerCase();
 
-        if (token || role === 'K' || role === 'CONSULTANT' || portal === 'consultant' || pathname.includes('/consultant')) return PERSONAS.find((p) => p.code === 'K') || PERSONAS[0];
-        if (role === 'D' || role === 'DOCTOR' || portal === 'doctor' || pathname.includes('/doctor')) return PERSONAS.find((p) => p.code === 'D') || PERSONAS[0];
-        if (role === 'N' || role === 'NURSE' || portal === 'nurse' || pathname.includes('/nurse')) return PERSONAS.find((p) => p.code === 'N') || PERSONAS[0];
-        if (role === 'C' || role === 'COORDINATOR' || portal === 'coordinator' || pathname.includes('/coordinator')) return PERSONAS.find((p) => p.code === 'C') || PERSONAS[0];
-        if (role === 'HA' || role === 'HOSPITAL' || portal === 'hospital' || pathname.includes('/hospital')) return PERSONAS.find((p) => p.code === 'HA') || PERSONAS[0];
-        if (role === 'AD' || role === 'SUPERADMIN' || portal === 'superadmin' || portal === 'admin' || pathname.includes('/admin')) return PERSONAS.find((p) => p.code === 'AD') || PERSONAS[0];
+        const portalRoleMap: Record<string, string> = {
+          consultant: 'K', doctor: 'D', nurse: 'N', coordinator: 'C',
+          hospital: 'HA', superadmin: 'AD', admin: 'AD', lab: 'L', pharmacy: 'PH', reception: 'REC',
+        };
+        const targetRole = token ? 'K' : portalRoleMap[portal] || portalRoleMap[role.toLowerCase()] || role;
+        if (targetRole) {
+          const matched = PERSONAS.find((p) => p.code === targetRole);
+          if (matched) return matched;
+        }
 
         // Check stored session on page refresh to keep active persona & role identity!
         const savedSession = localStorage.getItem(USER_SESSION_KEY);
@@ -240,8 +243,8 @@ export function useClinicalWorkflowState() {
       if (caseId) setActiveCaseId(caseId);
 
       const portalCodeMap: Record<string, string> = {
-        patient: 'P', nurse: 'N', doctor: 'D', coordinator: 'C',
-        consultant: 'K', hospital: 'HA', superadmin: 'AD', admin: 'AD'
+        patient: 'P', nurse: 'N', doctor: 'D', coordinator: 'C', consultant: 'K',
+        hospital: 'HA', superadmin: 'AD', admin: 'AD', lab: 'L', pharmacy: 'PH', reception: 'REC'
       };
       if (portal && portalCodeMap[portal]) {
         const matched = PERSONAS.find((p) => p.code === portalCodeMap[portal]);
@@ -316,20 +319,8 @@ export function useClinicalWorkflowState() {
   };
 
   const transitions = useWorkflowStageTransitions({
-    activeCase,
-    lang,
-    setLang,
-    isAutoDemoActive,
-    setActivePersona,
-    setViewMode,
-    setPatientSubView,
-    setIsWhatsAppDrawerOpen,
-    pendingHandoff,
-    setPendingHandoff,
-    handleUpdateCase,
-    setCases,
-    userSession,
-    viewMode,
+    activeCase, lang, setLang, isAutoDemoActive, setActivePersona, setViewMode, setPatientSubView,
+    setIsWhatsAppDrawerOpen, pendingHandoff, setPendingHandoff, handleUpdateCase, setCases, userSession, viewMode,
   });
 
   const handleLogout = () => {
