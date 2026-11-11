@@ -52,9 +52,9 @@ jobs:
                 sed -i "s/export default defineConfig({/export default defineConfig({ base: \x27.\/\x27,/g" vite.config.ts
                 docker build -t alo-preview-sarat:latest .
                 docker rm -f alo-preview-sarat 2>/dev/null || true
-                PG_PASS=$(docker inspect alo-postgres --format '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null | grep POSTGRES_PASSWORD | cut -d= -f2- || true)
-                MINIO_USER=$(docker inspect alo-minio --format '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null | grep MINIO_ROOT_USER | cut -d= -f2- || true)
-                MINIO_PASS=$(docker inspect alo-minio --format '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null | grep MINIO_ROOT_PASSWORD | cut -d= -f2- || true)
+                PG_PASS=$(docker exec alo-postgres env 2>/dev/null | grep POSTGRES_PASSWORD | cut -d= -f2-)
+                MINIO_USER=$(docker exec alo-minio env 2>/dev/null | grep MINIO_ROOT_USER | cut -d= -f2-)
+                MINIO_PASS=$(docker exec alo-minio env 2>/dev/null | grep MINIO_ROOT_PASSWORD | cut -d= -f2-)
 
                 docker run -d --name alo-preview-sarat --restart always --network coolify \
                   -e DB_HOST=alo-postgres \
@@ -78,9 +78,9 @@ jobs:
                 git reset --hard origin/main
                 docker build -t alo-frontend:latest .
                 docker rm -f alo-frontend 2>/dev/null || true
-                PG_PASS=$(docker inspect alo-postgres --format '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null | grep POSTGRES_PASSWORD | cut -d= -f2- || true)
-                MINIO_USER=$(docker inspect alo-minio --format '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null | grep MINIO_ROOT_USER | cut -d= -f2- || true)
-                MINIO_PASS=$(docker inspect alo-minio --format '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null | grep MINIO_ROOT_PASSWORD | cut -d= -f2- || true)
+                PG_PASS=$(docker exec alo-postgres env 2>/dev/null | grep POSTGRES_PASSWORD | cut -d= -f2-)
+                MINIO_USER=$(docker exec alo-minio env 2>/dev/null | grep MINIO_ROOT_USER | cut -d= -f2-)
+                MINIO_PASS=$(docker exec alo-minio env 2>/dev/null | grep MINIO_ROOT_PASSWORD | cut -d= -f2-)
 
                 docker run -d --name alo-frontend --restart always --network coolify -p 3000:80 \
                   -e DB_HOST=alo-postgres \
