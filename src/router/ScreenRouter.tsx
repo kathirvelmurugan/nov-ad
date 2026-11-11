@@ -85,14 +85,28 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
   userSession,
   onOpenLogin,
 }) => {
+  // Strict Root Role Isolation: Authenticated users are hard-locked to their role
+  const effectiveRole = (userSession && userSession.isAuthenticated && userSession.roleCode && userSession.roleCode !== 'AD')
+    ? userSession.roleCode
+    : activePersona.code;
+
+  const currentPersona = (effectiveRole !== activePersona.code)
+    ? (PERSONAS.find((p) => p.code === effectiveRole) || activePersona)
+    : activePersona;
+
+  const personaToUse = {
+    ...currentPersona,
+    name: userSession?.fullName || currentPersona.name,
+    hospitalId: userSession?.hospitalId || currentPersona.hospitalId,
+  };
 
   // ── Super Admin (ALO Master) ─────────────────────────────────────────────
-  if (activePersona.code === 'AD') {
+  if (effectiveRole === 'AD') {
     return (
       <SuperAdminPortalView
         lang={lang}
         onSelectPersona={handleSelectPersona}
-        activePersona={activePersona}
+        activePersona={personaToUse}
         userSession={userSession}
         onLogout={handleLogout}
         cases={cases}
@@ -101,11 +115,11 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
   }
 
   // ── Hospital / Medical Center Admin ───────────────────────────────────────
-  if (activePersona.code === 'HA') {
+  if (effectiveRole === 'HA') {
     return (
       <HospitalAdminPortalView
         lang={lang}
-        activePersona={activePersona}
+        activePersona={personaToUse}
         activeCase={activeCase}
         onSelectPersona={handleSelectPersona}
         userSession={userSession}
@@ -116,7 +130,7 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
   }
 
   // ── ALO Coordinator ──────────────────────────────────────────────────────
-  if (activePersona.code === 'C') {
+  if (effectiveRole === 'C') {
     return (
       <CoordinatorPortalView
         activeCase={activeCase}
@@ -131,7 +145,7 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
   }
 
   // ── International Consultant ─────────────────────────────────────────────
-  if (activePersona.code === 'K') {
+  if (effectiveRole === 'K') {
     const isPaid = !!activeCase.pricing?.paid || activeCase.paymentDetails?.status === 'completed';
     const isVerified = !!activeCase.paymentVerified || !!activeCase.metadata?.paymentVerified;
     const isInConsultantStage = ['WITH_CONSULTANT', 'OPINION_READY', 'PARTNER_SERVICES', 'FOLLOW_UP_21_DAYS', 'CLOSED'].includes(activeCase.currentStage);
@@ -174,7 +188,7 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
   }
 
   // ── ALO Nurse ────────────────────────────────────────────────────────────
-  if (activePersona.code === 'N') {
+  if (effectiveRole === 'N') {
     return (
       <NurseTriageView
         activeCase={activeCase}
@@ -184,13 +198,13 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
         onUpdateCase={handleUpdateCase}
         lang={lang}
         userSession={userSession}
-        activePersona={activePersona}
+        activePersona={personaToUse}
       />
     );
   }
 
   // ── Saudi Treating Doctor ─────────────────────────────────────────────────
-  if (activePersona.code === 'D') {
+  if (effectiveRole === 'D') {
     return (
       <DoctorReviewView
         activeCase={activeCase}
@@ -200,25 +214,25 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
         onUpdateCase={handleUpdateCase}
         lang={lang}
         userSession={userSession}
-        activePersona={activePersona}
+        activePersona={personaToUse}
       />
     );
   }
 
   // ── Hospital Department & Partner Roles (Lab, Pharmacy, Reception, etc.) ───
-  if (['L', 'PH', 'REC', 'H', 'T', 'V'].includes(activePersona.code)) {
+  if (['L', 'PH', 'REC', 'H', 'T', 'V'].includes(effectiveRole)) {
     return (
       <PartnerServicesView
         activeCase={activeCase}
         onAdvanceStage={handleAdvanceStage}
         onUpdateCase={handleUpdateCase}
-        roleFilter={['L', 'PH', 'REC'].includes(activePersona.code) ? (activePersona.code as 'L' | 'PH' | 'REC') : undefined}
+        roleFilter={['L', 'PH', 'REC'].includes(effectiveRole) ? (effectiveRole as 'L' | 'PH' | 'REC') : undefined}
       />
     );
   }
 
   // ── Patient ───────────────────────────────────────────────────────────────
-  if (activePersona.code === 'P') {
+  if (effectiveRole === 'P') {
 
     // Landing page - Full Business Marketing Landing Page
     if (patientSubView === 'landing') {

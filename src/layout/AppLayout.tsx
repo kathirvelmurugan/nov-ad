@@ -10,7 +10,7 @@
  * Keep this file ≤ 250 lines. Overlay logic only — no business state here.
  */
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
 import { Persona, ClinicalCase, ClinicalStage } from '../types';
 import { PERSONAS }                from '../data/personas';
@@ -144,14 +144,16 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   }
 
   // Strict RBAC: Lock authenticated users to their authorized role portal (Super Admin AD has platform oversight)
-  if (userSession && userSession.roleCode && userSession.roleCode !== 'AD' && activePersona.code !== userSession.roleCode) {
-    const matchedPersona = PERSONAS.find((p) => p.code === userSession.roleCode) || PERSONAS[0];
-    handleSelectPersona({
-      ...matchedPersona,
-      name: userSession.fullName || matchedPersona.name,
-      hospitalId: userSession.hospitalId || matchedPersona.hospitalId,
-    });
-  }
+  useEffect(() => {
+    if (userSession && userSession.roleCode && userSession.roleCode !== 'AD' && activePersona.code !== userSession.roleCode) {
+      const matchedPersona = PERSONAS.find((p) => p.code === userSession.roleCode) || PERSONAS[0];
+      handleSelectPersona({
+        ...matchedPersona,
+        name: userSession.fullName || matchedPersona.name,
+        hospitalId: userSession.hospitalId || matchedPersona.hospitalId,
+      });
+    }
+  }, [userSession, activePersona.code, handleSelectPersona]);
 
   return (
     <div

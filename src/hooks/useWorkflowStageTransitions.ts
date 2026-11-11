@@ -175,8 +175,10 @@ export function useWorkflowStageTransitions({
           : c
       )
     );
-    const coordinatorPersona = PERSONAS.find((p) => p.code === 'C') || PERSONAS[0];
-    setActivePersona(coordinatorPersona);
+    if (!userSession && viewMode === 'studio') {
+      const coordinatorPersona = PERSONAS.find((p) => p.code === 'C') || PERSONAS[0];
+      setActivePersona(coordinatorPersona);
+    }
     setPatientSubView('timeline');
     setIsWhatsAppDrawerOpen(true);
   };
@@ -209,8 +211,10 @@ export function useWorkflowStageTransitions({
           : c
       )
     );
-    const consultantPersona = PERSONAS.find((p) => p.code === 'K') || PERSONAS[0];
-    setActivePersona(consultantPersona);
+    if (!userSession && viewMode === 'studio') {
+      const consultantPersona = PERSONAS.find((p) => p.code === 'K') || PERSONAS[0];
+      setActivePersona(consultantPersona);
+    }
     setIsWhatsAppDrawerOpen(true);
   };
 
@@ -236,8 +240,10 @@ export function useWorkflowStageTransitions({
           : c
       )
     );
-    const patientPersona = PERSONAS.find((p) => p.code === 'P') || PERSONAS[0];
-    setActivePersona(patientPersona);
+    if (!userSession && viewMode === 'studio') {
+      const patientPersona = PERSONAS.find((p) => p.code === 'P') || PERSONAS[0];
+      setActivePersona(patientPersona);
+    }
     setViewMode('workstation');
     setPatientSubView('timeline');
     setIsWhatsAppDrawerOpen(true);
