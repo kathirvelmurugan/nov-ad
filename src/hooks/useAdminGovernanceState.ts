@@ -7,7 +7,6 @@ import {
   RoleCode,
   Persona,
   AdminCatalogsState,
-  ImpersonationSession,
 } from '../types';
 const SEEDED_TENANT_HOSPITALS: TenantHospital[] = [];
 const SEEDED_STAFF_DIRECTORY: StaffAccountRecord[] = [];
@@ -18,8 +17,6 @@ import {
   CATALOGS_KEY,
   AUDIT_LOGS_KEY,
 } from './workflowConstants';
-
-const IMPERSONATION_KEY = 'alo_impersonation_session_v3.0';
 
 export const DEFAULT_ADMIN_CATALOGS: AdminCatalogsState = {
   specialties: [
@@ -89,34 +86,6 @@ export function useAdminGovernanceState(
     }
   });
 
-  // 5. Impersonation (Act-As) Session State
-  const [impersonationSession, setImpersonationSession] = useState<ImpersonationSession | null>(() => {
-    try {
-      const saved = localStorage.getItem(IMPERSONATION_KEY);
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
-  });
-
-  // Cross-component sync for Act-As
-  useEffect(() => {
-    const handleSync = () => {
-      try {
-        const saved = localStorage.getItem(IMPERSONATION_KEY);
-        setImpersonationSession(saved ? JSON.parse(saved) : null);
-      } catch {
-        setImpersonationSession(null);
-      }
-    };
-    window.addEventListener('alo_act_as_changed', handleSync);
-    window.addEventListener('storage', handleSync);
-    return () => {
-      window.removeEventListener('alo_act_as_changed', handleSync);
-      window.removeEventListener('storage', handleSync);
-    };
-  }, []);
-
   // Persistence Effects
   useEffect(() => {
     try {
@@ -141,16 +110,6 @@ export function useAdminGovernanceState(
       localStorage.setItem(AUDIT_LOGS_KEY, JSON.stringify(auditLogs));
     } catch {}
   }, [auditLogs]);
-
-  useEffect(() => {
-    try {
-      if (impersonationSession) {
-        localStorage.setItem(IMPERSONATION_KEY, JSON.stringify(impersonationSession));
-      } else {
-        localStorage.removeItem(IMPERSONATION_KEY);
-      }
-    } catch {}
-  }, [impersonationSession]);
 
   // Initial backend fetch on mount & legacy cache auto-eviction
   useEffect(() => {
@@ -307,78 +266,6 @@ export function useAdminGovernanceState(
     }));
   }, []);
 
-  // Act-As Impersonation Preview
-  const startActAs = useCallback(
-    (roleCode: RoleCode, overridePersonaOrHospitalId?: Persona | string, maybeHospitalId?: string) => {
-      const origPersona =
-        typeof overridePersonaOrHospitalId === 'object' && overridePersonaOrHospitalId
-          ? overridePersonaOrHospitalId
-          : activePersona || PERSONAS[0];
-
-      const hospId =
-        typeof overridePersonaOrHospitalId === 'string'
-          ? overridePersonaOrHospitalId
-          : maybeHospitalId || origPersona.hospitalId;
-
-      const targetPersona = PERSONAS.find((p) => p.code === roleCode) || PERSONAS[0];
-      const customizedTarget: Persona = {
-        ...targetPersona,
-        hospitalId: hospId || targetPersona.hospitalId,
-      };
-
-      const session: ImpersonationSession = {
-        originalPersona: origPersona,
-        originalHospitalId: origPersona.hospitalId,
-        actingAs: customizedTarget,
-        actingHospitalId: hospId || targetPersona.hospitalId,
-      };
-
-      try {
-        localStorage.setItem(IMPERSONATION_KEY, JSON.stringify(session));
-      } catch {}
-
-      setImpersonationSession(session);
-      window.dispatchEvent(new CustomEvent('alo_act_as_changed', { detail: session }));
-
-      if (onSelectPersona) {
-        onSelectPersona(customizedTarget);
-      }
-
-      appendAuditLog({
-        actorName: origPersona.name,
-        actorRole: origPersona.code,
-        hospitalId: hospId || origPersona.hospitalId,
-        actionType: 'ACT_AS_ROLE_PREVIEW',
-        target: roleCode,
-        details: `Started preview session as ${roleCode} (${hospId || 'Global'})`,
-      });
-    },
-    [activePersona, onSelectPersona, appendAuditLog]
-  );
-
-  const stopActAs = useCallback(() => {
-    if (impersonationSession) {
-      if (onSelectPersona) {
-        onSelectPersona(impersonationSession.originalPersona);
-      }
-      appendAuditLog({
-        actorName: impersonationSession.originalPersona.name,
-        actorRole: impersonationSession.originalPersona.code,
-        actionType: 'EXIT_ACT_AS_PREVIEW',
-        target: impersonationSession.actingAs.code,
-        details: `Exited preview session back to ${impersonationSession.originalPersona.code}`,
-      });
-      const previousSession = impersonationSession;
-      try {
-        localStorage.removeItem(IMPERSONATION_KEY);
-      } catch {}
-      setImpersonationSession(null);
-      window.dispatchEvent(new CustomEvent('alo_act_as_changed', { detail: null }));
-      return previousSession;
-    }
-    return null;
-  }, [impersonationSession, onSelectPersona, appendAuditLog]);
-
   return {
     tenants,
     createTenant,
@@ -394,9 +281,6 @@ export function useAdminGovernanceState(
     addMedication,
     removeMedication,
     auditLogs,
-    impersonationSession,
-    startActAs,
-    stopActAs,
   };
 }
 

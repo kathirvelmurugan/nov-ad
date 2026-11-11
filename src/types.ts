@@ -69,13 +69,6 @@ export interface AdminCatalogsState {
   medications: string[];
 }
 
-export interface ImpersonationSession {
-  originalPersona: Persona;
-  originalHospitalId?: string;
-  actingAs: Persona;
-  actingHospitalId?: string;
-}
-
 export interface RolePermissionSpec {
   roleCode: RoleCode;
   roleNameAr: string;

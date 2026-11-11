@@ -48,19 +48,10 @@ export const SuperAdminPortalView: React.FC<SuperAdminPortalViewProps> = ({
     addMedication,
     removeMedication,
     auditLogs,
-    startActAs,
   } = useAdminGovernanceState();
 
-  const handleActAs = (roleCode: RoleCode) => {
-    startActAs(roleCode, activePersona);
-    const targetPersona = Object.values(PERSONAS).find((p) => p.code === roleCode);
-    if (targetPersona && onSelectPersona) {
-      onSelectPersona(targetPersona);
-    }
-  };
-
   const navTabs: { id: TabKey; labelAr: string; labelEn: string; icon: React.ReactNode }[] = [
-    { id: 'roles', labelAr: 'مصفوفة الصلاحيات (Act-As)', labelEn: 'Roles & Powers (Act-As)', icon: <Shield className="w-4 h-4" /> },
+    { id: 'roles', labelAr: 'مصفوفة الصلاحيات والحوكمة', labelEn: 'Roles & Governance Matrix', icon: <Shield className="w-4 h-4" /> },
     { id: 'tenants', labelAr: 'المستشفيات الشريكة', labelEn: 'Hospital Tenants', icon: <Building2 className="w-4 h-4" /> },
     { id: 'staff', labelAr: 'الكوادر المركزية', labelEn: 'Central Staff', icon: <UserCheck className="w-4 h-4" /> },
     { id: 'catalogs', labelAr: 'الكتالوجات الطبية', labelEn: 'Medical Catalogs', icon: <Database className="w-4 h-4" /> },
@@ -138,7 +129,7 @@ export const SuperAdminPortalView: React.FC<SuperAdminPortalViewProps> = ({
       {/* Active Tab Panel */}
       <main className="max-w-7xl mx-auto">
         {activeTab === 'roles' && (
-          <SuperAdminRolesPowersTab isRTL={isRTL} onActAs={handleActAs} />
+          <SuperAdminRolesPowersTab isRTL={isRTL} />
         )}
         {activeTab === 'tenants' && (
           <SuperAdminTenantsTab

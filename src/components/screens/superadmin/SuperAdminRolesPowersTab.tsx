@@ -4,7 +4,7 @@ import { ROLE_PERMISSIONS, ALL_ROLE_CODES, RoleCode, TenantTier } from '../../..
 
 interface SuperAdminRolesPowersTabProps {
   isRTL: boolean;
-  onActAs: (roleCode: RoleCode) => void;
+  onActAs?: (roleCode: RoleCode) => void;
 }
 
 const TIER_COLORS: Record<TenantTier, { bg: string; text: string; border: string }> = {
@@ -14,7 +14,7 @@ const TIER_COLORS: Record<TenantTier, { bg: string; text: string; border: string
   PATIENT_SELF: { bg: '#f3e8ff', text: '#7e22ce', border: '#e9d5ff' },
 };
 
-export const SuperAdminRolesPowersTab: React.FC<SuperAdminRolesPowersTabProps> = ({ isRTL, onActAs }) => {
+export const SuperAdminRolesPowersTab: React.FC<SuperAdminRolesPowersTabProps> = ({ isRTL }) => {
   const [filterTier, setFilterTier] = useState<TenantTier | 'ALL'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -186,25 +186,14 @@ export const SuperAdminRolesPowersTab: React.FC<SuperAdminRolesPowersTabProps> =
                 )}
               </div>
 
-              {/* Act-As Action Footer */}
+              {/* Governance Status Footer */}
               <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
                 <span className="text-[11px] text-slate-400 font-medium">
-                  {role.roleCode === 'AD' ? (isRTL ? 'أنت في هذا الدور' : 'Current Active Role') : (isRTL ? 'معاينة تجربة المستخدم' : 'Live User Preview')}
+                  {role.roleCode === 'AD' ? (isRTL ? 'الحساب الإداري الأعلى' : 'Root Master Role') : (isRTL ? 'صلاحية تشغيلية معتمدة' : 'Accredited Operational Role')}
                 </span>
-                {role.roleCode !== 'AD' ? (
-                  <button
-                    onClick={() => onActAs(role.roleCode)}
-                    className="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1.5 rounded-xl font-bold text-xs transition-transform active:scale-95 shadow-sm"
-                  >
-                    <Eye className="w-3.5 h-3.5" />
-                    <span>{isRTL ? 'تقمص الدور' : 'Act As'}</span>
-                    {isRTL ? <ArrowLeft className="w-3 h-3" /> : <ArrowRight className="w-3 h-3" />}
-                  </button>
-                ) : (
-                  <span className="text-xs font-bold text-slate-400 px-3 py-1 bg-slate-100 rounded-lg">
-                    {isRTL ? 'النظام الرئيسي' : 'Master Control'}
-                  </span>
-                )}
+                <span className="text-xs font-bold text-slate-600 dark:text-slate-300 px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+                  {isRTL ? 'معتمد رسمياً ✓' : 'Enforced ✓'}
+                </span>
               </div>
             </div>
           );

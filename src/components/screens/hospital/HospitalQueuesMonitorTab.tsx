@@ -13,7 +13,6 @@ export const HospitalQueuesMonitorTab: React.FC<HospitalQueuesMonitorTabProps> =
   isRTL,
   hospital,
   activeCase,
-  onNavigateToDept,
 }) => {
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -59,13 +58,10 @@ export const HospitalQueuesMonitorTab: React.FC<HospitalQueuesMonitorTabProps> =
             </div>
           </div>
 
-          <div className="pt-4 mt-4 border-t border-slate-100">
-            <button
-              onClick={() => onNavigateToDept && onNavigateToDept('L')}
-              className="w-full py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm"
-            >
-              {isRTL ? 'فتح محطة المختبر (L)' : 'Open Lab Workstation (L)'}
-            </button>
+          <div className="pt-4 mt-4 border-t border-slate-100 text-center">
+            <span className="text-[11px] font-bold text-slate-400">
+              {isRTL ? 'محطة المختبر التشغيلية المعتمدة' : 'Accredited Lab Station'}
+            </span>
           </div>
         </div>
 
@@ -91,13 +87,10 @@ export const HospitalQueuesMonitorTab: React.FC<HospitalQueuesMonitorTabProps> =
             </div>
           </div>
 
-          <div className="pt-4 mt-4 border-t border-slate-100">
-            <button
-              onClick={() => onNavigateToDept && onNavigateToDept('PH')}
-              className="w-full py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold transition-all shadow-sm"
-            >
-              {isRTL ? 'فتح محطة الصيدلية (PH)' : 'Open Pharmacy Workstation (PH)'}
-            </button>
+          <div className="pt-4 mt-4 border-t border-slate-100 text-center">
+            <span className="text-[11px] font-bold text-slate-400">
+              {isRTL ? 'محطة الصيدلية السريرية المعتمدة' : 'Accredited Pharmacy Station'}
+            </span>
           </div>
         </div>
 
@@ -123,13 +116,10 @@ export const HospitalQueuesMonitorTab: React.FC<HospitalQueuesMonitorTabProps> =
             </div>
           </div>
 
-          <div className="pt-4 mt-4 border-t border-slate-100">
-            <button
-              onClick={() => onNavigateToDept && onNavigateToDept('REC')}
-              className="w-full py-2 bg-purple-700 hover:bg-purple-800 text-white rounded-xl text-xs font-bold transition-all shadow-sm"
-            >
-              {isRTL ? 'فتح كاونتر الاستقبال (REC)' : 'Open Reception Counter (REC)'}
-            </button>
+          <div className="pt-4 mt-4 border-t border-slate-100 text-center">
+            <span className="text-[11px] font-bold text-slate-400">
+              {isRTL ? 'كاونتر الاستقبال والحضور المعتمد' : 'Accredited Reception Station'}
+            </span>
           </div>
         </div>
       </div>

@@ -25,8 +25,6 @@ import { AutoDemoController }      from '../components/AutoDemoController';
 import { PatientPipelineBoard }    from '../components/PatientPipelineBoard';
 import { FiveDeviceCockpitView }   from '../components/FiveDeviceCockpitView';
 import { NewCaseModal }            from '../components/NewCaseModal';
-import { ActAsBanner }             from '../components/layout/ActAsBanner';
-import { useAdminGovernanceState } from '../hooks/useAdminGovernanceState';
 import UnifiedAuthGate             from '../components/auth/UnifiedAuthGate';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -110,8 +108,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   const isPureLandingPage = (!userSession || (activePersona.code === 'P' && patientSubView === 'landing')) && viewMode !== 'studio';
   const isDemoMode = false;
 
-  const { impersonationSession, stopActAs } = useAdminGovernanceState(activePersona, handleSelectPersona);
-
   // ── Authentication Handler ───────────────────────────────────────────────
   const handleAuthSuccess = (session: UserSession) => {
     setUserSession(session);
@@ -148,7 +144,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   }
 
   // Strict RBAC: Prevent authenticated Patients from accessing restricted clinical/admin portals
-  if (userSession && !impersonationSession && userSession.roleCode === 'P' && activePersona.code !== 'P') {
+  if (userSession && userSession.roleCode === 'P' && activePersona.code !== 'P') {
     const patientPersona = PERSONAS.find((p) => p.code === 'P') || PERSONAS[0];
     handleSelectPersona(patientPersona);
   }
@@ -159,13 +155,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
       dir={isAr ? 'rtl' : 'ltr'}
       lang={lang}
     >
-      {/* 0. Top Act-As Impersonation Preview Banner */}
-      <ActAsBanner
-        isRTL={isAr}
-        session={impersonationSession}
-        onExitPreview={() => stopActAs()}
-      />
-
       {/* 1. Top Utility Ribbon & Persona Switcher */}
       {!isPureLandingPage && (
         <TopProfileSwitcher

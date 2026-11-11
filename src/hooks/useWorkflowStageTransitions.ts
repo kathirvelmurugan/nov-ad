@@ -52,28 +52,6 @@ export function useWorkflowStageTransitions({
     }
     const lockedLang = localStorage.getItem(LANG_KEY);
     if (!lockedLang) setLang(p.lang);
-
-    if (p.code === 'N') handleUpdateCase({ currentStage: 'NURSE_CHECK' });
-    else if (p.code === 'D') {
-      if (['INTAKE_RECEIVED', 'NURSE_CHECK'].includes(activeCase.currentStage)) {
-        handleUpdateCase({ currentStage: 'DOCTOR_REVIEW' });
-      }
-    }
-    else if (p.code === 'C') {
-      if (['INTAKE_RECEIVED', 'NURSE_CHECK', 'DOCTOR_REVIEW'].includes(activeCase.currentStage)) {
-        handleUpdateCase({ currentStage: 'AWAITING_PAYMENT' });
-      }
-    }
-    else if (p.code === 'K') {
-      handleUpdateCase({ currentStage: 'WITH_CONSULTANT' });
-    }
-    else if (['L', 'PH', 'REC', 'H', 'T', 'V'].includes(p.code)) handleUpdateCase({ currentStage: 'PARTNER_SERVICES' });
-    // Note: AD and HA governance logins must NEVER force-mutate clinical case stages to CLOSED
-    else if (p.code === 'P' || p.code === 'F') {
-      if (activeCase.currentStage === 'CLOSED') {
-        handleUpdateCase({ currentStage: 'INTAKE_RECEIVED' });
-      }
-    }
   };
 
   const handleSetStage = (stage: ClinicalStage) => {

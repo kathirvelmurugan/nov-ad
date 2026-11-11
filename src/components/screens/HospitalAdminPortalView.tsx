@@ -39,7 +39,6 @@ export const HospitalAdminPortalView: React.FC<HospitalAdminPortalViewProps> = (
     staffDirectory,
     createStaffMember,
     toggleStaffActive,
-    startActAs,
   } = useAdminGovernanceState();
 
   // Find the hospital tenant associated with this hospital admin
@@ -57,17 +56,6 @@ export const HospitalAdminPortalView: React.FC<HospitalAdminPortalViewProps> = (
       doctorCount: 0,
       createdAt: new Date().toISOString(),
     };
-
-  const handleActAs = (roleCode: RoleCode) => {
-    startActAs(roleCode, activePersona, hospital.id);
-    const targetPersona = Object.values(PERSONAS).find((p) => p.code === roleCode);
-    if (targetPersona && onSelectPersona) {
-      onSelectPersona({
-        ...targetPersona,
-        hospitalId: hospital.id,
-      });
-    }
-  };
 
   const navTabs: { id: TabKey; labelAr: string; labelEn: string; icon: React.ReactNode }[] = [
     { id: 'overview', labelAr: 'نظرة عامة والإحالات', labelEn: 'Overview & Referrals', icon: <Building2 className="w-4 h-4" /> },
@@ -173,7 +161,6 @@ export const HospitalAdminPortalView: React.FC<HospitalAdminPortalViewProps> = (
           <HospitalRolesPowersTab
             isRTL={isRTL}
             hospital={hospital}
-            onActAs={handleActAs}
           />
         )}
         {activeTab === 'queues' && (
@@ -181,7 +168,6 @@ export const HospitalAdminPortalView: React.FC<HospitalAdminPortalViewProps> = (
             isRTL={isRTL}
             hospital={hospital}
             activeCase={activeCase}
-            onNavigateToDept={(deptCode) => handleActAs(deptCode)}
           />
         )}
       </main>

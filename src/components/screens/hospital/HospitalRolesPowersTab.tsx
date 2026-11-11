@@ -6,7 +6,7 @@ import { TenantHospital } from '../../../types';
 interface HospitalRolesPowersTabProps {
   isRTL: boolean;
   hospital: TenantHospital;
-  onActAs: (roleCode: RoleCode) => void;
+  onActAs?: (roleCode: RoleCode) => void;
 }
 
 const HOSPITAL_ROLE_CODES: RoleCode[] = ['HA', 'D', 'L', 'PH', 'REC'];
@@ -14,7 +14,6 @@ const HOSPITAL_ROLE_CODES: RoleCode[] = ['HA', 'D', 'L', 'PH', 'REC'];
 export const HospitalRolesPowersTab: React.FC<HospitalRolesPowersTabProps> = ({
   isRTL,
   hospital,
-  onActAs,
 }) => {
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -98,25 +97,14 @@ export const HospitalRolesPowersTab: React.FC<HospitalRolesPowersTabProps> = ({
                 </div>
               </div>
 
-              {/* Act-As Footer */}
+              {/* Governance Status Footer */}
               <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
                 <span className="text-[11px] text-slate-400 font-medium">
-                  {code === 'HA' ? (isRTL ? 'أنت في هذا الدور' : 'Current Active Role') : (isRTL ? 'معاينة شاشة القسم' : 'Preview Department')}
+                  {code === 'HA' ? (isRTL ? 'مدير المنشأة المسؤول' : 'Facility Administrator') : (isRTL ? 'دور سريري معتمد' : 'Authorized Clinical Role')}
                 </span>
-                {code !== 'HA' ? (
-                  <button
-                    onClick={() => onActAs(code)}
-                    className="inline-flex items-center gap-1.5 bg-teal-700 hover:bg-teal-800 text-white px-3.5 py-1.5 rounded-xl font-bold text-xs transition-transform active:scale-95 shadow-sm"
-                  >
-                    <Eye className="w-3.5 h-3.5" />
-                    <span>{isRTL ? 'معاينة كـ' : 'Act As'}</span>
-                    {isRTL ? <ArrowLeft className="w-3 h-3" /> : <ArrowRight className="w-3 h-3" />}
-                  </button>
-                ) : (
-                  <span className="text-xs font-bold text-slate-400 px-3 py-1 bg-slate-100 rounded-lg">
-                    {isRTL ? 'مدير المنشأة' : 'Facility Admin'}
-                  </span>
-                )}
+                <span className="text-xs font-bold text-slate-600 px-3 py-1 bg-slate-100 rounded-lg border border-slate-200">
+                  {isRTL ? 'معتمد للمستشفى ✓' : 'Enrolled ✓'}
+                </span>
               </div>
             </div>
           );
