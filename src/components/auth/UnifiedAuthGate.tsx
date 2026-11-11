@@ -68,9 +68,8 @@ export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }:
     center: string;
   } | null>(null);
 
-  const isDemoMode =
-    typeof window !== 'undefined' &&
-    (new URLSearchParams(window.location.search).get('demo') === '1' || window.location.hash === '#cockpit');
+  const [isForgotPin, setIsForgotPin] = useState(false);
+  const isDemoMode = false;
 
   const phoneRef = useRef<HTMLInputElement>(null);
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -235,7 +234,8 @@ export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }:
     setIsLoading(false);
 
     const raw = extractRawPhone(phone);
-    if (!hasUserPin(raw)) {
+    if (isForgotPin || !hasUserPin(raw)) {
+      setPinDigits(['', '', '', '']);
       setStep('pin_setup');
     } else {
       completeAuth(false);
@@ -251,6 +251,8 @@ export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }:
     }
     const raw = extractRawPhone(phone);
     setUserPin(raw, entered);
+    apiClient.updateUserPin(raw, entered).catch(() => {});
+    setIsForgotPin(false);
     completeAuth(false);
   };
 
@@ -475,6 +477,7 @@ export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }:
                 isSetupMode={step === 'pin_setup'}
                 onSubmit={step === 'pin_setup' ? handlePinSetupSubmit : handlePinSubmit}
                 onForgotPin={() => {
+                  setIsForgotPin(true);
                   setCountdown(60);
                   setOtp(['', '', '', '', '', '']);
                   setStep('otp');

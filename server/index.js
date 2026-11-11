@@ -26,9 +26,49 @@ let memoryUsers = [
     roleCode: 'AD',
     phone: '+966500000001',
     pin: '1234',
+    hasCustomPin: true,
     department: 'Platform Operations',
     status: 'active',
     createdAt: '2026-01-01T00:00:00Z',
+  },
+  {
+    id: 'staff-n-01',
+    staffCode: '00301',
+    fullName: 'Sara Al-Dossary, RN',
+    fullNameAr: 'سارة الدوسري (تمريض ألو)',
+    roleCode: 'N',
+    phone: '+966503333333',
+    pin: '1234',
+    hasCustomPin: false,
+    department: 'Clinical Triage',
+    status: 'active',
+    createdAt: '2026-01-05T08:00:00Z',
+  },
+  {
+    id: 'staff-c-01',
+    staffCode: '00501',
+    fullName: 'Abdulrahman Al-Shehri',
+    fullNameAr: 'عبدالرحمن الشهري',
+    roleCode: 'C',
+    phone: '+966505555555',
+    pin: '1234',
+    hasCustomPin: false,
+    department: 'Care Coordination',
+    status: 'active',
+    createdAt: '2026-01-05T08:00:00Z',
+  },
+  {
+    id: 'staff-d-01',
+    staffCode: '10201',
+    fullName: 'Dr. Abdullah Al-Shammari',
+    fullNameAr: 'د. عبدالله الشمري',
+    roleCode: 'D',
+    phone: '+966502222222',
+    pin: '1234',
+    hasCustomPin: false,
+    department: 'Cardiology',
+    status: 'active',
+    createdAt: '2026-01-15T08:00:00Z',
   },
 ];
 let memoryCases = [];
@@ -126,18 +166,41 @@ apiRouter.post('/users/pin', async (req, res) => {
   const { phone, pin } = req.body;
   if (!phone || !pin) return res.status(400).json({ error: 'Missing phone or pin' });
   const clean = phone.replace(/\D/g, '');
+  const p1 = '+' + clean;
+  const p2 = clean.startsWith('966') ? '0' + clean.slice(3) : '0' + clean;
+  const p3 = clean.startsWith('966') ? clean : '966' + clean;
+
   try {
     await pool.query(
-      `UPDATE platform_users SET pin = $1, has_custom_pin = TRUE WHERE REPLACE(phone, '+', '') = $2 OR REPLACE(phone, ' ', '') = $2`,
-      [pin, clean]
+      `UPDATE platform_users 
+       SET pin = $1, has_custom_pin = TRUE 
+       WHERE phone = $2 
+          OR phone = $3 
+          OR phone = $4 
+          OR phone = $5 
+          OR REPLACE(REPLACE(phone, '+', ''), ' ', '') = $6`,
+      [pin, phone, p1, p2, p3, clean]
     );
-  } catch (err) {}
+  } catch (err) {
+    console.error('Error updating user pin:', err);
+  }
+
+  // Update in-memory fallback
+  const match = memoryUsers.find(
+    (m) => m.phone === phone || m.phone?.replace(/\D/g, '') === clean
+  );
+  if (match) {
+    match.pin = pin;
+    match.hasCustomPin = true;
+  }
+
   return res.json({ success: true, phone, hasCustomPin: true });
 });
 
 apiRouter.post('/users', async (req, res) => {
   const u = req.body;
   if (!u.fullName || !u.phone || !u.roleCode) return res.status(400).json({ error: 'Missing required staff fields' });
+  const hasCustomPin = u.hasCustomPin !== undefined ? !!u.hasCustomPin : false;
   const user = {
     id: u.id || `staff-${Date.now().toString().slice(-6)}`,
     staffCode: u.staffCode || Date.now().toString().slice(-5),
@@ -149,15 +212,16 @@ apiRouter.post('/users', async (req, res) => {
     hospitalId: u.hospitalId || null,
     department: u.department || 'Clinical',
     status: u.status || 'active',
+    hasCustomPin,
     createdAt: new Date().toISOString(),
   };
 
   try {
     await pool.query(
-      `INSERT INTO platform_users (id, staff_code, full_name, full_name_ar, role_code, phone, pin, hospital_id, department, status, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-       ON CONFLICT (id) DO UPDATE SET full_name = EXCLUDED.full_name, status = EXCLUDED.status`,
-      [user.id, user.staffCode, user.fullName, user.fullNameAr, user.roleCode, user.phone, user.pin, user.hospitalId, user.department, user.status, user.createdAt]
+      `INSERT INTO platform_users (id, staff_code, full_name, full_name_ar, role_code, phone, pin, hospital_id, department, status, has_custom_pin, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+       ON CONFLICT (id) DO UPDATE SET full_name = EXCLUDED.full_name, status = EXCLUDED.status, has_custom_pin = EXCLUDED.has_custom_pin`,
+      [user.id, user.staffCode, user.fullName, user.fullNameAr, user.roleCode, user.phone, user.pin, user.hospitalId, user.department, user.status, hasCustomPin, user.createdAt]
     );
   } catch (err) {
     memoryUsers = [user, ...memoryUsers.filter((x) => x.id !== user.id)];

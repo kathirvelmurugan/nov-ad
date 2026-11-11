@@ -108,7 +108,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
 }) => {
   const isAr = lang === 'ar';
   const isPureLandingPage = (!userSession || (activePersona.code === 'P' && patientSubView === 'landing')) && viewMode !== 'studio';
-  const isDemoMode = typeof window !== 'undefined' && (new URLSearchParams(window.location.search).get('demo') === '1' || window.location.hash === '#cockpit');
+  const isDemoMode = false;
 
   const { impersonationSession, stopActAs } = useAdminGovernanceState(activePersona, handleSelectPersona);
 

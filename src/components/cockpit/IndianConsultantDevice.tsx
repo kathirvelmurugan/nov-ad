@@ -251,8 +251,8 @@ export const IndianConsultantDevice: React.FC<CockpitDeviceProps> = ({
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '6px' }}>
               {(activeCase.focusQuestions && activeCase.focusQuestions.filter(Boolean).length > 0
                 ? activeCase.focusQuestions
-                : activeCase.treatingDoctor?.focusQuestions && activeCase.treatingDoctor.focusQuestions.filter(Boolean).length > 0
-                ? activeCase.treatingDoctor.focusQuestions
+                : activeCase.treatingDoctor?.focusQuestions && activeCase.treatingDoctor?.focusQuestions.filter(Boolean).length > 0
+                ? (activeCase.treatingDoctor?.focusQuestions || [])
                 : [
                     isAr ? 'هل استبدال الصمام بالقسطرة (TAVR) أم الجراحة المفتوحة (SAVR) أنسب؟' : 'TAVR vs open SAVR recommendation?',
                     isAr ? 'ما هو تقييم تكلس الشريان التاجي وهل يستدعي مجازة مرافقة (CABG)؟' : 'Does LAD calcification warrant concurrent CABG?',

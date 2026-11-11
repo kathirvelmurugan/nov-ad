@@ -18,7 +18,7 @@ export const SaudiDoctorDevice: React.FC<CockpitDeviceProps> = ({
 
   const initialQuestions = activeCase.focusQuestions && activeCase.focusQuestions.length > 0
     ? activeCase.focusQuestions
-    : (activeCase.treatingDoctor?.focusQuestions ? [...activeCase.treatingDoctor.focusQuestions] : ['', '', '']);
+    : (activeCase.treatingDoctor?.focusQuestions ? [...(activeCase.treatingDoctor?.focusQuestions || [])] : ['', '', '']);
 
   const [focusQs, setFocusQs] = useState<string[]>(initialQuestions);
 

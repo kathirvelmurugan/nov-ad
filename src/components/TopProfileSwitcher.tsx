@@ -113,7 +113,7 @@ export const TopProfileSwitcher: React.FC<Props> = ({
 }) => {
   const isAr = lang === 'ar';
   const isCustom = activeCase.id.startsWith('TEST-') || activeCase.id.startsWith('REAL-');
-  const isDemoMode = typeof window !== 'undefined' && (new URLSearchParams(window.location.search).get('demo') === '1' || window.location.hash === '#cockpit');
+  const isDemoMode = false;
 
   const cleanPatientName = isAr
     ? (activeCase.patientNameAr || activeCase.patientName || '')
@@ -178,8 +178,8 @@ export const TopProfileSwitcher: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* Center: Patient Experience Navigation (Landing Page | Intake Form | Status Tracker) */}
-        {onSelectPatientSubView && (
+        {/* Center: Patient Experience Navigation (Landing Page | Intake Form | Status Tracker) - Strictly only for Patient role */}
+        {onSelectPatientSubView && activePersona.code === 'P' && (
           <div className="flex items-center gap-1 bg-slate-200/80 dark:bg-slate-800 p-1 rounded-xl border border-slate-300/80 dark:border-slate-700 shadow-inner">
             <button
               type="button"

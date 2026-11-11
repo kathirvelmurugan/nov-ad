@@ -41,7 +41,7 @@ export const PatientStatusTimelineView: React.FC<Props> = ({
   const isAr = lang === 'ar';
   const stage = activeCase.currentStage;
   const currentIndex = STAGES.findIndex((s) => s.stage === stage);
-  const isDemoMode = typeof window !== 'undefined' && (new URLSearchParams(window.location.search).get('demo') === '1' || window.location.hash === '#cockpit');
+  const isDemoMode = false;
   const isInvoiceIssued = !!activeCase.invoiceIssued && Array.isArray(activeCase.allowedPaymentMethods) && activeCase.allowedPaymentMethods.length > 0;
   const isPaid = !!activeCase.pricing?.paid || activeCase.paymentDetails?.status === 'completed';
   const isPaymentVerified = !!activeCase.paymentVerified || !!activeCase.metadata?.paymentVerified;
@@ -98,7 +98,7 @@ export const PatientStatusTimelineView: React.FC<Props> = ({
               <span>·</span>
               <span>{isAr ? (activeCase.specialtyAr || activeCase.specialty) : (activeCase.specialtyEn || activeCase.specialty)}</span>
               <span>·</span>
-              <span>{activeCase.treatingDoctor.city}</span>
+              <span>{activeCase.treatingDoctor?.city || (isAr ? 'المملكة العربية السعودية' : 'Saudi Arabia')}</span>
             </p>
           </div>
 

@@ -27,7 +27,7 @@ export const DoctorFacilityOrdersSection: React.FC<Props> = ({
           </h3>
         </div>
         <span className="text-[10px] font-bold text-teal-700 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/50 px-2 py-0.5 rounded border border-teal-200">
-          {activeCase.treatingDoctor.hospital}
+          {activeCase.treatingDoctor?.hospital || (isAr ? 'المستشفى الشريك المعتمد' : 'Partner Accredited Hospital')}
         </span>
       </div>
 
