@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { apiClient } from '../services/apiClient';
 import {
   TenantHospital,
   StaffAccountRecord,
@@ -150,6 +151,16 @@ export function useAdminGovernanceState(
     } catch {}
   }, [impersonationSession]);
 
+  // Initial backend fetch on mount
+  useEffect(() => {
+    apiClient.fetchTenants().then((fetched) => {
+      if (Array.isArray(fetched) && fetched.length > 0) setTenants(fetched);
+    });
+    apiClient.fetchUsers().then((fetched) => {
+      if (Array.isArray(fetched) && fetched.length > 0) setStaffDirectory(fetched);
+    });
+  }, []);
+
   // Logging Helper
   const appendAuditLog = useCallback((entry: Omit<AuditLogEntry, 'id' | 'timestamp'>) => {
     const newLog: AuditLogEntry = {
@@ -169,6 +180,7 @@ export function useAdminGovernanceState(
         createdAt: new Date().toISOString(),
       };
       setTenants((prev) => [newTenant, ...prev]);
+      apiClient.createTenant(newTenant);
       appendAuditLog({
         actorName: activePersona?.name || 'Super Admin',
         actorRole: activePersona?.code || 'AD',
@@ -207,6 +219,7 @@ export function useAdminGovernanceState(
         createdAt: new Date().toISOString(),
       };
       setStaffDirectory((prev) => [newStaff, ...prev]);
+      apiClient.createUser(newStaff);
       appendAuditLog({
         actorName: activePersona?.name || 'Admin',
         actorRole: activePersona?.code || 'AD',

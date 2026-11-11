@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Building2, Plus, CheckCircle, XCircle, MapPin, Phone, Users, ShieldCheck } from 'lucide-react';
+import { Building2, Plus, CheckCircle, XCircle, MapPin, Phone, Users, ShieldCheck, AlertCircle } from 'lucide-react';
 import { TenantHospital } from '../../../types';
+import { sanitizeDigits, validatePhoneNumber } from '../../../utils/phoneValidation';
 
 interface SuperAdminTenantsTabProps {
   isRTL: boolean;
@@ -22,10 +23,24 @@ export const SuperAdminTenantsTab: React.FC<SuperAdminTenantsTabProps> = ({
   const [newLicense, setNewLicense] = useState('');
   const [adminName, setAdminName] = useState('');
   const [adminPhone, setAdminPhone] = useState('+96650');
+  const [phoneError, setPhoneError] = useState('');
+
+  const handlePhoneChange = (val: string) => {
+    const cleaned = sanitizeDigits(val);
+    setAdminPhone(cleaned);
+    const result = validatePhoneNumber(cleaned, false);
+    setPhoneError(result.isValid ? '' : (isRTL ? result.errorMessageAr || '' : result.errorMessage || ''));
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newNameEn.trim() || !newNameAr.trim()) return;
+
+    const validation = validatePhoneNumber(adminPhone, false);
+    if (!validation.isValid) {
+      setPhoneError(isRTL ? validation.errorMessageAr || '' : validation.errorMessage || '');
+      return;
+    }
 
     onCreateTenant({
       nameEn: newNameEn.trim(),
@@ -34,7 +49,7 @@ export const SuperAdminTenantsTab: React.FC<SuperAdminTenantsTabProps> = ({
       mciLicenseNumber: newLicense.trim() || `MCI-SA-${Date.now().toString().slice(-6)}`,
       status: 'active',
       hospitalAdminName: adminName.trim() || 'Dr. Hospital Admin',
-      hospitalAdminPhone: adminPhone.trim() || '+966504444444',
+      hospitalAdminPhone: adminPhone.trim(),
       doctorCount: 1,
     });
 
@@ -43,6 +58,7 @@ export const SuperAdminTenantsTab: React.FC<SuperAdminTenantsTabProps> = ({
     setNewLicense('');
     setAdminName('');
     setAdminPhone('+96650');
+    setPhoneError('');
     setShowAddForm(false);
   };
 
@@ -153,10 +169,16 @@ export const SuperAdminTenantsTab: React.FC<SuperAdminTenantsTabProps> = ({
               <input
                 type="text"
                 value={adminPhone}
-                onChange={(e) => setAdminPhone(e.target.value)}
-                placeholder="+966 50 XXX XXXX"
-                className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-sky-500"
+                onChange={(e) => handlePhoneChange(e.target.value)}
+                placeholder="+96650XXXXXXX"
+                className={`w-full px-3 py-2 text-sm bg-white border ${phoneError ? 'border-rose-400 focus:ring-rose-500' : 'border-slate-200 focus:ring-sky-500'} rounded-xl focus:ring-2`}
               />
+              {phoneError && (
+                <p className="mt-1 text-[11px] font-bold text-rose-600 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3 shrink-0" />
+                  <span>{phoneError}</span>
+                </p>
+              )}
             </div>
           </div>
           <div className="flex justify-end gap-2 pt-2">

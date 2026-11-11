@@ -1,30 +1,32 @@
 # ==============================================================================
-# Multi-Stage Production Dockerfile for ALO DOCTOR (nov-ad)
-# Stage 1: Build React/Vite/Tailwind Application
-# Stage 2: Serve with Ultra-Lightweight Nginx Alpine (< 25MB)
+# Production Dockerfile with Unified Node.js API + Static Frontend
+# Connects directly to alo-postgres on Coolify Docker Network
 # ==============================================================================
 
 FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Install dependencies
 COPY package*.json ./
 RUN npm ci
 
-# Copy source code and build
 COPY . .
 RUN npm run build
 
-# Runtime Stage
-FROM nginx:alpine
+# Runtime Stage: Unified Node + Express API + Static Server
+FROM node:20-alpine
 
-# Copy built assets to Nginx html directory
-COPY --from=builder /app/dist /usr/share/nginx/html
+WORKDIR /app
 
-# Copy custom Nginx configuration with SPA fallback
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+ENV NODE_ENV=production
+ENV PORT=80
+
+COPY package*.json ./
+RUN npm ci --only=production
+
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/server ./server
 
 EXPOSE 80
 
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["node", "server/index.js"]

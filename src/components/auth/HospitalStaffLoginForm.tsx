@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiClient } from '../../services/apiClient';
 import { PALETTE, getInputStyle, getPrimaryButtonStyle, labelStyle } from './authTypesAndUtils';
 import { SEEDED_TENANT_HOSPITALS, SEEDED_STAFF_DIRECTORY } from '../../data/platformSeed';
 import { RoleCode, TenantHospital, StaffAccountRecord } from '../../types';
@@ -42,24 +43,18 @@ export const HospitalStaffLoginForm: React.FC<HospitalStaffLoginFormProps> = ({
   const [adminOtp, setAdminOtp] = useState('123456');
   const [error, setError] = useState('');
 
-  // Re-sync dynamic hospitals from localStorage on mount and window focus
+  // Re-sync dynamic hospitals from backend API and localStorage on mount and window focus
   useEffect(() => {
     const refresh = () => {
-      try {
-        const saved = localStorage.getItem('alo_tenants_v3.0');
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setHospitals(parsed);
-            if (!selectedHospitalId) {
-              setSelectedHospitalId(parsed[0].id);
-              setAdminPhone(parsed[0].hospitalAdminPhone || '');
-            }
-            return;
+      apiClient.fetchTenants().then((fetched) => {
+        if (Array.isArray(fetched) && fetched.length > 0) {
+          setHospitals(fetched);
+          if (!selectedHospitalId) {
+            setSelectedHospitalId(fetched[0].id);
+            setAdminPhone(fetched[0].hospitalAdminPhone || '');
           }
         }
-      } catch {}
-      setHospitals(SEEDED_TENANT_HOSPITALS);
+      });
     };
 
     refresh();

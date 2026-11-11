@@ -294,8 +294,22 @@ export function useClinicalWorkflowState() {
   });
 
   const handleLogout = () => {
-    try { localStorage.removeItem(USER_SESSION_KEY); } catch (e) {}
+    try {
+      localStorage.removeItem(USER_SESSION_KEY);
+      localStorage.removeItem(VIEW_MODE_KEY);
+      localStorage.setItem('alo_patient_subview_v3.0', 'landing');
+    } catch (e) {}
     setUserSession(null);
+    setActivePersona(PERSONAS[0]); // Reset cleanly to Patient ('P')
+    setPatientSubView('landing');
+    setViewMode('workstation');
+    setIsAuthModalOpen(false);
+    if (typeof window !== 'undefined') {
+      try {
+        const cleanUrl = window.location.pathname;
+        window.history.replaceState({ subView: 'landing', viewMode: 'workstation' }, '', cleanUrl);
+      } catch (e) {}
+    }
   };
 
   const handleToggleLang = () => {

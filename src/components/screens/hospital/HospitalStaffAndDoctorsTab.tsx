@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Stethoscope, Plus, CheckCircle, XCircle, Phone, Award, Shield } from 'lucide-react';
+import { Stethoscope, Plus, CheckCircle, XCircle, Phone, Award, Shield, AlertCircle } from 'lucide-react';
 import { StaffAccountRecord, TenantHospital, RoleCode } from '../../../types';
+import { sanitizeDigits, validatePhoneNumber } from '../../../utils/phoneValidation';
 
 interface HospitalStaffAndDoctorsTabProps {
   isRTL: boolean;
@@ -21,8 +22,16 @@ export const HospitalStaffAndDoctorsTab: React.FC<HospitalStaffAndDoctorsTabProp
   const [nameEn, setNameEn] = useState('');
   const [nameAr, setNameAr] = useState('');
   const [phone, setPhone] = useState('+96650');
+  const [phoneError, setPhoneError] = useState('');
   const [roleCode, setRoleCode] = useState<RoleCode>('D');
   const [scfhs, setScfhs] = useState('');
+
+  const handlePhoneChange = (val: string) => {
+    const cleaned = sanitizeDigits(val);
+    setPhone(cleaned);
+    const result = validatePhoneNumber(cleaned, false);
+    setPhoneError(result.isValid ? '' : (isRTL ? result.errorMessageAr || '' : result.errorMessage || ''));
+  };
 
   // Hospital staff are those assigned to this hospital or matching hospital roles (D, L, PH, REC)
   const hospitalStaff = staffDirectory.filter(
@@ -32,6 +41,12 @@ export const HospitalStaffAndDoctorsTab: React.FC<HospitalStaffAndDoctorsTabProp
   const handleEnroll = (e: React.FormEvent) => {
     e.preventDefault();
     if (!nameEn.trim() || !phone.trim()) return;
+
+    const validation = validatePhoneNumber(phone, false);
+    if (!validation.isValid) {
+      setPhoneError(isRTL ? validation.errorMessageAr || '' : validation.errorMessage || '');
+      return;
+    }
 
     onCreateStaff({
       phone: phone.trim(),
@@ -48,6 +63,7 @@ export const HospitalStaffAndDoctorsTab: React.FC<HospitalStaffAndDoctorsTabProp
     setNameEn('');
     setNameAr('');
     setPhone('+96650');
+    setPhoneError('');
     setScfhs('');
     setShowAddForm(false);
   };
@@ -139,10 +155,15 @@ export const HospitalStaffAndDoctorsTab: React.FC<HospitalStaffAndDoctorsTabProp
                 type="text"
                 required
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="+966 50 XXX XXXX"
-                className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500"
+                onChange={(e) => handlePhoneChange(e.target.value)}
+                placeholder="+96650XXXXXXX"
+                className={`w-full px-3 py-2 text-sm bg-white border rounded-xl focus:ring-2 focus:ring-emerald-500 ${
+                  phoneError ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200'
+                }`}
               />
+              {phoneError && (
+                <p className="text-xs text-rose-600 mt-1 font-medium">{phoneError}</p>
+              )}
             </div>
             <div>
               <label className="block text-xs font-semibold text-slate-600 mb-1">

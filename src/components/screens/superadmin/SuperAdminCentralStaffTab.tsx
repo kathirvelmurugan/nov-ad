@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { UserCheck, Plus, CheckCircle, XCircle, Shield, Phone, Building } from 'lucide-react';
+import { UserCheck, Plus, CheckCircle, XCircle, Shield, Phone, Building, AlertCircle } from 'lucide-react';
 import { StaffAccountRecord, TenantHospital, RoleCode } from '../../../types';
+import { sanitizeDigits, validatePhoneNumber } from '../../../utils/phoneValidation';
 
 interface SuperAdminCentralStaffTabProps {
   isRTL: boolean;
@@ -19,11 +20,32 @@ export const SuperAdminCentralStaffTab: React.FC<SuperAdminCentralStaffTabProps>
 }) => {
   const [showEnrollForm, setShowEnrollForm] = useState(false);
   const [phone, setPhone] = useState('+96650');
+  const [phoneError, setPhoneError] = useState('');
   const [nameEn, setNameEn] = useState('');
   const [nameAr, setNameAr] = useState('');
   const [roleCode, setRoleCode] = useState<RoleCode>('C');
   const [hospitalId, setHospitalId] = useState<string>('');
   const [license, setLicense] = useState('');
+
+  const handlePhoneChange = (val: string, role: RoleCode) => {
+    const cleaned = sanitizeDigits(val);
+    setPhone(cleaned);
+    const isIndian = role === 'K';
+    const result = validatePhoneNumber(cleaned, isIndian);
+    setPhoneError(result.isValid ? '' : (isRTL ? result.errorMessageAr || '' : result.errorMessage || ''));
+  };
+
+  const handleRoleChange = (newRole: RoleCode) => {
+    setRoleCode(newRole);
+    if (newRole === 'K') {
+      if (phone.startsWith('+966')) setPhone('+91');
+    } else {
+      if (phone.startsWith('+91')) setPhone('+96650');
+    }
+    const isIndian = newRole === 'K';
+    const result = validatePhoneNumber(phone, isIndian);
+    setPhoneError(result.isValid ? '' : (isRTL ? result.errorMessageAr || '' : result.errorMessage || ''));
+  };
 
   const centralStaff = staffDirectory.filter(
     (s) => ['AD', 'HA', 'C', 'N', 'K'].includes(s.roleCode)
@@ -32,6 +54,13 @@ export const SuperAdminCentralStaffTab: React.FC<SuperAdminCentralStaffTabProps>
   const handleEnroll = (e: React.FormEvent) => {
     e.preventDefault();
     if (!phone.trim() || !nameEn.trim()) return;
+
+    const isIndian = roleCode === 'K';
+    const validation = validatePhoneNumber(phone, isIndian);
+    if (!validation.isValid) {
+      setPhoneError(isRTL ? validation.errorMessageAr || '' : validation.errorMessage || '');
+      return;
+    }
 
     onCreateStaff({
       phone: phone.trim(),
@@ -45,7 +74,8 @@ export const SuperAdminCentralStaffTab: React.FC<SuperAdminCentralStaffTabProps>
       staffCode: Math.floor(10000 + Math.random() * 90000).toString(),
     });
 
-    setPhone('+96650');
+    setPhone(roleCode === 'K' ? '+91' : '+96650');
+    setPhoneError('');
     setNameEn('');
     setNameAr('');
     setLicense('');
@@ -99,10 +129,16 @@ export const SuperAdminCentralStaffTab: React.FC<SuperAdminCentralStaffTabProps>
                 type="text"
                 required
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="+966 50 XXX XXXX"
-                className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
+                onChange={(e) => handlePhoneChange(e.target.value, roleCode)}
+                placeholder={roleCode === 'K' ? '+91 XXXXXXXXXX' : '+966 5X XXX XXXX'}
+                className={`w-full px-3 py-2 text-sm bg-white border ${phoneError ? 'border-rose-400 focus:ring-rose-500' : 'border-slate-200 focus:ring-indigo-500'} rounded-xl focus:ring-2`}
               />
+              {phoneError && (
+                <p className="mt-1 text-[11px] font-bold text-rose-600 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3 shrink-0" />
+                  <span>{phoneError}</span>
+                </p>
+              )}
             </div>
             <div>
               <label className="block text-xs font-semibold text-slate-600 mb-1">
@@ -135,7 +171,7 @@ export const SuperAdminCentralStaffTab: React.FC<SuperAdminCentralStaffTabProps>
               </label>
               <select
                 value={roleCode}
-                onChange={(e) => setRoleCode(e.target.value as RoleCode)}
+                onChange={(e) => handleRoleChange(e.target.value as RoleCode)}
                 className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
               >
                 <option value="C">C - ALO Care Coordinator (منسق رعاية)</option>
