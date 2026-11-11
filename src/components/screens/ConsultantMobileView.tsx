@@ -37,7 +37,8 @@ const ConsultantMobileView: React.FC<Props> = ({ activeCase, onAdvanceStage, onU
   const [finalRemarks, setFinalRemarks] = useState<string>(activeCase.finalClosureNote || '');
   const relayed = (activeCase.metadata?.relayedQuestions as string[]) || [];
   const [answers, setAnswers] = useState<string[]>(relayed.map(() => ''));
-  const focusQuestionsEn = activeCase.treatingDoctor.focusQuestionsEn || activeCase.treatingDoctor.focusQuestions;
+  const baseAr = activeCase.treatingDoctor?.focusQuestions || ['', '', ''];
+  const focusQuestionsEn = activeCase.treatingDoctor?.focusQuestionsEn || baseAr;
   const [focusAnswers, setFocusAnswers] = useState<[string, string, string]>([
     'TAVR is clinically indicated given the high surgical risk and anatomical suitability on aortic root CTA.',
     'Recommend dual antiplatelet therapy (DAPT) with Aspirin 81mg and Clopidogrel 75mg for 3-6 months post-procedure.',

@@ -26,6 +26,13 @@ export interface UserSession {
   lang: 'ar' | 'en';
 }
 
+export const DEFAULT_PARTNER_ORDERS = {
+  lab: { test: 'None', status: 'pending' as const },
+  pharmacy: { meds: [] as string[], substituteAllowed: true, status: 'pending' as const },
+  homeNurse: { area: '', visits: 0, status: 'scheduled' as const },
+  physio: { sessions: 0, status: 'planned' as const },
+};
+
 // ─── Clean-Slate Initial Case (Zero Pre-Filled Data) ─────────────────────────
 export const FRESH_PRIMARY_CASE: ClinicalCase = {
   id: 'case-initial-01',
@@ -53,13 +60,19 @@ export const FRESH_PRIMARY_CASE: ClinicalCase = {
   stage: 1,
   doctorSelectionPreference: 'need_assistance',
   treatingDoctor: {
-    name: '',
-    hospital: '',
-    city: '',
+    name: 'د. عبدالله الشمري',
+    hospital: 'مستشفى رعاية الرياض',
+    city: 'الرياض',
     focusQuestions: ['', '', ''],
     focusQuestionsEn: ['', '', ''],
   },
-  consultant: undefined,
+  consultant: {
+    name: 'Dr. Arjun Mehta',
+    center: 'KIMS Heart Institute',
+    city: 'Hyderabad, India',
+    opinionEnglish: '',
+    opinionArabic: '',
+  },
   pricing: {
     tier: 1,
     tierName: 'Written',
@@ -73,7 +86,7 @@ export const FRESH_PRIMARY_CASE: ClinicalCase = {
   invoiceIssued: false,
   allowedPaymentMethods: [],
   paymentVerified: false,
-  partnerOrders: undefined,
+  partnerOrders: DEFAULT_PARTNER_ORDERS,
   metadata: { isFreshTest: true },
 };
 

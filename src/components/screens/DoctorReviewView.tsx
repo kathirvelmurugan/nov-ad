@@ -38,16 +38,16 @@ export const DoctorReviewView: React.FC<Props> = ({
 
   const [localQuestions, setLocalQuestions] = React.useState<[string, string, string]>(() => {
     const src = isAr 
-      ? activeCase.treatingDoctor.focusQuestions 
-      : (activeCase.treatingDoctor.focusQuestionsEn || activeCase.treatingDoctor.focusQuestions);
-    return [src[0] || '', src[1] || '', src[2] || ''];
+      ? activeCase.treatingDoctor?.focusQuestions 
+      : (activeCase.treatingDoctor?.focusQuestionsEn || activeCase.treatingDoctor?.focusQuestions);
+    return [(src && src[0]) || '', (src && src[1]) || '', (src && src[2]) || ''];
   });
 
   React.useEffect(() => {
     const src = isAr 
-      ? activeCase.treatingDoctor.focusQuestions 
-      : (activeCase.treatingDoctor.focusQuestionsEn || activeCase.treatingDoctor.focusQuestions);
-    setLocalQuestions([src[0] || '', src[1] || '', src[2] || '']);
+      ? activeCase.treatingDoctor?.focusQuestions 
+      : (activeCase.treatingDoctor?.focusQuestionsEn || activeCase.treatingDoctor?.focusQuestions);
+    setLocalQuestions([(src && src[0]) || '', (src && src[1]) || '', (src && src[2]) || '']);
   }, [lang, activeCase.id]);
 
   const handleQuestionChange = (index: 0 | 1 | 2, value: string) => {
@@ -55,15 +55,17 @@ export const DoctorReviewView: React.FC<Props> = ({
     updated[index] = value;
     setLocalQuestions(updated);
 
-    const arQs = [...activeCase.treatingDoctor.focusQuestions] as [string, string, string];
-    const enQs = [...(activeCase.treatingDoctor.focusQuestionsEn || activeCase.treatingDoctor.focusQuestions)] as [string, string, string];
+    const baseAr = activeCase.treatingDoctor?.focusQuestions || ['', '', ''];
+    const baseEn = activeCase.treatingDoctor?.focusQuestionsEn || baseAr;
+    const arQs = [...baseAr] as [string, string, string];
+    const enQs = [...baseEn] as [string, string, string];
     arQs[index] = value;
     enQs[index] = value;
 
     onUpdateCase({
       focusQuestions: enQs,
       treatingDoctor: {
-        ...activeCase.treatingDoctor,
+        ...(activeCase.treatingDoctor || { name: 'د. عبد الله الشمري', hospital: 'مستشفى رعاية الرياض', city: 'الرياض' }),
         focusQuestions: arQs,
         focusQuestionsEn: enQs,
       },
@@ -94,7 +96,7 @@ export const DoctorReviewView: React.FC<Props> = ({
               D01 · {isAr ? 'الطبيب السعودي المعالج' : 'Saudi Treating Doctor'}
             </span>
             <span className="text-xs font-bold text-slate-500">
-              {isAr ? 'المستشفى الشريك:' : 'Partner Hospital:'} {activeCase.treatingDoctor.hospital}
+              {isAr ? 'المستشفى الشريك:' : 'Partner Hospital:'} {activeCase.treatingDoctor?.hospital || 'مستشفى رعاية الرياض'}
             </span>
             <span className="text-slate-300 dark:text-slate-700">·</span>
             <span className="text-xs font-mono font-bold text-alo-teal">
@@ -102,7 +104,7 @@ export const DoctorReviewView: React.FC<Props> = ({
             </span>
           </div>
           <h2 className="text-2xl font-black text-alo-navy dark:text-slate-100 mt-1">
-            {isAr ? activeCase.treatingDoctor.name : (activeCase.treatingDoctor.name || 'Treating Doctor, MD')}
+            {isAr ? (activeCase.treatingDoctor?.name || 'د. عبد الله الشمري') : (activeCase.treatingDoctor?.name || 'Treating Doctor, MD')}
           </h2>
           <div className="flex flex-wrap items-center gap-2 mt-2">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-teal-50 dark:bg-teal-950/40 text-alo-teal font-mono text-xs font-bold border border-teal-200 dark:border-teal-800">
@@ -246,10 +248,10 @@ export const DoctorReviewView: React.FC<Props> = ({
               {isAr ? 'اختر الاستشاري الهندي (المستقبل):' : 'Pick the Indian consultant (recipient):'}
             </label>
             <select
-              value={activeCase.consultant.name}
+              value={activeCase.consultant?.name || CONSULTANT_NETWORK[0].name}
               onChange={(e) => {
                 const picked = CONSULTANT_NETWORK.find((c) => c.name === e.target.value);
-                if (picked) onUpdateCase({ consultant: { ...activeCase.consultant, ...picked } });
+                if (picked) onUpdateCase({ consultant: { ...(activeCase.consultant || CONSULTANT_NETWORK[0]), ...picked } });
               }}
               className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl p-2.5 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-alo-teal outline-none shadow-sm"
             >
@@ -260,7 +262,7 @@ export const DoctorReviewView: React.FC<Props> = ({
               ))}
             </select>
             <p className="text-[11px] text-slate-500 mt-1">
-              {activeCase.consultant.center} · {activeCase.consultant.city}
+              {activeCase.consultant?.center || CONSULTANT_NETWORK[0].center} · {activeCase.consultant?.city || CONSULTANT_NETWORK[0].city}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">

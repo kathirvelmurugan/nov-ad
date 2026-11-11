@@ -35,6 +35,17 @@ async function run() {
     await page.reload({ waitUntil: 'networkidle2' });
     await sleep(600);
 
+    // Open Auth Modal if on landing page
+    let phoneInput = await page.$('input[type="tel"]');
+    if (!phoneInput) {
+      await page.evaluate(() => {
+        const buttons = Array.from(document.querySelectorAll('button, a'));
+        const btn = buttons.find((b) => b.textContent && (b.textContent.includes('حساب المريض') || b.textContent.includes('تسجيل الدخول') || b.textContent.includes('Sign In')));
+        if (btn) btn.click();
+      });
+      await sleep(600);
+    }
+
     // 1. Enter Phone via React setter
     await page.evaluate((val) => {
       const input = document.querySelector('input[type="tel"]');
@@ -145,6 +156,17 @@ async function run() {
     await page.evaluate(() => localStorage.clear());
     await page.reload({ waitUntil: 'networkidle2' });
     await sleep(600);
+
+    // Open Auth Modal if on landing page
+    let phoneInput = await page.$('input[type="tel"]');
+    if (!phoneInput) {
+      await page.evaluate(() => {
+        const buttons = Array.from(document.querySelectorAll('button, a'));
+        const btn = buttons.find((b) => b.textContent && (b.textContent.includes('حساب المريض') || b.textContent.includes('تسجيل الدخول') || b.textContent.includes('Sign In')));
+        if (btn) btn.click();
+      });
+      await sleep(600);
+    }
 
     await page.evaluate(() => {
       const input = document.querySelector('input[type="tel"]');

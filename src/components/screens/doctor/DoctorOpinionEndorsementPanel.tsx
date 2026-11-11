@@ -33,9 +33,10 @@ export const DoctorOpinionEndorsementPanel: React.FC<Props> = ({
       : (activeCase.metadata?.consultantAnswers as string[] | undefined) ||
         (activeCase.metadata?.focusAnswers as string[] | undefined)) || [];
 
+  const baseAr = activeCase.treatingDoctor?.focusQuestions || ['', '', ''];
   const focusQuestions = isAr
-    ? activeCase.treatingDoctor.focusQuestions
-    : activeCase.treatingDoctor.focusQuestionsEn || activeCase.treatingDoctor.focusQuestions;
+    ? baseAr
+    : activeCase.treatingDoctor?.focusQuestionsEn || baseAr;
 
   const opinionSummary =
     activeCase.consultantOpinion ||

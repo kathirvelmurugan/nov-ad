@@ -14,6 +14,7 @@ import React from 'react';
 import { useClinicalWorkflowState } from './hooks/useClinicalWorkflowState';
 import { AppLayout }                from './layout/AppLayout';
 import { ScreenRouter }             from './router/ScreenRouter';
+import { ErrorBoundary }            from './components/common/ErrorBoundary';
 
 export const App: React.FC = () => {
   const state = useClinicalWorkflowState();
@@ -70,30 +71,32 @@ export const App: React.FC = () => {
       handleLogout={state.handleLogout}
       handleStartCaseToCockpit={state.handleStartCaseToCockpit}
     >
-      <ScreenRouter
-        activePersona={state.activePersona}
-        activeCase={state.activeCase}
-        lang={state.lang}
-        patientSubView={state.patientSubView}
-        selectedServiceId={state.selectedServiceId}
-        setSelectedServiceId={state.setSelectedServiceId}
-        setActivePersona={state.setActivePersona}
-        setIsWhatsAppDrawerOpen={state.setIsWhatsAppDrawerOpen}
-        handleAdvanceStage={state.handleAdvanceStage}
-        handleAssignPaymentToPatient={state.handleAssignPaymentToPatient}
-        handleCompletePatientPayment={state.handleCompletePatientPayment}
-        handleVerifyPaymentAndDispatch={state.handleVerifyPaymentAndDispatch}
-        handleReleaseReportToPatient={state.handleReleaseReportToPatient}
-        handleUpdateCase={state.handleUpdateCase}
-        handleSelectPersona={state.handleSelectPersona}
-        handleSelectPatientSubView={state.handleSelectPatientSubView}
-        handleSelectServiceFromLanding={state.handleSelectServiceFromLanding}
-        handleResetActiveCase={state.handleResetActiveCase}
-        handleToggleLang={state.handleToggleLang}
-        handleLogout={state.handleLogout}
-        userSession={state.userSession}
-        onOpenLogin={() => state.setIsAuthModalOpen(true)}
-      />
+      <ErrorBoundary>
+        <ScreenRouter
+          activePersona={state.activePersona}
+          activeCase={state.activeCase}
+          lang={state.lang}
+          patientSubView={state.patientSubView}
+          selectedServiceId={state.selectedServiceId}
+          setSelectedServiceId={state.setSelectedServiceId}
+          setActivePersona={state.setActivePersona}
+          setIsWhatsAppDrawerOpen={state.setIsWhatsAppDrawerOpen}
+          handleAdvanceStage={state.handleAdvanceStage}
+          handleAssignPaymentToPatient={state.handleAssignPaymentToPatient}
+          handleCompletePatientPayment={state.handleCompletePatientPayment}
+          handleVerifyPaymentAndDispatch={state.handleVerifyPaymentAndDispatch}
+          handleReleaseReportToPatient={state.handleReleaseReportToPatient}
+          handleUpdateCase={state.handleUpdateCase}
+          handleSelectPersona={state.handleSelectPersona}
+          handleSelectPatientSubView={state.handleSelectPatientSubView}
+          handleSelectServiceFromLanding={state.handleSelectServiceFromLanding}
+          handleResetActiveCase={state.handleResetActiveCase}
+          handleToggleLang={state.handleToggleLang}
+          handleLogout={state.handleLogout}
+          userSession={state.userSession}
+          onOpenLogin={() => state.setIsAuthModalOpen(true)}
+        />
+      </ErrorBoundary>
     </AppLayout>
   );
 };

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Stethoscope } from 'lucide-react';
 import { ClinicalCase } from '../../../types';
+import { DEFAULT_PARTNER_ORDERS } from '../../../hooks/workflowConstants';
 
 interface Props {
   activeCase: ClinicalCase;
@@ -42,12 +43,12 @@ export const DoctorFacilityOrdersSection: React.FC<Props> = ({
           <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
-              checked={activeCase.partnerOrders.lab.status !== 'pending' || activeCase.internalOrders?.lab.ordered}
+              checked={Boolean((activeCase.partnerOrders?.lab?.status && activeCase.partnerOrders.lab.status !== 'pending') || activeCase.internalOrders?.lab?.ordered)}
               onChange={(e) => {
                 const checked = e.target.checked;
                 onUpdateCase({
                   partnerOrders: {
-                    ...activeCase.partnerOrders,
+                    ...(activeCase.partnerOrders || DEFAULT_PARTNER_ORDERS),
                     lab: {
                       test: checked ? 'تحليل تروبونين وفحوصات تمهيدية' : 'None',
                       status: checked ? 'collected' : 'pending'
@@ -55,7 +56,7 @@ export const DoctorFacilityOrdersSection: React.FC<Props> = ({
                   },
                   internalOrders: {
                     medicalCenterId: 'mc_riyadh_care',
-                    medicalCenterName: activeCase.treatingDoctor.hospital,
+                    medicalCenterName: activeCase.treatingDoctor?.hospital || 'مستشفى رعاية الرياض',
                     lab: {
                       ordered: checked,
                       tests: checked ? ['Troponin-I', 'CBC', 'Renal Function'] : [],
@@ -99,12 +100,12 @@ export const DoctorFacilityOrdersSection: React.FC<Props> = ({
           <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
-              checked={activeCase.partnerOrders.pharmacy.meds.length > 0 || activeCase.internalOrders?.pharmacy.ordered}
+              checked={Boolean((activeCase.partnerOrders?.pharmacy?.meds && activeCase.partnerOrders.pharmacy.meds.length > 0) || activeCase.internalOrders?.pharmacy?.ordered)}
               onChange={(e) => {
                 const checked = e.target.checked;
                 onUpdateCase({
                   partnerOrders: {
-                    ...activeCase.partnerOrders,
+                    ...(activeCase.partnerOrders || DEFAULT_PARTNER_ORDERS),
                     pharmacy: {
                       meds: checked ? ['Aspirin 81mg', 'Atorvastatin 40mg', 'Metoprolol 25mg'] : [],
                       substituteAllowed: true,
@@ -113,7 +114,7 @@ export const DoctorFacilityOrdersSection: React.FC<Props> = ({
                   },
                   internalOrders: {
                     medicalCenterId: 'mc_riyadh_care',
-                    medicalCenterName: activeCase.treatingDoctor.hospital,
+                    medicalCenterName: activeCase.treatingDoctor?.hospital || 'مستشفى رعاية الرياض',
                     lab: activeCase.internalOrders?.lab || {
                       ordered: false,
                       tests: [],
