@@ -143,10 +143,14 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
     );
   }
 
-  // Strict RBAC: Prevent authenticated Patients from accessing restricted clinical/admin portals
-  if (userSession && userSession.roleCode === 'P' && activePersona.code !== 'P') {
-    const patientPersona = PERSONAS.find((p) => p.code === 'P') || PERSONAS[0];
-    handleSelectPersona(patientPersona);
+  // Strict RBAC: Lock authenticated users to their authorized role portal (Super Admin AD has platform oversight)
+  if (userSession && userSession.roleCode && userSession.roleCode !== 'AD' && activePersona.code !== userSession.roleCode) {
+    const matchedPersona = PERSONAS.find((p) => p.code === userSession.roleCode) || PERSONAS[0];
+    handleSelectPersona({
+      ...matchedPersona,
+      name: userSession.fullName || matchedPersona.name,
+      hospitalId: userSession.hospitalId || matchedPersona.hospitalId,
+    });
   }
 
   return (

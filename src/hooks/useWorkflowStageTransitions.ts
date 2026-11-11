@@ -1,7 +1,7 @@
 import React from 'react';
 import { PERSONAS } from '../data/personas';
 import { ClinicalCase, ClinicalStage, PaymentMethodId, Persona } from '../types';
-import { STAGE_ORDER, isCasePaid, isCaseVerified, LANG_KEY, VIEW_MODE_KEY } from './workflowConstants';
+import { STAGE_ORDER, isCasePaid, isCaseVerified, LANG_KEY, VIEW_MODE_KEY, UserSession } from './workflowConstants';
 
 interface TransitionParams {
   activeCase: ClinicalCase;
@@ -16,6 +16,8 @@ interface TransitionParams {
   setPendingHandoff: (h: { fromStage: ClinicalStage; toStage: ClinicalStage; nextPersona: Persona } | null) => void;
   handleUpdateCase: (updated: Partial<ClinicalCase>) => void;
   setCases: React.Dispatch<React.SetStateAction<ClinicalCase[]>>;
+  userSession?: UserSession | null;
+  viewMode?: 'workstation' | 'studio';
 }
 
 export function useWorkflowStageTransitions({
@@ -31,6 +33,8 @@ export function useWorkflowStageTransitions({
   setPendingHandoff,
   handleUpdateCase,
   setCases,
+  userSession,
+  viewMode,
 }: TransitionParams) {
 
   const handleSelectPersona = (p: Persona) => {
@@ -65,17 +69,19 @@ export function useWorkflowStageTransitions({
       return;
     }
     handleUpdateCase({ currentStage: stage });
-    const awaitPaymentPersona = activeCase.invoiceIssued && !isCasePaid(activeCase) ? 'P' : 'C';
-    const stagePersonaMap: Partial<Record<ClinicalStage, string>> = {
-      INTAKE_RECEIVED: 'P', NURSE_CHECK: 'N', DOCTOR_REVIEW: 'D', AWAITING_PAYMENT: awaitPaymentPersona,
-      WITH_CONSULTANT: 'K', OPINION_READY: 'D', PARTNER_SERVICES: 'C',
-      FOLLOW_UP_21_DAYS: 'P', CLOSED: 'C',
-    };
-    const code = stagePersonaMap[stage];
-    const p = code ? (PERSONAS.find((x) => x.code === code) || PERSONAS[0]) : PERSONAS[0];
-    setActivePersona(p);
-    const lockedLang = localStorage.getItem(LANG_KEY);
-    if (!lockedLang) setLang(p.lang);
+    if (!userSession && viewMode === 'studio') {
+      const awaitPaymentPersona = activeCase.invoiceIssued && !isCasePaid(activeCase) ? 'P' : 'C';
+      const stagePersonaMap: Partial<Record<ClinicalStage, string>> = {
+        INTAKE_RECEIVED: 'P', NURSE_CHECK: 'N', DOCTOR_REVIEW: 'D', AWAITING_PAYMENT: awaitPaymentPersona,
+        WITH_CONSULTANT: 'K', OPINION_READY: 'D', PARTNER_SERVICES: 'C',
+        FOLLOW_UP_21_DAYS: 'P', CLOSED: 'C',
+      };
+      const code = stagePersonaMap[stage];
+      const p = code ? (PERSONAS.find((x) => x.code === code) || PERSONAS[0]) : PERSONAS[0];
+      setActivePersona(p);
+      const lockedLang = localStorage.getItem(LANG_KEY);
+      if (!lockedLang) setLang(p.lang);
+    }
   };
 
   const handleAdvanceStage = () => {
@@ -94,17 +100,21 @@ export function useWorkflowStageTransitions({
       }
     }
 
-    const nextPersonaMap: Partial<Record<ClinicalStage, string>> = {
-      NURSE_CHECK: 'N', DOCTOR_REVIEW: 'D', AWAITING_PAYMENT: 'C',
-      WITH_CONSULTANT: 'K', OPINION_READY: 'D', PARTNER_SERVICES: 'C',
-      FOLLOW_UP_21_DAYS: 'P', CLOSED: 'C',
-    };
-    const code = nextPersonaMap[nextStage];
-    const nextP = code ? (PERSONAS.find((p) => p.code === code) || PERSONAS[0]) : PERSONAS[0];
     handleUpdateCase({ currentStage: nextStage });
-    setActivePersona(nextP);
-    const lockedLang = localStorage.getItem(LANG_KEY);
-    if (!lockedLang) setLang(nextP.lang);
+
+    // Only auto-flip persona in unauthenticated studio demo mode
+    if (!userSession && viewMode === 'studio') {
+      const nextPersonaMap: Partial<Record<ClinicalStage, string>> = {
+        NURSE_CHECK: 'N', DOCTOR_REVIEW: 'D', AWAITING_PAYMENT: 'C',
+        WITH_CONSULTANT: 'K', OPINION_READY: 'D', PARTNER_SERVICES: 'C',
+        FOLLOW_UP_21_DAYS: 'P', CLOSED: 'C',
+      };
+      const code = nextPersonaMap[nextStage];
+      const nextP = code ? (PERSONAS.find((p) => p.code === code) || PERSONAS[0]) : PERSONAS[0];
+      setActivePersona(nextP);
+      const lockedLang = localStorage.getItem(LANG_KEY);
+      if (!lockedLang) setLang(nextP.lang);
+    }
 
     if (nextStage === 'AWAITING_PAYMENT') {
       setPatientSubView('timeline');

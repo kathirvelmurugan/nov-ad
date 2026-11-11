@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { ClinicalCase, Persona, UserSession } from '../../types';
+import React, { useState, useEffect, useMemo } from 'react';
+import { ClinicalCase, Persona, UserSession, StaffAccountRecord, TenantHospital } from '../../types';
 import { INITIAL_MEDICAL_CENTER_DOCTORS } from '../../data/medicalCenterDoctors';
+import { PLATFORM_USERS_KEY, TENANTS_KEY } from '../../hooks/workflowConstants';
 import { 
   ShieldAlert, 
   UserX, 
@@ -48,6 +49,44 @@ export const NurseTriageView: React.FC<Props> = ({
   };
 
   const [triageNotes, setTriageNotes] = useState<string>(generateDefaultNotes);
+
+  const availableDoctors = useMemo(() => {
+    let allStaff: StaffAccountRecord[] = [];
+    let allHospitals: TenantHospital[] = [];
+    try {
+      const storedUsers = localStorage.getItem(PLATFORM_USERS_KEY);
+      if (storedUsers) {
+        const parsed = JSON.parse(storedUsers);
+        if (Array.isArray(parsed)) allStaff = parsed;
+      }
+      const storedHospitals = localStorage.getItem(TENANTS_KEY);
+      if (storedHospitals) {
+        const parsedH = JSON.parse(storedHospitals);
+        if (Array.isArray(parsedH)) allHospitals = parsedH;
+      }
+    } catch {}
+
+    const dynamicDoctors = allStaff
+      .filter((s) => s.roleCode === 'D' && s.status === 'active')
+      .map((s) => {
+        const hospital = allHospitals.find((h) => h.id === s.hospitalId);
+        return {
+          id: s.id,
+          name: isAr && s.fullNameAr ? s.fullNameAr : s.fullName,
+          nameEn: s.fullName,
+          specialty: s.department || 'استشاري أمراض القلب',
+          specialtyEn: s.department || 'Cardiology Consultant',
+          hospital: hospital ? (isAr ? hospital.nameAr : hospital.nameEn) : 'المجمع الطبي الشريك',
+          hospitalEn: hospital ? hospital.nameEn : 'Partner Medical Center',
+          city: hospital ? hospital.city : 'الرياض',
+          license: s.scfhsLicense || 'SCFHS-CERTIFIED',
+          tier: 2 as const,
+          isOnDuty: true,
+        };
+      });
+
+    return [...dynamicDoctors, ...INITIAL_MEDICAL_CENTER_DOCTORS];
+  }, [isAr]);
 
   useEffect(() => {
     setTriageNotes(generateDefaultNotes());
@@ -306,8 +345,8 @@ export const NurseTriageView: React.FC<Props> = ({
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            {INITIAL_MEDICAL_CENTER_DOCTORS.map((doc) => {
-              const isSelected = activeCase.treatingDoctor?.name === doc.name;
+            {availableDoctors.map((doc) => {
+              const isSelected = activeCase.treatingDoctor?.name === doc.name || activeCase.treatingDoctor?.name === doc.nameEn;
               return (
                 <div
                   key={doc.id}
@@ -332,14 +371,14 @@ export const NurseTriageView: React.FC<Props> = ({
                   <div className="space-y-0.5">
                     <div className="font-black text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
                       <Stethoscope className="w-3.5 h-3.5 text-alo-teal" />
-                      <span>{isAr ? doc.name : doc.nameEn}</span>
+                      <span>{isAr ? doc.name : (doc.nameEn || doc.name)}</span>
                       {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-alo-teal" />}
                     </div>
                     <div className="text-[11px] text-slate-600 dark:text-slate-400 font-medium">
-                      {isAr ? doc.hospital : doc.hospitalEn} · {doc.city}
+                      {isAr ? doc.hospital : (doc.hospitalEn || doc.hospital)} · {doc.city}
                     </div>
                     <div className="text-[10px] text-teal-700 dark:text-teal-400 font-bold">
-                      {isAr ? doc.specialty : doc.specialtyEn} · <span className="font-mono text-slate-400">{doc.license}</span>
+                      {isAr ? doc.specialty : (doc.specialtyEn || doc.specialty)} · <span className="font-mono text-slate-400">{doc.license}</span>
                     </div>
                   </div>
                   <button

@@ -44,17 +44,18 @@ export function useClinicalWorkflowState() {
       if (typeof window !== 'undefined') {
         const search = new URLSearchParams(window.location.search);
         const role = (search.get('role') || '').toUpperCase();
+        const portal = (search.get('portal') || '').toLowerCase();
         const token = search.get('token') || search.get('magic');
         const pathname = window.location.pathname.toLowerCase();
 
-        if (token || role === 'K' || role === 'CONSULTANT' || pathname.includes('/consultant')) return PERSONAS.find((p) => p.code === 'K') || PERSONAS[0];
-        if (role === 'D' || role === 'DOCTOR' || pathname.includes('/doctor')) return PERSONAS.find((p) => p.code === 'D') || PERSONAS[0];
-        if (role === 'N' || role === 'NURSE' || pathname.includes('/nurse')) return PERSONAS.find((p) => p.code === 'N') || PERSONAS[0];
-        if (role === 'C' || role === 'COORDINATOR' || pathname.includes('/coordinator')) return PERSONAS.find((p) => p.code === 'C') || PERSONAS[0];
-        if (role === 'HA' || role === 'HOSPITAL' || pathname.includes('/hospital')) return PERSONAS.find((p) => p.code === 'HA') || PERSONAS[0];
-        if (role === 'AD' || role === 'SUPERADMIN' || pathname.includes('/admin')) return PERSONAS.find((p) => p.code === 'AD') || PERSONAS[0];
+        if (token || role === 'K' || role === 'CONSULTANT' || portal === 'consultant' || pathname.includes('/consultant')) return PERSONAS.find((p) => p.code === 'K') || PERSONAS[0];
+        if (role === 'D' || role === 'DOCTOR' || portal === 'doctor' || pathname.includes('/doctor')) return PERSONAS.find((p) => p.code === 'D') || PERSONAS[0];
+        if (role === 'N' || role === 'NURSE' || portal === 'nurse' || pathname.includes('/nurse')) return PERSONAS.find((p) => p.code === 'N') || PERSONAS[0];
+        if (role === 'C' || role === 'COORDINATOR' || portal === 'coordinator' || pathname.includes('/coordinator')) return PERSONAS.find((p) => p.code === 'C') || PERSONAS[0];
+        if (role === 'HA' || role === 'HOSPITAL' || portal === 'hospital' || pathname.includes('/hospital')) return PERSONAS.find((p) => p.code === 'HA') || PERSONAS[0];
+        if (role === 'AD' || role === 'SUPERADMIN' || portal === 'superadmin' || portal === 'admin' || pathname.includes('/admin')) return PERSONAS.find((p) => p.code === 'AD') || PERSONAS[0];
 
-        // Check stored session on page refresh to keep active persona!
+        // Check stored session on page refresh to keep active persona & role identity!
         const savedSession = localStorage.getItem(USER_SESSION_KEY);
         if (savedSession) {
           const parsed = JSON.parse(savedSession);
@@ -63,6 +64,7 @@ export function useClinicalWorkflowState() {
             if (matched) {
               return {
                 ...matched,
+                name: parsed.fullName || matched.name,
                 hospitalId: parsed.hospitalId || matched.hospitalId,
               };
             }
@@ -87,7 +89,17 @@ export function useClinicalWorkflowState() {
     return [];
   });
 
-  const [activeCaseId, setActiveCaseId] = useState<string>('');
+  const [activeCaseId, setActiveCaseId] = useState<string>(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const paramId = new URLSearchParams(window.location.search).get('caseId');
+        if (paramId) return paramId;
+      }
+      const saved = localStorage.getItem(ACTIVE_CASE_KEY);
+      if (saved) return saved;
+    } catch (e) {}
+    return '';
+  });
 
   // ── Theme ─────────────────────────────────────────────────────────────────
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -221,7 +233,6 @@ export function useClinicalWorkflowState() {
     const handlePopState = (e: PopStateEvent) => {
       if (typeof window === 'undefined') return;
 
-      // Close open modals on back navigation
       setIsAuthModalOpen(false);
       setIsGuideOpen(false);
       setIsNewCaseModalOpen(false);
@@ -229,14 +240,26 @@ export function useClinicalWorkflowState() {
 
       if (window.location.hash === '#cockpit') {
         setViewMode('studio');
-        const p = PERSONAS.find((x) => x.code === 'P') || PERSONAS[0];
-        setActivePersona(p);
         return;
+      }
+
+      const searchParams = new URLSearchParams(window.location.search);
+      const portal = (e.state?.portal || searchParams.get('portal') || '').toLowerCase();
+      const caseId = e.state?.caseId || searchParams.get('caseId');
+      if (caseId) setActiveCaseId(caseId);
+
+      const portalCodeMap: Record<string, string> = {
+        patient: 'P', nurse: 'N', doctor: 'D', coordinator: 'C',
+        consultant: 'K', hospital: 'HA', superadmin: 'AD', admin: 'AD'
+      };
+      if (portal && portalCodeMap[portal]) {
+        const matched = PERSONAS.find((p) => p.code === portalCodeMap[portal]);
+        if (matched) setActivePersona(matched);
       }
 
       // Restore subview from history state or URL param
       const stateSubView = e.state?.subView;
-      const searchSubView = new URLSearchParams(window.location.search).get('subview');
+      const searchSubView = searchParams.get('subview');
       const validSubViews = ['landing', 'intake', 'timeline', 'telehealth', 'checkout'];
       const targetSubView = (validSubViews.includes(stateSubView)
         ? stateSubView
@@ -246,9 +269,7 @@ export function useClinicalWorkflowState() {
 
       setViewMode('workstation');
       setPatientSubView(targetSubView);
-      try {
-        localStorage.setItem('alo_patient_subview_v3.0', targetSubView);
-      } catch (err) {}
+      try { localStorage.setItem('alo_patient_subview_v3.0', targetSubView); } catch (err) {}
     };
 
     window.addEventListener('popstate', handlePopState);
@@ -269,7 +290,7 @@ export function useClinicalWorkflowState() {
   // ─────────────────────────────────────────────────────────────────────────
   const handleUpdateCase = (updated: Partial<ClinicalCase>) => {
     setCases((prev) => {
-      const targetId = activeCase.id || FRESH_PRIMARY_CASE.id;
+      const targetId = updated.id || activeCase.id || `case-${Date.now()}`;
       const exists = prev.some((c) => c.id === targetId);
       let updatedCase: ClinicalCase;
       let nextCases: ClinicalCase[];
@@ -279,13 +300,13 @@ export function useClinicalWorkflowState() {
         nextCases = [updatedCase, ...prev];
       } else {
         nextCases = prev.map((c) => {
-          if (c.id === activeCase.id) {
-            updatedCase = { ...c, ...updated };
+          if (c.id === targetId || c.id === activeCase.id) {
+            updatedCase = { ...c, ...updated, id: targetId };
             return updatedCase;
           }
           return c;
         });
-        if (!updatedCase!) updatedCase = { ...activeCase, ...updated };
+        if (!updatedCase!) updatedCase = { ...activeCase, ...updated, id: targetId };
       }
       apiClient.saveCase(updatedCase).catch(() => {});
       return nextCases;
@@ -305,6 +326,8 @@ export function useClinicalWorkflowState() {
     setPendingHandoff,
     handleUpdateCase,
     setCases,
+    userSession,
+    viewMode,
   });
 
   const handleLogout = () => {
@@ -412,24 +435,17 @@ export function useClinicalWorkflowState() {
 
   const handleResetActiveCase = () => {
     const confirmMsg = lang === 'ar'
-      ? `هل أنت متأكد من رغبتك في تصفير هذه الحالة (${activeCase.caseNumber || activeCase.id}) بالكامل والبدء من جديد بمسار نظيف؟`
-      : `Reset this case (${activeCase.caseNumber || activeCase.id}) back to a clean slate (blank intake)?`;
+      ? `هل أنت متأكد من تصفير هذه الحالة (${activeCase.caseNumber || activeCase.id}) والبدء من جديد؟`
+      : `Reset this case (${activeCase.caseNumber || activeCase.id}) back to a clean slate?`;
     if (window.confirm(confirmMsg)) {
       handleUpdateCase({
-        currentStage: 'INTAKE_RECEIVED', stage: 1,
-        patientName: '', patientNameAr: '', patientNameEn: '', nationalIdMasked: '',
-        symptoms: '', symptomsAr: '', symptomsEn: '',
-        diagnosis: '', diagnosisAr: '', diagnosisEn: '',
-        consultantOpinion: '', proposedCallSlot: '', finalClosureNote: '',
-        vitals: undefined, piiMasked: false, triageComplete: false,
-        focusQuestions: ['', '', ''], referralApproved: false,
-        invoiceIssued: false, allowedPaymentMethods: [], paymentAssignedAt: undefined,
-        paymentVerified: false, paymentDetails: undefined, reportReleased: false,
-        verdicts: [], secondOpinionSubmitted: false, consultantAnswers: [],
-        consultantNotes: '', saudiEndorsement: undefined, coordinatorForwardedToDoctor: false,
-        doctorReleasedToPatient: false, isCrossBorderDeidentified: false,
-        dualTokenGenerated: false, egressToken: '', files: [],
-        pricing: { ...activeCase.pricing, paid: false, invoiceNumber: undefined },
+        currentStage: 'INTAKE_RECEIVED', stage: 1, patientName: '', patientNameAr: '', patientNameEn: '', nationalIdMasked: '',
+        symptoms: '', symptomsAr: '', symptomsEn: '', diagnosis: '', diagnosisAr: '', diagnosisEn: '',
+        consultantOpinion: '', proposedCallSlot: '', finalClosureNote: '', vitals: undefined, piiMasked: false, triageComplete: false,
+        focusQuestions: ['', '', ''], referralApproved: false, invoiceIssued: false, allowedPaymentMethods: [], paymentAssignedAt: undefined,
+        paymentVerified: false, paymentDetails: undefined, reportReleased: false, verdicts: [], secondOpinionSubmitted: false, consultantAnswers: [],
+        consultantNotes: '', saudiEndorsement: undefined, coordinatorForwardedToDoctor: false, doctorReleasedToPatient: false, isCrossBorderDeidentified: false,
+        dualTokenGenerated: false, egressToken: '', files: [], pricing: { ...activeCase.pricing, paid: false, invoiceNumber: undefined },
         metadata: { isFreshTest: true, pdf1Released: false, pdf2Released: false, paymentVerified: false, paymentLinkIssued: false },
       });
       setActivePersona(PERSONAS[0]); setPatientSubView('landing'); setSelectedServiceId('second-opinion');
@@ -453,44 +469,24 @@ export function useClinicalWorkflowState() {
   // ─────────────────────────────────────────────────────────────────────────
   return {
     // State
-    activePersona, setActivePersona,
-    cases, activeCaseId, setActiveCaseId,
-    activeCase,
-    theme, lang,
-    userSession, setUserSession,
-    isAuthModalOpen, setIsAuthModalOpen,
-    isWhatsAppDrawerOpen, setIsWhatsAppDrawerOpen,
-    isGuideOpen, setIsGuideOpen,
-    isPipelineBoardOpen, setIsPipelineBoardOpen,
-    isNewCaseModalOpen, setIsNewCaseModalOpen,
-    isAutoDemoActive, setIsAutoDemoActive,
-    pendingHandoff, setPendingHandoff,
-    viewMode, setViewMode,
-    patientSubView, setPatientSubView,
-    selectedServiceId, setSelectedServiceId,
+    activePersona, setActivePersona, cases, activeCaseId, setActiveCaseId, activeCase,
+    theme, lang, userSession, setUserSession,
+    isAuthModalOpen, setIsAuthModalOpen, isWhatsAppDrawerOpen, setIsWhatsAppDrawerOpen,
+    isGuideOpen, setIsGuideOpen, isPipelineBoardOpen, setIsPipelineBoardOpen,
+    isNewCaseModalOpen, setIsNewCaseModalOpen, isAutoDemoActive, setIsAutoDemoActive,
+    pendingHandoff, setPendingHandoff, viewMode, setViewMode,
+    patientSubView, setPatientSubView, selectedServiceId, setSelectedServiceId,
     // Handlers
-    handleUpdateCase,
-    handleLogout,
-    handleToggleLang,
-    handleToggleTheme,
-    handleToggleViewMode,
-    handleSelectPatientSubView,
-    handleSelectServiceFromLanding,
-    handleStartCaseToCockpit,
-    handleSelectPersona: transitions.handleSelectPersona,
-    handleSetStage: transitions.handleSetStage,
+    handleUpdateCase, handleLogout, handleToggleLang, handleToggleTheme, handleToggleViewMode,
+    handleSelectPatientSubView, handleSelectServiceFromLanding, handleStartCaseToCockpit,
+    handleSelectPersona: transitions.handleSelectPersona, handleSetStage: transitions.handleSetStage,
     handleAdvanceStage: transitions.handleAdvanceStage,
     handleAssignPaymentToPatient: transitions.handleAssignPaymentToPatient,
     handleCompletePatientPayment: transitions.handleCompletePatientPayment,
     handleVerifyPaymentAndDispatch: transitions.handleVerifyPaymentAndDispatch,
     handleReleaseReportToPatient: transitions.handleReleaseReportToPatient,
-    handleConfirmHandoff: transitions.handleConfirmHandoff,
-    handleNextCase,
-    handleSelectCaseFromPipeline,
-    handleResetDemo,
-    handleResetActiveCase,
-    handleAddNewCase,
-    handleAutoFill,
+    handleConfirmHandoff: transitions.handleConfirmHandoff, handleNextCase, handleSelectCaseFromPipeline,
+    handleResetDemo, handleResetActiveCase, handleAddNewCase, handleAutoFill,
     handleAutoDemoNextStage: transitions.handleAutoDemoNextStage,
     handleAutoDemoPrevStage: transitions.handleAutoDemoPrevStage,
   };

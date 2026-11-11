@@ -22,28 +22,33 @@ export const DEV_OTP = '123456';
 export const DEFAULT_DEV_PIN = '1234';
 export const DEFAULT_TEST_PASSWORD = '123456';
 
+export const matchesSaudiPhone = (phoneA?: string, phoneB?: string): boolean => {
+  if (!phoneA || !phoneB) return false;
+  const a = phoneA.replace(/\D/g, '');
+  const b = phoneB.replace(/\D/g, '');
+  if (a === b) return true;
+  if (a.length >= 9 && b.length >= 9 && a.slice(-9) === b.slice(-9)) return true;
+  return false;
+};
+
 export const getUserPin = (rawPhone: string): string | null => {
   const clean = rawPhone.replace(/\D/g, '');
   if (clean === '966500000001' || clean === '0500000001' || clean === '500000001') {
     return '1234';
   }
-  const variants = [rawPhone, clean, clean.startsWith('966') ? '+' + clean : '+966' + clean, clean.startsWith('966') ? '0' + clean.slice(3) : '0' + clean];
   try {
     const saved = localStorage.getItem(USER_PINS_KEY);
     if (saved) {
       const parsed = JSON.parse(saved);
-      for (const v of variants) {
-        if (parsed[v]) return parsed[v];
+      for (const k of Object.keys(parsed)) {
+        if (matchesSaudiPhone(k, rawPhone)) return parsed[k];
       }
     }
     const staffSaved = localStorage.getItem(PLATFORM_USERS_KEY);
     if (staffSaved) {
       const staffList = JSON.parse(staffSaved);
       if (Array.isArray(staffList)) {
-        const found = staffList.find((s: any) => {
-          const sc = s.phone?.replace(/\D/g, '') || '';
-          return sc === clean || variants.includes(s.phone);
-        });
+        const found = staffList.find((s: any) => matchesSaudiPhone(s.phone, rawPhone));
         if (found && found.hasCustomPin && found.pin) return found.pin;
       }
     }
@@ -66,8 +71,7 @@ export const setUserPin = (rawPhone: string, pin: string): void => {
       const staffList = JSON.parse(staffSaved);
       if (Array.isArray(staffList)) {
         const updated = staffList.map((s: any) => {
-          const sc = s.phone?.replace(/\D/g, '') || '';
-          if (sc === clean || variants.includes(s.phone)) {
+          if (matchesSaudiPhone(s.phone, rawPhone)) {
             return { ...s, pin, hasCustomPin: true };
           }
           return s;
@@ -83,21 +87,17 @@ export const hasUserPin = (rawPhone: string): boolean => {
   if (clean === '966500000001' || clean === '0500000001' || clean === '500000001') {
     return true; // Super Admin has default PIN 1234
   }
-  const variants = [rawPhone, clean, clean.startsWith('966') ? '+' + clean : '+966' + clean, clean.startsWith('966') ? '0' + clean.slice(3) : '0' + clean];
   try {
     const saved = localStorage.getItem(USER_PINS_KEY);
     if (saved) {
       const parsed = JSON.parse(saved);
-      if (variants.some((v) => !!parsed[v])) return true;
+      if (Object.keys(parsed).some((k) => matchesSaudiPhone(k, rawPhone))) return true;
     }
     const staffSaved = localStorage.getItem(PLATFORM_USERS_KEY);
     if (staffSaved) {
       const staffList = JSON.parse(staffSaved);
       if (Array.isArray(staffList)) {
-        const found = staffList.find((s: any) => {
-          const sc = s.phone?.replace(/\D/g, '') || '';
-          return sc === clean || variants.includes(s.phone);
-        });
+        const found = staffList.find((s: any) => matchesSaudiPhone(s.phone, rawPhone));
         if (found && found.hasCustomPin) return true;
       }
     }
@@ -251,18 +251,27 @@ export const getInitialPortal = (): AuthPortalTab => {
   return 'patient';
 };
 
-export const resolveAccountByPhone = (rawPhone: string, isRTL: boolean = true) => {
-  let allStaff: StaffAccountRecord[] = SEEDED_STAFF_DIRECTORY;
-  try {
-    const stored = localStorage.getItem(PLATFORM_USERS_KEY);
-    if (stored) {
-      allStaff = JSON.parse(stored);
-    }
-  } catch {}
+export const resolveAccountByPhone = (
+  rawPhone: string,
+  isRTL: boolean = true,
+  freshStaffList?: StaffAccountRecord[]
+) => {
+  let allStaff: StaffAccountRecord[] = freshStaffList || SEEDED_STAFF_DIRECTORY;
+  if (!freshStaffList) {
+    try {
+      const stored = localStorage.getItem(PLATFORM_USERS_KEY);
+      if (stored) {
+        allStaff = JSON.parse(stored);
+      }
+    } catch {}
+  }
 
   const clean = rawPhone.replace(/\D/g, '');
   const matchedStaff = allStaff.find(
-    (s) => s.phone === rawPhone || s.phone.replace(/\D/g, '') === clean
+    (s) =>
+      matchesSaudiPhone(s.phone, rawPhone) ||
+      (s.staffCode && (s.staffCode.trim() === rawPhone.trim() || s.staffCode.trim() === clean)) ||
+      (s.fullName && s.fullName.toLowerCase().trim() === rawPhone.toLowerCase().trim())
   );
 
   if (matchedStaff) {
@@ -272,10 +281,13 @@ export const resolveAccountByPhone = (rawPhone: string, isRTL: boolean = true) =
       fullName: isRTL && matchedStaff.fullNameAr ? matchedStaff.fullNameAr : matchedStaff.fullName,
       isStaff: true,
       hasCustomPin: !!matchedStaff.hasCustomPin,
+      staffRecord: matchedStaff,
     };
   }
 
-  const matchedPersona = PERSONA_PRESETS.find((p) => p.phone.replace(/\D/g, '') === clean || p.phone === rawPhone);
+  const matchedPersona = PERSONA_PRESETS.find(
+    (p) => matchesSaudiPhone(p.phone, rawPhone) || p.phone === rawPhone
+  );
   if (matchedPersona) {
     return {
       roleCode: matchedPersona.roleCode || 'P',
@@ -283,6 +295,7 @@ export const resolveAccountByPhone = (rawPhone: string, isRTL: boolean = true) =
       fullName: isRTL ? matchedPersona.nameAr : matchedPersona.nameEn,
       isStaff: matchedPersona.roleCode !== 'P',
       hasCustomPin: true,
+      staffRecord: undefined,
     };
   }
 
@@ -292,6 +305,7 @@ export const resolveAccountByPhone = (rawPhone: string, isRTL: boolean = true) =
     fullName: isRTL ? 'المريض' : 'Patient',
     isStaff: false,
     hasCustomPin: false,
+    staffRecord: undefined,
   };
 };
 
