@@ -33,7 +33,7 @@ export const NurseTriageView: React.FC<Props> = ({
   const [urgencyLevel, setUrgencyLevel] = useState<'routine' | 'urgent' | 'stat'>('urgent');
   const isAr = lang === 'ar';
   const nurseName = userSession?.fullName || activePersona?.name || (isAr ? 'ممرضة ألو' : 'ALO Nurse');
-  const referenceHospital = activeCase.treatingDoctor?.hospital || (isAr ? 'مستشفى رعاية الرياض' : 'Riyadh Care Hospital');
+  const referenceHospital = activeCase.treatingDoctor?.hospital || (isAr ? 'المستشفى الشريك المعتمد' : 'Partner Accredited Hospital');
 
   const generateDefaultNotes = () => {
     if (isAr) {

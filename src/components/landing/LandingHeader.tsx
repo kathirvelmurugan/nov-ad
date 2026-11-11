@@ -93,7 +93,7 @@ export const LandingHeader: React.FC<Props> = ({
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-extrabold text-white bg-slate-900 hover:bg-slate-800 transition-all shadow-sm active:scale-95 cursor-pointer"
           >
             <User className="w-3.5 h-3.5 text-emerald-400" />
-            <span>{isAr ? 'حساب المريض' : 'Patient Account'}</span>
+            <span>{isAr ? 'تسجيل الدخول' : 'Login'}</span>
           </button>
         </div>
 
@@ -155,7 +155,7 @@ export const LandingHeader: React.FC<Props> = ({
               className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-xs bg-slate-900 text-white shadow cursor-pointer"
             >
               <User className="w-4 h-4 text-emerald-400" />
-              <span>{isAr ? 'حساب المريض (دخول ومتابعة)' : 'Patient Account / Login'}</span>
+              <span>{isAr ? 'تسجيل الدخول' : 'Login'}</span>
             </button>
 
             <button

@@ -43,6 +43,8 @@ export interface StaffAccountRecord {
   hospitalId?: string;
   phone: string;
   pin: string;
+  hasCustomPin?: boolean;
+  tempPassword?: string;
   scfhsLicense?: string;
   department?: string;
   status: 'active' | 'pending_approval' | 'inactive';

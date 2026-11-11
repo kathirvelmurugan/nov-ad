@@ -76,7 +76,7 @@ export const TelehealthParticipantGrid: React.FC<Props> = ({
         isRtl={isRtl}
       />
 
-      {/* Tile 3: ALO Nurse (Sara) - Interpreter */}
+      {/* Tile 3: ALO Triage Nurse - Interpreter */}
       <div
         style={{
           position: 'relative',
@@ -114,9 +114,11 @@ export const TelehealthParticipantGrid: React.FC<Props> = ({
           </svg>
         </div>
 
-        <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, textAlign: 'center' }}>Sara Al-Dosari</h3>
+        <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, textAlign: 'center' }}>
+          {isRtl ? 'ممرضة ألو المناوبة' : 'ALO Triage Nurse'}
+        </h3>
         <p style={{ margin: '0.25rem 0', fontSize: '0.75rem', opacity: 0.8, textAlign: 'center' }}>
-          {isRtl ? 'ممرضة ألو' : 'ALO nurse'}
+          {isRtl ? 'تمريض الرعاية الافتراضية' : 'Virtual Care Nursing'}
         </p>
 
         {/* Interpreter Badge */}

@@ -320,11 +320,25 @@ apiRouter.get('/storage/:key', async (req, res) => {
 app.use('/api', apiRouter);
 app.use('/:prefix/api', apiRouter);
 
-// ── Static Files Serving (Production Mode) ──────────────────────────────────
+// ── Static Files Serving (Production Mode) with Cache-Busting ──────────────
 const distPath = path.join(__dirname, '../dist');
+
+// Safety: Ensure index.html and root navigation are never cached by proxy/browser
+app.use((req, res, next) => {
+  if (req.path === '/' || req.path.endsWith('.html') || !req.path.includes('.')) {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+  }
+  next();
+});
+
 app.use(express.static(distPath));
 app.use('/:prefix', express.static(distPath));
 app.use((req, res) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
   res.sendFile(path.join(distPath, 'index.html'));
 });
 

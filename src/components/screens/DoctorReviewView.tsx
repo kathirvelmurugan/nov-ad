@@ -25,7 +25,7 @@ export const DoctorReviewView: React.FC<Props> = ({
 }) => {
   const isAr = lang === 'ar';
   const doctorName = userSession?.fullName || activePersona?.name || activeCase.treatingDoctor?.name || (isAr ? 'الطبيب السعودي المعالج' : 'Saudi Treating Doctor');
-  const partnerHospital = activeCase.treatingDoctor?.hospital || (isAr ? 'مستشفى رعاية الرياض' : 'Riyadh Care Hospital');
+  const partnerHospital = activeCase.treatingDoctor?.hospital || (isAr ? 'المستشفى الشريك المعتمد' : 'Partner Accredited Hospital');
 
   const { formatted: slaFormatted } = useSlaCountdown({
     storageKey: `alo_sla_doctor_${activeCase.id}`,

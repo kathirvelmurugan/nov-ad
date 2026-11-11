@@ -21,6 +21,7 @@ export const SEEDED_STAFF_DIRECTORY: StaffAccountRecord[] = [
     roleCode: 'AD',
     phone: '+966500000001',
     pin: '1234',
+    hasCustomPin: true,
     department: 'Platform Operations',
     status: 'active',
     createdAt: '2026-01-01T00:00:00Z',

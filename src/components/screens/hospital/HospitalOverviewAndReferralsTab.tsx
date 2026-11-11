@@ -17,7 +17,7 @@ export const HospitalOverviewAndReferralsTab: React.FC<HospitalOverviewAndReferr
   const referrals = [
     {
       id: activeCase?.id || 'CASE-2026-901',
-      patientName: activeCase?.patientName || 'Sarah Al-Ghamdi',
+      patientName: activeCase?.patientName || (isRTL ? 'مريض محال' : 'Referred Patient'),
       specialty: activeCase?.specialty || 'Cardiology',
       urgency: 'HIGH',
       assignedDoctor: 'Dr. Adrian Lewis',

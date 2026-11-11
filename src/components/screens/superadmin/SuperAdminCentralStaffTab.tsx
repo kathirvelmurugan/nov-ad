@@ -69,7 +69,9 @@ export const SuperAdminCentralStaffTab: React.FC<SuperAdminCentralStaffTabProps>
       roleCode,
       hospitalId: roleCode === 'HA' ? hospitalId || tenants[0]?.id : undefined,
       status: 'active',
-      pin: '1234',
+      pin: '',
+      hasCustomPin: false,
+      tempPassword: '123456',
       scfhsLicense: license.trim() || undefined,
       staffCode: Math.floor(10000 + Math.random() * 90000).toString(),
     });
@@ -149,7 +151,7 @@ export const SuperAdminCentralStaffTab: React.FC<SuperAdminCentralStaffTabProps>
                 required
                 value={nameEn}
                 onChange={(e) => setNameEn(e.target.value)}
-                placeholder="e.g. Sarah Jenkins, RN"
+                placeholder="e.g. Staff Full Name, RN / MD"
                 className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
               />
             </div>

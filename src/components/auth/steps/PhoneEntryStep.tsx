@@ -10,6 +10,7 @@ import {
   getGuestButtonStyle,
   getErrorStyle,
   labelStyle,
+  AuthPortalTab,
 } from '../authTypesAndUtils';
 
 interface Props {
@@ -18,6 +19,7 @@ interface Props {
   error: string;
   isLoading: boolean;
   isDemoMode: boolean;
+  activePortal?: AuthPortalTab;
   phoneRef: React.RefObject<HTMLInputElement>;
   onPhoneChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onPhoneSubmit: (e: React.FormEvent) => void;
@@ -32,6 +34,7 @@ export const PhoneEntryStep: React.FC<Props> = ({
   error,
   isLoading,
   isDemoMode,
+  activePortal = 'patient',
   phoneRef,
   onPhoneChange,
   onPhoneSubmit,
@@ -39,6 +42,8 @@ export const PhoneEntryStep: React.FC<Props> = ({
   onGuestBypass,
   t,
 }) => {
+  const isStaffMode = activePortal === 'clinical' || activePortal === 'hospital';
+
   const personaCardStyle: React.CSSProperties = {
     display: 'flex',
     alignItems: 'center',
@@ -55,14 +60,22 @@ export const PhoneEntryStep: React.FC<Props> = ({
   return (
     <div>
       <h2 style={{ fontSize: '20px', fontWeight: 800, color: PALETTE.textDark, margin: '0 0 4px 0', textAlign: isRTL ? 'right' : 'left' }}>
-        {t('تسجيل الدخول', 'Sign In')}
+        {activePortal === 'clinical'
+          ? t('دخول العمليات والتمريض المعتمد', 'ALO Operations & Clinical Login')
+          : activePortal === 'hospital'
+          ? t('بوابة المستشفى الشريك المعتمد', 'Partner Hospital Portal Login')
+          : t('بوابة المرضى · الرأي الطبي الثاني', 'Patient Second Opinion Portal')}
       </h2>
       <p style={{ fontSize: '14px', color: PALETTE.textMuted, margin: '0 0 24px 0', textAlign: isRTL ? 'right' : 'left', lineHeight: 1.6 }}>
-        {t('أدخل رقم جوالك السعودي للمتابعة إلى ALO DOCTOR', 'Enter your Saudi mobile number to continue to ALO DOCTOR')}
+        {isStaffMode
+          ? t('أدخل رقم جوالك المعتمد المسجل لدى المنصة لتسجيل الدخول', 'Enter your registered authorized staff mobile number to log in')
+          : t('أدخل رقم جوالك السعودي لاستلام رمز التحقق والمتابعة', 'Enter your Saudi mobile number to receive verification code')}
       </p>
 
       <form onSubmit={onPhoneSubmit}>
-        <label style={labelStyle}>{t('رقم الجوال', 'Mobile Number')}</label>
+        <label style={labelStyle}>
+          {isStaffMode ? t('رقم جوال الكادر المعتمد', 'Authorized Staff Mobile') : t('رقم الجوال', 'Mobile Number')}
+        </label>
         <input
           ref={phoneRef}
           type="tel"
@@ -72,7 +85,7 @@ export const PhoneEntryStep: React.FC<Props> = ({
           style={getInputStyle(isRTL)}
           autoComplete="tel"
           dir="ltr"
-          aria-label={t('رقم الجوال السعودي', 'Saudi Mobile Number')}
+          aria-label={isStaffMode ? t('رقم جوال الكادر المعتمد', 'Authorized Staff Mobile') : t('رقم الجوال السعودي', 'Saudi Mobile Number')}
           {...inputFocusHandlers}
         />
         {error && (
@@ -93,6 +106,8 @@ export const PhoneEntryStep: React.FC<Props> = ({
         >
           {isLoading ? (
             <span style={{ display: 'inline-block', width: '20px', height: '20px', border: '3px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+          ) : isStaffMode ? (
+            t('تسجيل الدخول', 'Login')
           ) : (
             t('إرسال رمز التحقق', 'Send Verification Code')
           )}

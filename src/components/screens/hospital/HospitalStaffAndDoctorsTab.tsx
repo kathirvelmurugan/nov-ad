@@ -55,7 +55,9 @@ export const HospitalStaffAndDoctorsTab: React.FC<HospitalStaffAndDoctorsTabProp
       roleCode,
       hospitalId: hospital.id,
       status: 'active',
-      pin: '1234',
+      pin: '',
+      hasCustomPin: false,
+      tempPassword: '123456',
       scfhsLicense: scfhs.trim() || `SCFHS-${Date.now().toString().slice(-6)}`,
       staffCode: Math.floor(10000 + Math.random() * 90000).toString(),
     });

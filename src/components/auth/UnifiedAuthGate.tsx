@@ -15,10 +15,16 @@ import {
   getUserPin,
   setUserPin,
   hasUserPin,
+  getInitialPortal,
+  resolveAccountByPhone,
+  getRoleTitle,
+  getActiveConsultantSession,
+  saveConsultantSession,
+  createAuthSession,
+  getAuthContainerStyle,
+  authCardStyle,
 } from './authTypesAndUtils';
-import { RoleCode, StaffAccountRecord } from '../../types';
-import { SEEDED_STAFF_DIRECTORY } from '../../data/platformSeed';
-import { PLATFORM_USERS_KEY } from '../../hooks/workflowConstants';
+import { RoleCode } from '../../types';
 import { PortalSelectorBar } from './PortalSelectorBar';
 import { HospitalStaffLoginForm } from './HospitalStaffLoginForm';
 import { PhoneEntryStep } from './steps/PhoneEntryStep';
@@ -26,23 +32,15 @@ import { OtpVerificationStep } from './steps/OtpVerificationStep';
 import { PinEntryStep } from './PinEntryStep';
 import { SuperAdminAuthCard } from './SuperAdminAuthCard';
 import { AuthHeader } from './AuthHeader';
+import { FirstTimeActivationStep } from './FirstTimeActivationStep';
+import { ConsultantMagicLinkStep } from './ConsultantMagicLinkStep';
 
 interface UnifiedAuthGateProps {
   onAuthenticated: (session: SessionData) => void;
   initialLang?: 'ar' | 'en';
 }
 
-type AuthStep = 'phone' | 'otp' | 'pin' | 'pin_setup';
-
-const getInitialPortal = (): AuthPortalTab => {
-  if (typeof window === 'undefined') return 'patient';
-  const searchParams = new URLSearchParams(window.location.search);
-  const portal = searchParams.get('portal');
-  if (portal === 'super-admin' || portal === 'superadmin' || window.location.pathname.endsWith('/admin')) return 'superadmin';
-  if (portal === 'hospital' || window.location.pathname.endsWith('/hospital')) return 'hospital';
-  if (portal === 'coordinator' || portal === 'nurse' || portal === 'doctor' || portal === 'clinical') return 'clinical';
-  return 'patient';
-};
+type AuthStep = 'phone' | 'otp' | 'pin' | 'pin_setup' | 'activate' | 'consultant_otp';
 
 export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }: UnifiedAuthGateProps) {
   const [lang, setLang] = useState<'ar' | 'en'>(initialLang);
@@ -61,12 +59,44 @@ export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }:
   // Super Admin Credentials
   const [superAdminPasscode, setSuperAdminPasscode] = useState('123456');
 
+  // Indian Consultant Magic Link State
+  const [magicLinkData, setMagicLinkData] = useState<{
+    token: string;
+    caseId?: string;
+    consultantName: string;
+    center: string;
+  } | null>(null);
+
   const isDemoMode =
     typeof window !== 'undefined' &&
     (new URLSearchParams(window.location.search).get('demo') === '1' || window.location.hash === '#cockpit');
 
   const phoneRef = useRef<HTMLInputElement>(null);
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+    const role = params.get('role');
+    const caseId = params.get('caseId');
+
+    // Indian Consultant Magic Link detection (role=K, role=C, or role=consultant)
+    if (token && (role === 'K' || role === 'C' || role === 'consultant')) {
+      const active = getActiveConsultantSession(lang);
+      if (active) {
+        onAuthenticated(active);
+        return;
+      }
+      setMagicLinkData({
+        token,
+        caseId: caseId || undefined,
+        consultantName: 'Dr. Pradeep Kumar, MBBS, MS, MCh (CTVS)',
+        center: 'Apollo Hospitals, Bengaluru (India 🇮🇳)',
+      });
+      setStep('consultant_otp');
+    }
+  }, [onAuthenticated, lang]);
 
   useEffect(() => {
     const storedSession = localStorage.getItem(SESSION_KEY);
@@ -94,50 +124,6 @@ export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }:
 
   const t = useCallback((ar: string, en: string) => (isRTL ? ar : en), [isRTL]);
 
-  // Lookup Staff & Role from stored users or seed
-  const resolveAccountByPhone = useCallback(
-    (rawPhone: string) => {
-      let allStaff: StaffAccountRecord[] = SEEDED_STAFF_DIRECTORY;
-      try {
-        const stored = localStorage.getItem(PLATFORM_USERS_KEY);
-        if (stored) {
-          allStaff = JSON.parse(stored);
-        }
-      } catch {}
-
-      const matchedStaff = allStaff.find(
-        (s) => s.phone === rawPhone || s.phone.replace(/\D/g, '') === rawPhone.replace(/\D/g, '')
-      );
-
-      if (matchedStaff) {
-        return {
-          roleCode: matchedStaff.roleCode,
-          hospitalId: matchedStaff.hospitalId,
-          fullName: isRTL && matchedStaff.fullNameAr ? matchedStaff.fullNameAr : matchedStaff.fullName,
-          isStaff: true,
-        };
-      }
-
-      const matchedPersona = PERSONA_PRESETS.find((p) => p.phone === rawPhone);
-      if (matchedPersona) {
-        return {
-          roleCode: matchedPersona.roleCode || 'P',
-          hospitalId: matchedPersona.hospitalId,
-          fullName: isRTL ? matchedPersona.nameAr : matchedPersona.nameEn,
-          isStaff: matchedPersona.roleCode !== 'P',
-        };
-      }
-
-      return {
-        roleCode: 'P' as RoleCode,
-        hospitalId: undefined,
-        fullName: isRTL ? 'المريض' : 'Patient',
-        isStaff: false,
-      };
-    },
-    [isRTL]
-  );
-
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatPhoneDisplay(e.target.value);
     setPhone(formatted);
@@ -155,13 +141,46 @@ export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }:
     setIsLoading(false);
 
     const raw = extractRawPhone(phone);
-    if (hasUserPin(raw)) {
-      setPinDigits(['', '', '', '']);
-      setStep('pin');
+    const resolved = resolveAccountByPhone(raw);
+    const isStaffPortal = activePortal === 'clinical' || activePortal === 'hospital';
+
+    if (isStaffPortal) {
+      // Compulsory pre-registration check for Operations & Hospital staff
+      if (!resolved.isStaff) {
+        setError(
+          t(
+            'غير مصرح: هذا الرقم غير مسجل ككادر معتمد في النظام. يرجى مراجعة إدارة المنصة',
+            'Unauthorized: This mobile number is not registered as authorized staff. Please contact your platform administrator.'
+          )
+        );
+        return;
+      }
+      if (hasUserPin(raw)) {
+        setPinDigits(['', '', '', '']);
+        setStep('pin');
+      } else {
+        // First-time staff activation with test password (123456)
+        setStep('activate');
+      }
+      return;
+    }
+
+    if (resolved.isStaff) {
+      if (hasUserPin(raw)) {
+        setPinDigits(['', '', '', '']);
+        setStep('pin');
+      } else {
+        setStep('activate');
+      }
     } else {
-      setCountdown(60);
-      setStep('otp');
-      setTimeout(() => otpRefs.current[0]?.focus(), 100);
+      if (hasUserPin(raw)) {
+        setPinDigits(['', '', '', '']);
+        setStep('pin');
+      } else {
+        setCountdown(60);
+        setStep('otp');
+        setTimeout(() => otpRefs.current[0]?.focus(), 100);
+      }
     }
   };
 
@@ -172,27 +191,7 @@ export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }:
     customFullName?: string
   ) => {
     const rawPhone = isGuest ? '' : extractRawPhone(phone);
-    const resolved = resolveAccountByPhone(rawPhone);
-    const roleCode = customRole || resolved.roleCode;
-    const hospitalId = customHospitalId || resolved.hospitalId;
-    const fullName = customFullName || resolved.fullName;
-
-    const session: SessionData = {
-      isAuthenticated: true,
-      phone: rawPhone,
-      personaId: roleCode.toLowerCase(),
-      roleCode,
-      hospitalId,
-      fullName,
-      isGuest,
-      expiresAt: Date.now() + THIRTY_DAYS_MS,
-      lang,
-    };
-
-    try {
-      localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-    } catch (e) {}
-
+    const session = createAuthSession(rawPhone, isGuest, lang, customRole, customHospitalId, customFullName);
     setIsLoading(false);
     onAuthenticated(session);
   };
@@ -254,6 +253,45 @@ export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }:
     completeAuth(false);
   };
 
+  const handleConsultantVerify = () => {
+    if (!magicLinkData) return;
+    const session: SessionData = {
+      isAuthenticated: true,
+      phone: '+919876543210',
+      personaId: 'k',
+      roleCode: 'K',
+      fullName: magicLinkData.consultantName,
+      isGuest: false,
+      expiresAt: Date.now() + THIRTY_DAYS_MS,
+      lang,
+    };
+    saveConsultantSession(session);
+    onAuthenticated(session);
+  };
+
+  const handleOtpChange = (idx: number, val: string) => {
+    if (val.length > 1) val = val.slice(-1);
+    if (!/^\d*$/.test(val)) return;
+    const next = [...otp];
+    next[idx] = val;
+    setOtp(next);
+    setError('');
+    if (val && idx < 5) otpRefs.current[idx + 1]?.focus();
+  };
+
+  const handleOtpKeyDown = (idx: number, e: React.KeyboardEvent) => {
+    if (e.key === 'Backspace' && !otp[idx] && idx > 0) otpRefs.current[idx - 1]?.focus();
+  };
+
+  const handleOtpPaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    if (pasted.length === 6) {
+      setOtp(pasted.split(''));
+      otpRefs.current[5]?.focus();
+    }
+  };
+
   const handleResendOtp = (method: 'sms' | 'whatsapp') => {
     setDeliveryMethod(method);
     setCountdown(60);
@@ -262,18 +300,10 @@ export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }:
     setTimeout(() => otpRefs.current[0]?.focus(), 100);
   };
 
-  const handlePersonaQuickLogin = (persona: PersonaPreset) => {
-    completeAuth(false, persona.roleCode, persona.hospitalId, isRTL ? persona.nameAr : persona.nameEn);
-  };
+  const handlePersonaQuickLogin = (p: PersonaPreset) => completeAuth(false, p.roleCode, p.hospitalId, isRTL ? p.nameAr : p.nameEn);
 
-  const handleHospitalStaffLoginSuccess = (staff: {
-    phone: string;
-    roleCode: RoleCode;
-    hospitalId: string;
-    fullName: string;
-  }) => {
-    completeAuth(false, staff.roleCode, staff.hospitalId, staff.fullName);
-  };
+  const handleHospitalStaffLoginSuccess = (s: { phone: string; roleCode: RoleCode; hospitalId: string; fullName: string }) =>
+    completeAuth(false, s.roleCode, s.hospitalId, s.fullName);
 
   const handleSuperAdminSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -285,47 +315,17 @@ export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }:
     completeAuth(false, 'AD', undefined, 'Adrian Lewis (Super Admin)');
   };
 
-  const currentResolved = resolveAccountByPhone(extractRawPhone(phone));
+  const currentResolved = resolveAccountByPhone(extractRawPhone(phone), isRTL);
 
   return (
     <>
       <style>{`
-        @keyframes fadeInUp {
-          from { opacity: 0; transform: translateY(12px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        button:focus-visible, input:focus-visible, [role="button"]:focus-visible {
-          outline: 3px solid ${PALETTE.secondary};
-          outline-offset: 2px;
-        }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        button:focus-visible, input:focus-visible, [role="button"]:focus-visible { outline: 3px solid ${PALETTE.secondary}; outline-offset: 2px; }
       `}</style>
 
-      <div
-        style={{
-          direction: isRTL ? 'rtl' : 'ltr',
-          fontFamily: "'Cairo', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-          minHeight: '100vh',
-          backgroundColor: PALETTE.background,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '20px',
-          boxSizing: 'border-box',
-        }}
-      >
-        <div
-          style={{
-            backgroundColor: PALETTE.white,
-            borderRadius: '24px',
-            boxShadow: '0 8px 30px rgba(0, 123, 110, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04)',
-            border: `1px solid ${PALETTE.border}`,
-            width: '100%',
-            maxWidth: '460px',
-            padding: '36px 32px',
-            position: 'relative',
-            overflow: 'hidden',
-          }}
-        >
+      <div style={getAuthContainerStyle(isRTL)}>
+        <div style={authCardStyle}>
           <div
             style={{
               position: 'absolute',
@@ -407,9 +407,23 @@ export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }:
                 isLoading={isLoading}
                 isRTL={isRTL}
                 error={error}
+                activePortal={activePortal}
                 isDemoMode={isDemoMode}
                 onPersonaQuickLogin={handlePersonaQuickLogin}
                 onGuestBypass={() => completeAuth(true, 'P', undefined, isRTL ? 'زائر' : 'Guest Patient')}
+                t={t}
+              />
+            ) : step === 'consultant_otp' && magicLinkData ? (
+              <ConsultantMagicLinkStep
+                isRTL={isRTL}
+                consultantName={magicLinkData.consultantName}
+                center={magicLinkData.center}
+                caseId={magicLinkData.caseId}
+                onVerifySuccess={handleConsultantVerify}
+                onCancel={() => {
+                  setStep('phone');
+                  setActivePortal('patient');
+                }}
                 t={t}
               />
             ) : step === 'otp' ? (
@@ -425,30 +439,25 @@ export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }:
                 isDemoMode={isDemoMode}
                 otpRefs={otpRefs}
                 onBackToPhone={() => setStep('phone')}
-                onOtpChange={(idx, val) => {
-                  if (val.length > 1) val = val.slice(-1);
-                  if (!/^\d*$/.test(val)) return;
-                  const nextOtp = [...otp];
-                  nextOtp[idx] = val;
-                  setOtp(nextOtp);
-                  setError('');
-                  if (val && idx < 5) otpRefs.current[idx + 1]?.focus();
-                }}
-                onOtpKeyDown={(idx, e) => {
-                  if (e.key === 'Backspace' && !otp[idx] && idx > 0) {
-                    otpRefs.current[idx - 1]?.focus();
-                  }
-                }}
-                onOtpPaste={(e) => {
-                  e.preventDefault();
-                  const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
-                  if (pasted.length === 6) {
-                    setOtp(pasted.split(''));
-                    otpRefs.current[5]?.focus();
-                  }
-                }}
+                onOtpChange={handleOtpChange}
+                onOtpKeyDown={handleOtpKeyDown}
+                onOtpPaste={handleOtpPaste}
                 onOtpSubmit={handleOtpSubmit}
                 onResendOtp={() => handleResendOtp(deliveryMethod)}
+                t={t}
+              />
+            ) : step === 'activate' ? (
+              <FirstTimeActivationStep
+                isRTL={isRTL}
+                phoneDisplay={phone}
+                staffName={currentResolved.fullName}
+                roleName={getRoleTitle(currentResolved.roleCode, isRTL)}
+                onActivationSuccess={(newPin) => {
+                  const raw = extractRawPhone(phone);
+                  setUserPin(raw, newPin);
+                  completeAuth(false);
+                }}
+                onBack={() => setStep('phone')}
                 t={t}
               />
             ) : (
@@ -458,19 +467,7 @@ export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }:
                 phone={phone}
                 roleCode={currentResolved.roleCode}
                 userName={currentResolved.fullName}
-                roleTitle={
-                  currentResolved.roleCode === 'AD'
-                    ? t('المشرف العام', 'Super Admin')
-                    : currentResolved.roleCode === 'HA'
-                    ? t('مدير المستشفى', 'Hospital Admin')
-                    : currentResolved.roleCode === 'D'
-                    ? t('طبيب معالج معتمد', 'Treating Doctor')
-                    : currentResolved.roleCode === 'N'
-                    ? t('ممرضة فرز سريري', 'Triage Nurse')
-                    : currentResolved.roleCode === 'C'
-                    ? t('منسق رعاية ألو', 'Care Coordinator')
-                    : t('حساب المريض', 'Patient Account')
-                }
+                roleTitle={getRoleTitle(currentResolved.roleCode, isRTL)}
                 pin={pinDigits}
                 setPin={setPinDigits}
                 isSetupMode={step === 'pin_setup'}

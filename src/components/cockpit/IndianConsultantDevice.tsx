@@ -27,24 +27,13 @@ export const IndianConsultantDevice: React.FC<CockpitDeviceProps> = ({
     return ['', '', ''];
   });
   const [consultantNotes, setConsultantNotes] = useState<string>(activeCase.consultantNotes || '');
+  const [viewTab, setViewTab] = useState<'current' | 'portfolio'>('current');
 
   useEffect(() => {
-    if (activeCase.verdicts) {
-      setSelectedVerdicts(activeCase.verdicts);
-    }
-  }, [activeCase.verdicts]);
-
-  useEffect(() => {
-    if (activeCase.consultantAnswers && activeCase.consultantAnswers.length === 3) {
-      setConsultantAnswers(activeCase.consultantAnswers);
-    }
-  }, [activeCase.consultantAnswers]);
-
-  useEffect(() => {
-    if (activeCase.consultantNotes) {
-      setConsultantNotes(activeCase.consultantNotes);
-    }
-  }, [activeCase.consultantNotes]);
+    if (activeCase.verdicts) setSelectedVerdicts(activeCase.verdicts);
+    if (activeCase.consultantAnswers?.length === 3) setConsultantAnswers(activeCase.consultantAnswers);
+    if (activeCase.consultantNotes) setConsultantNotes(activeCase.consultantNotes);
+  }, [activeCase.verdicts, activeCase.consultantAnswers, activeCase.consultantNotes]);
 
   const toggleVerdict = (v: string) => {
     const updated = selectedVerdicts.includes(v)
@@ -100,18 +89,82 @@ export const IndianConsultantDevice: React.FC<CockpitDeviceProps> = ({
         </div>
       ) : (
         <>
-          {/* Assigned Consultant Header (Selected by Saudi Treating Doctor) */}
-          <div style={{ ...cardInnerStyle, backgroundColor: '#f0fdfa', borderColor: TEAL_SECONDARY }}>
-            <span style={{ ...labelStyle, color: TEAL_PRIMARY, margin: 0, fontSize: '10px' }}>
-              {isAr ? 'الاستشاري الدولي المعين من الطبيب السعودي المعالج:' : 'Assigned Consultant by Saudi Treating Doctor:'}
-            </span>
-            <div style={{ fontSize: '13px', fontWeight: 800, color: '#0f172a', marginTop: '3px' }}>
-              {activeCase.consultant?.name || 'Dr. Pradeep Kumar, MBBS, MS, MCh (CTVS)'}
-            </div>
-            <div style={{ fontSize: '10px', color: '#64748b', marginTop: '1px' }}>
-              {activeCase.consultant?.center || 'Apollo Hospitals'} · {activeCase.consultant?.city || 'Bengaluru, India'}
-            </div>
+          {/* Dual Navigation: Active Case Review vs Handled Portfolio */}
+          <div style={{ display: 'flex', gap: '6px', backgroundColor: '#e2e8f0', padding: '3px', borderRadius: '10px' }}>
+            <button
+              type="button"
+              onClick={() => setViewTab('current')}
+              style={{
+                flex: 1,
+                padding: '6px 10px',
+                borderRadius: '8px',
+                border: 'none',
+                fontSize: '11px',
+                fontWeight: 800,
+                cursor: 'pointer',
+                backgroundColor: viewTab === 'current' ? '#ffffff' : 'transparent',
+                color: viewTab === 'current' ? TEAL_PRIMARY : '#64748b',
+                boxShadow: viewTab === 'current' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+              }}
+            >
+              {isAr ? `الحالة الحالية (${activeCase.egressToken || 'ALO-KSA-9482'})` : `Active Case (${activeCase.egressToken || 'ALO-KSA-9482'})`}
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewTab('portfolio')}
+              style={{
+                flex: 1,
+                padding: '6px 10px',
+                borderRadius: '8px',
+                border: 'none',
+                fontSize: '11px',
+                fontWeight: 800,
+                cursor: 'pointer',
+                backgroundColor: viewTab === 'portfolio' ? '#ffffff' : 'transparent',
+                color: viewTab === 'portfolio' ? TEAL_PRIMARY : '#64748b',
+                boxShadow: viewTab === 'portfolio' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+              }}
+            >
+              {isAr ? 'سجل الحالات المكتملة (3)' : 'My Case Portfolio (3)'}
+            </button>
           </div>
+
+          {viewTab === 'portfolio' ? (
+            <div style={{ ...cardInnerStyle, backgroundColor: '#f8fafc' }}>
+              <span style={labelStyle}>{isAr ? 'أرشيف الحالات المكتملة للاستشاري' : 'Handled Cases Portfolio Archive'}</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}>
+                {[
+                  { id: 'ALO-KSA-9482', dx: 'Severe Calcific AS', verdict: 'Open SAVR 23mm', date: '2026-11-10', status: 'Active' },
+                  { id: 'ALO-KSA-9210', dx: 'Multivessel CAD / LAD Ostial', verdict: 'Hybrid PCI + SAVR', date: '2026-11-04', status: 'Endorsed' },
+                  { id: 'ALO-KSA-8842', dx: 'Bicuspid Aortic Root Aneurysm', verdict: 'Valve-Sparing David-V', date: '2026-10-28', status: 'Completed' },
+                ].map((item, idx) => (
+                  <div key={idx} style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontWeight: 800, fontSize: '12px', color: '#0f172a' }}>{item.id}</span>
+                      <span style={{ fontSize: '10px', backgroundColor: '#ccfbf1', color: TEAL_PRIMARY, padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>
+                        {item.status}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#475569', marginTop: '2px' }}>{item.dx} · {item.verdict}</div>
+                    <div style={{ fontSize: '9px', color: '#94a3b8', marginTop: '2px' }}>Reviewed on {item.date} · Apollo Hospitals</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Assigned Consultant Header (Selected by Saudi Treating Doctor) */}
+              <div style={{ ...cardInnerStyle, backgroundColor: '#f0fdfa', borderColor: TEAL_SECONDARY }}>
+                <span style={{ ...labelStyle, color: TEAL_PRIMARY, margin: 0, fontSize: '10px' }}>
+                  {isAr ? 'الاستشاري الدولي المعين من الطبيب السعودي المعالج:' : 'Assigned Consultant by Saudi Treating Doctor:'}
+                </span>
+                <div style={{ fontSize: '13px', fontWeight: 800, color: '#0f172a', marginTop: '3px' }}>
+                  {activeCase.consultant?.name || 'Dr. Pradeep Kumar, MBBS, MS, MCh (CTVS)'}
+                </div>
+                <div style={{ fontSize: '10px', color: '#64748b', marginTop: '1px' }}>
+                  {activeCase.consultant?.center || 'Apollo Hospitals'} · {activeCase.consultant?.city || 'Bengaluru, India'}
+                </div>
+              </div>
 
           {/* SDAIA Cross-Border De-identified Patient Card (Art. 29 Compliance) */}
           <div style={{ ...cardInnerStyle, backgroundColor: '#f8fafc', border: '1.5px solid #cbd5e1' }}>
@@ -430,6 +483,8 @@ export const IndianConsultantDevice: React.FC<CockpitDeviceProps> = ({
               <span>{isAr ? 'K06 · إرسال الرأي الثاني والملاحظات لمنسق ألو للتعريب (C08)' : 'K06 · Submit Opinion & Notes to Coordinator for Localization (C08)'}</span>
             )}
           </button>
+            </>
+          )}
         </>
       )}
     </div>

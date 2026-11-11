@@ -269,7 +269,7 @@ const OpinionTelehealthView: React.FC<Props> = ({ activeCase, onAdvanceStage, on
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <span style={{ fontSize: '0.75rem', fontWeight: 700, color: colors.primary, textTransform: 'uppercase' }}>
-              Dr. Arjun (EN):
+              Consultant (EN):
             </span>
             <p style={{ margin: 0, fontSize: '0.9rem', fontStyle: 'italic', opacity: 0.9 }}>
               "{activeCase.consultant?.opinionEnglish || `Based on the 3D DICOM reconstruction for ${activeCase.diagnosis}, I recommend proceeding with the certified intervention plan.`}"
@@ -278,7 +278,7 @@ const OpinionTelehealthView: React.FC<Props> = ({ activeCase, onAdvanceStage, on
           <div style={{ height: '1px', backgroundColor: isDarkMode ? '#334155' : '#e2e8f0', width: '100%' }} />
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <span style={{ fontSize: '0.75rem', fontWeight: 700, color: colors.whatsapp, textTransform: 'uppercase' }}>
-              Sara (AR):
+              Clinical Team (AR):
             </span>
             <p style={{ margin: 0, fontSize: '1rem', fontWeight: 600, fontFamily: "'Cairo', sans-serif", direction: 'rtl' }}>
               "{activeCase.consultant?.opinionArabic || `بناءً على إعادة البناء ثلاثية الأبعاد لـ ${activeCase.diagnosisAr || activeCase.diagnosis}، أوصي بالمضي قدماً وفق الخطة العلاجية المعتمدة.`}"
