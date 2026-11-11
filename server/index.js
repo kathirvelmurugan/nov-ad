@@ -172,13 +172,12 @@ app.use('/:prefix/api', apiRouter);
 const distPath = path.join(__dirname, '../dist');
 app.use(express.static(distPath));
 app.use('/:prefix', express.static(distPath));
-app.get('*', (req, res) => {
+app.use((req, res) => {
   res.sendFile(path.join(distPath, 'index.html'));
 });
 
 // ── Server Start ─────────────────────────────────────────────────────────────
-initDatabase().finally(() => {
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 ALO DOCTOR Unified Backend Server running on port ${PORT}`);
-  });
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 ALO DOCTOR Unified Backend Server running on port ${PORT}`);
+  initDatabase().catch((e) => console.warn('Database init warning:', e.message));
 });

@@ -4,10 +4,15 @@ dotenv.config();
 
 const { Pool } = pg;
 
+const pgHost = process.env.DB_HOST || (process.env.NODE_ENV === 'production' ? 'alo-postgres' : '127.0.0.1');
+
 export const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || 'postgresql://alo_admin:alo_secure_postgres_pass_2026@127.0.0.1:5432/alodoctor?schema=public',
+  connectionString:
+    process.env.DATABASE_URL ||
+    `postgresql://alo_admin:alo_secure_postgres_pass_2026@${pgHost}:5432/alodoctor?schema=public`,
   max: 10,
   idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 3000,
 });
 
 export async function initDatabase() {
