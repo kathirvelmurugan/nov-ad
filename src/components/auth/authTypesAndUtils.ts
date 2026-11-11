@@ -68,9 +68,10 @@ export interface PersonaPreset {
 export const PERSONA_PRESETS: PersonaPreset[] = [
   { id: 'super_admin', nameAr: 'المشرف العام', nameEn: 'Platform Super Admin', phone: '+966500000001', role: 'Super Admin / المشرف العام', roleCode: 'AD' },
   { id: 'hospital_admin', nameAr: 'د. فهد العتيبي', nameEn: 'Dr. Fahad Al-Otaibi', phone: '+966504444444', role: 'Hospital Admin / مدير المستشفى', roleCode: 'HA', hospitalId: 'hosp-riyadh-care' },
-  { id: 'doctor', nameAr: 'د. عبد الله الشمري', nameEn: 'Dr. Abdullah Al Shammari', phone: '+966502222222', role: 'Treating Doctor / طبيب معالج', roleCode: 'D', hospitalId: 'hosp-riyadh-care' },
-  { id: 'nurse', nameAr: 'سارة الدوسري', nameEn: 'Nurse Sara N.', phone: '+966503333333', role: 'Triage Nurse / ممرضة فرز', roleCode: 'N' },
-  { id: 'coordinator', nameAr: 'عبدالرحمن الشهري', nameEn: 'Abdulrahman Al-Shehri', phone: '+966505555555', role: 'Care Coordinator / منسق رعاية', roleCode: 'C' },
+  { id: 'doctor', nameAr: 'الطبيب المعالج', nameEn: 'Saudi Treating Doctor', phone: '+966502222222', role: 'Saudi Treating Doctor / الطبيب السعودي المعالج', roleCode: 'D', hospitalId: 'hosp-riyadh-care' },
+  { id: 'nurse', nameAr: 'ممرضة ألو', nameEn: 'ALO Nurse', phone: '+966503333333', role: 'ALO Nurse / ممرضة ألو', roleCode: 'N' },
+  { id: 'coordinator', nameAr: 'منسق رعاية ألو', nameEn: 'ALO Coordinator', phone: '+966505555555', role: 'ALO Coordinator / منسق رعاية ألو', roleCode: 'C' },
+  { id: 'consultant', nameAr: 'د. أرجون ميهتا', nameEn: 'Dr. Arjun Mehta', phone: '+919876543210', role: 'Indian Consultant / الاستشاري الدولي', roleCode: 'K' },
   { id: 'patient', nameAr: 'سالم العامري', nameEn: 'Salem Al-Ameri', phone: '+966501111111', role: 'Patient / مريض', roleCode: 'P' },
 ];
 

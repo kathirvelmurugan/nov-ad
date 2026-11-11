@@ -37,26 +37,26 @@ const ROLE_METADATA: Record<string, { labelAr: string; labelEn: string; scopeAr:
     scopeEn: 'Medical dossier, second opinion tracking, and appointment scheduling'
   },
   N: {
-    labelAr: 'ممرضة ألو (سارة)',
-    labelEn: 'ALO Nurse (Sara)',
+    labelAr: 'ممرضة ألو',
+    labelEn: 'ALO Nurse',
     scopeAr: 'صندوق فرز الحالات، تدقيق الفحوصات ومقاطع الأشعة، وحجب البيانات الشخصية آلياً (SDAIA)',
     scopeEn: 'Clinical triage inbox, diagnostic scan audit, and automated PII de-identification'
   },
   D: {
-    labelAr: 'الطبيب السعودي المعالج (د. عبدالله)',
-    labelEn: 'Saudi Treating Doctor (Dr. Abdullah)',
+    labelAr: 'الطبيب السعودي المعالج',
+    labelEn: 'Saudi Treating Doctor',
     scopeAr: 'مراجعة التاريخ المرضي، تحديد الفحص الحضوري، وصياغة الأسئلة السريرية للاستشاري',
     scopeEn: 'Clinical review, in-person exam decision, and clinical consultant focus questions'
   },
   C: {
-    labelAr: 'منسق رعاية ألو (عبدالرحمن)',
-    labelEn: 'ALO Coordinator (Abdulrahman)',
+    labelAr: 'منسق رعاية ألو',
+    labelEn: 'ALO Coordinator',
     scopeAr: 'مراجعة وتأكيد الإحالة، إصدار الفواتير وروابط السداد للمريض، وتوجيه الملف للاستشاري',
     scopeEn: 'Referral verification, dispatching ZATCA payment links, and international case assignment'
   },
   K: {
-    labelAr: 'الاستشاري الدولي (د. أرجون)',
-    labelEn: 'International Consultant (Dr. Arjun)',
+    labelAr: 'الاستشاري الدولي',
+    labelEn: 'Indian Consultant',
     scopeAr: 'مراجعة الأشعة ثلاثية الأبعاد، الاستشارة المرئية المباشرة، وإصدار التقرير الطبي المعتمد',
     scopeEn: '3D DICOM review, live video consultation, and certified second opinion report'
   }
@@ -322,11 +322,13 @@ export const TopProfileSwitcher: React.FC<Props> = ({
         if (activePersona.code === 'P') {
           activeLabel = isAr ? `المريض (${cleanPatientName})` : `Patient (${cleanPatientName})`;
         } else if (activePersona.code === 'K') {
-          activeLabel = isAr ? `الاستشاري الدولي (${activeCase.consultant?.name || 'د. أرجون'})` : `International Consultant (${activeCase.consultant?.name || 'Dr. Arjun'})`;
+          activeLabel = isAr ? `الاستشاري الدولي (${activeCase.consultant?.name || activePersona.name})` : `Indian Consultant (${activeCase.consultant?.name || activePersona.name})`;
         } else if (activePersona.code === 'D') {
-          activeLabel = isAr ? `الطبيب السعودي المعالج (${activeCase.treatingDoctor?.name || 'د. عبدالله'})` : `Saudi Treating Doctor (${activeCase.treatingDoctor?.name || 'Dr. Abdullah'})`;
+          activeLabel = isAr ? `الطبيب السعودي المعالج (${activePersona.name || activeCase.treatingDoctor?.name || 'الطبيب المعالج'})` : `Saudi Treating Doctor (${activePersona.name || activeCase.treatingDoctor?.name || 'Treating Doctor'})`;
         } else if (activePersona.code === 'C') {
-          activeLabel = isAr ? 'منسق رعاية ألو (عبدالرحمن)' : 'ALO Coordinator (Abdulrahman)';
+          activeLabel = isAr ? `منسق رعاية ألو (${activePersona.name})` : `ALO Coordinator (${activePersona.name})`;
+        } else if (activePersona.code === 'N') {
+          activeLabel = isAr ? `ممرضة ألو (${activePersona.name})` : `ALO Nurse (${activePersona.name})`;
         }
 
         const activeScope = activeMeta

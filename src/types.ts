@@ -315,3 +315,6 @@ export interface ClinicalCase {
   finalReportAr?: string;
   followUpExpiresAt?: string;
 }
+
+export type { UserSession } from './hooks/workflowConstants';
+

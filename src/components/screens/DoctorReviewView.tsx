@@ -1,5 +1,5 @@
 import React from 'react';
-import { ClinicalCase } from '../../types';
+import { ClinicalCase, Persona, UserSession } from '../../types';
 import { Check, Timer, ShieldCheck, FileCheck2 } from 'lucide-react';
 import { useSlaCountdown } from '../../hooks/useSlaCountdown';
 import { DoctorOpinionEndorsementPanel } from './doctor/DoctorOpinionEndorsementPanel';
@@ -11,6 +11,8 @@ interface Props {
   onAdvanceStage: () => void;
   onUpdateCase: (updated: Partial<ClinicalCase>) => void;
   lang?: 'ar' | 'en';
+  userSession?: UserSession | null;
+  activePersona?: Persona;
 }
 
 export const DoctorReviewView: React.FC<Props> = ({
@@ -18,8 +20,12 @@ export const DoctorReviewView: React.FC<Props> = ({
   onAdvanceStage,
   onUpdateCase,
   lang = 'ar',
+  userSession,
+  activePersona,
 }) => {
   const isAr = lang === 'ar';
+  const doctorName = userSession?.fullName || activePersona?.name || activeCase.treatingDoctor?.name || (isAr ? 'الطبيب السعودي المعالج' : 'Saudi Treating Doctor');
+  const partnerHospital = activeCase.treatingDoctor?.hospital || (isAr ? 'مستشفى رعاية الرياض' : 'Riyadh Care Hospital');
 
   const { formatted: slaFormatted } = useSlaCountdown({
     storageKey: `alo_sla_doctor_${activeCase.id}`,
@@ -28,13 +34,11 @@ export const DoctorReviewView: React.FC<Props> = ({
     initialSeconds: 15,
   });
 
-  const CONSULTANT_NETWORK = [
-    { name: 'Dr. Arjun Mehta', center: 'KIMS Heart Institute', city: 'Hyderabad, India' },
-    { name: 'Dr. Suresh Rao', center: 'Apollo Hospitals', city: 'Chennai, India' },
-    { name: 'Dr. Rajesh Deshmukh', center: 'Fortis Memorial Research Institute', city: 'Delhi, India' },
-    { name: 'Dr. Alok Sharma', center: 'NIMHANS / Manipal', city: 'Bangalore, India' },
-    { name: 'Dr. Priya Ramachandran', center: 'Tata Memorial / Apollo Cancer Center', city: 'Mumbai, India' },
-  ];
+  const assignedConsultant = activeCase.consultant || {
+    name: 'Dr. Arjun Mehta',
+    center: 'KIMS Heart Institute',
+    city: 'Hyderabad, India',
+  };
 
   const [localQuestions, setLocalQuestions] = React.useState<[string, string, string]>(() => {
     const src = isAr 
@@ -96,7 +100,7 @@ export const DoctorReviewView: React.FC<Props> = ({
               D01 · {isAr ? 'الطبيب السعودي المعالج' : 'Saudi Treating Doctor'}
             </span>
             <span className="text-xs font-bold text-slate-500">
-              {isAr ? 'المستشفى الشريك:' : 'Partner Hospital:'} {activeCase.treatingDoctor?.hospital || 'مستشفى رعاية الرياض'}
+              {isAr ? 'المستشفى الشريك:' : 'Partner Hospital:'} {partnerHospital}
             </span>
             <span className="text-slate-300 dark:text-slate-700">·</span>
             <span className="text-xs font-mono font-bold text-alo-teal">
@@ -104,7 +108,7 @@ export const DoctorReviewView: React.FC<Props> = ({
             </span>
           </div>
           <h2 className="text-2xl font-black text-alo-navy dark:text-slate-100 mt-1">
-            {isAr ? (activeCase.treatingDoctor?.name || 'د. عبد الله الشمري') : (activeCase.treatingDoctor?.name || 'Treating Doctor, MD')}
+            {doctorName}
           </h2>
           <div className="flex flex-wrap items-center gap-2 mt-2">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-teal-50 dark:bg-teal-950/40 text-alo-teal font-mono text-xs font-bold border border-teal-200 dark:border-teal-800">
@@ -245,25 +249,27 @@ export const DoctorReviewView: React.FC<Props> = ({
           </div>
           <div>
             <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-              {isAr ? 'اختر الاستشاري الهندي (المستقبل):' : 'Pick the Indian consultant (recipient):'}
+              {isAr ? 'الاستشاري الدولي المعين (المستقبل):' : 'Assigned Indian Consultant (Recipient):'}
             </label>
-            <select
-              value={activeCase.consultant?.name || CONSULTANT_NETWORK[0].name}
-              onChange={(e) => {
-                const picked = CONSULTANT_NETWORK.find((c) => c.name === e.target.value);
-                if (picked) onUpdateCase({ consultant: { ...(activeCase.consultant || CONSULTANT_NETWORK[0]), ...picked } });
-              }}
-              className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl p-2.5 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-alo-teal outline-none shadow-sm"
-            >
-              {CONSULTANT_NETWORK.map((c) => (
-                <option key={c.name} value={c.name}>
-                  {c.name} — {c.center} · {c.city}
-                </option>
-              ))}
-            </select>
-            <p className="text-[11px] text-slate-500 mt-1">
-              {activeCase.consultant?.center || CONSULTANT_NETWORK[0].center} · {activeCase.consultant?.city || CONSULTANT_NETWORK[0].city}
-            </p>
+            <div className="bg-slate-50 dark:bg-slate-900 border border-teal-200 dark:border-teal-900/60 rounded-xl p-3.5 flex items-center justify-between shadow-2xs">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl p-2 bg-white dark:bg-slate-800 rounded-lg shadow-2xs border border-slate-200 dark:border-slate-700">🇮🇳</span>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-sm font-extrabold text-alo-navy dark:text-slate-100">{assignedConsultant.name}</h4>
+                    <span className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 px-2 py-0.5 rounded text-[10px] font-bold">
+                      ✓ {isAr ? 'معتمد رسمياً' : 'Verified Specialist'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
+                    {assignedConsultant.center} · {assignedConsultant.city}
+                  </p>
+                </div>
+              </div>
+              <span className="text-[10px] font-mono text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/40 px-2.5 py-1 rounded-md border border-teal-200 dark:border-teal-800 font-bold">
+                {isAr ? 'جاهز للاستشارة' : 'Direct Dispatch Ready'}
+              </span>
+            </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs font-bold text-slate-700 dark:text-slate-300">

@@ -7,6 +7,7 @@ interface ReportSignaturesFooterProps {
   isAr: boolean;
   treatingDocName: string;
   consultantName: string;
+  coordinatorName?: string;
 }
 
 export const ReportSignaturesFooter: React.FC<ReportSignaturesFooterProps> = ({
@@ -14,7 +15,9 @@ export const ReportSignaturesFooter: React.FC<ReportSignaturesFooterProps> = ({
   isAr,
   treatingDocName,
   consultantName,
+  coordinatorName,
 }) => {
+  const displayCoordinator = coordinatorName || (activeCase.metadata?.assignedCoordinatorName as string) || (isAr ? 'منسق رعاية ألو' : 'ALO Coordinator');
   return (
     <>
       {/* Holistic Clinical Notes & Observations (Free-text Relay) */}
@@ -125,10 +128,10 @@ export const ReportSignaturesFooter: React.FC<ReportSignaturesFooterProps> = ({
 
         {/* Signature 3: Alo Coordinator & Medical Translator */}
         <div style={{ textAlign: 'center', padding: '10px', backgroundColor: '#f0fdf4', borderRadius: '8px', border: `1px solid ${WHATSAPP_GREEN}` }}>
-          <div style={{ fontSize: '10px', color: '#166534' }}>التدقيق اللغوي والتعريب السريري</div>
-          <div style={{ fontSize: '12px', fontWeight: 800, color: '#166534', marginTop: '4px' }}>عبدالرحمن الشهري</div>
-          <div style={{ fontSize: '9px', color: '#64748b' }}>منسق رعاية ألو ومترجم طبي معتمد</div>
-          <div style={{ marginTop: '6px', fontSize: '10px', color: '#166534', fontWeight: 700 }}>✓ مصادقة الترجمة والتوجيه للطبيب</div>
+          <div style={{ fontSize: '10px', color: '#166534' }}>{isAr ? 'التدقيق اللغوي والتعريب السريري' : 'Medical Review & Translation'}</div>
+          <div style={{ fontSize: '12px', fontWeight: 800, color: '#166534', marginTop: '4px' }}>{displayCoordinator}</div>
+          <div style={{ fontSize: '9px', color: '#64748b' }}>{isAr ? 'منسق رعاية ألو ومترجم طبي معتمد' : 'Certified ALO Care Coordinator'}</div>
+          <div style={{ marginTop: '6px', fontSize: '10px', color: '#166534', fontWeight: 700 }}>{isAr ? '✓ مصادقة الترجمة والتوجيه للطبيب' : '✓ Verified & Dispatched to Doctor'}</div>
         </div>
       </div>
 

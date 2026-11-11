@@ -174,6 +174,8 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
         onAdvanceStage={handleAdvanceStage}
         onUpdateCase={handleUpdateCase}
         lang={lang}
+        userSession={userSession}
+        activePersona={activePersona}
       />
     );
   }
@@ -186,6 +188,8 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
         onAdvanceStage={handleAdvanceStage}
         onUpdateCase={handleUpdateCase}
         lang={lang}
+        userSession={userSession}
+        activePersona={activePersona}
       />
     );
   }

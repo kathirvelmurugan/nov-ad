@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ClinicalCase } from '../../types';
+import { ClinicalCase, Persona, UserSession } from '../../types';
 import { INITIAL_MEDICAL_CENTER_DOCTORS } from '../../data/medicalCenterDoctors';
 import { 
   ShieldAlert, 
@@ -18,11 +18,22 @@ interface Props {
   onAdvanceStage: () => void;
   onUpdateCase: (updated: Partial<ClinicalCase>) => void;
   lang?: 'ar' | 'en';
+  userSession?: UserSession | null;
+  activePersona?: Persona;
 }
 
-export const NurseTriageView: React.FC<Props> = ({ activeCase, onAdvanceStage, onUpdateCase, lang = 'ar' }) => {
+export const NurseTriageView: React.FC<Props> = ({ 
+  activeCase, 
+  onAdvanceStage, 
+  onUpdateCase, 
+  lang = 'ar',
+  userSession,
+  activePersona
+}) => {
   const [urgencyLevel, setUrgencyLevel] = useState<'routine' | 'urgent' | 'stat'>('urgent');
   const isAr = lang === 'ar';
+  const nurseName = userSession?.fullName || activePersona?.name || (isAr ? 'ممرضة ألو' : 'ALO Nurse');
+  const referenceHospital = activeCase.treatingDoctor?.hospital || (isAr ? 'مستشفى رعاية الرياض' : 'Riyadh Care Hospital');
 
   const generateDefaultNotes = () => {
     if (isAr) {
@@ -54,7 +65,7 @@ export const NurseTriageView: React.FC<Props> = ({ activeCase, onAdvanceStage, o
             {isAr ? 'تدقيق ملف الحالة:' : 'Case Review File:'} <span className="font-mono text-alo-teal font-extrabold">{activeCase.caseNumber}</span> · <span className="text-slate-700 dark:text-slate-200 text-xl font-bold">{isAr ? activeCase.patientNameAr : (activeCase.patientNameEn || activeCase.patientName)}</span>
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            {isAr ? 'الممرضة المسؤولة عن الفرز:' : 'ALO nurse:'} <strong className="text-slate-700 dark:text-slate-200">{isAr ? 'سارة الدوسري (Sara N.)' : 'Nurse Sara N.'}</strong> · {isAr ? 'المستشفى المرجعي:' : 'Reference Hospital:'} {activeCase.treatingDoctor.hospital}
+            {isAr ? 'الممرضة المسؤولة عن الفرز:' : 'ALO Nurse:'} <strong className="text-slate-700 dark:text-slate-200">{nurseName}</strong> · {isAr ? 'المستشفى المرجعي:' : 'Reference Hospital:'} {referenceHospital}
           </p>
         </div>
 
@@ -104,10 +115,10 @@ export const NurseTriageView: React.FC<Props> = ({ activeCase, onAdvanceStage, o
           </div>
 
           <div className="bg-slate-50 dark:bg-slate-900/40 p-3 rounded-xl border border-slate-200/80 text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-            <span className="font-bold text-slate-800 dark:text-slate-200">{isAr ? 'تقرير الممرضة سارة:' : 'Nurse check:'}</span>{' '}
+            <span className="font-bold text-slate-800 dark:text-slate-200">{isAr ? `تقرير الممرضة (${nurseName}):` : `${nurseName} audit check:`}</span>{' '}
             {isAr 
               ? `تم التحقق من سلامة كافة الفحوصات الطبية ومقاطع الأشعة المرفوعة لحالة [${activeCase.caseNumber}] الخاصة بتخصص (${activeCase.specialtyAr || activeCase.specialty}). الملف مطابق للمعايير السريرية المعتمدة للاستشارة الدولية.`
-              : `Diagnostic series and clinical files verified for case [${activeCase.caseNumber}] (${activeCase.specialtyEn || activeCase.specialty}). Records verified and clinically sufficient for Indian consultant review.`}
+              : `Diagnostic series and clinical files verified for case [${activeCase.caseNumber}] (${activeCase.specialtyEn || activeCase.specialty}). Records verified and clinically sufficient for Indian Consultant review.`}
           </div>
         </div>
 

@@ -131,6 +131,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
     if (matched) {
       handleSelectPersona({
         ...matched,
+        name: session.fullName || matched.name,
         hospitalId: session.hospitalId || matched.hospitalId,
       });
     }
