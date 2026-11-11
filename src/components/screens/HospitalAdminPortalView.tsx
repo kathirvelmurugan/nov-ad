@@ -39,15 +39,15 @@ export const HospitalAdminPortalView: React.FC<HospitalAdminPortalViewProps> = (
   const hospital =
     tenants.find((t) => t.id === activePersona.hospitalId) ||
     tenants[0] || {
-      id: 'hosp-riyadh-care',
-      nameEn: 'Riyadh Care Hospital',
-      nameAr: 'مستشفى رعاية الرياض',
+      id: '',
+      nameEn: 'Unassigned Hospital',
+      nameAr: 'مستشفى غير مسجل',
       city: 'الرياض',
-      mciLicenseNumber: 'MCI-SA-998241',
-      hospitalAdminPhone: '+966 11 444 4444',
-      hospitalAdminName: 'د. فهد العتيبي',
+      mciLicenseNumber: '',
+      hospitalAdminPhone: '',
+      hospitalAdminName: '',
       status: 'active' as const,
-      doctorCount: 8,
+      doctorCount: 0,
       createdAt: new Date().toISOString(),
     };
 

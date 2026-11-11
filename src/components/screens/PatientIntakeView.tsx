@@ -190,7 +190,8 @@ export const PatientIntakeView: React.FC<Props> = ({
               </span>
               <input
                 type="text"
-                value={activeCase.caregiver?.name || 'فاطمة العتيبي'}
+                value={activeCase.caregiver?.name || ''}
+                placeholder={isAr ? 'الاسم الكامل للوكيل' : 'Full Name'}
                 onChange={(e) => onUpdateCase({
                   caregiver: { ...activeCase.caregiver!, name: e.target.value }
                 })}
@@ -203,7 +204,8 @@ export const PatientIntakeView: React.FC<Props> = ({
               </span>
               <input
                 type="text"
-                value={activeCase.caregiver?.relationship || (isAr ? 'ابنة المريض (Daughter)' : 'Daughter')}
+                value={activeCase.caregiver?.relationship || ''}
+                placeholder={isAr ? 'صلة القرابة' : 'e.g. Son, Daughter, Spouse'}
                 onChange={(e) => onUpdateCase({
                   caregiver: { ...activeCase.caregiver!, relationship: e.target.value }
                 })}
@@ -216,7 +218,8 @@ export const PatientIntakeView: React.FC<Props> = ({
               </span>
               <input
                 type="text"
-                value={activeCase.caregiver?.nationalId || '1098452103'}
+                value={activeCase.caregiver?.nationalId || ''}
+                placeholder="10XXXXXXXX"
                 onChange={(e) => onUpdateCase({
                   caregiver: { ...activeCase.caregiver!, nationalId: e.target.value }
                 })}

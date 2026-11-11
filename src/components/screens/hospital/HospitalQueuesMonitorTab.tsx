@@ -47,30 +47,14 @@ export const HospitalQueuesMonitorTab: React.FC<HospitalQueuesMonitorTabProps> =
                   {isRTL ? 'طابور المختبر (L01)' : 'Laboratory Queue (L01)'}
                 </h3>
               </div>
-              <span className="text-xs bg-sky-50 text-sky-700 font-bold px-2.5 py-0.5 rounded-full border border-sky-200">
-                2 Pending
+              <span className="text-xs bg-slate-100 text-slate-600 font-bold px-2.5 py-0.5 rounded-full border border-slate-200">
+                0 Pending
               </span>
             </div>
 
             <div className="space-y-3">
-              <div className="bg-slate-50 rounded-xl p-3 border border-slate-200/80">
-                <div className="flex items-center justify-between text-xs font-bold text-slate-800 mb-1">
-                  <span>CBC + Lipid Profile</span>
-                  <span className="text-amber-600 font-mono">18m left</span>
-                </div>
-                <div className="text-[11px] text-slate-500">
-                  {isRTL ? 'المريض: سارة الغامدي' : 'Patient: Sarah Al-Ghamdi'} ({activeCase?.id || 'CASE-901'})
-                </div>
-              </div>
-
-              <div className="bg-slate-50 rounded-xl p-3 border border-slate-200/80">
-                <div className="flex items-center justify-between text-xs font-bold text-slate-800 mb-1">
-                  <span>HbA1c + Fasting Blood Sugar</span>
-                  <span className="text-emerald-600 font-mono">42m left</span>
-                </div>
-                <div className="text-[11px] text-slate-500">
-                  {isRTL ? 'المريض: فهد العتيبي' : 'Patient: Fahad Al-Otaibi'} (CASE-884)
-                </div>
+              <div className="bg-slate-50 rounded-xl p-4 border border-dashed border-slate-200 text-center text-xs text-slate-400">
+                {isRTL ? 'لا توجد طلبات مخبرية معلقة حالياً' : 'No pending laboratory orders'}
               </div>
             </div>
           </div>
@@ -95,22 +79,14 @@ export const HospitalQueuesMonitorTab: React.FC<HospitalQueuesMonitorTabProps> =
                   {isRTL ? 'طابور الصيدلية (H01)' : 'Pharmacy Queue (H01)'}
                 </h3>
               </div>
-              <span className="text-xs bg-emerald-50 text-emerald-700 font-bold px-2.5 py-0.5 rounded-full border border-emerald-200">
-                1 Ready
+              <span className="text-xs bg-slate-100 text-slate-600 font-bold px-2.5 py-0.5 rounded-full border border-slate-200">
+                0 Ready
               </span>
             </div>
 
             <div className="space-y-3">
-              <div className="bg-slate-50 rounded-xl p-3 border border-slate-200/80">
-                <div className="flex items-center justify-between text-xs font-bold text-slate-800 mb-1">
-                  <span>Atorvastatin 20mg + Aspirin</span>
-                  <span className="text-emerald-700 font-bold text-[11px] bg-emerald-100 px-2 py-0.5 rounded">
-                    Ready for Dispense
-                  </span>
-                </div>
-                <div className="text-[11px] text-slate-500">
-                  {isRTL ? 'المريض: سارة الغامدي' : 'Patient: Sarah Al-Ghamdi'} ({activeCase?.id || 'CASE-901'})
-                </div>
+              <div className="bg-slate-50 rounded-xl p-4 border border-dashed border-slate-200 text-center text-xs text-slate-400">
+                {isRTL ? 'لا توجد وصفات دوائية بانتظار الصرف' : 'No prescriptions awaiting dispensing'}
               </div>
             </div>
           </div>
@@ -135,30 +111,14 @@ export const HospitalQueuesMonitorTab: React.FC<HospitalQueuesMonitorTabProps> =
                   {isRTL ? 'شباك الاستقبال (REC)' : 'Reception Desk (REC)'}
                 </h3>
               </div>
-              <span className="text-xs bg-purple-50 text-purple-700 font-bold px-2.5 py-0.5 rounded-full border border-purple-200">
-                3 Arrivals
+              <span className="text-xs bg-slate-100 text-slate-600 font-bold px-2.5 py-0.5 rounded-full border border-slate-200">
+                0 Arrivals
               </span>
             </div>
 
             <div className="space-y-3">
-              <div className="bg-slate-50 rounded-xl p-3 border border-slate-200/80">
-                <div className="flex items-center justify-between text-xs font-bold text-slate-800 mb-1">
-                  <span className="font-mono">Code: RC-8842</span>
-                  <span className="text-purple-700 font-bold text-[11px]">Checked-In</span>
-                </div>
-                <div className="text-[11px] text-slate-500">
-                  {isRTL ? 'المريض: سارة الغامدي — عيادة القلب' : 'Sarah Al-Ghamdi — Cardiology'}
-                </div>
-              </div>
-
-              <div className="bg-slate-50 rounded-xl p-3 border border-slate-200/80">
-                <div className="flex items-center justify-between text-xs font-bold text-slate-800 mb-1">
-                  <span className="font-mono">Code: RC-7721</span>
-                  <span className="text-amber-600 font-bold text-[11px]">En Route</span>
-                </div>
-                <div className="text-[11px] text-slate-500">
-                  {isRTL ? 'المريض: فهد العتيبي — الباطنية' : 'Fahad Al-Otaibi — Internal Med'}
-                </div>
+              <div className="bg-slate-50 rounded-xl p-4 border border-dashed border-slate-200 text-center text-xs text-slate-400">
+                {isRTL ? 'لا توجد مواعيد حضورية مسجلة اليوم' : 'No in-person arrivals queued today'}
               </div>
             </div>
           </div>

@@ -59,20 +59,8 @@ export const FRESH_PRIMARY_CASE: ClinicalCase = {
   currentStage: 'INTAKE_RECEIVED',
   stage: 1,
   doctorSelectionPreference: 'need_assistance',
-  treatingDoctor: {
-    name: 'د. عبدالله الشمري',
-    hospital: 'مستشفى رعاية الرياض',
-    city: 'الرياض',
-    focusQuestions: ['', '', ''],
-    focusQuestionsEn: ['', '', ''],
-  },
-  consultant: {
-    name: 'Dr. Arjun Mehta',
-    center: 'KIMS Heart Institute',
-    city: 'Hyderabad, India',
-    opinionEnglish: '',
-    opinionArabic: '',
-  },
+  treatingDoctor: undefined,
+  consultant: undefined,
   pricing: {
     tier: 1,
     tierName: 'Written',

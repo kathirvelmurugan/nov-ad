@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { apiClient } from '../../services/apiClient';
 import { PALETTE, getInputStyle, getPrimaryButtonStyle, labelStyle } from './authTypesAndUtils';
 import { SEEDED_TENANT_HOSPITALS, SEEDED_STAFF_DIRECTORY } from '../../data/platformSeed';
+import { TENANTS_KEY, PLATFORM_USERS_KEY } from '../../hooks/workflowConstants';
 import { RoleCode, TenantHospital, StaffAccountRecord } from '../../types';
 import { Building2, KeyRound, Phone, CheckCircle2, AlertCircle } from 'lucide-react';
 
@@ -26,7 +27,7 @@ export const HospitalStaffLoginForm: React.FC<HospitalStaffLoginFormProps> = ({
   // Read dynamic hospitals from localStorage or fall back to seed
   const [hospitals, setHospitals] = useState<TenantHospital[]>(() => {
     try {
-      const saved = localStorage.getItem('alo_tenants_v3.0');
+      const saved = localStorage.getItem(TENANTS_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
@@ -80,7 +81,7 @@ export const HospitalStaffLoginForm: React.FC<HospitalStaffLoginFormProps> = ({
   // Read staff accounts dynamically
   const getDynamicStaff = (): StaffAccountRecord[] => {
     try {
-      const stored = localStorage.getItem('alo_platform_users_v3.0');
+      const stored = localStorage.getItem(PLATFORM_USERS_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed)) return parsed;

@@ -3,7 +3,7 @@ import { Persona } from '../types';
 export const PERSONAS: Persona[] = [
   {
     code: 'P',
-    name: 'سالم بن عبد العزيز العامري',
+    name: 'المريض',
     title: 'المريض (Patient)',
     badge: '👤 Patient',
     avatar: '👨‍💼',
@@ -47,7 +47,7 @@ export const PERSONAS: Persona[] = [
   },
   {
     code: 'K',
-    name: 'Dr. Arjun Mehta',
+    name: 'الاستشاري الدولي',
     title: 'الاستشاري الدولي (Indian Consultant)',
     badge: '🇮🇳 Indian Consultant',
     avatar: '👨‍⚕️',
@@ -58,7 +58,7 @@ export const PERSONAS: Persona[] = [
   },
   {
     code: 'HA',
-    name: 'د. فهد العتيبي',
+    name: 'مدير المجمع الطبي',
     title: 'مدير المجمع الطبي (Medical Center Admin)',
     badge: '🏥 Hospital Admin',
     avatar: '🏢',
@@ -69,7 +69,7 @@ export const PERSONAS: Persona[] = [
   },
   {
     code: 'L',
-    name: 'أخصائي المختبر (مستشفى رعاية الرياض)',
+    name: 'أخصائي المختبر',
     title: 'المختبر التشخيصي (Diagnostic Lab)',
     badge: '🔬 Facility Lab',
     avatar: '🧪',

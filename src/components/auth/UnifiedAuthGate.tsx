@@ -18,6 +18,7 @@ import {
 } from './authTypesAndUtils';
 import { RoleCode, StaffAccountRecord } from '../../types';
 import { SEEDED_STAFF_DIRECTORY } from '../../data/platformSeed';
+import { PLATFORM_USERS_KEY } from '../../hooks/workflowConstants';
 import { PortalSelectorBar } from './PortalSelectorBar';
 import { HospitalStaffLoginForm } from './HospitalStaffLoginForm';
 import { PhoneEntryStep } from './steps/PhoneEntryStep';
@@ -98,7 +99,7 @@ export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }:
     (rawPhone: string) => {
       let allStaff: StaffAccountRecord[] = SEEDED_STAFF_DIRECTORY;
       try {
-        const stored = localStorage.getItem('alo_platform_users_v3.0');
+        const stored = localStorage.getItem(PLATFORM_USERS_KEY);
         if (stored) {
           allStaff = JSON.parse(stored);
         }

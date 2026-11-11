@@ -88,6 +88,16 @@ apiRouter.post('/tenants', async (req, res) => {
   return res.json({ success: true, data: tenant });
 });
 
+apiRouter.delete('/tenants/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query('DELETE FROM tenants WHERE id = $1', [id]);
+  } catch (err) {
+    memoryTenants = memoryTenants.filter((x) => x.id !== id);
+  }
+  return res.json({ success: true, deletedId: id });
+});
+
 // ── API Routes: Platform Staff & Doctors ─────────────────────────────────────
 apiRouter.get('/users', async (req, res) => {
   try {
@@ -139,6 +149,58 @@ apiRouter.post('/users', async (req, res) => {
     memoryUsers = [user, ...memoryUsers.filter((x) => x.id !== user.id)];
   }
   return res.json({ success: true, data: user });
+});
+
+apiRouter.delete('/users/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query('DELETE FROM platform_users WHERE id = $1', [id]);
+  } catch (err) {
+    memoryUsers = memoryUsers.filter((x) => x.id !== id);
+  }
+  return res.json({ success: true, deletedId: id });
+});
+
+// ── Clean-Slate Purge Endpoint ───────────────────────────────────────────────
+apiRouter.post('/admin/clean-slate', async (req, res) => {
+  try {
+    // 1. Wipe tenants
+    await pool.query('TRUNCATE TABLE tenants CASCADE');
+    // 2. Wipe cases & audit
+    try { await pool.query('TRUNCATE TABLE clinical_cases CASCADE'); } catch {}
+    try { await pool.query('TRUNCATE TABLE cases CASCADE'); } catch {}
+    try { await pool.query('TRUNCATE TABLE audit_logs CASCADE'); } catch {}
+    // 3. Remove all users except Super Admin
+    await pool.query("DELETE FROM platform_users WHERE role_code != 'AD'");
+    // 4. Ensure Super Admin Adrian Lewis exists
+    await pool.query(`
+      INSERT INTO platform_users (id, staff_code, full_name, full_name_ar, role_code, phone, pin, department, status, created_at)
+      VALUES ('staff-ad-01', '00001', 'Adrian Lewis', 'المشرف العام أدريان لويس', 'AD', '+966500000001', '1234', 'Platform Operations', 'active', NOW())
+      ON CONFLICT (id) DO NOTHING
+    `);
+    memoryTenants = [];
+    memoryCases = [];
+    memoryAudit = [];
+    memoryUsers = [
+      {
+        id: 'staff-ad-01',
+        staffCode: '00001',
+        fullName: 'Adrian Lewis',
+        fullNameAr: 'المشرف العام أدريان لويس',
+        roleCode: 'AD',
+        phone: '+966500000001',
+        pin: '1234',
+        department: 'Platform Operations',
+        status: 'active',
+        createdAt: new Date().toISOString(),
+      }
+    ];
+    return res.json({ success: true, message: 'Database successfully purged to clean-slate state (Super Admin only).' });
+  } catch (err) {
+    console.error('Clean-slate purge failed:', err);
+    memoryTenants = [];
+    return res.status(500).json({ error: 'Failed to purge database', details: String(err) });
+  }
 });
 
 // ── API Routes: Cases ────────────────────────────────────────────────────────

@@ -3,6 +3,7 @@ import { Stethoscope } from 'lucide-react';
 import { ClinicalCase, StaffAccountRecord, TenantHospital } from '../../types';
 import { INITIAL_MEDICAL_CENTER_DOCTORS } from '../../data/medicalCenterDoctors';
 import { SEEDED_STAFF_DIRECTORY, SEEDED_TENANT_HOSPITALS } from '../../data/platformSeed';
+import { TENANTS_KEY, PLATFORM_USERS_KEY } from '../../hooks/workflowConstants';
 
 interface Props {
   activeCase: ClinicalCase;
@@ -21,12 +22,12 @@ export const IntakeDoctorSelectionCard: React.FC<Props> = ({
     let allHospitals: TenantHospital[] = SEEDED_TENANT_HOSPITALS;
 
     try {
-      const storedUsers = localStorage.getItem('alo_platform_users_v3.0');
+      const storedUsers = localStorage.getItem(PLATFORM_USERS_KEY);
       if (storedUsers) {
         const parsed = JSON.parse(storedUsers);
         if (Array.isArray(parsed)) allStaff = parsed;
       }
-      const storedHospitals = localStorage.getItem('alo_tenants_v3.0');
+      const storedHospitals = localStorage.getItem(TENANTS_KEY);
       if (storedHospitals) {
         const parsedH = JSON.parse(storedHospitals);
         if (Array.isArray(parsedH)) allHospitals = parsedH;

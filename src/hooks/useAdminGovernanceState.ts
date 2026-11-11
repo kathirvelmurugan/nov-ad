@@ -151,10 +151,20 @@ export function useAdminGovernanceState(
     } catch {}
   }, [impersonationSession]);
 
-  // Initial backend fetch on mount
+  // Initial backend fetch on mount & legacy cache auto-eviction
   useEffect(() => {
+    try {
+      [
+        'alo_platform_users_v3.0',
+        'alo_tenants_v3.0',
+        'alo_cases_v3.0',
+        'alo_platform_users_v2.0',
+        'alo_tenants_v2.0',
+      ].forEach((k) => localStorage.removeItem(k));
+    } catch {}
+
     apiClient.fetchTenants().then((fetched) => {
-      if (Array.isArray(fetched) && fetched.length > 0) setTenants(fetched);
+      if (Array.isArray(fetched)) setTenants(fetched);
     });
     apiClient.fetchUsers().then((fetched) => {
       if (Array.isArray(fetched) && fetched.length > 0) setStaffDirectory(fetched);

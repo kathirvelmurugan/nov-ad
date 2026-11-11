@@ -1,4 +1,5 @@
 import { TenantHospital, StaffAccountRecord, ClinicalCase, AuditLogEntry } from '../types';
+import { TENANTS_KEY, PLATFORM_USERS_KEY } from '../hooks/workflowConstants';
 
 function getApiBase(): string {
   if (typeof window === 'undefined') return '';
@@ -33,8 +34,8 @@ export const apiClient = {
       const res = await safeFetch('/api/tenants', { headers: { 'Content-Type': 'application/json' } });
       if (res.ok) {
         const json = await res.json();
-        if (Array.isArray(json.data) && json.data.length > 0) {
-          localStorage.setItem('alo_tenants_v3.0', JSON.stringify(json.data));
+        if (Array.isArray(json.data)) {
+          localStorage.setItem(TENANTS_KEY, JSON.stringify(json.data));
           return json.data;
         }
       }
@@ -42,7 +43,7 @@ export const apiClient = {
       console.warn('[API] Failed to fetch tenants from backend, using local fallback:', e);
     }
     try {
-      const saved = localStorage.getItem('alo_tenants_v3.0');
+      const saved = localStorage.getItem(TENANTS_KEY);
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -77,8 +78,8 @@ export const apiClient = {
       const res = await safeFetch('/api/users', { headers: { 'Content-Type': 'application/json' } });
       if (res.ok) {
         const json = await res.json();
-        if (Array.isArray(json.data) && json.data.length > 0) {
-          localStorage.setItem('alo_platform_users_v3.0', JSON.stringify(json.data));
+        if (Array.isArray(json.data)) {
+          localStorage.setItem(PLATFORM_USERS_KEY, JSON.stringify(json.data));
           return json.data;
         }
       }
@@ -86,10 +87,22 @@ export const apiClient = {
       console.warn('[API] Failed to fetch users from backend, using local fallback:', e);
     }
     try {
-      const saved = localStorage.getItem('alo_platform_users_v3.0');
+      const saved = localStorage.getItem(PLATFORM_USERS_KEY);
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
+    }
+  },
+
+  async cleanSlateDatabase(): Promise<boolean> {
+    try {
+      const res = await safeFetch('/api/admin/clean-slate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      return res.ok;
+    } catch {
+      return false;
     }
   },
 
