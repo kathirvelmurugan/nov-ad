@@ -9,7 +9,8 @@ import {
   AdminCatalogsState,
   ImpersonationSession,
 } from '../types';
-import { SEEDED_TENANT_HOSPITALS, SEEDED_STAFF_DIRECTORY } from '../data/platformSeed';
+const SEEDED_TENANT_HOSPITALS: TenantHospital[] = [];
+const SEEDED_STAFF_DIRECTORY: StaffAccountRecord[] = [];
 import { PERSONAS } from '../data/personas';
 import {
   TENANTS_KEY,

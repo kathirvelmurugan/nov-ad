@@ -6,46 +6,38 @@ interface HospitalOverviewAndReferralsTabProps {
   isRTL: boolean;
   hospital: TenantHospital;
   activeCase?: ClinicalCase;
+  cases?: ClinicalCase[];
 }
 
 export const HospitalOverviewAndReferralsTab: React.FC<HospitalOverviewAndReferralsTabProps> = ({
   isRTL,
   hospital,
   activeCase,
+  cases = [],
 }) => {
-  // Mock recent referrals for this hospital tenant
-  const referrals = [
-    {
-      id: activeCase?.id || 'CASE-2026-901',
-      patientName: activeCase?.patientName || (isRTL ? 'مريض محال' : 'Referred Patient'),
-      specialty: activeCase?.specialty || 'Cardiology',
-      urgency: 'HIGH',
-      assignedDoctor: 'Dr. Adrian Lewis',
-      checkInCode: (activeCase?.metadata as any)?.checkInCode || 'RC-8842',
-      checkInStatus: 'CHECKED_IN',
-      time: '10:30 AM',
-    },
-    {
-      id: 'CASE-2026-884',
-      patientName: 'Fahad Al-Otaibi',
-      specialty: 'Internal Medicine',
-      urgency: 'ROUTINE',
-      assignedDoctor: 'Dr. David Nunez',
-      checkInCode: 'RC-7721',
-      checkInStatus: 'PENDING_ARRIVAL',
-      time: '11:15 AM',
-    },
-    {
-      id: 'CASE-2026-840',
-      patientName: 'Noura Al-Shehri',
-      specialty: 'Endocrinology',
-      urgency: 'ROUTINE',
-      assignedDoctor: 'Dr. Marcus Vance',
-      checkInCode: 'RC-6619',
-      checkInStatus: 'COMPLETED',
-      time: '09:00 AM',
-    },
-  ];
+  const referrals = (cases && cases.length > 0)
+    ? cases.map((c, idx) => ({
+        id: c.caseNumber || c.id,
+        patientName: isRTL ? c.patientNameAr || c.patientName || 'مريض' : c.patientNameEn || c.patientName || 'Patient',
+        specialty: isRTL ? c.specialtyAr || c.specialty || 'الطب العام' : c.specialtyEn || c.specialty || 'General Medicine',
+        urgency: (c as any).urgency || 'HIGH',
+        assignedDoctor: c.treatingDoctor?.name || 'Dr. Adrian Lewis',
+        checkInCode: (c.metadata as any)?.checkInCode || `RC-${8800 + idx}`,
+        checkInStatus: c.currentStage === 'CLOSED' ? 'COMPLETED' : c.currentStage === 'PARTNER_SERVICES' ? 'CHECKED_IN' : 'PENDING_ARRIVAL',
+        time: c.createdAt ? new Date(c.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '10:30 AM',
+      }))
+    : (activeCase && activeCase.caseNumber)
+    ? [{
+        id: activeCase.caseNumber || activeCase.id,
+        patientName: isRTL ? activeCase.patientNameAr || activeCase.patientName || 'مريض' : activeCase.patientNameEn || activeCase.patientName || 'Patient',
+        specialty: isRTL ? activeCase.specialtyAr || activeCase.specialty || 'الطب العام' : activeCase.specialtyEn || activeCase.specialty || 'General Medicine',
+        urgency: 'HIGH',
+        assignedDoctor: activeCase.treatingDoctor?.name || 'Dr. Adrian Lewis',
+        checkInCode: (activeCase.metadata as any)?.checkInCode || 'RC-8842',
+        checkInStatus: 'PENDING_ARRIVAL',
+        time: '10:30 AM',
+      }]
+    : [];
 
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -75,9 +67,9 @@ export const HospitalOverviewAndReferralsTab: React.FC<HospitalOverviewAndReferr
               <FileCheck2 className="w-4 h-4" />
             </span>
           </div>
-          <div className="text-2xl font-black text-slate-900">14</div>
+          <div className="text-2xl font-black text-slate-900">{referrals.length}</div>
           <p className="text-[11px] text-emerald-600 font-semibold mt-1">
-            {isRTL ? 'جميع الحالات مؤكدة مالياً' : 'All Verified & Guaranteed'}
+            {isRTL ? 'إجمالي الحالات المسجلة' : 'Total Enrolled Cases'}
           </p>
         </div>
 
@@ -90,7 +82,7 @@ export const HospitalOverviewAndReferralsTab: React.FC<HospitalOverviewAndReferr
               <QrCode className="w-4 h-4" />
             </span>
           </div>
-          <div className="text-2xl font-black text-slate-900">6</div>
+          <div className="text-2xl font-black text-slate-900">{referrals.filter(r => r.checkInStatus !== 'COMPLETED').length}</div>
           <p className="text-[11px] text-purple-700 font-semibold mt-1">
             {isRTL ? 'جاهزة لدى شباك الاستقبال' : 'Ready at Reception Counter'}
           </p>

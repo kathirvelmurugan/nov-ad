@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../../services/apiClient';
 import { PALETTE, getInputStyle, getPrimaryButtonStyle, labelStyle } from './authTypesAndUtils';
-import { SEEDED_TENANT_HOSPITALS, SEEDED_STAFF_DIRECTORY } from '../../data/platformSeed';
+const SEEDED_TENANT_HOSPITALS: TenantHospital[] = [];
+const SEEDED_STAFF_DIRECTORY: StaffAccountRecord[] = [];
 import { TENANTS_KEY, PLATFORM_USERS_KEY } from '../../hooks/workflowConstants';
 import { RoleCode, TenantHospital, StaffAccountRecord } from '../../types';
 import { Building2, KeyRound, Phone, CheckCircle2, AlertCircle } from 'lucide-react';

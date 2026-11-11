@@ -82,6 +82,8 @@ export const PatientLandingView: React.FC<Props> = ({
           else setAccountModalOpen(true);
         }}
         onScrollToSection={scrollToSection}
+        userSession={userSession}
+        onLogout={onLogout}
       />
 
       <LandingHeroSection

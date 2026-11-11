@@ -12,8 +12,17 @@ export function purgeLegacyStorage(): void {
       const key = localStorage.key(i);
       if (!key) continue;
 
-      // Keep user preferences (language and theme)
-      if (key === 'alo_lang_preference' || key === 'alo_theme_preference') {
+      // Keep user preferences, active sessions, and clean slate database keys
+      if (
+        key === 'alo_lang_preference' ||
+        key === 'alo_theme_preference' ||
+        key.includes('_clean') ||
+        key.includes('session') ||
+        key.includes('cases') ||
+        key.includes('tenants') ||
+        key.includes('users') ||
+        key.includes('pins')
+      ) {
         continue;
       }
 

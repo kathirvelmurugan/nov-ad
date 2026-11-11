@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
-import { HeartPulse, Globe, User, Menu, X } from 'lucide-react';
+import { HeartPulse, Globe, User, Menu, X, LogOut } from 'lucide-react';
+import { UserSession } from '../../types';
 
 interface Props {
   isAr: boolean;
   onToggleLang: () => void;
   onOpenAccountModal: () => void;
   onScrollToSection: (id: string) => void;
+  userSession?: UserSession | null;
+  onLogout?: () => void;
 }
 
 export const LandingHeader: React.FC<Props> = ({
@@ -13,6 +16,8 @@ export const LandingHeader: React.FC<Props> = ({
   onToggleLang,
   onOpenAccountModal,
   onScrollToSection,
+  userSession,
+  onLogout,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -88,13 +93,38 @@ export const LandingHeader: React.FC<Props> = ({
             <span>{isAr ? 'English' : 'العربية'}</span>
           </button>
 
-          <button
-            onClick={onOpenAccountModal}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-extrabold text-white bg-slate-900 hover:bg-slate-800 transition-all shadow-sm active:scale-95 cursor-pointer"
-          >
-            <User className="w-3.5 h-3.5 text-emerald-400" />
-            <span>{isAr ? 'تسجيل الدخول' : 'Login'}</span>
-          </button>
+          {userSession?.isAuthenticated ? (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={onOpenAccountModal}
+                className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold text-slate-800 bg-emerald-50/80 hover:bg-emerald-100 border border-emerald-300 transition-all cursor-pointer shadow-sm"
+              >
+                <div className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-bold">
+                  {(userSession.fullName || userSession.phone || 'U').charAt(0).toUpperCase()}
+                </div>
+                <span className="font-extrabold max-w-[130px] truncate">
+                  {userSession.fullName || userSession.phone || (isAr ? 'حسابي' : 'My Profile')}
+                </span>
+              </button>
+              {onLogout && (
+                <button
+                  onClick={onLogout}
+                  className="p-2 rounded-xl text-rose-600 hover:bg-rose-50 border border-rose-200 transition-all cursor-pointer"
+                  title={isAr ? 'تسجيل الخروج' : 'Logout'}
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          ) : (
+            <button
+              onClick={onOpenAccountModal}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-extrabold text-white bg-slate-900 hover:bg-slate-800 transition-all shadow-sm active:scale-95 cursor-pointer"
+            >
+              <User className="w-3.5 h-3.5 text-emerald-400" />
+              <span>{isAr ? 'تسجيل الدخول' : 'Login'}</span>
+            </button>
+          )}
         </div>
 
         {/* Mobile Hamburger Button */}
@@ -147,16 +177,43 @@ export const LandingHeader: React.FC<Props> = ({
           </nav>
 
           <div className="pt-3 border-t border-slate-100 flex flex-col gap-2">
-            <button
-              onClick={() => {
-                setMobileMenuOpen(false);
-                onOpenAccountModal();
-              }}
-              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-xs bg-slate-900 text-white shadow cursor-pointer"
-            >
-              <User className="w-4 h-4 text-emerald-400" />
-              <span>{isAr ? 'تسجيل الدخول' : 'Login'}</span>
-            </button>
+            {userSession?.isAuthenticated ? (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    onOpenAccountModal();
+                  }}
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-xs bg-emerald-50 text-slate-800 border border-emerald-300 shadow cursor-pointer"
+                >
+                  <User className="w-3.5 h-3.5 text-emerald-600" />
+                  <span className="truncate">{userSession.fullName || userSession.phone || (isAr ? 'حسابي' : 'My Profile')}</span>
+                </button>
+                {onLogout && (
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      onLogout();
+                    }}
+                    className="p-2.5 rounded-xl bg-rose-50 text-rose-600 border border-rose-200"
+                    title={isAr ? 'تسجيل الخروج' : 'Logout'}
+                  >
+                    <LogOut className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            ) : (
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  onOpenAccountModal();
+                }}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-xs bg-slate-900 text-white shadow cursor-pointer"
+              >
+                <User className="w-4 h-4 text-emerald-400" />
+                <span>{isAr ? 'تسجيل الدخول' : 'Login'}</span>
+              </button>
+            )}
 
             <button
               onClick={() => {

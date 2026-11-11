@@ -275,7 +275,19 @@ export const PatientIntakeView: React.FC<Props> = ({
           </div>
 
           <button
-            onClick={onAdvanceStage}
+            onClick={() => {
+              const freshId = activeCase.id && !activeCase.id.startsWith('seed-') ? activeCase.id : `case-${Date.now()}`;
+              const freshCaseNum = activeCase.caseNumber || `CASE-2026-${Math.floor(1000 + Math.random() * 9000)}`;
+              onUpdateCase({
+                id: freshId,
+                caseNumber: freshCaseNum,
+                currentStage: 'NURSE_CHECK',
+                stage: 2,
+                createdAt: activeCase.createdAt || new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+              });
+              onAdvanceStage();
+            }}
             disabled={!privacyAgreed}
             className="w-full sm:w-auto bg-gradient-to-r from-alo-teal to-teal-700 hover:from-teal-700 hover:to-teal-800 disabled:opacity-50 text-white font-extrabold py-3 px-8 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-sm active:scale-95 cursor-pointer"
           >

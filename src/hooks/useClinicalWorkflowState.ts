@@ -10,8 +10,8 @@
 
 import { useState, useEffect } from 'react';
 import { PERSONAS } from '../data/personas';
-import { SEED_CASES } from '../data/seedCases';
 import { Persona, ClinicalCase, ClinicalStage } from '../types';
+import { apiClient } from '../services/apiClient';
 import {
   STORAGE_KEY,
   ACTIVE_CASE_KEY,
@@ -47,24 +47,12 @@ export function useClinicalWorkflowState() {
         const token = search.get('token') || search.get('magic');
         const pathname = window.location.pathname.toLowerCase();
 
-        if (token || role === 'K' || role === 'CONSULTANT' || pathname.includes('/consultant')) {
-          return PERSONAS.find((p) => p.code === 'K') || PERSONAS[0];
-        }
-        if (role === 'D' || role === 'DOCTOR' || pathname.includes('/doctor')) {
-          return PERSONAS.find((p) => p.code === 'D') || PERSONAS[0];
-        }
-        if (role === 'N' || role === 'NURSE' || pathname.includes('/nurse')) {
-          return PERSONAS.find((p) => p.code === 'N') || PERSONAS[0];
-        }
-        if (role === 'C' || role === 'COORDINATOR' || pathname.includes('/coordinator')) {
-          return PERSONAS.find((p) => p.code === 'C') || PERSONAS[0];
-        }
-        if (role === 'HA' || role === 'HOSPITAL' || pathname.includes('/hospital')) {
-          return PERSONAS.find((p) => p.code === 'HA') || PERSONAS[0];
-        }
-        if (role === 'AD' || role === 'SUPERADMIN' || pathname.includes('/admin')) {
-          return PERSONAS.find((p) => p.code === 'AD') || PERSONAS[0];
-        }
+        if (token || role === 'K' || role === 'CONSULTANT' || pathname.includes('/consultant')) return PERSONAS.find((p) => p.code === 'K') || PERSONAS[0];
+        if (role === 'D' || role === 'DOCTOR' || pathname.includes('/doctor')) return PERSONAS.find((p) => p.code === 'D') || PERSONAS[0];
+        if (role === 'N' || role === 'NURSE' || pathname.includes('/nurse')) return PERSONAS.find((p) => p.code === 'N') || PERSONAS[0];
+        if (role === 'C' || role === 'COORDINATOR' || pathname.includes('/coordinator')) return PERSONAS.find((p) => p.code === 'C') || PERSONAS[0];
+        if (role === 'HA' || role === 'HOSPITAL' || pathname.includes('/hospital')) return PERSONAS.find((p) => p.code === 'HA') || PERSONAS[0];
+        if (role === 'AD' || role === 'SUPERADMIN' || pathname.includes('/admin')) return PERSONAS.find((p) => p.code === 'AD') || PERSONAS[0];
 
         // Check stored session on page refresh to keep active persona!
         const savedSession = localStorage.getItem(USER_SESSION_KEY);
@@ -124,23 +112,9 @@ export function useClinicalWorkflowState() {
     try {
       if (typeof window !== 'undefined') {
         const search = new URLSearchParams(window.location.search);
-        if (
-          search.get('demo') === '1' ||
-          search.get('cockpit') === '1' ||
-          search.get('auth') === 'bypass' ||
-          search.get('token') ||
-          search.get('magic') ||
-          window.location.hash === '#cockpit'
-        ) {
+        if (search.get('demo') === '1' || search.get('cockpit') === '1' || search.get('auth') === 'bypass' || search.get('token') || search.get('magic') || window.location.hash === '#cockpit') {
           const roleCode = (search.get('role') || 'P').toUpperCase();
-          const personaId =
-            roleCode === 'D' || roleCode === 'DOCTOR' ? 'doctor'
-            : roleCode === 'K' || roleCode === 'CONSULTANT' ? 'consultant'
-            : roleCode === 'N' || roleCode === 'NURSE' ? 'nurse'
-            : roleCode === 'C' || roleCode === 'COORDINATOR' ? 'coordinator'
-            : roleCode === 'HA' || roleCode === 'HOSPITAL' ? 'hospital_admin'
-            : roleCode === 'AD' || roleCode === 'SUPERADMIN' ? 'super_admin'
-            : 'patient';
+          const personaId = roleCode === 'D' ? 'doctor' : roleCode === 'K' ? 'consultant' : roleCode === 'N' ? 'nurse' : roleCode === 'C' ? 'coordinator' : roleCode === 'HA' ? 'hospital_admin' : roleCode === 'AD' ? 'super_admin' : 'patient';
           return { isAuthenticated: true, phone: '+966501111111', personaId, isGuest: true, expiresAt: Date.now() + 30 * 24 * 3600 * 1000, lang: 'ar' };
         }
         const saved = localStorage.getItem(USER_SESSION_KEY);
@@ -201,14 +175,34 @@ export function useClinicalWorkflowState() {
   });
 
   // ─────────────────────────────────────────────────────────────────────────
-  // localStorage Sync Effects
+  // Database & LocalStorage Synchronization
   // ─────────────────────────────────────────────────────────────────────────
-  useEffect(() => { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(cases)); } catch (e) { console.warn(e); } }, [cases]);
+  useEffect(() => {
+    let mounted = true;
+    const syncCases = async () => {
+      try {
+        const remoteCases = await apiClient.fetchCases();
+        if (mounted && Array.isArray(remoteCases) && remoteCases.length > 0) {
+          setCases(remoteCases);
+        }
+      } catch (e) {}
+    };
+    syncCases();
+    const timer = setInterval(syncCases, 15000);
+    return () => { mounted = false; clearInterval(timer); };
+  }, []);
+
+  useEffect(() => { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(cases)); } catch (e) {} }, [cases]);
   useEffect(() => { try { localStorage.setItem(ACTIVE_CASE_KEY, activeCaseId); } catch (e) {} }, [activeCaseId]);
   useEffect(() => { try { localStorage.setItem(THEME_KEY, theme); } catch (e) {} }, [theme]);
   useEffect(() => { try { localStorage.setItem(LANG_KEY, lang); } catch (e) {} }, [lang]);
   useEffect(() => { try { localStorage.setItem('alo_patient_subview_v3.0', patientSubView); } catch (e) {} }, [patientSubView]);
   useEffect(() => { try { localStorage.setItem('alo_selected_service_v3.0', selectedServiceId); } catch (e) {} }, [selectedServiceId]);
+  useEffect(() => {
+    if (userSession && userSession.isAuthenticated) {
+      try { localStorage.setItem(USER_SESSION_KEY, JSON.stringify(userSession)); } catch (e) {}
+    }
+  }, [userSession]);
 
   // Dark mode HTML class sync
   useEffect(() => {
@@ -277,12 +271,24 @@ export function useClinicalWorkflowState() {
     setCases((prev) => {
       const targetId = activeCase.id || FRESH_PRIMARY_CASE.id;
       const exists = prev.some((c) => c.id === targetId);
+      let updatedCase: ClinicalCase;
+      let nextCases: ClinicalCase[];
       if (!exists) {
-        const createdCase = { ...activeCase, ...updated, id: targetId };
-        setActiveCaseId(createdCase.id);
-        return [createdCase, ...prev];
+        updatedCase = { ...activeCase, ...updated, id: targetId };
+        setActiveCaseId(updatedCase.id);
+        nextCases = [updatedCase, ...prev];
+      } else {
+        nextCases = prev.map((c) => {
+          if (c.id === activeCase.id) {
+            updatedCase = { ...c, ...updated };
+            return updatedCase;
+          }
+          return c;
+        });
+        if (!updatedCase!) updatedCase = { ...activeCase, ...updated };
       }
-      return prev.map((c) => (c.id === activeCase.id ? { ...c, ...updated } : c));
+      apiClient.saveCase(updatedCase).catch(() => {});
+      return nextCases;
     });
   };
 
@@ -397,15 +403,10 @@ export function useClinicalWorkflowState() {
   };
 
   const handleResetDemo = () => {
-    const confirmMsg = lang === 'ar'
-      ? 'هل أنت متأكد من رغبتك في إعادة ضبط جميع الحالات إلى حالتها الأصلية؟ سيتم مسح أي تعديلات محلية في المتصفح.'
-      : 'Are you sure you want to reset all 10 clinical cases to initial demo state? All local browser changes will be cleared.';
+    const confirmMsg = lang === 'ar' ? 'إعادة ضبط الحالات إلى حالة نظيفة؟' : 'Reset all clinical cases to clean state?';
     if (window.confirm(confirmMsg)) {
       try { localStorage.removeItem(STORAGE_KEY); localStorage.removeItem(ACTIVE_CASE_KEY); } catch (e) {}
-      setCases(SEED_CASES);
-      setActiveCaseId(SEED_CASES[0].id);
-      setPatientSubView('landing');
-      setSelectedServiceId('second-opinion');
+      setCases([]); setActiveCaseId(''); setPatientSubView('landing'); setSelectedServiceId('second-opinion');
     }
   };
 

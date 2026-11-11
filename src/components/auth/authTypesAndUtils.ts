@@ -1,6 +1,6 @@
 import React from 'react';
 import { RoleCode, StaffAccountRecord } from '../../types';
-import { SEEDED_STAFF_DIRECTORY } from '../../data/platformSeed';
+const SEEDED_STAFF_DIRECTORY: StaffAccountRecord[] = [];
 import { PLATFORM_USERS_KEY } from '../../hooks/workflowConstants';
 
 export const PALETTE = {

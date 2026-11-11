@@ -93,6 +93,9 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
         lang={lang}
         onSelectPersona={handleSelectPersona}
         activePersona={activePersona}
+        userSession={userSession}
+        onLogout={handleLogout}
+        cases={cases}
       />
     );
   }
@@ -105,6 +108,9 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
         activePersona={activePersona}
         activeCase={activeCase}
         onSelectPersona={handleSelectPersona}
+        userSession={userSession}
+        onLogout={handleLogout}
+        cases={cases}
       />
     );
   }
@@ -147,15 +153,12 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
           <button
             type="button"
             onClick={() => {
-              const targetCode = isPaid || activeCase.referralApproved ? 'C' : 'P';
-              const target = PERSONAS.find((x) => x.code === targetCode);
+              const target = PERSONAS.find((x) => x.code === 'P');
               if (target) handleSelectPersona(target);
             }}
             className="px-5 py-2.5 rounded-xl bg-alo-teal text-white text-xs font-extrabold shadow-sm hover:opacity-95 cursor-pointer"
           >
-            {isPaid || activeCase.referralApproved
-              ? (isAr ? 'الانتقال إلى منسق رعاية ألو (C01) →' : 'Switch to ALO Coordinator (C01) →')
-              : (isAr ? 'العودة إلى بوابة المريض →' : 'Return to Patient Portal →')}
+            {isAr ? 'العودة إلى بوابة المريض الرئيسية →' : 'Return to Patient Portal →'}
           </button>
         </div>
       );
@@ -270,7 +273,6 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
           onAdvanceStage={handleAdvanceStage}
           onUpdateCase={handleUpdateCase}
           onResetActiveCase={handleResetActiveCase}
-          onSelectRole={(code) => { const p = PERSONAS.find((x) => x.code === code); if (p) handleSelectPersona(p); }}
           onBackToLanding={() => handleSelectPatientSubView('landing')}
           onOpenTelehealth={() => handleSelectPatientSubView('telehealth')}
           onOpenPayment={() => { if (canPatientCheckout) handleSelectPatientSubView('checkout'); }}
@@ -322,7 +324,6 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
         onAdvanceStage={handleAdvanceStage}
         onUpdateCase={handleUpdateCase}
         onResetActiveCase={handleResetActiveCase}
-        onSelectRole={(code) => { const p = PERSONAS.find((x) => x.code === code); if (p) handleSelectPersona(p); }}
         onBackToLanding={() => handleSelectPatientSubView('landing')}
         onOpenTelehealth={() => handleSelectPatientSubView('telehealth')}
         onOpenPayment={() => handleSelectPatientSubView('checkout')}
@@ -338,7 +339,6 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
       onAdvanceStage={handleAdvanceStage}
       onUpdateCase={handleUpdateCase}
       onResetActiveCase={handleResetActiveCase}
-      onSelectRole={(code) => { const p = PERSONAS.find((x) => x.code === code); if (p) handleSelectPersona(p); }}
       onOpenTelehealth={() => handleSelectPatientSubView('telehealth')}
       lang={lang}
     />

@@ -2,7 +2,8 @@ import React, { useMemo } from 'react';
 import { Stethoscope } from 'lucide-react';
 import { ClinicalCase, StaffAccountRecord, TenantHospital } from '../../types';
 import { INITIAL_MEDICAL_CENTER_DOCTORS } from '../../data/medicalCenterDoctors';
-import { SEEDED_STAFF_DIRECTORY, SEEDED_TENANT_HOSPITALS } from '../../data/platformSeed';
+const SEEDED_STAFF_DIRECTORY: StaffAccountRecord[] = [];
+const SEEDED_TENANT_HOSPITALS: TenantHospital[] = [];
 import { TENANTS_KEY, PLATFORM_USERS_KEY } from '../../hooks/workflowConstants';
 
 interface Props {

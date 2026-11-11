@@ -1,5 +1,5 @@
 import { TenantHospital, StaffAccountRecord, ClinicalCase, AuditLogEntry } from '../types';
-import { TENANTS_KEY, PLATFORM_USERS_KEY } from '../hooks/workflowConstants';
+import { TENANTS_KEY, PLATFORM_USERS_KEY, STORAGE_KEY } from '../hooks/workflowConstants';
 
 function getApiBase(): string {
   if (typeof window === 'undefined') return '';
@@ -153,6 +153,27 @@ export const apiClient = {
   },
 
   // ── Cases ─────────────────────────────────────────────────────────────────
+  async fetchCases(): Promise<ClinicalCase[]> {
+    try {
+      const res = await safeFetch('/api/cases', { headers: { 'Content-Type': 'application/json' } });
+      if (res.ok) {
+        const json = await res.json();
+        if (Array.isArray(json.data)) {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(json.data));
+          return json.data;
+        }
+      }
+    } catch (e) {
+      console.warn('[API] Failed to fetch cases from backend, using local fallback:', e);
+    }
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  },
+
   async saveCase(c: ClinicalCase): Promise<void> {
     try {
       await safeFetch('/api/cases', {

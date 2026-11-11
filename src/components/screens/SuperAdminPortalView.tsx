@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Shield, Building2, UserCheck, Database, FileText, Globe } from 'lucide-react';
-import { Persona } from '../../types';
+import { Shield, Building2, UserCheck, Database, FileText, Globe, LogOut } from 'lucide-react';
+import { Persona, ClinicalCase } from '../../types';
+import { UserSession } from '../../hooks/workflowConstants';
 import { PERSONAS, PERSONA_BY_CODE } from '../../data/personas';
 import { RoleCode } from '../../data/rbacMatrix';
 import { useAdminGovernanceState } from '../../hooks/useAdminGovernanceState';
@@ -14,6 +15,9 @@ interface SuperAdminPortalViewProps {
   lang: 'ar' | 'en';
   onSelectPersona?: (persona: Persona) => void;
   activePersona?: Persona;
+  userSession?: UserSession | null;
+  onLogout?: () => void;
+  cases?: ClinicalCase[];
 }
 
 type TabKey = 'roles' | 'tenants' | 'staff' | 'catalogs' | 'audit';
@@ -22,6 +26,9 @@ export const SuperAdminPortalView: React.FC<SuperAdminPortalViewProps> = ({
   lang,
   onSelectPersona,
   activePersona = PERSONA_BY_CODE.AD || PERSONAS[0],
+  userSession,
+  onLogout,
+  cases = [],
 }) => {
   const isRTL = lang === 'ar';
   const [activeTab, setActiveTab] = useState<TabKey>('roles');
@@ -88,10 +95,22 @@ export const SuperAdminPortalView: React.FC<SuperAdminPortalViewProps> = ({
         <div className="flex items-center gap-2">
           <div className="text-right text-xs bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm">
             <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">
-              {isRTL ? 'الجلسة النشطة' : 'Active Session'}
+              {isRTL ? 'المشرف العام (Super Admin)' : 'ALO Master (Super Admin)'}
             </span>
-            <span className="font-bold text-slate-800 font-mono">+966 50 000 0001 (AD)</span>
+            <span className="font-bold text-slate-800 font-mono">
+              {userSession?.fullName || 'Adrian Lewis'} ({userSession?.phone || '+966 50 000 0001'})
+            </span>
           </div>
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-sm"
+              title={isRTL ? 'تسجيل الخروج' : 'Logout'}
+            >
+              <LogOut className="w-3.5 h-3.5 text-rose-600" />
+              <span>{isRTL ? 'خروج' : 'Logout'}</span>
+            </button>
+          )}
         </div>
       </header>
 

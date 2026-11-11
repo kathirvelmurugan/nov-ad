@@ -172,47 +172,45 @@ export const PatientStatusTimelineView: React.FC<Props> = ({
           onAdvanceStage={onAdvanceStage}
         />
 
-        {/* Clinical Next Step Action */}
+        {/* Patient Actionable Milestones & Clinical Journey Status */}
         <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="text-xs text-slate-500 dark:text-slate-400 font-bold">
-            {isDemoMode
-              ? (isAr ? 'للاختبار والمحاكاة: انتقل لدور الفريق الطبي المختص لمتابعة الدورة:' : 'Demo / Testing Action: Switch to the active clinical role to continue:')
-              : (isAr ? 'الإجراء السريري لمتابعة مسار الحالة:' : 'Current Clinical Milestone Action:')
-            }
+            {isAr ? 'الإجراء الحالي لمتابعة مسار الحالة:' : 'Current Case Milestone Action:'}
           </div>
 
-          {((stage === 'AWAITING_PAYMENT' && (!isInvoiceIssued || (isPaid && !isPaymentVerified))) ||
-            (stage === 'OPINION_READY') ||
-            (stage === 'PARTNER_SERVICES' && !isReportReleased)) && !isDemoMode ? (
-            <span className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-200 border border-amber-200 dark:border-amber-800 text-xs font-extrabold">
-              <Clock className="w-4 h-4 animate-pulse" />
+          {stage === 'AWAITING_PAYMENT' && isInvoiceIssued && !isPaid ? (
+            <button
+              onClick={onOpenPayment}
+              className="w-full sm:w-auto bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-extrabold py-3 px-6 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-xs active:scale-95 cursor-pointer"
+            >
+              <span>{isAr ? 'الانتقال إلى بوابة الدفع وسداد الفاتورة الآن →' : 'Open Payment Checkout & Complete Payment Now →'}</span>
+            </button>
+          ) : stage === 'PARTNER_SERVICES' && isReportReleased ? (
+            <button
+              onClick={() => setIsReportModalOpen(true)}
+              className="w-full sm:w-auto bg-gradient-to-r from-alo-teal to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white font-extrabold py-3 px-6 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-xs active:scale-95 cursor-pointer"
+            >
+              <span>{isAr ? 'عرض وطباعة التقرير الطبي المعتمد (PDF 1) →' : 'View & Print Certified Report (PDF 1) →'}</span>
+            </button>
+          ) : (
+            <span className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-xs font-bold shadow-sm">
+              <Clock className="w-4 h-4 animate-pulse text-alo-teal" />
               <span>
-                {stage === 'AWAITING_PAYMENT' && !isInvoiceIssued
-                  ? (isAr ? 'بانتظار إعداد الفاتورة وطرق الدفع من منسق رعاية ألو' : 'Awaiting ALO Coordinator payment setup')
+                {stage === 'NURSE_CHECK'
+                  ? (isAr ? 'قيد الفرز والتدقيق السريري وحجب الهوية لدى كادر التمريض' : 'Under clinical triage & SDAIA de-identification by Partner Hospital Nurse')
+                  : stage === 'DOCTOR_REVIEW'
+                  ? (isAr ? 'قيد المراجعة والاعتماد وصياغة الأسئلة لدى الطبيب السعودي المعالج' : 'Under clinical review by Saudi Treating Physician')
+                  : stage === 'WITH_CONSULTANT'
+                  ? (isAr ? 'قيد إعداد الرأي الطبي الثاني لدى الاستشاري الدولي' : 'Under review by International Medical Specialist')
                   : stage === 'AWAITING_PAYMENT'
-                  ? (isAr ? 'تم السداد — بانتظار تحقق منسق ألو وتوصيل الاستشاري' : 'Paid — awaiting ALO Coordinator verification')
+                  ? (isInvoiceIssued
+                      ? (isAr ? 'تم السداد — بانتظار تحقق منسق ألو وتوصيل الاستشاري' : 'Paid — awaiting ALO Coordinator verification')
+                      : (isAr ? 'بانتظار إعداد الفاتورة وطرق الدفع من منسق رعاية ألو' : 'Awaiting ALO Coordinator payment setup'))
                   : stage === 'OPINION_READY'
-                  ? (isAr ? 'بانتظار مراجعة واعتماد الطبيب السعودي المعالج' : 'Awaiting Saudi Treating Doctor endorsement')
+                  ? (isAr ? 'بانتظار مراجعة واعتماد التقرير من الطبيب السعودي المعالج' : 'Awaiting Saudi Treating Doctor endorsement')
                   : (isAr ? 'بانتظار إسناد التقرير المعتمد من منسق رعاية ألو' : 'Awaiting ALO Coordinator report assignment')}
               </span>
             </span>
-          ) : (
-            <button
-              onClick={() => {
-                if (stage === 'PARTNER_SERVICES' && isReportReleased) {
-                  setIsReportModalOpen(true);
-                } else if (stage === 'AWAITING_PAYMENT' && isInvoiceIssued && !isPaid && onOpenPayment) {
-                  onOpenPayment();
-                } else if (onSelectRole) {
-                  onSelectRole(content.nextRoleCode);
-                } else {
-                  onAdvanceStage();
-                }
-              }}
-              className="w-full sm:w-auto bg-gradient-to-r from-alo-teal to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white font-extrabold py-3 px-6 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-xs active:scale-95"
-            >
-              <span>{isAr ? content.nextRoleLabelAr : content.nextRoleLabelEn}</span>
-            </button>
           )}
         </div>
       </div>

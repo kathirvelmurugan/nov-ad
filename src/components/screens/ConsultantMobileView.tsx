@@ -28,11 +28,8 @@ const ConsultantMobileView: React.FC<Props> = ({ activeCase, onAdvanceStage, onU
   });
   const isOtpVerified = !!activeCase.consultantToken?.otpVerified || !!activeCase.consultantToken?.sessionCookieActive || activeCase.currentStage === 'WITH_CONSULTANT' || accepted;
   const [currentScreen, setCurrentScreen] = useState<ScreenStage>(accepted ? 'K06' : 'K05');
-  const [otpCode, setOtpCode] = useState<string>('123456');
-  const [opinionText, setOpinionText] = useState<string>(
-    activeCase.consultantOpinion ||
-    'Based on comprehensive multi-slice CTA review and echocardiogram parameters, the patient demonstrates severe symptomatic calcific aortic stenosis with preserved LVEF (55%). TAVR with a 26mm balloon-expandable valve is recommended. Post-procedure monitoring for high-grade AV block and dual antiplatelet therapy indicated.'
-  );
+  const [otpCode, setOtpCode] = useState<string>('');
+  const [opinionText, setOpinionText] = useState<string>(activeCase.consultantOpinion || '');
   const [selectedSlot, setSelectedSlot] = useState<string>('');
   const [finalRemarks, setFinalRemarks] = useState<string>(activeCase.finalClosureNote || '');
   const relayed = (activeCase.metadata?.relayedQuestions as string[]) || [];

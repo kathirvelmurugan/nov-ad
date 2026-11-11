@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Building2, Users, Shield, Clock, MapPin, Phone } from 'lucide-react';
+import { Building2, Users, Shield, Clock, MapPin, Phone, LogOut } from 'lucide-react';
 import { Persona, ClinicalCase } from '../../types';
+import { UserSession } from '../../hooks/workflowConstants';
 import { PERSONAS, PERSONA_BY_CODE } from '../../data/personas';
 import { RoleCode } from '../../data/rbacMatrix';
 import { useAdminGovernanceState } from '../../hooks/useAdminGovernanceState';
@@ -14,6 +15,9 @@ interface HospitalAdminPortalViewProps {
   activePersona?: Persona;
   activeCase?: ClinicalCase;
   onSelectPersona?: (persona: Persona) => void;
+  userSession?: UserSession | null;
+  onLogout?: () => void;
+  cases?: ClinicalCase[];
 }
 
 type TabKey = 'overview' | 'staff' | 'roles' | 'queues';
@@ -23,6 +27,9 @@ export const HospitalAdminPortalView: React.FC<HospitalAdminPortalViewProps> = (
   activePersona = PERSONA_BY_CODE.HA || PERSONAS[0],
   activeCase,
   onSelectPersona,
+  userSession,
+  onLogout,
+  cases = [],
 }) => {
   const isRTL = lang === 'ar';
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
@@ -105,8 +112,20 @@ export const HospitalAdminPortalView: React.FC<HospitalAdminPortalViewProps> = (
             <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">
               {isRTL ? 'مدير المنشأة' : 'Facility Admin'}
             </span>
-            <span className="font-bold text-slate-800 font-mono">+966 50 444 4444 (HA)</span>
+            <span className="font-bold text-slate-800 font-mono">
+              {userSession?.fullName || hospital.hospitalAdminName || 'Admin'} ({userSession?.phone || hospital.hospitalAdminPhone || '+966 50 444 4444'})
+            </span>
           </div>
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-sm"
+              title={isRTL ? 'تسجيل الخروج' : 'Logout'}
+            >
+              <LogOut className="w-3.5 h-3.5 text-rose-600" />
+              <span>{isRTL ? 'خروج' : 'Logout'}</span>
+            </button>
+          )}
         </div>
       </header>
 
@@ -138,6 +157,7 @@ export const HospitalAdminPortalView: React.FC<HospitalAdminPortalViewProps> = (
             isRTL={isRTL}
             hospital={hospital}
             activeCase={activeCase}
+            cases={cases}
           />
         )}
         {activeTab === 'staff' && (

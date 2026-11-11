@@ -147,6 +147,12 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
     );
   }
 
+  // Strict RBAC: Prevent authenticated Patients from accessing restricted clinical/admin portals
+  if (userSession && !impersonationSession && userSession.roleCode === 'P' && activePersona.code !== 'P') {
+    const patientPersona = PERSONAS.find((p) => p.code === 'P') || PERSONAS[0];
+    handleSelectPersona(patientPersona);
+  }
+
   return (
     <div
       className={`min-h-screen bg-alo-canvas dark:bg-alo-darkCanvas text-slate-800 dark:text-slate-100 flex flex-col transition-colors duration-200 ${isAr ? 'font-cairo' : 'font-sans'}`}
