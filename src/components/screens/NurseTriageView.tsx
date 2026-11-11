@@ -86,7 +86,22 @@ export const NurseTriageView: React.FC<Props> = ({
         };
       });
 
-    return [...dynamicDoctors, ...INITIAL_MEDICAL_CENTER_DOCTORS];
+    const combined = [...INITIAL_MEDICAL_CENTER_DOCTORS, ...dynamicDoctors];
+    const uniqueByPerson = new Map<string, typeof combined[0]>();
+    combined.forEach((doc) => {
+      const normalized = (doc.nameEn || doc.name).replace(/^(dr\.?|د\.?)\s*/i, '').trim().toLowerCase();
+      const existing = uniqueByPerson.get(normalized);
+      if (!existing) {
+        uniqueByPerson.set(normalized, doc);
+      } else {
+        const existingIsGeneric = existing.hospitalEn === 'Partner Medical Center' || existing.license === 'SCFHS-CERTIFIED';
+        const currentIsGeneric = doc.hospitalEn === 'Partner Medical Center' || doc.license === 'SCFHS-CERTIFIED';
+        if (existingIsGeneric && !currentIsGeneric) {
+          uniqueByPerson.set(normalized, doc);
+        }
+      }
+    });
+    return Array.from(uniqueByPerson.values());
   }, [isAr]);
 
   const pendingTriageCases = useMemo(() => {

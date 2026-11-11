@@ -127,7 +127,7 @@ export function useAdminGovernanceState(
     } catch {}
 
     apiClient.fetchTenants().then((fetched) => {
-      if (Array.isArray(fetched)) setTenants(fetched);
+      if (Array.isArray(fetched) && fetched.length > 0) setTenants(fetched);
     });
     apiClient.fetchUsers().then((fetched) => {
       if (Array.isArray(fetched) && fetched.length > 0) setStaffDirectory(fetched);
