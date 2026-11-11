@@ -92,8 +92,7 @@ export function useClinicalWorkflowState() {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          const liveCase = parsed.find((c: ClinicalCase) => c.id === FRESH_PRIMARY_CASE.id);
-          if (liveCase) return [{ ...FRESH_PRIMARY_CASE, ...liveCase }];
+          return parsed;
         }
       }
     } catch (e) { console.warn('Failed to parse cases from localStorage:', e); }
@@ -269,7 +268,7 @@ export function useClinicalWorkflowState() {
   // ─────────────────────────────────────────────────────────────────────────
   // Derived State
   // ─────────────────────────────────────────────────────────────────────────
-  const activeCase = cases.find((c) => c.id === activeCaseId) || cases[0];
+  const activeCase = cases.find((c) => c.id === activeCaseId) || cases[0] || FRESH_PRIMARY_CASE;
 
   // ─────────────────────────────────────────────────────────────────────────
   // Handlers

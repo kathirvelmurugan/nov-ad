@@ -134,6 +134,21 @@ const CoordinatorPortalView: React.FC<Props> = ({
     isAr ? 'متى يجب أن أبدأ العلاج الطبيعي؟' : 'When should I start physical therapy?',
   ];
 
+  if (!activeCase || !activeCase.caseNumber) {
+    return (
+      <div data-testid="coordinator-empty" className="max-w-2xl mx-auto my-12 text-center p-10 card-clinical space-y-4">
+        <h3 className="text-xl font-black text-alo-navy dark:text-slate-100">
+          {isAr ? 'لا توجد حالات سريرية قيد التنسيق الطبي أو المالي حالياً' : 'No Cases Pending Coordination'}
+        </h3>
+        <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
+          {isAr
+            ? 'صندوق منسق رعاية ألو محدّث بالكامل. ستظهر الحالات هنا فور اعتماد إحالتها من الطبيب السعودي المعالج.'
+            : 'ALO Care Coordinator queue is up to date. Cases will appear here once approved by the Saudi Treating Doctor.'}
+        </p>
+      </div>
+    );
+  }
+
   const handleRelayQuestion = async () => {
     const text = relayMessage.trim() || incomingQuestions[incomingQuestions.length - 1] || '';
     if (!text) return;

@@ -14,7 +14,9 @@ import {
 } from 'lucide-react';
 
 interface Props {
-  activeCase: ClinicalCase;
+  activeCase?: ClinicalCase;
+  cases?: ClinicalCase[];
+  onSelectCase?: (caseId: string) => void;
   onAdvanceStage: () => void;
   onUpdateCase: (updated: Partial<ClinicalCase>) => void;
   lang?: 'ar' | 'en';
@@ -24,6 +26,8 @@ interface Props {
 
 export const NurseTriageView: React.FC<Props> = ({ 
   activeCase, 
+  cases = [],
+  onSelectCase,
   onAdvanceStage, 
   onUpdateCase, 
   lang = 'ar',
@@ -33,23 +37,84 @@ export const NurseTriageView: React.FC<Props> = ({
   const [urgencyLevel, setUrgencyLevel] = useState<'routine' | 'urgent' | 'stat'>('urgent');
   const isAr = lang === 'ar';
   const nurseName = userSession?.fullName || activePersona?.name || (isAr ? 'ممرضة ألو' : 'ALO Nurse');
-  const referenceHospital = activeCase.treatingDoctor?.hospital || (isAr ? 'المستشفى الشريك المعتمد' : 'Partner Accredited Hospital');
+  const referenceHospital = activeCase?.treatingDoctor?.hospital || (isAr ? 'المستشفى الشريك المعتمد' : 'Partner Accredited Hospital');
 
   const generateDefaultNotes = () => {
+    if (!activeCase) return '';
     if (isAr) {
-      return `المريض يعاني من ${activeCase.diagnosisAr || activeCase.diagnosis} مع شكوى سريرية: (${activeCase.symptomsAr || activeCase.symptoms}). الملف مكتمل تشخيصياً ويتضمن الفحوصات والتقارير الطبية ومقاطع التصوير المعتمدة. تم إخفاء الهوية الوطنية والاسم وفق معايير سدايا وحماية البيانات، وتصنيف الحالة بأولوية عاجلة (24 ساعة SLA).`;
+      return `المريض يعاني من ${activeCase.diagnosisAr || activeCase.diagnosis || 'حالة سريرية'} مع شكوى: (${activeCase.symptomsAr || activeCase.symptoms || 'قيد المتابعة'}). الملف مكتمل تشخيصياً ويتضمن الفحوصات والتقارير الطبية ومقاطع التصوير المعتمدة. تم إخفاء الهوية الوطنية والاسم وفق معايير سدايا وحماية البيانات، وتصنيف الحالة بأولوية عاجلة (24 ساعة SLA).`;
     }
-    return `Patient presents with ${activeCase.diagnosis} with clinical complaint: (${activeCase.symptomsEn || activeCase.symptoms}). Diagnostic file is complete with laboratory panels, validated clinical reports, and medical imaging studies. PHI de-identified according to MOH & SDAIA standards; triaged as High Priority (24h SLA).`;
+    return `Patient presents with ${activeCase.diagnosis || 'clinical condition'} with complaint: (${activeCase.symptomsEn || activeCase.symptoms || 'under review'}). Diagnostic file is complete with laboratory panels, validated clinical reports, and medical imaging studies. PHI de-identified according to MOH & SDAIA standards; triaged as High Priority (24h SLA).`;
   };
 
   const [triageNotes, setTriageNotes] = useState<string>(generateDefaultNotes);
 
   useEffect(() => {
     setTriageNotes(generateDefaultNotes());
-  }, [activeCase.id, isAr]);
+  }, [activeCase?.id, isAr]);
+
+  // Zero-Case Dedicated Empty State
+  if (!activeCase || !activeCase.caseNumber || (cases && cases.length === 0)) {
+    return (
+      <div data-testid="nurse-triage-empty" className="max-w-2xl mx-auto my-12 text-center p-10 card-clinical space-y-4">
+        <div className="w-16 h-16 rounded-2xl bg-teal-50 dark:bg-teal-950/50 text-alo-teal flex items-center justify-center mx-auto text-2xl border border-teal-200 dark:border-teal-800 shadow-inner">
+          <Stethoscope className="w-8 h-8 text-alo-teal" />
+        </div>
+        <h3 className="text-xl font-black text-alo-navy dark:text-slate-100">
+          {isAr ? 'لا توجد حالات سريرية في قائمة الفرز حالياً' : 'No Cases in Triage Queue'}
+        </h3>
+        <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
+          {isAr
+            ? 'صندوق الفرز السريري محدّث بالكامل. ستظهر استشارات المرضى الجديدة تلقائياً في هذه القائمة فور إرسالها من بوابة المريض.'
+            : 'Clinical triage inbox is up to date. New patient consultations will automatically appear here once submitted via the patient portal.'}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div data-testid="nurse-triage-view" className="max-w-4xl mx-auto space-y-6">
+      {/* Multi-Case Triage Queue Switcher */}
+      {cases && cases.length > 1 && (
+        <div className="card-clinical p-4 bg-gradient-to-r from-slate-50 to-teal-50/40 dark:from-slate-900/80 dark:to-teal-950/30 border border-slate-200 dark:border-slate-800">
+          <div className="flex items-center justify-between mb-2.5">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+              <h4 className="text-xs font-black text-slate-800 dark:text-slate-200 tracking-wide uppercase">
+                {isAr ? `قائمة حالات الفرز التمريضي (${cases.length} حالات)` : `Triage Case Queue (${cases.length} cases)`}
+              </h4>
+            </div>
+            <span className="text-[11px] text-slate-500">
+              {isAr ? 'انقر على أي حالة للتبديل وتدقيق ملفها' : 'Click any case to inspect and triage dossier'}
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {cases.map((c) => {
+              const isSelected = c.id === activeCase.id;
+              const patName = isAr ? c.patientNameAr || c.patientName : c.patientNameEn || c.patientName;
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => onSelectCase?.(c.id)}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer border ${
+                    isSelected
+                      ? 'bg-alo-teal text-white border-teal-600 shadow-md ring-2 ring-teal-400/50'
+                      : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:border-alo-teal hover:bg-teal-50/50 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  <span className="font-mono">{c.caseNumber}</span>
+                  <span>·</span>
+                  <span className="truncate max-w-[140px]">{patName}</span>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded ${isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>
+                    {isAr ? c.specialtyAr || c.specialty : c.specialtyEn || c.specialty}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
       {/* N01: Triage Inbox & Case Header */}
       <div className="card-clinical p-6 flex flex-wrap items-center justify-between gap-4 border-l-4 border-l-alo-teal">
         <div>

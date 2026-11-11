@@ -178,106 +178,14 @@ export const TopProfileSwitcher: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* Center: Patient Experience Navigation (Landing Page | Intake Form | Status Tracker) - Strictly only for Patient role */}
-        {onSelectPatientSubView && activePersona.code === 'P' && (
-          <div className="flex items-center gap-1 bg-slate-200/80 dark:bg-slate-800 p-1 rounded-xl border border-slate-300/80 dark:border-slate-700 shadow-inner">
-            <button
-              type="button"
-              onClick={() => onSelectPatientSubView('landing')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer ${
-                patientSubView === 'landing' && viewMode !== 'studio'
-                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-700/20 ring-2 ring-emerald-400'
-                  : 'text-slate-700 dark:text-slate-300 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-white/60 dark:hover:bg-slate-700/60'
-              }`}
-            >
-              <span>🏠</span>
-              <span>{isAr ? 'بوابة المريض' : 'Patient Home'}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => onSelectPatientSubView('intake')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer ${
-                patientSubView === 'intake' && viewMode !== 'studio'
-                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-700/20 ring-2 ring-emerald-400'
-                  : 'text-slate-700 dark:text-slate-300 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-white/60 dark:hover:bg-slate-700/60'
-              }`}
-            >
-              <span>📝</span>
-              <span>{isAr ? 'طلب استشارة' : 'New Consultation'}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => onSelectPatientSubView('timeline')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer ${
-                patientSubView === 'timeline' && viewMode !== 'studio'
-                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-700/20 ring-2 ring-emerald-400'
-                  : 'text-slate-700 dark:text-slate-300 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-white/60 dark:hover:bg-slate-700/60'
-              }`}
-            >
-              <span>⏱️</span>
-              <span>{isAr ? 'متابعة المسار' : 'Track Status'}</span>
-            </button>
-          </div>
-        )}
 
-        {/* Right Section: QA tools (hidden unless ?demo=1) + Theme + Lang + Logout */}
+
+        {/* Right Section: Theme + Lang + Logout */}
         <div className="flex items-center gap-2.5">
-          {/* QA-Only: 5-Role Studio Cockpit Multi-Device Toggle */}
-          {isDemoMode && onToggleViewMode && (
-            <button
-              onClick={onToggleViewMode}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl shadow-sm transition-all text-xs active:scale-95 border font-extrabold cursor-pointer ${
-                viewMode === 'studio'
-                  ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white border-teal-300 ring-2 ring-teal-400'
-                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-300 dark:border-slate-700'
-              }`}
-            >
-              <span>📱</span>
-              <span>
-                {viewMode === 'studio'
-                  ? (isAr ? '🌐 الخروج لبوابة المريض' : '🌐 Exit to Patient App')
-                  : (isAr ? '📱 استوديو ٥ شاشات' : '📱 5-Role Cockpit')}
-              </span>
-            </button>
-          )}
-
-          {/* QA-Only: Magic 1-Click Auto-Fill */}
-          {isDemoMode && (
-            <button
-              onClick={onAutoFill}
-              className="flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold px-3 py-1 rounded-lg shadow-sm transition-all text-xs active:scale-95"
-            >
-              <Zap className="w-3.5 h-3.5 fill-white text-white" />
-              <span>{isAr ? '⚡ تعبئة سريعة' : '⚡ Auto-Fill'}</span>
-            </button>
-          )}
-
-          {/* QA-Only: Interactive Platform Guide */}
-          {isDemoMode && onOpenGuide && (
-            <button
-              onClick={onOpenGuide}
-              className="flex items-center gap-1.5 bg-sky-50 hover:bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300 dark:hover:bg-sky-900/50 px-2.5 py-1 rounded-lg border border-sky-200 dark:border-sky-800 font-bold text-xs transition-all shadow-sm active:scale-95"
-            >
-              <HelpCircle className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
-              <span>{isAr ? 'دليل التجربة' : 'Guide'}</span>
-            </button>
-          )}
-
-          {/* QA-Only: 1-Click Reset Sandbox */}
-          {isDemoMode && onResetDemo && (
-            <button
-              onClick={onResetDemo}
-              className="flex items-center gap-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 dark:hover:bg-rose-900/50 px-2.5 py-1 rounded-lg border border-rose-200 dark:border-rose-800 font-bold text-xs transition-all shadow-sm active:scale-95"
-            >
-              <RotateCcw className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
-              <span>{isAr ? 'إعادة ضبط' : 'Reset'}</span>
-            </button>
-          )}
-
           {/* Theme Toggle (Light Clinical Calm / Dark Luminous) */}
           <button
             onClick={onToggleTheme}
-            className="p-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors shadow-sm"
+            className="p-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors shadow-sm cursor-pointer"
             title={theme === 'light' ? 'Switch to Dark' : 'Switch to Light'}
             aria-label="Toggle Theme"
           >
@@ -291,7 +199,7 @@ export const TopProfileSwitcher: React.FC<Props> = ({
           {/* Universal 1-Click Bilingual Switcher */}
           <button
             onClick={onToggleLang}
-            className="flex items-center gap-1.5 bg-alo-mint hover:bg-teal-100 text-alo-teal dark:bg-alo-mintDark dark:text-alo-aqua px-3 py-1 rounded-lg border border-teal-300 dark:border-teal-700 font-extrabold text-xs transition-all shadow-sm active:scale-95"
+            className="flex items-center gap-1.5 bg-alo-mint hover:bg-teal-100 text-alo-teal dark:bg-alo-mintDark dark:text-alo-aqua px-3 py-1 rounded-lg border border-teal-300 dark:border-teal-700 font-extrabold text-xs transition-all shadow-sm active:scale-95 cursor-pointer"
             title={isAr ? 'Switch Interface to English' : 'تحويل الواجهة إلى العربية'}
           >
             <Globe className="w-3.5 h-3.5 text-alo-teal dark:text-alo-aqua" />
@@ -354,31 +262,6 @@ export const TopProfileSwitcher: React.FC<Props> = ({
                 {activeScope}
               </span>
             </div>
-
-            {isDemoMode && (
-              <div className="flex items-center gap-2 text-[10px] shrink-0">
-                <span className="text-slate-500 dark:text-slate-400 hidden sm:inline">
-                  {isAr ? 'تبديل الصلاحية:' : 'Switch Role:'}
-                </span>
-                <div className="flex items-center gap-1 bg-white/90 dark:bg-slate-900/90 p-0.5 rounded-lg border border-teal-300/80 dark:border-teal-700 shadow-2xs font-sans">
-                  {PERSONAS.map((p) => (
-                    <button
-                      key={p.code}
-                      type="button"
-                      onClick={() => onSelectPersona(p)}
-                      className={`px-2 py-0.5 rounded-md text-[10px] font-bold transition-all cursor-pointer ${
-                        activePersona.code === p.code
-                          ? 'bg-slate-900 text-white shadow-2xs'
-                          : 'text-slate-600 dark:text-slate-300 hover:text-emerald-700'
-                      }`}
-                      title={p.title}
-                    >
-                      <span>{p.avatar} {isAr ? p.name.split(' ')[0] : p.code}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         );
       })()}

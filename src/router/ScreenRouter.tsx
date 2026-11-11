@@ -31,6 +31,8 @@ import { PatientLandingView }        from '../components/screens/PatientLandingV
 interface ScreenRouterProps {
   activePersona: Persona;
   activeCase: ClinicalCase;
+  cases?: ClinicalCase[];
+  onSelectCase?: (caseId: string) => void;
   lang: 'ar' | 'en';
   patientSubView: 'landing' | 'intake' | 'timeline' | 'telehealth' | 'checkout';
   selectedServiceId: string;
@@ -60,6 +62,8 @@ interface ScreenRouterProps {
 export const ScreenRouter: React.FC<ScreenRouterProps> = ({
   activePersona,
   activeCase,
+  cases = [],
+  onSelectCase,
   lang,
   patientSubView,
   selectedServiceId,
@@ -171,6 +175,8 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
     return (
       <NurseTriageView
         activeCase={activeCase}
+        cases={cases}
+        onSelectCase={onSelectCase}
         onAdvanceStage={handleAdvanceStage}
         onUpdateCase={handleUpdateCase}
         lang={lang}
@@ -185,6 +191,8 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
     return (
       <DoctorReviewView
         activeCase={activeCase}
+        cases={cases}
+        onSelectCase={onSelectCase}
         onAdvanceStage={handleAdvanceStage}
         onUpdateCase={handleUpdateCase}
         lang={lang}

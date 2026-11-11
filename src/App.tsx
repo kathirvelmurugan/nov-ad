@@ -75,6 +75,8 @@ export const App: React.FC = () => {
         <ScreenRouter
           activePersona={state.activePersona}
           activeCase={state.activeCase}
+          cases={state.cases}
+          onSelectCase={state.setActiveCaseId}
           lang={state.lang}
           patientSubView={state.patientSubView}
           selectedServiceId={state.selectedServiceId}

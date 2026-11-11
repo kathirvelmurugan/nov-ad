@@ -1,13 +1,15 @@
 import React from 'react';
 import { ClinicalCase, Persona, UserSession } from '../../types';
-import { Check, Timer, ShieldCheck, FileCheck2 } from 'lucide-react';
+import { Check, Timer, ShieldCheck, FileCheck2, Stethoscope } from 'lucide-react';
 import { useSlaCountdown } from '../../hooks/useSlaCountdown';
 import { DoctorOpinionEndorsementPanel } from './doctor/DoctorOpinionEndorsementPanel';
 import { DoctorFocusQuestionsSection } from './doctor/DoctorFocusQuestionsSection';
 import { DoctorFacilityOrdersSection } from './doctor/DoctorFacilityOrdersSection';
 
 interface Props {
-  activeCase: ClinicalCase;
+  activeCase?: ClinicalCase;
+  cases?: ClinicalCase[];
+  onSelectCase?: (caseId: string) => void;
   onAdvanceStage: () => void;
   onUpdateCase: (updated: Partial<ClinicalCase>) => void;
   lang?: 'ar' | 'en';
@@ -17,6 +19,8 @@ interface Props {
 
 export const DoctorReviewView: React.FC<Props> = ({
   activeCase,
+  cases = [],
+  onSelectCase,
   onAdvanceStage,
   onUpdateCase,
   lang = 'ar',
@@ -24,11 +28,11 @@ export const DoctorReviewView: React.FC<Props> = ({
   activePersona,
 }) => {
   const isAr = lang === 'ar';
-  const doctorName = userSession?.fullName || activePersona?.name || activeCase.treatingDoctor?.name || (isAr ? 'الطبيب السعودي المعالج' : 'Saudi Treating Doctor');
-  const partnerHospital = activeCase.treatingDoctor?.hospital || (isAr ? 'المستشفى الشريك المعتمد' : 'Partner Accredited Hospital');
+  const doctorName = userSession?.fullName || activePersona?.name || activeCase?.treatingDoctor?.name || (isAr ? 'الطبيب السعودي المعالج' : 'Saudi Treating Doctor');
+  const partnerHospital = activeCase?.treatingDoctor?.hospital || (isAr ? 'المستشفى الشريك المعتمد' : 'Partner Accredited Hospital');
 
   const { formatted: slaFormatted } = useSlaCountdown({
-    storageKey: `alo_sla_doctor_${activeCase.id}`,
+    storageKey: `alo_sla_doctor_${activeCase?.id || 'default'}`,
     initialHours: 23,
     initialMinutes: 42,
     initialSeconds: 15,
@@ -88,10 +92,70 @@ export const DoctorReviewView: React.FC<Props> = ({
 
   React.useEffect(() => {
     setViewTab(hasConsultantOpinion ? 'opinion' : 'referral');
-  }, [hasConsultantOpinion, activeCase.id]);
+  }, [hasConsultantOpinion, activeCase?.id]);
+
+  // Zero-Case Dedicated Empty State
+  if (!activeCase || !activeCase.caseNumber || (cases && cases.length === 0)) {
+    return (
+      <div data-testid="doctor-review-empty" className="max-w-2xl mx-auto my-12 text-center p-10 card-clinical space-y-4">
+        <div className="w-16 h-16 rounded-2xl bg-teal-50 dark:bg-teal-950/50 text-alo-teal flex items-center justify-center mx-auto text-2xl border border-teal-200 dark:border-teal-800 shadow-inner">
+          <Stethoscope className="w-8 h-8 text-alo-teal" />
+        </div>
+        <h3 className="text-xl font-black text-alo-navy dark:text-slate-100">
+          {isAr ? 'لا توجد حالات بانتظار مراجعة الطبيب السعودي المعالج' : 'No Cases Pending Doctor Review'}
+        </h3>
+        <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
+          {isAr
+            ? 'صندوق إحالات الطبيب المعالج محدّث بالكامل. ستظهر الحالات هنا فور اعتماد الفرز التمريضي وتدقيق الفحوصات.'
+            : 'Physician referral queue is up to date. Cases will appear here once Nurse Triage is completed and verified.'}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div data-testid="doctor-review-view" className="max-w-4xl mx-auto space-y-6">
+      {/* Multi-Case Doctor Review Queue Switcher */}
+      {cases && cases.length > 1 && (
+        <div className="card-clinical p-4 bg-gradient-to-r from-slate-50 to-teal-50/40 dark:from-slate-900/80 dark:to-teal-950/30 border border-slate-200 dark:border-slate-800">
+          <div className="flex items-center justify-between mb-2.5">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+              <h4 className="text-xs font-black text-slate-800 dark:text-slate-200 tracking-wide uppercase">
+                {isAr ? `قائمة حالات الطبيب المعالج (${cases.length} حالات)` : `Doctor Review Queue (${cases.length} cases)`}
+              </h4>
+            </div>
+            <span className="text-[11px] text-slate-500">
+              {isAr ? 'انقر على أي حالة لمراجعتها واعتماد الإحالة' : 'Click any case to review and approve referral'}
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {cases.map((c) => {
+              const isSelected = c.id === activeCase.id;
+              const patName = isAr ? c.patientNameAr || c.patientName : c.patientNameEn || c.patientName;
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => onSelectCase?.(c.id)}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer border ${
+                    isSelected
+                      ? 'bg-alo-teal text-white border-teal-600 shadow-md ring-2 ring-teal-400/50'
+                      : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:border-alo-teal hover:bg-teal-50/50 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  <span className="font-mono">{c.caseNumber}</span>
+                  <span>·</span>
+                  <span className="truncate max-w-[140px]">{patName}</span>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded ${isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>
+                    {isAr ? c.specialtyAr || c.specialty : c.specialtyEn || c.specialty}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
       {/* Doctor Header & SLA Warning */}
       <div className="card-clinical p-6 flex flex-wrap items-center justify-between gap-4 border-l-4 border-l-alo-teal">
         <div>
