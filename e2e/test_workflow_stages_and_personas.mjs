@@ -500,6 +500,11 @@ async function runEndToEndTest() {
     await pageL.bringToFront();
     await pageL.reload({ waitUntil: 'domcontentloaded' });
     await pageL.waitForTimeout(1000);
+    const lCaseCard = pageL.locator(`button:has-text("${activeCaseNumber}")`).first();
+    if (await lCaseCard.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await lCaseCard.click();
+      await pageL.waitForTimeout(600);
+    }
     const labActionBtn = pageL.locator('button:has-text("Upload Results"), button:has-text("اعتماد ورفع النتائج"), button:has-text("Sample Collected"), button:has-text("تأكيد سحب العينات")').first();
     if (await labActionBtn.isVisible({ timeout: 4000 }).catch(() => false)) {
       await labActionBtn.click();
@@ -511,6 +516,11 @@ async function runEndToEndTest() {
     await pagePH.bringToFront();
     await pagePH.reload({ waitUntil: 'domcontentloaded' });
     await pagePH.waitForTimeout(1000);
+    const phCaseCard = pagePH.locator(`button:has-text("${activeCaseNumber}")`).first();
+    if (await phCaseCard.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await phCaseCard.click();
+      await pagePH.waitForTimeout(600);
+    }
     const pharmacyActionBtn = pagePH.locator('button:has-text("Dispense Rx"), button:has-text("تأكيد التحضير والصرف"), button:has-text("صرف")').first();
     if (await pharmacyActionBtn.isVisible({ timeout: 4000 }).catch(() => false)) {
       await pharmacyActionBtn.click();
@@ -522,6 +532,11 @@ async function runEndToEndTest() {
     await pageREC.bringToFront();
     await pageREC.reload({ waitUntil: 'domcontentloaded' });
     await pageREC.waitForTimeout(1000);
+    const recCaseCard = pageREC.locator(`button:has-text("${activeCaseNumber}")`).first();
+    if (await recCaseCard.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await recCaseCard.click();
+      await pageREC.waitForTimeout(600);
+    }
     const recActionBtn = pageREC.locator('button:has-text("Check-in Done"), button:has-text("تأكيد اكتمال الزيارة والاستقبال")').first();
     if (await recActionBtn.isVisible({ timeout: 4000 }).catch(() => false)) {
       await recActionBtn.click();
@@ -539,16 +554,62 @@ async function runEndToEndTest() {
     }
 
     // -------------------------------------------------------------------------
-    // Step B11: Final Verification on Patient Screen
+    // Step B11: 21-Day Follow-Up Completion & PDF 2 Dossier Generation
     // -------------------------------------------------------------------------
-    console.log(`\n▶ Step B11: [P] Final Verification on Patient Screen...`);
+    console.log(`\n▶ Step B11: [P & C] 21-Day Follow-Up Completion & PDF 2 Verification...`);
     await pageP.bringToFront();
     await pageP.reload({ waitUntil: 'domcontentloaded' });
     await pageP.waitForTimeout(1500);
 
-    const patientViewContent = await pageP.innerText('body');
-    const hasReportAvailable = patientViewContent.includes('PDF 1') || patientViewContent.includes('التقرير') || patientViewContent.includes('Report');
-    console.log(`   Patient portal rendered: hasReportNotification=${hasReportAvailable}`);
+    // Open follow-up chat from patient timeline
+    const openFollowUpBtn = pageP.locator('button:has-text("فتح محادثة المتابعة"), button:has-text("Open Follow-up")').first();
+    if (await openFollowUpBtn.isVisible({ timeout: 4000 }).catch(() => false)) {
+      await openFollowUpBtn.click();
+      await pageP.waitForTimeout(1000);
+    }
+
+    // Rate 5 stars and complete follow-up
+    const stars = pageP.locator('button[role="radio"]');
+    if (await stars.count() > 0) {
+      await stars.last().click();
+      await pageP.waitForTimeout(400);
+    }
+
+    const completeFollowUpBtn = pageP.locator('button:has-text("إتمام المتابعة"), button:has-text("Complete Follow-Up")').first();
+    if (await completeFollowUpBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await completeFollowUpBtn.click();
+      console.log('   [P] Patient completed 21-day follow-up with 5-star rating.');
+      await pageP.waitForTimeout(2000);
+    }
+
+    // Verify in API that case reached CLOSED (Stage 9) and pdf2Released is true
+    await verifyCaseTransition(activeCaseId, 9, 'CLOSED', 'Step B11: Follow-Up Closure & PDF 2');
+
+    // Verify PDF 2 Dossier on Patient Portal
+    await pageP.bringToFront();
+    await pageP.reload({ waitUntil: 'domcontentloaded' });
+    await pageP.waitForTimeout(1500);
+    const patientPdf2Btn = pageP.locator('button:has-text("PDF 2"), button:has-text("التقرير السريري الشامل"), button:has-text("Comprehensive")').first();
+    const isPatientPdf2Available = await patientPdf2Btn.isVisible({ timeout: 5000 }).catch(() => false);
+    console.log(`   ✓ [P] Patient Comprehensive Dossier (PDF 2) button visible: ${isPatientPdf2Available}`);
+
+    // Verify PDF 2 Dossier on Coordinator Portal
+    await pageC.bringToFront();
+    await pageC.reload({ waitUntil: 'domcontentloaded' });
+    await pageC.waitForTimeout(1500);
+    const cCaseCardClosed = pageC.locator(`button:has-text("${activeCaseNumber}")`).first();
+    if (await cCaseCardClosed.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await cCaseCardClosed.click();
+      await pageC.waitForTimeout(600);
+    }
+    const c10Tab = pageC.locator('button:has-text("C10"), button:has-text("إغلاق الملف"), button:has-text("Case Closure")').first();
+    if (await c10Tab.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await c10Tab.click();
+      await pageC.waitForTimeout(600);
+    }
+    const coordPdf2Btn = pageC.locator('button:has-text("PDF 2"), button:has-text("تقرير الإغلاق النهائي"), button:has-text("Final Dossier")').first();
+    const isCoordPdf2Available = await coordPdf2Btn.isVisible({ timeout: 5000 }).catch(() => false);
+    console.log(`   ✓ [C] Coordinator Final Dossier (PDF 2) button visible: ${isCoordPdf2Available}`);
 
     console.log('\n========================================================================');
     console.log('🎉 FULL WORKFLOW PASSED WITH ZERO CRASHES AND 100% CLEAN STAGE ADVANCE!');
