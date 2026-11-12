@@ -540,13 +540,13 @@ export const DoctorReviewView: React.FC<Props> = ({
                 patientName: forwardedPatient,
               });
 
+              const nextPending = pendingDoctorCases.find((c) => c.id !== activeCase.id);
               onUpdateCase({
+                currentStage: 'AWAITING_PAYMENT',
                 referralApproved: true, invoiceIssued: false, allowedPaymentMethods: [], paymentAssignedAt: undefined, paymentVerified: false,
                 pricing: { ...activeCase.pricing, paid: false, invoiceNumber: undefined },
                 metadata: { ...(activeCase.metadata || {}), paymentLinkIssued: false, paymentVerified: false },
               });
-              const nextPending = pendingDoctorCases.find((c) => c.id !== activeCase.id);
-              onAdvanceStage();
               if (nextPending && onSelectCase) onSelectCase(nextPending.id);
             }}
             className="w-full sm:w-auto bg-gradient-to-r from-alo-teal to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white font-extrabold py-3 px-8 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-sm active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
