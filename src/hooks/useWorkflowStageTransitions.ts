@@ -38,6 +38,10 @@ export function useWorkflowStageTransitions({
 }: TransitionParams) {
 
   const handleSelectPersona = (p: Persona) => {
+    if (userSession?.isAuthenticated && userSession.roleCode && userSession.roleCode !== 'AD' && p.code !== userSession.roleCode) {
+      return;
+    }
+
     if (p.code === 'K' && !isAutoDemoActive) {
       if (!isCasePaid(activeCase)) {
         alert(lang === 'ar' ? 'لا يمكن فتح شاشة الاستشاري الهندي قبل تأكيد السداد.' : 'The Indian consultant screen opens only after payment is confirmed.');
@@ -87,19 +91,6 @@ export function useWorkflowStageTransitions({
       return;
     }
     handleUpdateCase({ currentStage: stage });
-    if (!userSession && viewMode === 'studio') {
-      const awaitPaymentPersona = activeCase.invoiceIssued && !isCasePaid(activeCase) ? 'P' : 'C';
-      const stagePersonaMap: Partial<Record<ClinicalStage, string>> = {
-        INTAKE_RECEIVED: 'P', NURSE_CHECK: 'N', DOCTOR_REVIEW: 'D', AWAITING_PAYMENT: awaitPaymentPersona,
-        WITH_CONSULTANT: 'K', OPINION_READY: 'D', PARTNER_SERVICES: 'C',
-        FOLLOW_UP_21_DAYS: 'P', CLOSED: 'C',
-      };
-      const code = stagePersonaMap[stage];
-      const p = code ? (PERSONAS.find((x) => x.code === code) || PERSONAS[0]) : PERSONAS[0];
-      setActivePersona(p);
-      const lockedLang = localStorage.getItem(LANG_KEY);
-      if (!lockedLang) setLang(p.lang);
-    }
   };
 
   const handleAdvanceStage = () => {
@@ -120,22 +111,10 @@ export function useWorkflowStageTransitions({
 
     handleUpdateCase({ currentStage: nextStage });
 
-    // Only auto-flip persona in unauthenticated studio demo mode
-    if (!userSession && viewMode === 'studio') {
-      const nextPersonaMap: Partial<Record<ClinicalStage, string>> = {
-        NURSE_CHECK: 'N', DOCTOR_REVIEW: 'D', AWAITING_PAYMENT: 'C',
-        WITH_CONSULTANT: 'K', OPINION_READY: 'D', PARTNER_SERVICES: 'C',
-        FOLLOW_UP_21_DAYS: 'P', CLOSED: 'C',
-      };
-      const code = nextPersonaMap[nextStage];
-      const nextP = code ? (PERSONAS.find((p) => p.code === code) || PERSONAS[0]) : PERSONAS[0];
-      setActivePersona(nextP);
-      const lockedLang = localStorage.getItem(LANG_KEY);
-      if (!lockedLang) setLang(nextP.lang);
-    }
-
     if (nextStage === 'AWAITING_PAYMENT') {
-      setPatientSubView('timeline');
+      if (!userSession?.roleCode || userSession.roleCode === 'P') {
+        setPatientSubView('timeline');
+      }
     }
     setPendingHandoff(null);
     setIsWhatsAppDrawerOpen(true);
@@ -171,10 +150,6 @@ export function useWorkflowStageTransitions({
         paymentVerified: false,
       },
     });
-    const patientPersona = PERSONAS.find((p) => p.code === 'P') || PERSONAS[0];
-    setActivePersona(patientPersona);
-    setViewMode('workstation');
-    setPatientSubView('checkout');
     setIsWhatsAppDrawerOpen(true);
   };
 
@@ -193,11 +168,9 @@ export function useWorkflowStageTransitions({
           : c
       )
     );
-    if (!userSession && viewMode === 'studio') {
-      const coordinatorPersona = PERSONAS.find((p) => p.code === 'C') || PERSONAS[0];
-      setActivePersona(coordinatorPersona);
+    if (!userSession?.roleCode || userSession.roleCode === 'P') {
+      setPatientSubView('timeline');
     }
-    setPatientSubView('timeline');
     setIsWhatsAppDrawerOpen(true);
   };
 
@@ -229,10 +202,6 @@ export function useWorkflowStageTransitions({
           : c
       )
     );
-    if (!userSession && viewMode === 'studio') {
-      const consultantPersona = PERSONAS.find((p) => p.code === 'K') || PERSONAS[0];
-      setActivePersona(consultantPersona);
-    }
     setIsWhatsAppDrawerOpen(true);
   };
 
@@ -258,19 +227,12 @@ export function useWorkflowStageTransitions({
           : c
       )
     );
-    if (!userSession && viewMode === 'studio') {
-      const patientPersona = PERSONAS.find((p) => p.code === 'P') || PERSONAS[0];
-      setActivePersona(patientPersona);
-    }
-    setViewMode('workstation');
-    setPatientSubView('timeline');
     setIsWhatsAppDrawerOpen(true);
   };
 
   const handleConfirmHandoff = () => {
     if (!pendingHandoff) return;
     handleUpdateCase({ currentStage: pendingHandoff.toStage });
-    handleSelectPersona(pendingHandoff.nextPersona);
     setPendingHandoff(null);
     setIsWhatsAppDrawerOpen(true);
   };

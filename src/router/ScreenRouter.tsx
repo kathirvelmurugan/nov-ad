@@ -162,25 +162,25 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
     if (!isUnlocked && eligibleCases.length === 0) {
       const isAr = lang === 'ar';
       return (
-        <div className="max-w-xl mx-auto mt-10 p-6 bg-white dark:bg-alo-darkCard rounded-2xl border border-amber-300 dark:border-amber-800 shadow-md text-center space-y-4">
+        <div
+          dir={isAr ? 'rtl' : 'ltr'}
+          className="max-w-xl mx-auto mt-10 p-6 bg-[#E6FAF7] dark:bg-alo-darkCard rounded-2xl border border-[#00C6AE] dark:border-[#007B6E] shadow-md text-center space-y-4 font-cairo"
+        >
           <div className="text-4xl">🔒</div>
           <h2 className="text-lg font-extrabold text-slate-900 dark:text-white">
             {isAr ? 'شاشة الاستشاري الدولي مقفلة حالياً' : 'International Consultant Portal Locked'}
           </h2>
           <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
             {isAr
-              ? 'لا يمكن فتح الحالة للاستشاري الهندي قبل إتمام المريض للسداد ثم تحقق منسق رعاية ألو (C05–C06).'
-              : 'This case cannot be accessed by the Indian Consultant until the patient completes payment and ALO Coordinator verifies it (C05–C06).'}
+              ? 'لا يمكن فتح الحالة للاستشاري قبل إتمام المريض للسداد ثم تحقق منسق رعاية ألو (C05–C06). سيتم فتح الحالة تلقائياً بمجرد اكتمال التحقق.'
+              : 'This case cannot be accessed by the Consultant until the patient completes payment and the ALO Coordinator verifies it (C05–C06). The case will unlock automatically once verification is complete.'}
           </p>
           <button
             type="button"
-            onClick={() => {
-              const target = PERSONAS.find((x) => x.code === 'P');
-              if (target) handleSelectPersona(target);
-            }}
-            className="px-5 py-2.5 rounded-xl bg-alo-teal text-white text-xs font-extrabold shadow-sm hover:opacity-95 cursor-pointer"
+            onClick={() => handleLogout()}
+            className="px-5 py-2.5 rounded-xl bg-[#007B6E] text-white text-xs font-extrabold shadow-sm hover:bg-[#00C6AE] transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#00C6AE] focus:ring-offset-2"
           >
-            {isAr ? 'العودة إلى بوابة المريض الرئيسية →' : 'Return to Patient Portal →'}
+            {isAr ? 'تسجيل الخروج' : 'Sign Out'}
           </button>
         </div>
       );
