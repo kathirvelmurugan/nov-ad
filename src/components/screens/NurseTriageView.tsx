@@ -18,6 +18,7 @@ import {
   Info
 } from 'lucide-react';
 import { PortalCaseTrackerPanel, getStageBadgeMeta } from '../common/PortalCaseTrackerPanel';
+import { apiClient } from '../../services/apiClient';
 
 interface Props {
   activeCase?: ClinicalCase;
@@ -55,22 +56,51 @@ export const NurseTriageView: React.FC<Props> = ({
   };
 
   const [triageNotes, setTriageNotes] = useState<string>(generateDefaultNotes);
+  const [liveStaff, setLiveStaff] = useState<StaffAccountRecord[] | null>(null);
+  const [liveHospitals, setLiveHospitals] = useState<TenantHospital[] | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    apiClient.fetchUsers()
+      .then((users) => {
+        if (!cancelled && Array.isArray(users) && users.length > 0) {
+          setLiveStaff(users);
+          try { localStorage.setItem(PLATFORM_USERS_KEY, JSON.stringify(users)); } catch {}
+        }
+      })
+      .catch(() => {});
+    apiClient.fetchTenants()
+      .then((tenants) => {
+        if (!cancelled && Array.isArray(tenants) && tenants.length > 0) {
+          setLiveHospitals(tenants);
+          try { localStorage.setItem(TENANTS_KEY, JSON.stringify(tenants)); } catch {}
+        }
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
   const availableDoctors = useMemo(() => {
-    let allStaff: StaffAccountRecord[] = DEFAULT_STAFF_DIRECTORY;
-    let allHospitals: TenantHospital[] = DEFAULT_TENANT_HOSPITALS;
-    try {
-      const storedUsers = localStorage.getItem(PLATFORM_USERS_KEY);
-      if (storedUsers) {
-        const parsed = JSON.parse(storedUsers);
-        if (Array.isArray(parsed)) allStaff = parsed;
-      }
-      const storedHospitals = localStorage.getItem(TENANTS_KEY);
-      if (storedHospitals) {
-        const parsedH = JSON.parse(storedHospitals);
-        if (Array.isArray(parsedH)) allHospitals = parsedH;
-      }
-    } catch {}
+    let allStaff: StaffAccountRecord[] = liveStaff || DEFAULT_STAFF_DIRECTORY;
+    let allHospitals: TenantHospital[] = liveHospitals || DEFAULT_TENANT_HOSPITALS;
+    if (!liveStaff || !liveHospitals) {
+      try {
+        if (!liveStaff) {
+          const storedUsers = localStorage.getItem(PLATFORM_USERS_KEY);
+          if (storedUsers) {
+            const parsed = JSON.parse(storedUsers);
+            if (Array.isArray(parsed)) allStaff = parsed;
+          }
+        }
+        if (!liveHospitals) {
+          const storedHospitals = localStorage.getItem(TENANTS_KEY);
+          if (storedHospitals) {
+            const parsedH = JSON.parse(storedHospitals);
+            if (Array.isArray(parsedH)) allHospitals = parsedH;
+          }
+        }
+      } catch {}
+    }
 
     const dynamicDoctors = allStaff
       .filter((s) => s.roleCode === 'D' && s.status === 'active')
@@ -544,15 +574,15 @@ export const NurseTriageView: React.FC<Props> = ({
                 patientName: forwardedPatient,
               });
 
+              const nextPending = pendingTriageCases.find((c) => c.id !== activeCase.id);
               onUpdateCase({
+                currentStage: 'DOCTOR_REVIEW',
                 metadata: {
                   ...(activeCase.metadata || {}),
                   nurseVerified: true,
                   deidentifiedAt: new Date().toISOString(),
                 },
               });
-              const nextPending = pendingTriageCases.find((c) => c.id !== activeCase.id);
-              onAdvanceStage();
               if (nextPending && onSelectCase) onSelectCase(nextPending.id);
             }}
             className="w-full sm:w-auto bg-gradient-to-r from-alo-teal to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white font-extrabold py-3 px-8 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-sm active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
