@@ -66,12 +66,8 @@ export const PatientIntakeView: React.FC<Props> = ({
     setActiveServiceId(selectedService);
   }, [selectedService]);
 
-  // If a submitted case is active when opening intake, spawn a fresh draft so we don't mutate the existing case
-  useEffect(() => {
-    if (activeCase && activeCase.stage && activeCase.stage > 1 && onStartNewCase) {
-      onStartNewCase();
-    }
-  }, [activeCase?.id, activeCase?.stage, onStartNewCase]);
+  // Clean draft mode: only register case upon explicit submit
+  // (Auto-spawn on mount removed so empty cases are never generated)
 
   const handleSwitchService = (serviceId: string) => {
     setActiveServiceId(serviceId);
@@ -302,21 +298,35 @@ export const PatientIntakeView: React.FC<Props> = ({
 
           <button
             onClick={() => {
-              const isOldSubmittedCase = !!(activeCase.stage && activeCase.stage > 1);
-              const isInvalidId = !activeCase.id || activeCase.id.startsWith('seed-') || activeCase.id.startsWith('case-initial-');
-              const freshId = isOldSubmittedCase || isInvalidId ? `case-${Date.now()}` : activeCase.id;
-              const freshCaseNum = isOldSubmittedCase || !activeCase.caseNumber ? `CASE-2026-${Math.floor(1000 + Math.random() * 9000)}` : activeCase.caseNumber;
+              const symp = (activeCase.symptoms || activeCase.symptomsAr || activeCase.symptomsEn || '').trim();
+              if (!symp) {
+                alert(isAr ? 'يرجى كتابة الشكوى أو الأعراض السريرية قبل إرسال الحالة إلى التمريض.' : 'Please describe your clinical symptoms before submitting.');
+                return;
+              }
+              const freshId = `case-${Date.now()}`;
+              const freshCaseNum = `CASE-2026-${Math.floor(1000 + Math.random() * 9000)}`;
               const patPhone = userSession?.phone || activeCase.patientPhone || '';
+              const patName = activeCase.patientName || userSession?.fullName || (isAr ? 'مريض ألو' : 'ALO Patient');
               onUpdateCase({
                 id: freshId,
                 caseNumber: freshCaseNum,
                 patientPhone: patPhone,
-                patientName: activeCase.patientName || userSession?.fullName || (isAr ? 'مريض ألو' : 'ALO Patient'),
-                patientNameAr: activeCase.patientNameAr || (isAr ? (activeCase.patientName || userSession?.fullName || 'مريض ألو') : undefined),
-                patientNameEn: activeCase.patientNameEn || (!isAr ? (activeCase.patientName || userSession?.fullName || 'ALO Patient') : undefined),
+                patientName: patName,
+                patientNameAr: activeCase.patientNameAr || (isAr ? patName : undefined),
+                patientNameEn: activeCase.patientNameEn || (!isAr ? patName : undefined),
+                symptoms: symp,
+                symptomsAr: isAr ? symp : (activeCase.symptomsAr || ''),
+                symptomsEn: !isAr ? symp : (activeCase.symptomsEn || ''),
+                diagnosis: activeCase.diagnosis || '',
+                diagnosisAr: activeCase.diagnosisAr || '',
+                diagnosisEn: activeCase.diagnosisEn || '',
+                specialty: activeCase.specialty || 'جراحة القلب والصدر',
+                specialtyAr: activeCase.specialtyAr || 'جراحة القلب والصدر',
+                specialtyEn: activeCase.specialtyEn || 'Cardiothoracic Surgery',
                 currentStage: 'NURSE_CHECK',
                 stage: 2,
-                createdAt: isOldSubmittedCase ? new Date().toISOString() : (activeCase.createdAt || new Date().toISOString()),
+                status: 'open',
+                createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
               });
             }}

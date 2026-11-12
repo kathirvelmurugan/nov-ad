@@ -126,7 +126,7 @@ export const DoctorReviewView: React.FC<Props> = ({
     <div data-testid="doctor-review-view" className="max-w-4xl mx-auto space-y-6">
       {/* Integrated Portal Case Tracker Panel */}
       {cases.length > 0 && (
-        <div className="max-h-[340px] flex">
+        <div className="w-full">
           <PortalCaseTrackerPanel
             cases={cases}
             activeCaseId={activeCase.id}

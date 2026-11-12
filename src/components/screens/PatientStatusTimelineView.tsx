@@ -244,13 +244,13 @@ export const PatientStatusTimelineView: React.FC<Props> = ({
         </div>
       )}
       
-      {/* Patient Own Cases Switcher */}
-      {cases && cases.length > 0 && (
+      {/* Patient Own Cases Switcher (Clean Horizontal Scroll Pill Bar) */}
+      {cases && cases.length > 1 && (
         <div className="card-clinical p-3.5 bg-gradient-to-r from-teal-50/60 to-slate-50 dark:from-slate-900/80 dark:to-teal-950/30 border border-teal-200 dark:border-teal-800 rounded-2xl shadow-xs">
-          <div className="flex items-center justify-between mb-2.5">
+          <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <span className="text-xs font-black text-alo-navy dark:text-slate-200">
-                {isAr ? `ملفاتي الطبية المسجلة (${cases.length})` : `My Registered Cases (${cases.length})`}
+                {isAr ? `ملفاتي الطبية المسجلة (${cases.filter((c) => (c.stage && c.stage > 1) || (c.symptoms && c.symptoms.trim().length > 0)).length})` : `My Registered Cases (${cases.filter((c) => (c.stage && c.stage > 1) || (c.symptoms && c.symptoms.trim().length > 0)).length})`}
               </span>
               <span className="text-[11px] text-slate-500 hidden sm:inline">
                 {isAr ? '· انقر للتبديل بين ملفاتك الطبية' : '· Click to switch between your cases'}
@@ -267,32 +267,34 @@ export const PatientStatusTimelineView: React.FC<Props> = ({
               </button>
             )}
           </div>
-          <div className="flex flex-wrap gap-2">
-            {cases.map((c) => {
-              const isSelected = c.id === activeCase.id;
-              const stageNum = c.stage || (c.currentStage ? STAGES.findIndex((s) => s.stage === c.currentStage) + 1 : 1);
-              return (
-                <button
-                  key={c.id}
-                  type="button"
-                  onClick={() => onSelectCase?.(c.id)}
-                  className={`px-3 py-2 rounded-xl text-xs font-bold transition-all border flex items-center gap-2 cursor-pointer ${
-                    isSelected
-                      ? 'bg-alo-teal text-white border-teal-600 shadow-md ring-2 ring-teal-500/30'
-                      : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:border-alo-teal shadow-2xs'
-                  }`}
-                >
-                  <span className="font-mono font-black">{c.caseNumber || c.id}</span>
-                  <span className="opacity-50">·</span>
-                  <span>{isAr ? c.specialtyAr || c.specialty || 'استشارة عامة' : c.specialtyEn || c.specialty || 'Consultation'}</span>
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono ${
-                    isSelected ? 'bg-teal-800 text-teal-100' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-                  }`}>
-                    {isAr ? `مرحلة ${stageNum}` : `Stage ${stageNum}`}
-                  </span>
-                </button>
-              );
-            })}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-thin">
+            {cases
+              .filter((c) => (c.stage && c.stage > 1) || (c.symptoms && c.symptoms.trim().length > 0))
+              .map((c) => {
+                const isSelected = c.id === activeCase.id;
+                const stageNum = c.stage || (c.currentStage ? STAGES.findIndex((s) => s.stage === c.currentStage) + 1 : 1);
+                return (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => onSelectCase?.(c.id)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border flex items-center gap-2 shrink-0 cursor-pointer ${
+                      isSelected
+                        ? 'bg-alo-teal text-white border-teal-600 shadow-md ring-2 ring-teal-500/30'
+                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:border-alo-teal shadow-2xs'
+                    }`}
+                  >
+                    <span className="font-mono font-black">{c.caseNumber || c.id}</span>
+                    <span className="opacity-50">·</span>
+                    <span className="max-w-[120px] truncate">{isAr ? c.specialtyAr || c.specialty || 'استشارة عامة' : c.specialtyEn || c.specialty || 'Consultation'}</span>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono ${
+                      isSelected ? 'bg-teal-800 text-teal-100' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                    }`}>
+                      {isAr ? `مرحلة ${stageNum}` : `Stage ${stageNum}`}
+                    </span>
+                  </button>
+                );
+              })}
           </div>
         </div>
       )}

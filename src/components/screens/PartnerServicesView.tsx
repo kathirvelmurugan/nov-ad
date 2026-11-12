@@ -141,37 +141,39 @@ export const PartnerServicesView: React.FC<Props> = ({
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-12 font-sans" dir="rtl">
-      {/* Multi-Case Facility Queue Switcher */}
+      {/* Multi-Case Facility Queue Switcher (Clean Horizontal Scroll) */}
       {cases && cases.length > 1 && (
-        <div className="card-clinical p-4 bg-slate-900 border border-teal-500/30 text-white rounded-2xl">
+        <div className="card-clinical p-4 bg-slate-900 border border-teal-500/30 text-white rounded-2xl shadow-sm">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-bold text-teal-300">
-              قائمة الحالات السريرية للمركز الطبي ({cases.length} حالات)
+              قائمة الحالات السريرية للمركز الطبي ({cases.filter((c) => (c.stage && c.stage > 1) || (c.symptoms && c.symptoms.trim().length > 0)).length} حالات)
             </span>
             <span className="text-[11px] text-slate-400">
               انقر لاختيار الحالة ومتابعة خدماتها
             </span>
           </div>
-          <div className="flex flex-wrap gap-2">
-            {cases.map((c) => {
-              const isSelected = c.id === activeCase.id;
-              return (
-                <button
-                  key={c.id}
-                  type="button"
-                  onClick={() => onSelectCase?.(c.id)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
-                    isSelected
-                      ? 'bg-teal-600 text-white border-teal-400 shadow'
-                      : 'bg-slate-800 text-slate-300 border-slate-700 hover:border-teal-500'
-                  }`}
-                >
-                  <span className="font-mono">{c.caseNumber || c.id}</span>
-                  <span>·</span>
-                  <span>{c.patientNameAr || c.patientName}</span>
-                </button>
-              );
-            })}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-thin">
+            {cases
+              .filter((c) => (c.stage && c.stage > 1) || (c.symptoms && c.symptoms.trim().length > 0))
+              .map((c) => {
+                const isSelected = c.id === activeCase.id;
+                return (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => onSelectCase?.(c.id)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border shrink-0 flex items-center gap-1.5 cursor-pointer ${
+                      isSelected
+                        ? 'bg-teal-600 text-white border-teal-400 shadow'
+                        : 'bg-slate-800 text-slate-300 border-slate-700 hover:border-teal-500'
+                    }`}
+                  >
+                    <span className="font-mono">{c.caseNumber || c.id}</span>
+                    <span>·</span>
+                    <span className="max-w-[120px] truncate">{c.patientNameAr || c.patientName}</span>
+                  </button>
+                );
+              })}
           </div>
         </div>
       )}

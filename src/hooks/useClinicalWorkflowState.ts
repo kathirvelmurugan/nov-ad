@@ -314,7 +314,7 @@ export function useClinicalWorkflowState() {
     : sortedCases;
 
   const rawActiveCase = (isPatientUser
-    ? (effectiveCases.find((c) => c.id === activeCaseId) || effectiveCases[0])
+    ? (effectiveCases.find((c) => c.id === activeCaseId) || (patientSubView === 'intake' ? FRESH_PRIMARY_CASE : effectiveCases[0]))
     : (sortedCases.find((c) => c.id === activeCaseId) || sortedCases[0])) || {
       ...FRESH_PRIMARY_CASE,
       id: isPatientUser ? `case-${Date.now()}` : FRESH_PRIMARY_CASE.id,
@@ -348,6 +348,10 @@ export function useClinicalWorkflowState() {
       let updatedCase: ClinicalCase;
       let nextCases: ClinicalCase[];
       if (!exists) {
+        const isSubmitted = syncedUpdate.currentStage === 'NURSE_CHECK' || (Boolean(syncedUpdate.stage) && (syncedUpdate.stage || 0) >= 2);
+        if (!isSubmitted) {
+          return prev;
+        }
         const baseCase = (activeCase && activeCase.id === targetId) ? activeCase : FRESH_PRIMARY_CASE;
         updatedCase = { ...baseCase, ...syncedUpdate, id: targetId, ...(phoneToSet ? { patientPhone: phoneToSet } : {}) };
         setActiveCaseId(updatedCase.id);
@@ -451,48 +455,16 @@ export function useClinicalWorkflowState() {
   };
 
   const handleStartNewCase = () => {
-    const newId = `case-${Date.now()}`;
-    const newCaseNumber = `CASE-2026-${Math.floor(1000 + Math.random() * 9000)}`;
-    const phoneToSet = isPatientUser ? userSession?.phone : undefined;
-    const nameToSet = isPatientUser ? (userSession?.fullName || 'المريض') : 'المريض';
-    const newCase: ClinicalCase = {
-      ...FRESH_PRIMARY_CASE,
-      id: newId,
-      caseNumber: newCaseNumber,
-      patientPhone: phoneToSet,
-      patientName: nameToSet,
-      patientNameAr: nameToSet,
-      patientNameEn: isPatientUser ? (userSession?.fullName || 'Patient') : 'Patient',
-      currentStage: 'INTAKE_RECEIVED',
-      stage: 1,
-      status: 'open',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      symptoms: '',
-      symptomsAr: '',
-      symptomsEn: '',
-      diagnosis: '',
-      diagnosisAr: '',
-      diagnosisEn: '',
-      specialty: 'جراحة القلب والصدر',
-      specialtyAr: 'جراحة القلب والصدر',
-      specialtyEn: 'Cardiothoracic Surgery',
-      files: [],
-      pricing: { ...FRESH_PRIMARY_CASE.pricing, paid: false, invoiceNumber: undefined },
-      metadata: { isFreshTest: true, pdf1Released: false, pdf2Released: false, paymentVerified: false, paymentLinkIssued: false },
-    };
-    setCases((prev) => [newCase, ...prev]);
-    setActiveCaseId(newId);
+    setActiveCaseId(null);
     setPatientSubView('intake');
     if (typeof window !== 'undefined') {
       try {
         const url = new URL(window.location.href);
         url.searchParams.set('subview', 'intake');
-        url.searchParams.set('caseId', newId);
-        window.history.pushState({ portal: 'patient', subView: 'intake', caseId: newId, viewMode: 'workstation' }, '', url.pathname + url.search);
+        url.searchParams.delete('caseId');
+        window.history.pushState({ portal: 'patient', subView: 'intake', viewMode: 'workstation' }, '', url.pathname + url.search);
       } catch (err) {}
     }
-    apiClient.saveCase(newCase).catch(() => {});
   };
 
   const handleStartCaseToCockpit = () => {

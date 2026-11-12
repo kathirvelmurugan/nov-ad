@@ -247,10 +247,15 @@ apiRouter.post('/admin/clean-slate', async (req, res) => {
 // ── API Routes: Cases ────────────────────────────────────────────────────────
 apiRouter.get('/cases', async (req, res) => {
   try {
-    const { rows } = await pool.query('SELECT case_data FROM clinical_cases ORDER BY updated_at DESC');
+    const { rows } = await pool.query(`
+      SELECT case_data FROM clinical_cases 
+      WHERE (case_data->>'stage')::int > 1 OR (case_data->>'symptoms') IS NOT NULL AND length(trim(case_data->>'symptoms')) > 0
+      ORDER BY updated_at DESC
+    `);
     return res.json({ success: true, data: rows.map((r) => r.case_data) });
   } catch (err) {
-    return res.json({ success: true, data: memoryCases, isFallback: true });
+    const filtered = memoryCases.filter((c) => (c.stage && c.stage > 1) || (c.symptoms && c.symptoms.trim().length > 0));
+    return res.json({ success: true, data: filtered, isFallback: true });
   }
 });
 
@@ -268,6 +273,16 @@ apiRouter.post('/cases', async (req, res) => {
     memoryCases = [c, ...memoryCases.filter((x) => x.id !== c.id)];
   }
   return res.json({ success: true, data: c });
+});
+
+apiRouter.delete('/cases/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query('DELETE FROM clinical_cases WHERE id = $1', [id]);
+  } catch (err) {
+    memoryCases = memoryCases.filter((x) => x.id !== id);
+  }
+  return res.json({ success: true, deletedId: id });
 });
 
 // ── API Routes: Audit Logs ───────────────────────────────────────────────────

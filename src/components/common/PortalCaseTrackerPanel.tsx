@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { ClinicalCase, ClinicalStage } from '../../types';
-import { Activity, Clock, CheckCircle2, CreditCard, Eye } from 'lucide-react';
+import { Activity, Clock, CheckCircle2, CreditCard, Eye, ChevronDown, ChevronUp, Search } from 'lucide-react';
 
 export interface PortalCaseTrackerPanelProps {
   cases: ClinicalCase[];
@@ -87,6 +87,8 @@ const PortalCaseTrackerPanel: React.FC<PortalCaseTrackerPanelProps> = ({
   const [tab, setTab] = useState<'actionable' | 'all'>(
     actionableCases.length > 0 ? 'actionable' : 'all'
   );
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     if (actionableCases.length === 0 && cases.length > 0) {
@@ -99,6 +101,15 @@ const PortalCaseTrackerPanel: React.FC<PortalCaseTrackerPanelProps> = ({
   }
 
   const displayedCases = tab === 'actionable' ? actionableCases : cases;
+  const filteredCases = displayedCases.filter((c) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    const num = (c.caseNumber || c.id || '').toLowerCase();
+    const pName = (c.patientName || (c as any).patientNameAr || (c as any).patientNameEn || '').toLowerCase();
+    const spec = (c.specialty || (c as any).specialtyAr || (c as any).specialtyEn || '').toLowerCase();
+    return num.includes(q) || pName.includes(q) || spec.includes(q);
+  });
+  const activeCase = cases.find((c) => c.id === activeCaseId) || cases[0];
   const title = isAr ? portalTitleAr : portalTitleEn;
 
   const getPaymentPill = (c: ClinicalCase) => {
@@ -140,76 +151,117 @@ const PortalCaseTrackerPanel: React.FC<PortalCaseTrackerPanelProps> = ({
       dir={dir}
       className="w-full h-full flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm font-['Cairo',sans-serif]"
     >
-      {/* Header */}
-      <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-800 bg-[#E6FAF7] dark:bg-slate-900/80">
-        <h2 className="text-sm font-bold text-[#007B6E] dark:text-[#00C6AE] flex items-center gap-2">
-          <Activity className="w-4 h-4" />
-          {title}
-        </h2>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
-        <button
-          type="button"
-          onClick={() => setTab('actionable')}
-          className={`flex-1 px-3 py-2.5 text-xs font-semibold transition-all duration-200 flex items-center justify-center gap-1.5 ${
-            tab === 'actionable'
-              ? 'text-[#007B6E] dark:text-[#00C6AE] border-b-2 border-[#007B6E] dark:border-[#00C6AE] bg-white dark:bg-slate-900'
-              : 'text-slate-500 dark:text-slate-400 hover:text-[#007B6E] dark:hover:text-[#00C6AE] hover:bg-white dark:hover:bg-slate-900'
-          }`}
-          aria-selected={tab === 'actionable'}
-          role="tab"
-        >
-          <Clock className="w-3.5 h-3.5" />
-          {isAr ? 'قائمة الإجراءات' : 'Actionable Queue'}
-          <span
-            className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold ${
-              tab === 'actionable'
-                ? 'bg-[#007B6E] text-white dark:bg-[#00C6AE] dark:text-slate-900'
-                : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
-            }`}
-          >
-            {actionableCases.length}
-          </span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setTab('all')}
-          className={`flex-1 px-3 py-2.5 text-xs font-semibold transition-all duration-200 flex items-center justify-center gap-1.5 ${
-            tab === 'all'
-              ? 'text-[#007B6E] dark:text-[#00C6AE] border-b-2 border-[#007B6E] dark:border-[#00C6AE] bg-white dark:bg-slate-900'
-              : 'text-slate-500 dark:text-slate-400 hover:text-[#007B6E] dark:hover:text-[#00C6AE] hover:bg-white dark:hover:bg-slate-900'
-          }`}
-          aria-selected={tab === 'all'}
-          role="tab"
-        >
-          <Eye className="w-3.5 h-3.5" />
-          {isAr ? 'تتبع جميع الحالات' : 'Track All Cases'}
-          <span
-            className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold ${
-              tab === 'all'
-                ? 'bg-[#007B6E] text-white dark:bg-[#00C6AE] dark:text-slate-900'
-                : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
-            }`}
-          >
+      {/* Header with Case Overview & Collapse Toggle */}
+      <div className="px-4 py-2.5 border-b border-slate-200 dark:border-slate-800 bg-[#E6FAF7] dark:bg-slate-900/80 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <Activity className="w-4 h-4 text-[#007B6E] shrink-0" />
+          <h2 className="text-sm font-bold text-[#007B6E] dark:text-[#00C6AE] truncate">
+            {title}
+          </h2>
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#007B6E]/10 text-[#007B6E] dark:bg-[#00C6AE]/20 dark:text-[#00C6AE]">
             {cases.length}
           </span>
-        </button>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          {activeCase && (
+            <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-white dark:bg-slate-800 text-[11px] font-mono font-bold text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 shadow-2xs">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span>{activeCase.caseNumber || activeCase.id}</span>
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="inline-flex items-center gap-1 text-xs font-bold text-[#007B6E] hover:text-[#005a50] bg-white hover:bg-slate-50 dark:bg-slate-800 px-2.5 py-1 rounded-lg border border-[#00C6AE]/40 transition-all cursor-pointer shadow-2xs"
+            aria-label={isCollapsed ? (isAr ? 'عرض القائمة' : 'Expand queue') : (isAr ? 'طي القائمة' : 'Collapse queue')}
+          >
+            <span>{isCollapsed ? (isAr ? 'عرض الحالات' : 'Expand') : (isAr ? 'طي القائمة' : 'Collapse')}</span>
+            {isCollapsed ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
+          </button>
+        </div>
       </div>
 
-      {/* Case List */}
-      <div className="flex-1 overflow-y-auto p-2 space-y-2 bg-white dark:bg-slate-900">
-        {displayedCases.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-slate-400 dark:text-slate-600">
-            <CheckCircle2 className="w-10 h-10 mb-3 opacity-40" />
-            <p className="text-sm font-medium">
-              {isAr ? 'لا توجد حالات في هذه القائمة' : 'No cases in this queue'}
-            </p>
+      {!isCollapsed && (
+        <>
+          {/* Tabs */}
+          <div className="flex border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+            <button
+              type="button"
+              onClick={() => setTab('actionable')}
+              className={`flex-1 px-3 py-2 text-xs font-semibold transition-all duration-200 flex items-center justify-center gap-1.5 ${
+                tab === 'actionable'
+                  ? 'text-[#007B6E] dark:text-[#00C6AE] border-b-2 border-[#007B6E] dark:border-[#00C6AE] bg-white dark:bg-slate-900'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-[#007B6E] dark:hover:text-[#00C6AE] hover:bg-white dark:hover:bg-slate-900'
+              }`}
+              aria-selected={tab === 'actionable'}
+              role="tab"
+            >
+              <Clock className="w-3.5 h-3.5" />
+              {isAr ? 'قائمة الإجراءات' : 'Actionable Queue'}
+              <span
+                className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold ${
+                  tab === 'actionable'
+                    ? 'bg-[#007B6E] text-white dark:bg-[#00C6AE] dark:text-slate-900'
+                    : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
+                }`}
+              >
+                {actionableCases.length}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setTab('all')}
+              className={`flex-1 px-3 py-2 text-xs font-semibold transition-all duration-200 flex items-center justify-center gap-1.5 ${
+                tab === 'all'
+                  ? 'text-[#007B6E] dark:text-[#00C6AE] border-b-2 border-[#007B6E] dark:border-[#00C6AE] bg-white dark:bg-slate-900'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-[#007B6E] dark:hover:text-[#00C6AE] hover:bg-white dark:hover:bg-slate-900'
+              }`}
+              aria-selected={tab === 'all'}
+              role="tab"
+            >
+              <Eye className="w-3.5 h-3.5" />
+              {isAr ? 'تتبع جميع الحالات' : 'Track All Cases'}
+              <span
+                className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold ${
+                  tab === 'all'
+                    ? 'bg-[#007B6E] text-white dark:bg-[#00C6AE] dark:text-slate-900'
+                    : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
+                }`}
+              >
+                {cases.length}
+              </span>
+            </button>
           </div>
-        ) : (
-          displayedCases.map((c) => {
-            const isActive = c.id === activeCaseId;
+
+          {/* Quick Search Bar when multiple cases exist */}
+          {displayedCases.length > 3 && (
+            <div className="p-2 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 absolute top-1/2 -translate-y-1/2 start-2.5 text-slate-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={isAr ? 'بحث برقم الحالة أو اسم المريض...' : 'Filter by case # or patient name...'}
+                  className="w-full ps-8 pe-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-1 focus:ring-[#007B6E]"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Case List (Max Height with Independent Clean Scroll) */}
+          <div className="max-h-[220px] overflow-y-auto p-2 space-y-2 bg-white dark:bg-slate-900 scrollbar-thin">
+            {filteredCases.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8 text-slate-400 dark:text-slate-600">
+                <CheckCircle2 className="w-8 h-8 mb-2 opacity-40" />
+                <p className="text-xs font-medium">
+                  {isAr ? 'لا توجد حالات تطابق البحث' : 'No cases matching search'}
+                </p>
+              </div>
+            ) : (
+              filteredCases.map((c) => {
+                const isActive = c.id === activeCaseId;
             const isActionable = actionablePredicate(c);
             const stageMeta = getStageBadgeMeta(c.currentStage, isAr);
             const paymentPill = getPaymentPill(c);
@@ -295,7 +347,9 @@ const PortalCaseTrackerPanel: React.FC<PortalCaseTrackerPanelProps> = ({
           })
         )}
       </div>
-    </div>
+    </>
+  )}
+</div>
   );
 };
 

@@ -357,7 +357,7 @@ const CoordinatorPortalView: React.FC<Props> = ({
       </header>
 
       {cases && cases.length > 0 && (
-        <div style={{ maxWidth: '900px', margin: '0 auto 24px', maxHeight: '340px', display: 'flex' }}>
+        <div style={{ maxWidth: '900px', margin: '0 auto 20px', width: '100%' }}>
           <PortalCaseTrackerPanel
             cases={cases}
             activeCaseId={activeCase.id}
@@ -370,7 +370,7 @@ const CoordinatorPortalView: React.FC<Props> = ({
         </div>
       )}
 
-      <nav style={{ display: 'flex', gap: '8px', marginBottom: '32px', flexWrap: 'wrap' }} role="tablist" aria-label={isAr ? 'مراحل التنسيق' : 'Coordination Stages'}>
+      <nav style={{ display: 'flex', gap: '8px', marginBottom: '24px', overflowX: 'auto', paddingBottom: '6px' }} role="tablist" aria-label={isAr ? 'مراحل التنسيق' : 'Coordination Stages'}>
         <button key="tab-c01" role="tab" aria-selected={activeTab === 'C01'} style={getTabStyle('C01')} onClick={() => setActiveTab('C01')}>
           C01 - {isAr ? 'الإحالة والفاتورة' : 'Referral & Invoice'}
         </button>
