@@ -216,6 +216,14 @@ export function useClinicalWorkflowState() {
     document.documentElement.classList.toggle('dark', theme === 'dark');
   }, [theme]);
 
+  // Language & Direction HTML sync
+  useEffect(() => {
+    try {
+      document.documentElement.lang = lang;
+      document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+    } catch (e) {}
+  }, [lang]);
+
   // Initial history state seed
   useEffect(() => {
     if (typeof window !== 'undefined' && !window.history.state) {

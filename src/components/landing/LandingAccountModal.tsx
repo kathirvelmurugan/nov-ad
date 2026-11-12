@@ -57,19 +57,25 @@ export const LandingAccountModal: React.FC<Props> = ({
         {/* Logged in patient card */}
         <div className="bg-gradient-to-r from-emerald-900 to-teal-950 p-4 rounded-2xl text-white space-y-2">
           <div className="flex items-center justify-between text-xs text-emerald-300">
-            <span className="font-mono">{activeCase.caseNumber || 'ALO-2026-LIVE'}</span>
+            <span className="font-mono">{activeCase.caseNumber || (isAr ? 'لا توجد حالات مسجلة' : 'No active cases')}</span>
             <span className="bg-emerald-500/20 px-2 py-0.5 rounded text-[10px] font-bold border border-emerald-400/30">
               {isAr ? 'هوية موثقة' : 'Verified ID'}
             </span>
           </div>
           <p className="text-base font-black">
             {isAr
-              ? (activeCase.patientNameAr || activeCase.patientName || 'مريض معتمد')
-              : (activeCase.patientNameEn || activeCase.patientName || 'Verified Patient')}
+              ? (activeCase.patientNameAr || activeCase.patientName || 'المريض')
+              : (activeCase.patientNameEn || activeCase.patientName || 'Patient')}
           </p>
-          <p className="text-[11px] text-slate-300">
-            {isAr ? 'الهوية الوطنية:' : 'National ID:'} <span className="font-mono text-emerald-300">{activeCase.nationalIdMasked || '1089****10'}</span> · {isAr ? 'المدينة:' : 'City:'} {isAr ? (activeCase.cityAr || 'الرياض') : (activeCase.cityEn || 'Riyadh')}
-          </p>
+          {activeCase.nationalIdMasked ? (
+            <p className="text-[11px] text-slate-300">
+              {isAr ? 'الهوية الوطنية:' : 'National ID:'} <span className="font-mono text-emerald-300">{activeCase.nationalIdMasked}</span> · {isAr ? 'المدينة:' : 'City:'} {isAr ? (activeCase.cityAr || 'الرياض') : (activeCase.cityEn || 'Riyadh')}
+            </p>
+          ) : (
+            <p className="text-[11px] text-slate-300">
+              {isAr ? 'المملكة العربية السعودية' : 'Saudi Arabia'}
+            </p>
+          )}
         </div>
 
         {/* Quick Actions */}
@@ -83,7 +89,7 @@ export const LandingAccountModal: React.FC<Props> = ({
           >
             <div className="flex items-center gap-2">
               <FolderHeart className="w-4 h-4" />
-              <span>{isAr ? 'متابعة حالتي النشطة (Live Tracker)' : 'View My Active Case'}</span>
+              <span>{activeCase.caseNumber ? (isAr ? 'متابعة حالتي النشطة (Live Tracker)' : 'View My Active Case') : (isAr ? 'حالاتي الطبية' : 'My Cases')}</span>
             </div>
             <ArrowIcon className="w-4 h-4" />
           </button>

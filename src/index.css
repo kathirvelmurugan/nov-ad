@@ -57,3 +57,14 @@
 .dark ::-webkit-scrollbar-thumb {
   background: #1e433e;
 }
+
+/* Coordinator Portal & Clinical Forms Interactive Focus */
+.coordinator-portal-container button:focus-visible {
+  outline: 3px solid #00C6AE;
+  outline-offset: 2px;
+}
+.coordinator-portal-container textarea:focus-visible {
+  border-color: #007B6E;
+  box-shadow: 0 0 0 3px rgba(0, 198, 174, 0.25);
+}
+

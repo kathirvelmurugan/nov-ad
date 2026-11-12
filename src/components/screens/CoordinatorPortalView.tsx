@@ -207,6 +207,8 @@ const CoordinatorPortalView: React.FC<Props> = ({
       await new Promise(resolve => setTimeout(resolve, 1500));
       onUpdateCase({
         status: 'closed',
+        currentStage: 'CLOSED',
+        stage: 9,
         metadata: {
           ...(activeCase?.metadata || {}),
           pdf2Released: true,
@@ -298,14 +300,18 @@ const CoordinatorPortalView: React.FC<Props> = ({
   const stageMeta = getStageBadgeMeta(activeCase.currentStage, isAr);
 
   return (
-    <div data-testid="coordinator-portal-view" style={{
-      direction: dir,
-      fontFamily,
-      backgroundColor: '#F4F7F6',
-      minHeight: '100vh',
-      padding: '24px 32px',
-      color: '#1A202C',
-    }}>
+    <div
+      data-testid="coordinator-portal-view"
+      className="coordinator-portal-container"
+      style={{
+        direction: dir,
+        fontFamily,
+        backgroundColor: '#F4F7F6',
+        minHeight: '100vh',
+        padding: '24px 32px',
+        color: '#1A202C',
+      }}
+    >
       <header style={{
         display: 'flex',
         justifyContent: 'space-between',
@@ -357,11 +363,12 @@ const CoordinatorPortalView: React.FC<Props> = ({
       )}
 
       <nav style={{ display: 'flex', gap: '8px', marginBottom: '32px', flexWrap: 'wrap' }} role="tablist" aria-label={isAr ? 'مراحل التنسيق' : 'Coordination Stages'}>
-        <button role="tab" aria-selected={activeTab === 'C01'} style={getTabStyle('C01')} onClick={() => setActiveTab('C01')}>
+        <button key="tab-c01" role="tab" aria-selected={activeTab === 'C01'} style={getTabStyle('C01')} onClick={() => setActiveTab('C01')}>
           C01 - {isAr ? 'الإحالة والفاتورة' : 'Referral & Invoice'}
         </button>
         {activeCase?.consultationType === 'video' && (
           <button 
+            key="tab-c07"
             role="tab" 
             aria-selected={activeTab === 'C07'} 
             style={{ ...getTabStyle('C07'), opacity: isPaid ? 1 : 0.6 }} 
@@ -376,13 +383,13 @@ const CoordinatorPortalView: React.FC<Props> = ({
             C07 - {isAr ? (isPaid ? 'موعد المكالمة' : 'موعد المكالمة 🔒') : (isPaid ? 'Call Slot' : 'Call Slot 🔒')}
           </button>
         )}
-        <button role="tab" aria-selected={activeTab === 'C08'} style={getTabStyle('C08')} onClick={() => setActiveTab('C08')}>
+        <button key="tab-c08" role="tab" aria-selected={activeTab === 'C08'} style={getTabStyle('C08')} onClick={() => setActiveTab('C08')}>
           C08 - PDF 1
         </button>
-        <button role="tab" aria-selected={activeTab === 'C09'} style={getTabStyle('C09')} onClick={() => setActiveTab('C09')}>
+        <button key="tab-c09" role="tab" aria-selected={activeTab === 'C09'} style={getTabStyle('C09')} onClick={() => setActiveTab('C09')}>
           C09 - {isAr ? 'المتابعة' : 'Follow-Up'}
         </button>
-        <button role="tab" aria-selected={activeTab === 'C10'} style={getTabStyle('C10')} onClick={() => setActiveTab('C10')}>
+        <button key="tab-c10" role="tab" aria-selected={activeTab === 'C10'} style={getTabStyle('C10')} onClick={() => setActiveTab('C10')}>
           C10 - PDF 2
         </button>
       </nav>
@@ -399,6 +406,7 @@ const CoordinatorPortalView: React.FC<Props> = ({
         
         {activeTab === 'C01' && (
           <CoordinatorPaymentGateTab
+            key="content-c01"
             activeCase={activeCase}
             lang={lang}
             isPaid={isPaid}
@@ -415,6 +423,7 @@ const CoordinatorPortalView: React.FC<Props> = ({
 
         {activeTab === 'C07' && (
           <CoordinatorTelehealthTab
+            key="content-c07"
             lang={lang}
             proposedSlots={proposedSlots}
             confirmedSlotId={confirmedSlotId}
@@ -425,6 +434,7 @@ const CoordinatorPortalView: React.FC<Props> = ({
 
         {activeTab === 'C08' && (
           <CoordinatorReportReleaseTab
+            key="content-c08"
             lang={lang}
             activeCase={activeCase}
             isSaudiDoctorApproved={isSaudiDoctorApproved}
@@ -438,6 +448,7 @@ const CoordinatorPortalView: React.FC<Props> = ({
 
         {activeTab === 'C09' && (
           <CoordinatorFollowUpTab
+            key="content-c09"
             lang={lang}
             incomingQuestions={incomingQuestions}
             relayMessage={relayMessage}
@@ -449,6 +460,7 @@ const CoordinatorPortalView: React.FC<Props> = ({
 
         {activeTab === 'C10' && (
           <CoordinatorCaseClosureTab
+            key="content-c10"
             lang={lang}
             activeCase={activeCase}
             isArchived={isArchived}
@@ -458,24 +470,6 @@ const CoordinatorPortalView: React.FC<Props> = ({
         )}
 
       </main>
-
-      <style>{`
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        button:focus-visible {
-          outline: 3px solid ${TEAL_ACCENT};
-          outline-offset: 2px;
-        }
-        textarea:focus-visible {
-          border-color: ${TEAL_PRIMARY};
-          box-shadow: 0 0 0 3px ${TEAL_ACCENT}40;
-        }
-        a:hover {
-          background-color: ${TEAL_BG} !important;
-        }
-      `}</style>
     </div>
   );
 };

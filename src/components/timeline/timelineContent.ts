@@ -55,6 +55,22 @@ export function getStageContent(
   const assignedMethodsLabelAr = (activeCase.allowedPaymentMethods || []).map((m) => METHOD_NAMES[m]?.ar || m).join(' · ');
 
   switch (stage) {
+    case 'INTAKE_RECEIVED':
+      return {
+        badgeAr: 'المرحلة 1 من 9 · تم استلام الطلب وبانتظار بدء الفرز',
+        badgeEn: 'Stage 1 of 9 · Intake Received & Pending Triage',
+        titleAr: 'تم استلام طلب الرأي الطبي بنجاح وهو بانتظار فرز التمريض',
+        titleEn: 'Second Opinion Intake Received & Awaiting Nurse Triage',
+        descAr: 'تم تسجيل ملفك بنجاح. سيقوم كادر التمريض السريري بمراجعة المؤشرات الحيوية وفحص الأشعة وتطبيق حجب الهوية (SDAIA) تمهيداً للإحالة.',
+        descEn: 'Your medical dossier has been received. The clinical nurse will review your records, verify imaging scans, and apply SDAIA de-identification prior to doctor review.',
+        queueStatusAr: 'الطلب في قائمة الفرز السريري الأولي لدى كادر التمريض',
+        queueStatusEn: 'Status: In clinical nurse triage queue',
+        nextRoleCode: 'N',
+        nextRoleLabelAr: 'الانتقال إلى شاشة التمريض (N01) لإجراء الفرز وحجب الهوية →',
+        nextRoleLabelEn: 'Switch to Nurse View (N01) to begin triage →',
+        slaAr: 'SLA استلام وتدقيق الطلب: فوري',
+        slaEn: 'Intake SLA: Immediate',
+      };
     case 'NURSE_CHECK':
       return {
         badgeAr: 'المرحلة 2 من 9 · قيد فرز التمريض',

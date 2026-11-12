@@ -104,6 +104,7 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
   if (effectiveRole === 'AD') {
     return (
       <SuperAdminPortalView
+        key="portal-AD"
         lang={lang}
         onSelectPersona={handleSelectPersona}
         activePersona={personaToUse}
@@ -118,6 +119,7 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
   if (effectiveRole === 'HA') {
     return (
       <HospitalAdminPortalView
+        key="portal-HA"
         lang={lang}
         activePersona={personaToUse}
         activeCase={activeCase}
@@ -133,6 +135,7 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
   if (effectiveRole === 'C') {
     return (
       <CoordinatorPortalView
+        key="portal-C"
         activeCase={activeCase}
         cases={cases}
         onSelectCase={onSelectCase}
@@ -163,6 +166,7 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
       const isAr = lang === 'ar';
       return (
         <div
+          key="portal-K-locked"
           dir={isAr ? 'rtl' : 'ltr'}
           className="max-w-xl mx-auto mt-10 p-6 bg-[#E6FAF7] dark:bg-alo-darkCard rounded-2xl border border-[#00C6AE] dark:border-[#007B6E] shadow-md text-center space-y-4 font-cairo"
         >
@@ -188,6 +192,7 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
 
     return (
       <ConsultantMobileView
+        key="portal-K"
         activeCase={consultantCase}
         cases={eligibleCases.length > 0 ? eligibleCases : cases}
         onSelectCase={onSelectCase}
@@ -201,6 +206,7 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
   if (effectiveRole === 'N') {
     return (
       <NurseTriageView
+        key="portal-N"
         activeCase={activeCase}
         cases={cases}
         onSelectCase={onSelectCase}
@@ -217,6 +223,7 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
   if (effectiveRole === 'D') {
     return (
       <DoctorReviewView
+        key="portal-D"
         activeCase={activeCase}
         cases={cases}
         onSelectCase={onSelectCase}
@@ -233,6 +240,7 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
   if (['L', 'PH', 'REC', 'H', 'T', 'V'].includes(effectiveRole)) {
     return (
       <PartnerServicesView
+        key={`portal-${effectiveRole}`}
         activeCase={activeCase}
         cases={cases}
         onSelectCase={onSelectCase}
@@ -250,6 +258,7 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
     if (patientSubView === 'landing') {
       return (
         <PatientLandingView
+          key="patient-landing"
           activeCase={activeCase}
           lang={lang}
           onToggleLang={handleToggleLang}
@@ -273,6 +282,7 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
     if (patientSubView === 'intake') {
       return (
         <PatientIntakeView
+          key="patient-intake"
           activeCase={activeCase}
           onAdvanceStage={() => { handleAdvanceStage(); handleSelectPatientSubView('timeline'); }}
           onUpdateCase={handleUpdateCase}
@@ -296,6 +306,7 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
     if (patientSubView === 'timeline') {
       return (
         <PatientStatusTimelineView
+          key="patient-timeline"
           activeCase={activeCase}
           cases={cases}
           onSelectCase={onSelectCase}
@@ -305,6 +316,8 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
           onBackToLanding={() => handleSelectPatientSubView('landing')}
           onOpenTelehealth={() => handleSelectPatientSubView('telehealth')}
           onOpenPayment={() => { if (canPatientCheckout) handleSelectPatientSubView('checkout'); }}
+          onRegisterCase={() => handleSelectPatientSubView('intake')}
+          userSession={userSession}
           lang={lang}
         />
       );
@@ -314,6 +327,7 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
     if (patientSubView === 'telehealth' || (activeCase.currentStage === 'OPINION_READY' && activeCase.consultationType === 'video' && !!activeCase.metadata?.pdf1Released)) {
       return (
         <OpinionTelehealthView
+          key="patient-telehealth"
           activeCase={activeCase}
           onAdvanceStage={() => { handleAdvanceStage(); handleSelectPatientSubView('timeline'); }}
           onUpdateCase={handleUpdateCase}
@@ -326,6 +340,7 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
     if ((patientSubView === 'checkout' || activeCase.currentStage === 'AWAITING_PAYMENT') && canPatientCheckout) {
       return (
         <PaymentCheckoutView
+          key="patient-checkout"
           activeCase={activeCase}
           onAdvanceStage={handleCompletePatientPayment}
           onBackToTimeline={() => handleSelectPatientSubView('timeline')}
@@ -339,6 +354,7 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
     if (activeCase.currentStage === 'FOLLOW_UP_21_DAYS') {
       return (
         <FollowUpChatView
+          key="patient-followup"
           activeCase={activeCase}
           onAdvanceStage={handleAdvanceStage}
           onUpdateCase={handleUpdateCase}
@@ -349,13 +365,18 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
     // All intermediate clinical stages → Patient Journey Tracker
     return (
       <PatientStatusTimelineView
+        key="patient-status"
         activeCase={activeCase}
+        cases={cases}
+        onSelectCase={onSelectCase}
         onAdvanceStage={handleAdvanceStage}
         onUpdateCase={handleUpdateCase}
         onResetActiveCase={handleResetActiveCase}
         onBackToLanding={() => handleSelectPatientSubView('landing')}
         onOpenTelehealth={() => handleSelectPatientSubView('telehealth')}
         onOpenPayment={() => handleSelectPatientSubView('checkout')}
+        onRegisterCase={() => handleSelectPatientSubView('intake')}
+        userSession={userSession}
         lang={lang}
       />
     );
@@ -364,11 +385,16 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
   // ── Fallback ──────────────────────────────────────────────────────────────
   return (
     <PatientStatusTimelineView
+      key="patient-fallback"
       activeCase={activeCase}
+      cases={cases}
+      onSelectCase={onSelectCase}
       onAdvanceStage={handleAdvanceStage}
       onUpdateCase={handleUpdateCase}
       onResetActiveCase={handleResetActiveCase}
       onOpenTelehealth={() => handleSelectPatientSubView('telehealth')}
+      onRegisterCase={() => handleSelectPatientSubView('intake')}
+      userSession={userSession}
       lang={lang}
     />
   );

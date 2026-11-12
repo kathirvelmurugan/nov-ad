@@ -26,6 +26,10 @@ export class ErrorBoundary extends Component<Props, State> {
     console.error('Unhandled React Error caught by ErrorBoundary:', error, errorInfo);
   }
 
+  private handleRetry = () => {
+    this.setState({ hasError: false, error: null });
+  };
+
   private handleReset = () => {
     this.setState({ hasError: false, error: null });
     window.location.reload();
@@ -50,8 +54,8 @@ export class ErrorBoundary extends Component<Props, State> {
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
                 {isRtl
-                  ? 'تم استرداد النظام وحماية الجلسة السريرية. انقر أدناه لتحديث العرض والمتابعة.'
-                  : 'The system has safely isolated the view. Click below to refresh and continue.'}
+                  ? 'تم استرداد النظام وحماية الجلسة السريرية. انقر أدناه للمتابعة أو إعادة التحميل.'
+                  : 'The system has safely isolated the view. Click below to continue or refresh.'}
               </p>
             </div>
             {this.state.error && (
@@ -59,14 +63,23 @@ export class ErrorBoundary extends Component<Props, State> {
                 {this.state.error.message}
               </div>
             )}
-            <button
-              type="button"
-              onClick={this.handleReset}
-              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold shadow-md transition-all active:scale-95 cursor-pointer w-full"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-              <span>{isRtl ? 'إعادة تحميل الشاشة' : 'Reload Screen'}</span>
-            </button>
+            <div className="flex items-center gap-2 pt-1">
+              <button
+                type="button"
+                onClick={this.handleRetry}
+                className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold shadow-md transition-all active:scale-95 cursor-pointer"
+              >
+                <span>{isRtl ? 'المتابعة وتحديث العرض' : 'Resume & Continue'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={this.handleReset}
+                className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all active:scale-95 cursor-pointer"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>{isRtl ? 'إعادة تحميل الشاشة' : 'Reload Screen'}</span>
+              </button>
+            </div>
           </div>
         </div>
       );

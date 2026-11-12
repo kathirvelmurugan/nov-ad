@@ -225,16 +225,16 @@ export const PaymentCheckoutView: React.FC<Props> = ({
   return (
     <div
       dir={isRTL ? 'rtl' : 'ltr'}
-      className="min-h-screen w-full bg-[#E6FAF7] py-8 px-4 sm:px-6 lg:px-8"
+      className="w-full bg-[#E6FAF7] min-h-[calc(100vh-80px)] py-4 sm:py-6"
       style={{ fontFamily: isRTL ? "'Cairo', sans-serif" : "'Inter', sans-serif" }}
     >
-      <div className="max-w-6xl mx-auto space-y-8">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-6">
         
         {onBackToTimeline && (
           <div className="flex items-center justify-start">
             <button
               onClick={onBackToTimeline}
-              className="inline-flex items-center gap-2 text-sm font-bold text-[#007B6E] hover:text-[#005a50] transition-colors bg-white/80 hover:bg-white px-4 py-2 rounded-xl border border-[#00C6AE]/30 shadow-sm"
+              className="inline-flex items-center gap-2 text-xs sm:text-sm font-bold text-[#007B6E] hover:text-[#005a50] transition-colors bg-white/90 hover:bg-white px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl border border-[#00C6AE]/30 shadow-sm cursor-pointer"
             >
               <span>{isRTL ? '→' : '←'}</span>
               <span>{isRTL ? 'العودة إلى متابعة الطلب' : 'Back to Case Timeline'}</span>
@@ -243,17 +243,17 @@ export const PaymentCheckoutView: React.FC<Props> = ({
         )}
 
         {/* Header */}
-        <div className="text-center space-y-3">
-          <h1 className="text-3xl md:text-4xl font-extrabold text-[#007B6E] tracking-tight">
+        <div className="text-center space-y-2">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#007B6E] tracking-tight">
             {t.title}
           </h1>
-          <p className="text-base md:text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-sm sm:text-base text-slate-600 max-w-2xl mx-auto leading-relaxed">
             {t.subtitle}
           </p>
         </div>
 
         {/* 2-Tier Selection Matrix (Tier 1 & Tier 2 Only) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch pt-4">
           {TIERS.map((tier) => {
             const isSelected = selectedTierId === tier.id;
             const IconComponent = tier.icon;
@@ -266,53 +266,55 @@ export const PaymentCheckoutView: React.FC<Props> = ({
                 type="button"
                 onClick={() => handleTierSelect(tier)}
                 aria-pressed={isSelected}
-                className={`relative flex flex-col h-full text-start p-6 rounded-3xl border-2 transition-all duration-300 ease-out focus:outline-none focus-visible:ring-4 focus-visible:ring-[#00C6AE]/50 ${
+                className={`relative flex flex-col justify-between h-full text-start p-6 sm:p-7 rounded-3xl border-2 transition-all duration-200 cursor-pointer focus:outline-none focus-visible:ring-4 focus-visible:ring-[#00C6AE]/50 ${
                   isSelected
-                    ? 'border-[#007B6E] bg-white shadow-[0_0_0_4px_rgba(0,123,110,0.15),0_20px_25px_-5px_rgba(0,0,0,0.1)] scale-[1.02]'
-                    : 'border-transparent bg-white/70 hover:bg-white hover:border-[#00C6AE]/40 hover:shadow-lg'
+                    ? 'border-[#007B6E] bg-white ring-2 ring-[#007B6E]/20 shadow-xl'
+                    : 'border-slate-200/90 bg-white/80 hover:bg-white hover:border-[#00C6AE]/60 hover:shadow-md'
                 }`}
               >
                 {tier.recommended && (
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-[#007B6E] to-[#00C6AE] text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-md whitespace-nowrap flex items-center gap-1.5">
+                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-[#007B6E] to-[#00C6AE] text-white text-xs font-bold px-3.5 py-1 rounded-full shadow-md whitespace-nowrap flex items-center gap-1.5 z-10">
                     <Sparkles size={12} />
-                    {t.recommended}
+                    <span>{t.recommended}</span>
                   </div>
                 )}
 
-                <div className={`inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-5 ${
-                  isSelected ? 'bg-[#007B6E] text-white' : 'bg-[#E6FAF7] text-[#007B6E]'
-                }`}>
-                  <IconComponent size={28} strokeWidth={2} />
+                <div>
+                  <div className={`inline-flex items-center justify-center w-12 h-12 sm:w-13 sm:h-13 rounded-2xl mb-4 ${
+                    isSelected ? 'bg-[#007B6E] text-white shadow-sm' : 'bg-[#E6FAF7] text-[#007B6E]'
+                  }`}>
+                    <IconComponent size={26} strokeWidth={2.2} />
+                  </div>
+
+                  <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 mb-4 leading-snug">
+                    {tierName}
+                  </h3>
+
+                  <ul className="space-y-2.5 mb-6">
+                    {features.map((feature, idx) => (
+                      <li key={idx} className="flex items-start gap-2.5 text-xs sm:text-sm text-slate-600">
+                        <CheckCircle2
+                          size={17}
+                          className={`mt-0.5 shrink-0 ${isSelected ? 'text-[#007B6E]' : 'text-[#00C6AE]'}`}
+                        />
+                        <span className="leading-snug">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
 
-                <h3 className="text-xl font-bold text-gray-900 mb-4 leading-snug min-h-[3.5rem]">
-                  {tierName}
-                </h3>
-
-                <ul className="space-y-3 mb-6 flex-1">
-                  {features.map((feature, idx) => (
-                    <li key={idx} className="flex items-start gap-3 text-sm text-gray-600">
-                      <CheckCircle2
-                        size={18}
-                        className={`mt-0.5 flex-shrink-0 ${isSelected ? 'text-[#007B6E]' : 'text-[#00C6AE]'}`}
-                      />
-                      <span className="leading-relaxed">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <div className="border-t border-gray-100 pt-5 mt-auto space-y-2">
-                  <div className="flex justify-between items-center text-sm text-gray-500">
+                <div className="border-t border-slate-100 pt-4 mt-auto space-y-1.5">
+                  <div className="flex justify-between items-center text-xs text-slate-500">
                     <span>{t.baseFee}</span>
-                    <span>{formatCurrency(tier.baseSar)} {t.sar}</span>
+                    <span className="font-semibold">{formatCurrency(tier.baseSar)} {t.sar}</span>
                   </div>
-                  <div className="flex justify-between items-center text-sm text-gray-500">
+                  <div className="flex justify-between items-center text-xs text-slate-500">
                     <span>{t.vat}</span>
-                    <span>{formatCurrency(tier.vatSar)} {t.sar}</span>
+                    <span className="font-semibold">{formatCurrency(tier.vatSar)} {t.sar}</span>
                   </div>
-                  <div className="flex justify-between items-center text-lg font-extrabold text-[#007B6E] pt-2">
+                  <div className="flex justify-between items-center text-base sm:text-lg font-extrabold text-[#007B6E] pt-2 border-t border-slate-100">
                     <span>{t.total}</span>
-                    <span>{formatCurrency(tier.totalSar)} {t.sar}</span>
+                    <span className="text-xl sm:text-2xl font-black">{formatCurrency(tier.totalSar)} {t.sar}</span>
                   </div>
                 </div>
               </button>
@@ -321,70 +323,72 @@ export const PaymentCheckoutView: React.FC<Props> = ({
         </div>
 
         {/* Bottom Section: Payment Methods & Invoice */}
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-stretch">
           
           {/* Payment Methods */}
-          <div className="lg:col-span-3 bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100">
-            <div className="flex flex-wrap items-center justify-between gap-2 mb-6">
-              <h2 className="text-xl font-bold text-gray-900 flex items-center gap-3">
-                <CreditCard className="text-[#007B6E]" size={24} />
-                {t.paymentMethodTitle}
-              </h2>
-              {isCoordinatorAssigned && (
-                <span className="text-xs font-bold text-[#007B6E] bg-[#E6FAF7] px-3 py-1 rounded-full border border-[#00C6AE]/40">
-                  {isRTL ? 'معتمدة من منسق ألو' : 'Assigned by ALO Coordinator'}
-                </span>
+          <div className="lg:col-span-3 bg-white rounded-3xl p-6 sm:p-7 shadow-sm border border-slate-200/90 flex flex-col justify-between">
+            <div>
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-5">
+                <h2 className="text-base sm:text-lg font-extrabold text-slate-900 flex items-center gap-2.5">
+                  <CreditCard className="text-[#007B6E]" size={22} />
+                  <span>{t.paymentMethodTitle}</span>
+                </h2>
+                {isCoordinatorAssigned && (
+                  <span className="text-xs font-bold text-[#007B6E] bg-[#E6FAF7] px-3 py-1 rounded-full border border-[#00C6AE]/40">
+                    {isRTL ? 'معتمدة من منسق ألو' : 'Assigned by ALO Coordinator'}
+                  </span>
+                )}
+              </div>
+
+              {!isCoordinatorAssigned ? (
+                <div className="p-5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-sm font-semibold">
+                  {isRTL
+                    ? 'الدفع مقفل حالياً — بانتظار قيام منسق رعاية ألو باعتماد الفاتورة وتحديد طرق الدفع المتاحة لك.'
+                    : 'Payment is locked — waiting for the ALO Coordinator to issue your invoice and assign available payment methods.'}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  {methods.map((method) => {
+                    const isActive = paymentMethod === method.id;
+                    const MethodIcon = method.icon;
+                    
+                    return (
+                      <button
+                        key={method.id}
+                        type="button"
+                        onClick={() => setPaymentMethod(method.id)}
+                        className={`flex items-center gap-3.5 p-3.5 rounded-2xl border-2 transition-all duration-200 text-start cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#00C6AE] ${
+                          isActive
+                            ? 'border-[#007B6E] bg-[#E6FAF7]/60 shadow-sm ring-1 ring-[#007B6E]/30'
+                            : 'border-slate-200/80 hover:border-[#00C6AE]/50 bg-white'
+                        }`}
+                      >
+                        <div className={`flex items-center justify-center w-11 h-11 rounded-xl shrink-0 ${
+                          isActive ? 'bg-[#007B6E] text-white shadow-sm' : 'bg-slate-100 text-slate-500'
+                        }`}>
+                          <MethodIcon size={22} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={`font-bold text-xs sm:text-sm truncate ${isActive ? 'text-[#007B6E]' : 'text-slate-900'}`}>
+                            {method.label}
+                          </p>
+                          <p className="text-[11px] text-slate-500 truncate mt-0.5">{method.sublabel}</p>
+                        </div>
+                        {isActive && (
+                          <CheckCircle2 size={18} className="text-[#007B6E] shrink-0" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
               )}
             </div>
 
-            {!isCoordinatorAssigned ? (
-              <div className="p-5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-sm font-semibold">
-                {isRTL
-                  ? 'الدفع مقفل حالياً — بانتظار قيام منسق رعاية ألو باعتماد الفاتورة وتحديد طرق الدفع المتاحة لك.'
-                  : 'Payment is locked — waiting for the ALO Coordinator to issue your invoice and assign available payment methods.'}
-              </div>
-            ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {methods.map((method) => {
-                const isActive = paymentMethod === method.id;
-                const MethodIcon = method.icon;
-                
-                return (
-                  <button
-                    key={method.id}
-                    type="button"
-                    onClick={() => setPaymentMethod(method.id)}
-                    className={`flex items-center gap-4 p-4 rounded-2xl border-2 transition-all duration-200 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#00C6AE]/50 ${
-                      isActive
-                        ? 'border-[#007B6E] bg-[#E6FAF7]/50'
-                        : 'border-gray-100 hover:border-[#00C6AE]/50 bg-white'
-                    }`}
-                  >
-                    <div className={`flex items-center justify-center w-12 h-12 rounded-xl ${
-                      isActive ? 'bg-[#007B6E] text-white' : 'bg-gray-50 text-gray-500'
-                    }`}>
-                      <MethodIcon size={24} />
-                    </div>
-                    <div className="text-start flex-1">
-                      <p className={`font-bold text-sm ${isActive ? 'text-[#007B6E]' : 'text-gray-900'}`}>
-                        {method.label}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-0.5">{method.sublabel}</p>
-                    </div>
-                    {isActive && (
-                      <CheckCircle2 size={20} className="text-[#007B6E] flex-shrink-0" />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-            )}
-
             {/* Dynamic Tabby Info if Tabby Selected */}
             {paymentMethod === 'tabby' && (
-              <div className="mt-6 p-4 bg-[#E6FAF7] rounded-2xl border border-[#00C6AE]/30 flex items-start gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <Sparkles className="text-[#007B6E] mt-0.5 flex-shrink-0" size={20} />
-                <div className="text-sm text-[#007B6E] font-medium leading-relaxed">
+              <div className="mt-4 p-3 bg-[#E6FAF7] rounded-2xl border border-[#00C6AE]/30 flex items-start gap-2.5 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                <Sparkles className="text-[#007B6E] mt-0.5 shrink-0" size={18} />
+                <div className="text-xs text-[#007B6E] font-medium leading-relaxed">
                   {isRTL 
                     ? `سيتم تقسيم المبلغ الإجمالي ${formatCurrency(selectedTier.totalSar)} ر.س إلى 4 دفعات شهرية بدون فوائد بقيمة ${tabbyMonthly} ر.س عبر تابي.`
                     : `Your total of SAR ${formatCurrency(selectedTier.totalSar)} will be split into 4 interest-free monthly payments of SAR ${tabbyMonthly} via Tabby.`
@@ -395,66 +399,68 @@ export const PaymentCheckoutView: React.FC<Props> = ({
           </div>
 
           {/* ZATCA Phase-2 Tax Invoice Card */}
-          <div className="lg:col-span-2 bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100 flex flex-col">
-            <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-              <Receipt className="text-[#007B6E]" size={24} />
-              {t.invoiceTitle}
-            </h2>
+          <div className="lg:col-span-2 bg-white rounded-3xl p-6 sm:p-7 shadow-sm border border-slate-200/90 flex flex-col justify-between">
+            <div>
+              <h2 className="text-base sm:text-lg font-extrabold text-slate-900 mb-5 flex items-center gap-2.5">
+                <Receipt className="text-[#007B6E]" size={22} />
+                <span>{t.invoiceTitle}</span>
+              </h2>
 
-            <div className="space-y-4 flex-1">
-              <div className="flex justify-between items-center pb-3 border-b border-dashed border-gray-200">
-                <span className="text-sm font-medium text-gray-500">{t.caseNumber}</span>
-                <span className="text-sm font-bold text-gray-900 font-mono tracking-wider">
-                  {activeCase.caseNumber || 'ALO-000000'}
-                </span>
-              </div>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center pb-2.5 border-b border-dashed border-slate-200">
+                  <span className="text-xs sm:text-sm font-medium text-slate-500">{t.caseNumber}</span>
+                  <span className="text-xs sm:text-sm font-bold text-slate-900 font-mono tracking-wider">
+                    {activeCase.caseNumber || 'ALO-000000'}
+                  </span>
+                </div>
 
-              <div className="flex justify-between items-center pb-3 border-b border-dashed border-gray-200">
-                <span className="text-sm font-medium text-gray-500">{t.serviceFee}</span>
-                <span className="text-sm font-bold text-gray-900">
-                  {formatCurrency(selectedTier.baseSar)} {t.sar}
-                </span>
-              </div>
+                <div className="flex justify-between items-center pb-2.5 border-b border-dashed border-slate-200">
+                  <span className="text-xs sm:text-sm font-medium text-slate-500">{t.serviceFee}</span>
+                  <span className="text-xs sm:text-sm font-bold text-slate-900">
+                    {formatCurrency(selectedTier.baseSar)} {t.sar}
+                  </span>
+                </div>
 
-              <div className="flex justify-between items-center pb-3 border-b border-dashed border-gray-200">
-                <span className="text-sm font-medium text-gray-500">{t.zatcaVat}</span>
-                <span className="text-sm font-bold text-gray-900">
-                  {formatCurrency(selectedTier.vatSar)} {t.sar}
-                </span>
-              </div>
+                <div className="flex justify-between items-center pb-2.5 border-b border-dashed border-slate-200">
+                  <span className="text-xs sm:text-sm font-medium text-slate-500">{t.zatcaVat}</span>
+                  <span className="text-xs sm:text-sm font-bold text-slate-900">
+                    {formatCurrency(selectedTier.vatSar)} {t.sar}
+                  </span>
+                </div>
 
-              <div className="flex justify-between items-center pt-2">
-                <span className="text-base font-bold text-gray-900">{t.totalDue}</span>
-                <span className="text-2xl font-extrabold text-[#007B6E]">
-                  {formatCurrency(selectedTier.totalSar)} {t.sar}
-                </span>
+                <div className="flex justify-between items-center pt-1.5">
+                  <span className="text-sm sm:text-base font-extrabold text-slate-900">{t.totalDue}</span>
+                  <span className="text-xl sm:text-2xl font-black text-[#007B6E]">
+                    {formatCurrency(selectedTier.totalSar)} {t.sar}
+                  </span>
+                </div>
               </div>
             </div>
 
-            <div className="mt-8 pt-6 border-t border-gray-100 space-y-4">
-              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-                <QrCode size={24} className="text-gray-400" />
-                <span className="text-xs font-medium text-gray-500">{t.qrIndicator}</span>
+            <div className="mt-5 pt-4 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div className="flex items-center gap-2 p-2 bg-slate-50 rounded-xl">
+                <QrCode size={18} className="text-slate-400 shrink-0" />
+                <span className="text-[11px] font-medium text-slate-600 truncate">{t.qrIndicator}</span>
               </div>
               
-              <div className="flex items-center gap-3 p-3 bg-[#E6FAF7] rounded-xl">
-                <ShieldCheck size={24} className="text-[#007B6E]" />
-                <span className="text-xs font-bold text-[#007B6E]">{t.samaBadge}</span>
+              <div className="flex items-center gap-2 p-2 bg-[#E6FAF7] rounded-xl border border-[#00C6AE]/20">
+                <ShieldCheck size={18} className="text-[#007B6E] shrink-0" />
+                <span className="text-[11px] font-bold text-[#007B6E] truncate">{t.samaBadge}</span>
               </div>
             </div>
           </div>
         </div>
 
         {/* Instant Payment Action */}
-        <div className="flex flex-col items-center justify-center pt-4 pb-12">
+        <div className="flex flex-col items-center justify-center pt-4 pb-8">
           <button
             type="button"
             onClick={handlePayment}
             disabled={isProcessing || !isCoordinatorAssigned}
-            className={`group relative inline-flex items-center justify-center gap-3 w-full sm:w-auto sm:min-w-[420px] px-10 py-5 rounded-2xl text-lg font-bold text-white transition-all duration-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#00C6AE]/50 ${
+            className={`group relative inline-flex items-center justify-center gap-3 w-full sm:w-auto sm:min-w-[420px] px-8 py-4 rounded-2xl text-base sm:text-lg font-extrabold text-white transition-all duration-200 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#00C6AE]/50 shadow-md ${
               isProcessing || !isCoordinatorAssigned
                 ? 'bg-[#007B6E]/50 cursor-not-allowed'
-                : 'bg-gradient-to-r from-[#007B6E] to-[#00C6AE] hover:shadow-[0_10px_30px_-5px_rgba(0,123,110,0.5)] hover:-translate-y-0.5 active:translate-y-0'
+                : 'bg-gradient-to-r from-[#007B6E] to-[#00C6AE] hover:shadow-xl hover:brightness-105 active:scale-[0.99] cursor-pointer'
             }`}
           >
             {isProcessing ? (
@@ -472,7 +478,7 @@ export const PaymentCheckoutView: React.FC<Props> = ({
                 </span>
                 <ArrowRight
                   size={20}
-                  className={`transition-transform duration-300 ${
+                  className={`transition-transform duration-200 ${
                     isRTL ? 'group-hover:-translate-x-1 rotate-180' : 'group-hover:translate-x-1'
                   }`}
                 />
@@ -480,9 +486,9 @@ export const PaymentCheckoutView: React.FC<Props> = ({
             )}
           </button>
           
-          <p className="mt-4 text-xs text-gray-400 flex items-center gap-1.5">
-            <ShieldCheck size={12} />
-            {isRTL ? 'محمي بتشفير 256-bit SSL ومتوافق مع معايير PCI-DSS' : 'Secured by 256-bit SSL encryption & PCI-DSS compliant'}
+          <p className="mt-3 text-xs text-slate-500 flex items-center gap-1.5">
+            <ShieldCheck size={14} className="text-emerald-600" />
+            <span>{isRTL ? 'محمي بتشفير 256-bit SSL ومتوافق مع معايير PCI-DSS' : 'Secured by 256-bit SSL encryption & PCI-DSS compliant'}</span>
           </p>
         </div>
 
