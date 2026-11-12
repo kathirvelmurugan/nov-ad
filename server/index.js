@@ -261,7 +261,11 @@ apiRouter.get('/cases', async (req, res) => {
 
 apiRouter.post('/cases', async (req, res) => {
   const c = req.body;
-  if (!c.id) return res.status(400).json({ error: 'Case ID required' });
+  if (!c.id || c.id === 'draft-intake') return res.status(400).json({ error: 'Valid case ID required' });
+  const hasSymptoms = (c.symptoms && c.symptoms.trim().length > 0) || (c.symptomsAr && c.symptomsAr.trim().length > 0) || (c.symptomsEn && c.symptomsEn.trim().length > 0);
+  if ((!c.stage || c.stage <= 1) && !hasSymptoms) {
+    return res.status(400).json({ error: 'Cannot register empty case before explicit nurse submission' });
+  }
   try {
     await pool.query(
       `INSERT INTO clinical_cases (id, case_number, current_stage, stage, patient_name, patient_name_ar, patient_name_en, national_id_masked, consultation_type, case_data, updated_at)

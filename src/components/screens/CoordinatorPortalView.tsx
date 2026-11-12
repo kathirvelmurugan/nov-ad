@@ -303,6 +303,8 @@ const CoordinatorPortalView: React.FC<Props> = ({
     fontFamily,
     boxShadow: activeTab === tab ? `0 4px 12px ${TEAL_PRIMARY}40` : '0 1px 3px rgba(0,0,0,0.1)',
     transition: 'all 0.2s ease',
+    whiteSpace: 'nowrap',
+    flexShrink: 0,
   });
 
   const stageMeta = getStageBadgeMeta(activeCase.currentStage, isAr);

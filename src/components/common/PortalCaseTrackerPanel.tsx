@@ -79,9 +79,14 @@ const PortalCaseTrackerPanel: React.FC<PortalCaseTrackerPanelProps> = ({
   const isAr = lang === 'ar';
   const dir = isAr ? 'rtl' : 'ltr';
 
+  const validCases = useMemo(
+    () => cases.filter((c) => (c.stage && c.stage > 1) || (c.symptoms && c.symptoms.trim().length > 0)),
+    [cases]
+  );
+
   const actionableCases = useMemo(
-    () => cases.filter(actionablePredicate),
-    [cases, actionablePredicate]
+    () => validCases.filter(actionablePredicate),
+    [validCases, actionablePredicate]
   );
 
   const [tab, setTab] = useState<'actionable' | 'all'>(
@@ -91,16 +96,16 @@ const PortalCaseTrackerPanel: React.FC<PortalCaseTrackerPanelProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    if (actionableCases.length === 0 && cases.length > 0) {
+    if (actionableCases.length === 0 && validCases.length > 0) {
       setTab('all');
     }
-  }, [actionableCases.length, cases.length]);
+  }, [actionableCases.length, validCases.length]);
 
-  if (cases.length === 0) {
+  if (validCases.length === 0) {
     return null;
   }
 
-  const displayedCases = tab === 'actionable' ? actionableCases : cases;
+  const displayedCases = tab === 'actionable' ? actionableCases : validCases;
   const filteredCases = displayedCases.filter((c) => {
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
@@ -109,7 +114,7 @@ const PortalCaseTrackerPanel: React.FC<PortalCaseTrackerPanelProps> = ({
     const spec = (c.specialty || (c as any).specialtyAr || (c as any).specialtyEn || '').toLowerCase();
     return num.includes(q) || pName.includes(q) || spec.includes(q);
   });
-  const activeCase = cases.find((c) => c.id === activeCaseId) || cases[0];
+  const activeCase = validCases.find((c) => c.id === activeCaseId) || validCases[0];
   const title = isAr ? portalTitleAr : portalTitleEn;
 
   const getPaymentPill = (c: ClinicalCase) => {

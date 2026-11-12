@@ -21,6 +21,24 @@ const ConsultantMobileView: React.FC<Props> = ({ activeCase, cases = [], onSelec
   const isWritten = activeCase.consultationType === 'written';
   const accepted = !!activeCase.metadata?.consultantAccepted;
 
+  const validCases = React.useMemo(
+    () => cases.filter((c) => (c.stage && c.stage > 1) || (c.symptoms && c.symptoms.trim().length > 0)),
+    [cases]
+  );
+
+  const didAutoFocusConsultantRef = React.useRef(false);
+  React.useEffect(() => {
+    if (!didAutoFocusConsultantRef.current && onSelectCase && validCases.length > 0) {
+      if (activeCase.currentStage !== 'WITH_CONSULTANT') {
+        const actionable = validCases.find((c) => c.currentStage === 'WITH_CONSULTANT');
+        if (actionable) {
+          didAutoFocusConsultantRef.current = true;
+          onSelectCase(actionable.id);
+        }
+      }
+    }
+  }, [validCases, activeCase.currentStage, onSelectCase]);
+
   const { formatted: consultantSlaFormatted } = useSlaCountdown({
     storageKey: `alo_sla_consultant_${activeCase.id}`,
     initialHours: 47,
@@ -173,7 +191,7 @@ const ConsultantMobileView: React.FC<Props> = ({ activeCase, cases = [], onSelec
         </p>
       </header>
 
-      {cases && cases.length > 1 && (
+      {validCases && validCases.length > 1 && (
         <div style={{
           backgroundColor: '#FFFFFF',
           borderRadius: '12px',
@@ -186,14 +204,14 @@ const ConsultantMobileView: React.FC<Props> = ({ activeCase, cases = [], onSelec
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '12px', fontWeight: 700, color: tealPrimary }}>
-              Assigned Specialist Cases ({cases.length})
+              Assigned Specialist Cases ({validCases.length})
             </span>
             <span style={{ fontSize: '11px', color: '#5F6368' }}>
               Select dossier to review
             </span>
           </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-            {cases.map((c) => {
+          <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '6px' }}>
+            {validCases.map((c) => {
               const isSelected = c.id === activeCase.id;
               return (
                 <button
@@ -206,6 +224,8 @@ const ConsultantMobileView: React.FC<Props> = ({ activeCase, cases = [], onSelec
                     fontSize: '11px',
                     fontWeight: 700,
                     cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0,
                     border: isSelected ? `2px solid ${tealPrimary}` : '1px solid #CBD5E0',
                     backgroundColor: isSelected ? tealPrimary : '#FFFFFF',
                     color: isSelected ? '#FFFFFF' : '#2D3748',

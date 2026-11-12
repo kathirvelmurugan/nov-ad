@@ -99,6 +99,16 @@ export const DoctorReviewView: React.FC<Props> = ({
   const isCurrentStageDoctor = !!activeCase && isActionableForDoctor(activeCase);
   const isReferralEditable = activeCase?.currentStage === 'DOCTOR_REVIEW';
 
+  const didAutoFocusDoctorRef = React.useRef(false);
+  React.useEffect(() => {
+    if (!didAutoFocusDoctorRef.current && onSelectCase && cases.length > 0) {
+      if (!isCurrentStageDoctor && pendingDoctorCases.length > 0) {
+        didAutoFocusDoctorRef.current = true;
+        onSelectCase(pendingDoctorCases[0].id);
+      }
+    }
+  }, [cases, isCurrentStageDoctor, pendingDoctorCases, onSelectCase]);
+
   const [forwardedBanner, setForwardedBanner] = React.useState<{ caseId: string; caseNumber: string; patientName: string } | null>(null);
 
   // Zero-Case Dedicated Empty State

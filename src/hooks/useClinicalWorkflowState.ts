@@ -31,6 +31,52 @@ import { useWorkflowStageTransitions } from './useWorkflowStageTransitions';
 export type { UserSession };
 export { STORAGE_KEY, ACTIVE_CASE_KEY, THEME_KEY, LANG_KEY, VIEW_MODE_KEY, USER_SESSION_KEY, FRESH_PRIMARY_CASE };
 
+// Clean-slate in-memory draft template for fresh unsubmitted intake
+const createFreshDraftIntake = (session?: UserSession | null, isAr = false): ClinicalCase => ({
+  ...FRESH_PRIMARY_CASE,
+  id: 'draft-intake',
+  caseNumber: '',
+  patientName: session?.fullName || (isAr ? 'مريض ألو' : 'ALO Patient'),
+  patientNameAr: session?.fullName || (isAr ? 'مريض ألو' : 'ALO Patient'),
+  patientNameEn: session?.fullName || (!isAr ? 'ALO Patient' : 'ALO Patient'),
+  patientPhone: session?.phone || '',
+  nationalIdMasked: '10********',
+  age: 45,
+  gender: 'M',
+  city: 'Riyadh',
+  cityAr: 'الرياض',
+  cityEn: 'Riyadh',
+  specialty: 'جراحة القلب والصدر',
+  specialtyAr: 'جراحة القلب والصدر',
+  specialtyEn: 'Cardiothoracic Surgery',
+  diagnosis: '',
+  diagnosisAr: '',
+  diagnosisEn: '',
+  symptoms: '',
+  symptomsAr: '',
+  symptomsEn: '',
+  consultationType: 'written',
+  currentStage: 'INTAKE_RECEIVED',
+  stage: 1,
+  status: 'draft',
+  doctorSelectionPreference: 'need_assistance',
+  treatingDoctor: DEFAULT_TREATING_DOCTOR,
+  consultant: DEFAULT_CONSULTANT,
+  files: [],
+  pricing: {
+    tier: 1,
+    tierName: 'Written',
+    baseSar: 65.22,
+    vatSar: 9.78,
+    totalSar: 75,
+    vatPercent: 15,
+    paid: false,
+  },
+  metadata: {
+    isDraft: true,
+  },
+});
+
 // ─── Hook ────────────────────────────────────────────────────────────────────
 export function useClinicalWorkflowState() {
 
@@ -183,6 +229,26 @@ export function useClinicalWorkflowState() {
     return 'second-opinion';
   });
 
+  // ── Intake Draft (In-Memory Only Until Explicit Nurse Submission) ───────────
+  const [intakeDraft, setIntakeDraft] = useState<ClinicalCase>(() => createFreshDraftIntake(userSession, lang === 'ar'));
+
+  useEffect(() => {
+    if (userSession && userSession.phone) {
+      setIntakeDraft((prev) => {
+        if (prev.id === 'draft-intake') {
+          return {
+            ...prev,
+            patientPhone: userSession.phone,
+            patientName: userSession.fullName || prev.patientName,
+            patientNameAr: userSession.fullName || prev.patientNameAr,
+            patientNameEn: userSession.fullName || prev.patientNameEn,
+          };
+        }
+        return prev;
+      });
+    }
+  }, [userSession]);
+
   // ─────────────────────────────────────────────────────────────────────────
   // Database & LocalStorage Synchronization
   // ─────────────────────────────────────────────────────────────────────────
@@ -304,7 +370,8 @@ export function useClinicalWorkflowState() {
 
   // ── Derived State (Patient Data Scoping) ─────────────────────────────────
   const isPatientUser = userSession?.roleCode === 'P';
-  const sortedCases = [...cases].sort((a, b) => {
+  const validCases = cases.filter((c) => (c.stage && c.stage > 1) || (c.symptoms && c.symptoms.trim().length > 0));
+  const sortedCases = [...validCases].sort((a, b) => {
     const timeA = new Date(a.createdAt || 0).getTime() || 0;
     const timeB = new Date(b.createdAt || 0).getTime() || 0;
     return timeB - timeA;
@@ -313,16 +380,15 @@ export function useClinicalWorkflowState() {
     ? sortedCases.filter((c) => matchesSaudiPhone(c.patientPhone, userSession.phone))
     : sortedCases;
 
-  const rawActiveCase = (isPatientUser
-    ? (effectiveCases.find((c) => c.id === activeCaseId) || (patientSubView === 'intake' ? FRESH_PRIMARY_CASE : effectiveCases[0]))
-    : (sortedCases.find((c) => c.id === activeCaseId) || sortedCases[0])) || {
-      ...FRESH_PRIMARY_CASE,
-      id: isPatientUser ? `case-${Date.now()}` : FRESH_PRIMARY_CASE.id,
-      patientPhone: isPatientUser ? userSession?.phone : undefined,
-      patientName: isPatientUser ? (userSession?.fullName || '') : '',
-      patientNameAr: isPatientUser ? (userSession?.fullName || '') : '',
-      patientNameEn: isPatientUser ? (userSession?.fullName || '') : '',
-    };
+  const isDraftIntakeView =
+    patientSubView === 'intake' &&
+    (!activeCaseId || activeCaseId === 'draft-intake' || !cases.some((c) => c.id === activeCaseId));
+
+  const rawActiveCase = isDraftIntakeView
+    ? intakeDraft
+    : (isPatientUser
+      ? (effectiveCases.find((c) => c.id === activeCaseId) || effectiveCases[0])
+      : (sortedCases.find((c) => c.id === activeCaseId) || sortedCases[0])) || intakeDraft;
 
   const activeCase: ClinicalCase = {
     ...rawActiveCase,
@@ -338,20 +404,92 @@ export function useClinicalWorkflowState() {
       const idx = STAGE_ORDER.indexOf(updated.currentStage);
       if (idx >= 0) syncedUpdate.stage = idx + 1;
     }
+
+    const isDraftTarget =
+      syncedUpdate.id === 'draft-intake' ||
+      activeCase.id === 'draft-intake' ||
+      (patientSubView === 'intake' && (!activeCaseId || !cases.some((c) => c.id === activeCaseId)));
+
+    const isNurseSubmit =
+      syncedUpdate.currentStage === 'NURSE_CHECK' ||
+      (Boolean(syncedUpdate.stage) && (syncedUpdate.stage || 0) >= 2);
+
+    if (isDraftTarget) {
+      if (!isNurseSubmit) {
+        // Typing into symptoms, selecting service/doctor, uploading files in draft mode:
+        // Update in-memory draft ONLY. Do NOT persist to DB or add to cases!
+        setIntakeDraft((prev) => ({
+          ...prev,
+          ...syncedUpdate,
+        }));
+        return;
+      }
+
+      // Explicit submission of the new case to Nurse Triage
+      const freshId = syncedUpdate.id && syncedUpdate.id !== 'draft-intake' ? syncedUpdate.id : `case-${Date.now()}`;
+      const freshCaseNum = syncedUpdate.caseNumber || `CASE-2026-${Math.floor(1000 + Math.random() * 9000)}`;
+      const phoneToSet = userSession?.phone || intakeDraft.patientPhone || syncedUpdate.patientPhone || '';
+      const nameToSet = userSession?.fullName || intakeDraft.patientName || syncedUpdate.patientName || (lang === 'ar' ? 'مريض ألو' : 'ALO Patient');
+
+      const registeredCase: ClinicalCase = {
+        ...intakeDraft,
+        ...syncedUpdate,
+        id: freshId,
+        caseNumber: freshCaseNum,
+        patientPhone: phoneToSet,
+        patientName: nameToSet,
+        patientNameAr: userSession?.fullName || intakeDraft.patientNameAr || syncedUpdate.patientNameAr || nameToSet,
+        patientNameEn: userSession?.fullName || intakeDraft.patientNameEn || syncedUpdate.patientNameEn || nameToSet,
+        currentStage: 'NURSE_CHECK',
+        stage: 2,
+        status: 'open',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        metadata: {
+          ...(intakeDraft.metadata || {}),
+          ...(syncedUpdate.metadata || {}),
+          isDraft: false,
+        },
+      };
+
+      // 1. Save to PostgreSQL database
+      apiClient.saveCase(registeredCase).catch(() => {});
+
+      // 2. Prepend to cases state
+      setCases((prev) => [registeredCase, ...prev.filter((c) => c.id !== freshId && c.id !== 'draft-intake')]);
+
+      // 3. Set active case ID
+      setActiveCaseId(registeredCase.id);
+
+      // 4. Reset intake draft for next fresh submission
+      setIntakeDraft(createFreshDraftIntake(userSession, lang === 'ar'));
+
+      // 5. Transition patient to timeline
+      setPatientSubView('timeline');
+      if (typeof window !== 'undefined') {
+        try {
+          const url = new URL(window.location.href);
+          url.searchParams.set('subview', 'timeline');
+          url.searchParams.set('caseId', registeredCase.id);
+          window.history.pushState({ portal: 'patient', subView: 'timeline', caseId: registeredCase.id, viewMode: 'workstation' }, '', url.pathname + url.search);
+        } catch (err) {}
+      }
+      return;
+    }
+
     if (isPatientUser && syncedUpdate.currentStage === 'NURSE_CHECK') {
       setPatientSubView('timeline');
     }
+
     setCases((prev) => {
       const targetId = syncedUpdate.id || activeCase.id || `case-${Date.now()}`;
       const exists = prev.some((c) => c.id === targetId);
       const phoneToSet = syncedUpdate.patientPhone || (isPatientUser ? userSession?.phone : activeCase.patientPhone);
       let updatedCase: ClinicalCase;
       let nextCases: ClinicalCase[];
+
       if (!exists) {
-        const isSubmitted = syncedUpdate.currentStage === 'NURSE_CHECK' || (Boolean(syncedUpdate.stage) && (syncedUpdate.stage || 0) >= 2);
-        if (!isSubmitted) {
-          return prev;
-        }
+        if (!isNurseSubmit) return prev;
         const baseCase = (activeCase && activeCase.id === targetId) ? activeCase : FRESH_PRIMARY_CASE;
         updatedCase = { ...baseCase, ...syncedUpdate, id: targetId, ...(phoneToSet ? { patientPhone: phoneToSet } : {}) };
         setActiveCaseId(updatedCase.id);
@@ -456,6 +594,7 @@ export function useClinicalWorkflowState() {
 
   const handleStartNewCase = () => {
     setActiveCaseId(null);
+    setIntakeDraft(createFreshDraftIntake(userSession, lang === 'ar'));
     setPatientSubView('intake');
     if (typeof window !== 'undefined') {
       try {

@@ -143,12 +143,23 @@ export const NurseTriageView: React.FC<Props> = ({
     return cases.filter((c) => c.currentStage === 'NURSE_CHECK' || c.currentStage === 'INTAKE_RECEIVED');
   }, [cases]);
 
+  const isCurrentStageTriage = activeCase?.currentStage === 'NURSE_CHECK' || activeCase?.currentStage === 'INTAKE_RECEIVED';
+
+  const didAutoFocusNurseRef = React.useRef(false);
+  useEffect(() => {
+    if (!didAutoFocusNurseRef.current && onSelectCase && cases.length > 0) {
+      if (!isCurrentStageTriage && pendingTriageCases.length > 0) {
+        didAutoFocusNurseRef.current = true;
+        onSelectCase(pendingTriageCases[0].id);
+      }
+    }
+  }, [cases, isCurrentStageTriage, pendingTriageCases, onSelectCase]);
+
   useEffect(() => {
     setTriageNotes(generateDefaultNotes());
   }, [activeCase?.id, isAr]);
 
   // Zero-Case Dedicated Empty State
-  const isCurrentStageTriage = activeCase?.currentStage === 'NURSE_CHECK' || activeCase?.currentStage === 'INTAKE_RECEIVED';
   if (!activeCase || !activeCase.caseNumber || cases.length === 0) {
     return (
       <div data-testid="nurse-triage-empty" className="max-w-2xl mx-auto my-12 text-center p-10 card-clinical space-y-4">
