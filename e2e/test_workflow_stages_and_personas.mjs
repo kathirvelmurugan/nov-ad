@@ -83,26 +83,29 @@ async function loginPersona(browser, persona) {
     await page.waitForTimeout(300);
   }
 
-  // Click Login (top-right)
-  const loginBtn = page.locator('button:has-text("Login"), button:has-text("تسجيل الدخول")').first();
-  if (await loginBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+  // If phone input is not already visible, wait for and click Login button
+  const phoneInput = page.locator('input[type="tel"]').first();
+  const alreadyOpen = await phoneInput.isVisible().catch(() => false);
+  if (!alreadyOpen) {
+    const loginBtn = page.locator('button:has-text("Login"), button:has-text("تسجيل الدخول")').first();
+    await loginBtn.waitFor({ state: 'visible', timeout: 15000 });
     await loginBtn.click();
-    await page.waitForTimeout(400);
+    await page.waitForTimeout(500);
   }
 
   // Enter phone
-  const phoneInput = page.locator('input[type="tel"]').first();
-  await phoneInput.waitFor({ state: 'visible', timeout: 5000 });
+  await phoneInput.waitFor({ state: 'visible', timeout: 15000 });
   await phoneInput.fill(persona.phone);
   await page.waitForTimeout(200);
 
   // Submit phone
   const submitPhoneBtn = page.locator('button[type="submit"]').first();
   await submitPhoneBtn.click();
-  await page.waitForTimeout(700);
+  await page.waitForTimeout(800);
 
   // Verify it goes straight to 4-digit PIN 1234 (no 123456 activation/OTP)
   const pinInputs = page.locator('input[type="password"]');
+  await pinInputs.first().waitFor({ state: 'visible', timeout: 15000 });
   const count = await pinInputs.count();
   if (count < 4) {
     const shotPath = path.join(SCREENSHOT_DIR, `fail_login_${persona.role}.png`);
