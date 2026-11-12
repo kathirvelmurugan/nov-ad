@@ -74,7 +74,7 @@ async function loginPersona(browser, persona) {
     }
   });
 
-  await page.goto(BASE_URL, { waitUntil: 'networkidle', timeout: 30000 });
+  await page.goto(BASE_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
 
   // Click English (top-left)
   const englishBtn = page.locator('button:has-text("English")').first();
@@ -190,7 +190,7 @@ async function runEndToEndTest() {
     await pageP.bringToFront();
 
     // Check if on Landing or Timeline, and start a new consultation
-    const newCaseBtn = pageP.locator('button:has-text("Start Your Case"), button:has-text("ابدأ طلبك السريري"), button:has-text("+ New Consultation"), button:has-text("+ طلب استشارة جديدة")').first();
+    const newCaseBtn = pageP.locator('button:has-text("New Consultation"), button:has-text("+ New Consultation"), button:has-text("طلب استشارة جديدة"), button:has-text("Start Your Case"), button:has-text("ابدأ طلبك السريري")').first();
     if (await newCaseBtn.isVisible({ timeout: 4000 }).catch(() => false)) {
       console.log('   Clicking Start Case / New Consultation button...');
       await newCaseBtn.click();
@@ -233,7 +233,7 @@ async function runEndToEndTest() {
     // -------------------------------------------------------------------------
     console.log(`\n▶ Step B2: [N] Nurse Triage & Assign Treating Doctor (${activeCaseNumber})...`);
     await pageN.bringToFront();
-    await pageN.reload({ waitUntil: 'networkidle' });
+    await pageN.reload({ waitUntil: 'domcontentloaded' });
     await pageN.waitForTimeout(1000);
 
     // If case switcher is present, select our active case
@@ -265,7 +265,7 @@ async function runEndToEndTest() {
     // -------------------------------------------------------------------------
     console.log(`\n▶ Step B3: [D] Saudi Treating Doctor Referral Approval (${activeCaseNumber})...`);
     await pageD.bringToFront();
-    await pageD.reload({ waitUntil: 'networkidle' });
+    await pageD.reload({ waitUntil: 'domcontentloaded' });
     await pageD.waitForTimeout(1000);
 
     // Select active case if in tracker
@@ -289,7 +289,7 @@ async function runEndToEndTest() {
     // -------------------------------------------------------------------------
     console.log(`\n▶ Step B4: [C] ALO Coordinator Payment Link Setup (${activeCaseNumber})...`);
     await pageC.bringToFront();
-    await pageC.reload({ waitUntil: 'networkidle' });
+    await pageC.reload({ waitUntil: 'domcontentloaded' });
     await pageC.waitForTimeout(1000);
 
     // Select active case
@@ -318,7 +318,7 @@ async function runEndToEndTest() {
     // -------------------------------------------------------------------------
     console.log(`\n▶ Step B5: [P] Patient Payment Checkout (${activeCaseNumber})...`);
     await pageP.bringToFront();
-    await pageP.reload({ waitUntil: 'networkidle' });
+    await pageP.reload({ waitUntil: 'domcontentloaded' });
     await pageP.waitForTimeout(1000);
 
     // Click Open Payment Checkout
@@ -356,7 +356,7 @@ async function runEndToEndTest() {
     // -------------------------------------------------------------------------
     console.log(`\n▶ Step B6: [C] Verify Payment & Dispatch to Indian Consultant (${activeCaseNumber})...`);
     await pageC.bringToFront();
-    await pageC.reload({ waitUntil: 'networkidle' });
+    await pageC.reload({ waitUntil: 'domcontentloaded' });
     await pageC.waitForTimeout(1000);
 
     // Select active case
@@ -380,7 +380,7 @@ async function runEndToEndTest() {
     // -------------------------------------------------------------------------
     console.log(`\n▶ Step B7: [K] International Consultant Clinical Review (${activeCaseNumber})...`);
     await pageK.bringToFront();
-    await pageK.reload({ waitUntil: 'networkidle' });
+    await pageK.reload({ waitUntil: 'domcontentloaded' });
     await pageK.waitForTimeout(1000);
 
     // Select case if listed
@@ -433,7 +433,7 @@ async function runEndToEndTest() {
     // -------------------------------------------------------------------------
     console.log(`\n▶ Step B8: [D] Saudi Treating Doctor Opinion Endorsement (${activeCaseNumber})...`);
     await pageD.bringToFront();
-    await pageD.reload({ waitUntil: 'networkidle' });
+    await pageD.reload({ waitUntil: 'domcontentloaded' });
     await pageD.waitForTimeout(1000);
 
     const dCaseCard2 = pageD.locator(`button:has-text("${activeCaseNumber}")`).first();
@@ -466,7 +466,7 @@ async function runEndToEndTest() {
     // -------------------------------------------------------------------------
     console.log(`\n▶ Step B9: [C] Release Certified Report PDF 1 to Patient (${activeCaseNumber})...`);
     await pageC.bringToFront();
-    await pageC.reload({ waitUntil: 'networkidle' });
+    await pageC.reload({ waitUntil: 'domcontentloaded' });
     await pageC.waitForTimeout(1000);
 
     const cCaseCard2 = pageC.locator(`button:has-text("${activeCaseNumber}")`).first();
@@ -498,7 +498,7 @@ async function runEndToEndTest() {
 
     // 10a: Lab (Omar Al-Zahrani)
     await pageL.bringToFront();
-    await pageL.reload({ waitUntil: 'networkidle' });
+    await pageL.reload({ waitUntil: 'domcontentloaded' });
     await pageL.waitForTimeout(1000);
     const labActionBtn = pageL.locator('button:has-text("Upload Results"), button:has-text("اعتماد ورفع النتائج"), button:has-text("Sample Collected"), button:has-text("تأكيد سحب العينات")').first();
     if (await labActionBtn.isVisible({ timeout: 4000 }).catch(() => false)) {
@@ -509,7 +509,7 @@ async function runEndToEndTest() {
 
     // 10b: Pharmacy (Noura Al-Dosari)
     await pagePH.bringToFront();
-    await pagePH.reload({ waitUntil: 'networkidle' });
+    await pagePH.reload({ waitUntil: 'domcontentloaded' });
     await pagePH.waitForTimeout(1000);
     const pharmacyActionBtn = pagePH.locator('button:has-text("Dispense Rx"), button:has-text("تأكيد التحضير والصرف"), button:has-text("صرف")').first();
     if (await pharmacyActionBtn.isVisible({ timeout: 4000 }).catch(() => false)) {
@@ -520,7 +520,7 @@ async function runEndToEndTest() {
 
     // 10c: Reception (Marcus Vance)
     await pageREC.bringToFront();
-    await pageREC.reload({ waitUntil: 'networkidle' });
+    await pageREC.reload({ waitUntil: 'domcontentloaded' });
     await pageREC.waitForTimeout(1000);
     const recActionBtn = pageREC.locator('button:has-text("Check-in Done"), button:has-text("تأكيد اكتمال الزيارة والاستقبال")').first();
     if (await recActionBtn.isVisible({ timeout: 4000 }).catch(() => false)) {
@@ -543,7 +543,7 @@ async function runEndToEndTest() {
     // -------------------------------------------------------------------------
     console.log(`\n▶ Step B11: [P] Final Verification on Patient Screen...`);
     await pageP.bringToFront();
-    await pageP.reload({ waitUntil: 'networkidle' });
+    await pageP.reload({ waitUntil: 'domcontentloaded' });
     await pageP.waitForTimeout(1500);
 
     const patientViewContent = await pageP.innerText('body');
