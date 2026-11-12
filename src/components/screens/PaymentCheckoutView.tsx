@@ -182,6 +182,7 @@ export const PaymentCheckoutView: React.FC<Props> = ({
     const invoiceNumber = activeCase.pricing?.invoiceNumber || `INV-2026-${Math.floor(100000 + Math.random() * 900000)}`;
 
     onUpdateCase({
+      id: activeCase.id,
       paymentVerified: false,
       pricing: {
         ...activeCase.pricing,

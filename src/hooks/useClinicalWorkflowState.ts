@@ -192,7 +192,12 @@ export function useClinicalWorkflowState() {
       try {
         const remoteCases = await apiClient.fetchCases();
         if (mounted && Array.isArray(remoteCases) && remoteCases.length > 0) {
-          setCases(remoteCases);
+          const sorted = [...remoteCases].sort((a, b) => {
+            const timeA = new Date(a.createdAt || 0).getTime() || 0;
+            const timeB = new Date(b.createdAt || 0).getTime() || 0;
+            return timeB - timeA;
+          });
+          setCases(sorted);
         }
       } catch (e) {}
     };
@@ -299,13 +304,18 @@ export function useClinicalWorkflowState() {
 
   // ── Derived State (Patient Data Scoping) ─────────────────────────────────
   const isPatientUser = userSession?.roleCode === 'P';
+  const sortedCases = [...cases].sort((a, b) => {
+    const timeA = new Date(a.createdAt || 0).getTime() || 0;
+    const timeB = new Date(b.createdAt || 0).getTime() || 0;
+    return timeB - timeA;
+  });
   const effectiveCases = isPatientUser
-    ? cases.filter((c) => matchesSaudiPhone(c.patientPhone, userSession.phone))
-    : cases;
+    ? sortedCases.filter((c) => matchesSaudiPhone(c.patientPhone, userSession.phone))
+    : sortedCases;
 
   const rawActiveCase = (isPatientUser
     ? (effectiveCases.find((c) => c.id === activeCaseId) || effectiveCases[0])
-    : (cases.find((c) => c.id === activeCaseId) || cases[0])) || {
+    : (sortedCases.find((c) => c.id === activeCaseId) || sortedCases[0])) || {
       ...FRESH_PRIMARY_CASE,
       id: isPatientUser ? `case-${Date.now()}` : FRESH_PRIMARY_CASE.id,
       patientPhone: isPatientUser ? userSession?.phone : undefined,

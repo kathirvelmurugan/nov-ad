@@ -321,6 +321,12 @@ async function runEndToEndTest() {
     await pageP.reload({ waitUntil: 'domcontentloaded' });
     await pageP.waitForTimeout(1000);
 
+    const pCaseCard = pageP.locator(`button:has-text("${activeCaseNumber}")`).first();
+    if (await pCaseCard.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await pCaseCard.click();
+      await pageP.waitForTimeout(600);
+    }
+
     // Click Open Payment Checkout
     const openCheckoutBtn = pageP.locator('button:has-text("Open Payment Checkout"), button:has-text("الانتقال إلى بوابة الدفع"), button:has-text("سداد الفاتورة")').first();
     if (await openCheckoutBtn.isVisible({ timeout: 4000 }).catch(() => false)) {
