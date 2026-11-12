@@ -1,6 +1,6 @@
 import React from 'react';
 import { ClinicalCase, Persona, UserSession } from '../../types';
-import { Check, Timer, ShieldCheck, FileCheck2, Stethoscope, Eye } from 'lucide-react';
+import { Check, Timer, ShieldCheck, FileCheck2, Stethoscope, Eye, CheckCircle2, X } from 'lucide-react';
 import { useSlaCountdown } from '../../hooks/useSlaCountdown';
 import { DoctorOpinionEndorsementPanel } from './doctor/DoctorOpinionEndorsementPanel';
 import { DoctorFocusQuestionsSection } from './doctor/DoctorFocusQuestionsSection';
@@ -99,6 +99,8 @@ export const DoctorReviewView: React.FC<Props> = ({
   const isCurrentStageDoctor = !!activeCase && isActionableForDoctor(activeCase);
   const isReferralEditable = activeCase?.currentStage === 'DOCTOR_REVIEW';
 
+  const [forwardedBanner, setForwardedBanner] = React.useState<{ caseId: string; caseNumber: string; patientName: string } | null>(null);
+
   // Zero-Case Dedicated Empty State
   if (!activeCase || !activeCase.caseNumber || cases.length === 0) {
     return (
@@ -134,6 +136,53 @@ export const DoctorReviewView: React.FC<Props> = ({
             portalTitleEn="Saudi Doctor Queue & Case Tracking"
             actionablePredicate={isActionableForDoctor}
           />
+        </div>
+      )}
+
+      {/* D10 Forwarded Confirmation Banner */}
+      {forwardedBanner && (
+        <div
+          role="status"
+          dir={isAr ? 'rtl' : 'ltr'}
+          className="card-clinical p-4 bg-gradient-to-r from-emerald-50 to-teal-50/60 dark:from-emerald-950/40 dark:to-teal-950/30 border border-emerald-300 dark:border-emerald-800/70 flex flex-wrap items-center justify-between gap-4 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300"
+        >
+          <div className="flex items-start sm:items-center gap-3 flex-1 min-w-0">
+            <div className="shrink-0 w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/60 flex items-center justify-center border border-emerald-200 dark:border-emerald-800">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <div className="flex flex-col gap-0.5 min-w-0">
+              <span className="text-xs font-extrabold text-emerald-800 dark:text-emerald-200 uppercase tracking-wide">
+                {isAr ? 'تم النقل بنجاح' : 'Successfully Forwarded'}
+              </span>
+              <p className="text-sm font-bold text-slate-800 dark:text-slate-100 leading-snug break-words">
+                {isAr
+                  ? `تم نقل الحالة [${forwardedBanner.caseNumber}] إلى المرحلة التالية ← منسق رعاية ألو (C01)`
+                  : `Case [${forwardedBanner.caseNumber}] moved to next stage → ALO Coordinator (C01)`}
+              </p>
+              {forwardedBanner.patientName && (
+                <span className="text-xs font-medium text-slate-500 dark:text-slate-400 truncate">
+                  {isAr ? 'المريض:' : 'Patient:'} {forwardedBanner.patientName}
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => onSelectCase?.(forwardedBanner.caseId)}
+              className="text-xs font-extrabold px-4 py-2 rounded-lg bg-white dark:bg-slate-800 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors shadow-sm cursor-pointer whitespace-nowrap"
+            >
+              {isAr ? 'عرض في التتبع' : 'View in Tracker'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setForwardedBanner(null)}
+              aria-label={isAr ? 'إغلاق الإشعار' : 'Dismiss notification'}
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       )}
 
@@ -480,6 +529,17 @@ export const DoctorReviewView: React.FC<Props> = ({
             disabled={!isReferralEditable}
             onClick={() => {
               if (!isReferralEditable) return;
+
+              const forwardedCaseId = activeCase.id;
+              const forwardedCaseNumber = activeCase.caseNumber || activeCase.id;
+              const forwardedPatient = (isAr ? activeCase.patientNameAr : activeCase.patientNameEn) || activeCase.patientName || '';
+
+              setForwardedBanner({
+                caseId: forwardedCaseId,
+                caseNumber: forwardedCaseNumber,
+                patientName: forwardedPatient,
+              });
+
               onUpdateCase({
                 referralApproved: true, invoiceIssued: false, allowedPaymentMethods: [], paymentAssignedAt: undefined, paymentVerified: false,
                 pricing: { ...activeCase.pricing, paid: false, invoiceNumber: undefined },
