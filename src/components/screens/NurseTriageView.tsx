@@ -145,6 +145,15 @@ export const NurseTriageView: React.FC<Props> = ({
 
   const isCurrentStageTriage = activeCase?.currentStage === 'NURSE_CHECK' || activeCase?.currentStage === 'INTAKE_RECEIVED';
 
+  const isDoctorAssigned = Boolean(
+    activeCase?.treatingDoctor?.name &&
+    activeCase.treatingDoctor.name.trim().length > 0 &&
+    activeCase.treatingDoctor.name !== 'Pending Selection' &&
+    activeCase.treatingDoctor.name !== 'قيد التحديد السريري'
+  );
+  const isNotesValid = (triageNotes || '').trim().length >= 20;
+  const canAdvanceN07 = isCurrentStageTriage && isDoctorAssigned && isNotesValid;
+
   const didAutoFocusNurseRef = React.useRef(false);
   useEffect(() => {
     if (!didAutoFocusNurseRef.current && onSelectCase && cases.length > 0) {
@@ -543,65 +552,96 @@ export const NurseTriageView: React.FC<Props> = ({
 
         {/* N05: Nurse Summary Formulation */}
         <div>
-          <div className="flex items-center gap-2 mb-1.5">
-            <span className="bg-alo-mint text-alo-teal font-mono text-[10px] px-2 py-0.5 rounded font-bold border border-teal-200">
-              N05 · {isAr ? 'الملخص التمريضي' : 'Nurse Summary'}
+          <div className="flex items-center justify-between mb-1.5">
+            <div className="flex items-center gap-2">
+              <span className="bg-alo-mint text-alo-teal font-mono text-[10px] px-2 py-0.5 rounded font-bold border border-teal-200">
+                N05 · {isAr ? 'الملخص التمريضي' : 'Nurse Summary'}
+              </span>
+              <Stethoscope className="w-3.5 h-3.5 text-alo-teal" />
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                {isAr ? 'التلخيص السريري الموجه للطبيب السعودي المعالج (د. عبدالله الشمري):' : 'Clinical Summary for Treating Doctor (Dr. Abdullah):'}
+              </label>
+            </div>
+            <span className={`text-[11px] font-mono font-semibold ${isNotesValid ? 'text-teal-600 dark:text-teal-400' : 'text-rose-500'}`}>
+              {(triageNotes || '').trim().length} / 20 {isAr ? 'حرف كحد أدنى' : 'min chars'}
             </span>
-            <Stethoscope className="w-3.5 h-3.5 text-alo-teal" />
-            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-              {isAr ? 'التلخيص السريري الموجه للطبيب السعودي المعالج (د. عبدالله الشمري):' : 'Clinical Summary for Treating Doctor (Dr. Abdullah):'}
-            </label>
           </div>
           <textarea
             rows={3}
             value={triageNotes}
             onChange={(e) => setTriageNotes(e.target.value)}
             readOnly={!isCurrentStageTriage}
-            className={`w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl p-3 text-xs text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-alo-teal outline-none leading-relaxed shadow-sm font-medium ${!isCurrentStageTriage ? 'opacity-70 cursor-not-allowed bg-slate-50 dark:bg-slate-800' : ''}`}
+            placeholder={isAr ? 'أدخل ملخص الفرز السريري (الحد الأدنى 20 حرفاً)...' : 'Enter clinical triage summary (minimum 20 characters)...'}
+            className={`w-full bg-white dark:bg-slate-900 border rounded-xl p-3 text-xs text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-alo-teal outline-none leading-relaxed shadow-sm font-medium ${
+              !isNotesValid && isCurrentStageTriage ? 'border-rose-300 dark:border-rose-700' : 'border-slate-300 dark:border-slate-700'
+            } ${!isCurrentStageTriage ? 'opacity-70 cursor-not-allowed bg-slate-50 dark:bg-slate-800' : ''}`}
           />
+          {!isNotesValid && isCurrentStageTriage && (
+            <p className="text-[11px] text-rose-500 font-medium mt-1">
+              {isAr ? '⚠️ يجب أن يحتوي الملخص التمريضي على 20 حرفاً على الأقل قبل المتابعة.' : '⚠️ Clinical triage notes must be at least 20 characters long.'}
+            </p>
+          )}
         </div>
 
         {/* N06 & N07: Assignment and Stage Advance Action */}
         <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-2">
-            <span className="bg-alo-mint text-alo-teal font-mono text-[10px] px-2 py-0.5 rounded font-bold">
-              N06 · {isAr ? 'الطبيب المعالج' : 'Assigned Doctor'}
-            </span>
-            <span>{isAr ? 'المحال إليه:' : 'Assigned to:'} <strong className="text-alo-teal font-bold">{activeCase.treatingDoctor?.name || (isAr ? 'قيد التحديد السريري' : 'Pending Selection')}</strong> ({activeCase.treatingDoctor?.hospital || referenceHospital})</span>
+          <div className="text-xs text-slate-600 dark:text-slate-400 flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <span className="bg-alo-mint text-alo-teal font-mono text-[10px] px-2 py-0.5 rounded font-bold">
+                N06 · {isAr ? 'الطبيب المعالج' : 'Assigned Doctor'}
+              </span>
+              <span>{isAr ? 'المحال إليه:' : 'Assigned to:'} <strong className="text-alo-teal font-bold">{activeCase.treatingDoctor?.name || (isAr ? 'قيد التحديد السريري' : 'Pending Selection')}</strong> ({activeCase.treatingDoctor?.hospital || referenceHospital})</span>
+            </div>
+            {!isDoctorAssigned && isCurrentStageTriage && (
+              <span className="text-[11px] text-rose-500 font-medium">
+                {isAr ? '⚠️ يرجى اختيار الطبيب المعالج من القائمة أعلاه (N06)' : '⚠️ Please select a treating doctor from above (N06)'}
+              </span>
+            )}
           </div>
 
-          <button
-            disabled={!isCurrentStageTriage}
-            onClick={() => {
-              if (!isCurrentStageTriage) return;
-              
-              const forwardedCaseId = activeCase.id;
-              const forwardedCaseNumber = activeCase.caseNumber || activeCase.id;
-              const forwardedPatient = (isAr ? activeCase.patientNameAr : activeCase.patientNameEn) || activeCase.patientName || '';
-              
-              setForwardedBanner({
-                caseId: forwardedCaseId,
-                caseNumber: forwardedCaseNumber,
-                patientName: forwardedPatient,
-              });
+          <div className="flex flex-col items-end gap-1 w-full sm:w-auto">
+            <button
+              disabled={!canAdvanceN07}
+              onClick={() => {
+                if (!canAdvanceN07) return;
+                
+                const forwardedCaseId = activeCase.id;
+                const forwardedCaseNumber = activeCase.caseNumber || activeCase.id;
+                const forwardedPatient = (isAr ? activeCase.patientNameAr : activeCase.patientNameEn) || activeCase.patientName || '';
+                
+                setForwardedBanner({
+                  caseId: forwardedCaseId,
+                  caseNumber: forwardedCaseNumber,
+                  patientName: forwardedPatient,
+                });
 
-              const nextPending = pendingTriageCases.find((c) => c.id !== activeCase.id);
-              onUpdateCase({
-                currentStage: 'DOCTOR_REVIEW',
-                metadata: {
-                  ...(activeCase.metadata || {}),
-                  nurseVerified: true,
-                  deidentifiedAt: new Date().toISOString(),
-                },
-              });
-              if (nextPending && onSelectCase) onSelectCase(nextPending.id);
-            }}
-            className="w-full sm:w-auto bg-gradient-to-r from-alo-teal to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white font-extrabold py-3 px-8 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-sm active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Send className="w-4 h-4" />
-            <span>N07 · {isAr ? 'اعتماد الفرز وإرسال الملف للطبيب السعودي (D02)' : 'Approve & route to Saudi treating doctor (D02)'}</span>
-            <span>{isAr ? '←' : '→'}</span>
-          </button>
+                const nextPending = pendingTriageCases.find((c) => c.id !== activeCase.id);
+                onUpdateCase({
+                  currentStage: 'DOCTOR_REVIEW',
+                  metadata: {
+                    ...(activeCase.metadata || {}),
+                    nurseVerified: true,
+                    deidentifiedAt: new Date().toISOString(),
+                  },
+                });
+                if (nextPending && onSelectCase) onSelectCase(nextPending.id);
+              }}
+              className="w-full sm:w-auto bg-gradient-to-r from-alo-teal to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white font-extrabold py-3 px-8 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-sm active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Send className="w-4 h-4" />
+              <span>N07 · {isAr ? 'اعتماد الفرز وإرسال الملف للطبيب السعودي (D02)' : 'Approve & route to Saudi treating doctor (D02)'}</span>
+              <span>{isAr ? '←' : '→'}</span>
+            </button>
+            {!canAdvanceN07 && isCurrentStageTriage && (
+              <span className="text-[11px] text-rose-500 font-medium">
+                {!isDoctorAssigned 
+                  ? (isAr ? 'مطلوب تعيين الطبيب لتفعيل الزر' : 'Doctor assignment required')
+                  : !isNotesValid
+                  ? (isAr ? 'مطلوب استكمال الملاحظات (20 حرفاً)' : 'Complete notes required (min 20 chars)')
+                  : null}
+              </span>
+            )}
+          </div>
         </div>
       </div>
     </div>

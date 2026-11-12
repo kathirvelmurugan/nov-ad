@@ -118,7 +118,20 @@ export interface PersonaPreset {
 }
 
 export const PERSONA_PRESETS: PersonaPreset[] = [
-  { id: 'super_admin', nameAr: 'المشرف العام', nameEn: 'Platform Super Admin', phone: '+966500000001', role: 'Super Admin / المشرف العام', roleCode: 'AD' },
+  { id: 'super_admin', nameAr: 'المشرف العام', nameEn: 'Adrian Lewis', phone: '+966500000001', role: 'Super Admin / المشرف العام', roleCode: 'AD' },
+  { id: 'hospital_admin', nameAr: 'مدير المجمع الطبي', nameEn: 'David Nunez', phone: '+966500000002', role: 'Hospital Admin / مدير المجمع الطبي', roleCode: 'HA', hospitalId: 'hosp-alo-riyadh-01' },
+  { id: 'hospital_admin_alias', nameAr: 'مدير المجمع الطبي', nameEn: 'David Nunez', phone: '+966504444444', role: 'Hospital Admin / مدير المجمع الطبي', roleCode: 'HA', hospitalId: 'hosp-alo-riyadh-01' },
+  { id: 'coordinator', nameAr: 'منسق رعاية ألو', nameEn: 'Emmanuel Arcon Gonzalez', phone: '+966500000003', role: 'ALO Coordinator / منسق رعاية ألو', roleCode: 'C' },
+  { id: 'coordinator_alias', nameAr: 'منسق رعاية ألو', nameEn: 'Emmanuel Arcon Gonzalez', phone: '+966505555555', role: 'ALO Coordinator / منسق رعاية ألو', roleCode: 'C' },
+  { id: 'nurse', nameAr: 'ممرضة ألو للفرز', nameEn: 'Sara Al-Qahtani', phone: '+966500000004', role: 'ALO Nurse / ممرضة ألو', roleCode: 'N' },
+  { id: 'doctor', nameAr: 'الطبيب السعودي المعالج', nameEn: 'Dr. Fahad Al-Harbi', phone: '+966500000005', role: 'Treating Doctor / الطبيب المعالج', roleCode: 'D', hospitalId: 'hosp-alo-riyadh-01' },
+  { id: 'doctor_alias', nameAr: 'الطبيب السعودي المعالج', nameEn: 'Dr. Fahad Al-Harbi', phone: '+966502222222', role: 'Treating Doctor / الطبيب المعالج', roleCode: 'D', hospitalId: 'hosp-alo-riyadh-01' },
+  { id: 'consultant', nameAr: 'الاستشاري الدولي', nameEn: 'Dr. V. Prasanth', phone: '+966500000006', role: 'Consultant / الاستشاري الدولي', roleCode: 'K' },
+  { id: 'lab', nameAr: 'المختبر التشخيصي', nameEn: 'Omar Al-Zahrani', phone: '+966500000007', role: 'Lab / المختبر', roleCode: 'L', hospitalId: 'hosp-alo-riyadh-01' },
+  { id: 'pharmacy', nameAr: 'الصيدلية السريرية', nameEn: 'Noura Al-Dosari', phone: '+966500000008', role: 'Pharmacy / الصيدلية', roleCode: 'PH', hospitalId: 'hosp-alo-riyadh-01' },
+  { id: 'reception', nameAr: 'الاستقبال والمواعيد', nameEn: 'Marcus Vance', phone: '+966500000009', role: 'Reception / الاستقبال', roleCode: 'REC', hospitalId: 'hosp-alo-riyadh-01' },
+  { id: 'patient', nameAr: 'المريض', nameEn: 'Sami Al-Harbi', phone: '+966500000099', role: 'Patient / المريض', roleCode: 'P' },
+  { id: 'patient_alias', nameAr: 'المريض', nameEn: 'Sami Al-Harbi', phone: '+966501111111', role: 'Patient / المريض', roleCode: 'P' },
 ];
 
 export interface SessionData {

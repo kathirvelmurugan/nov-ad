@@ -79,6 +79,11 @@ export const DoctorReviewView: React.FC<Props> = ({
   };
 
   const questions = localQuestions;
+  const areQuestionsValid = Boolean(
+    questions &&
+    questions.length === 3 &&
+    questions.every((q) => (q || '').trim().length >= 10)
+  );
   const hasConsultantOpinion =
     activeCase?.currentStage === 'OPINION_READY' ||
     ['PARTNER_SERVICES', 'FOLLOW_UP_21_DAYS', 'CLOSED'].includes(activeCase?.currentStage || '') ||
@@ -114,7 +119,7 @@ export const DoctorReviewView: React.FC<Props> = ({
   // Zero-Case Dedicated Empty State
   if (!activeCase || !activeCase.caseNumber || cases.length === 0) {
     return (
-      <div data-testid="doctor-review-empty" className="max-w-2xl mx-auto my-12 text-center p-10 card-clinical space-y-4">
+      <div data-testid="doctor-review-view" data-subview="empty" className="max-w-2xl mx-auto my-12 text-center p-10 card-clinical space-y-4">
         <div className="w-16 h-16 rounded-2xl bg-teal-50 dark:bg-teal-950/50 text-alo-teal flex items-center justify-center mx-auto text-2xl border border-teal-200 dark:border-teal-800 shadow-inner">
           <Stethoscope className="w-8 h-8 text-alo-teal" />
         </div>
@@ -534,11 +539,11 @@ export const DoctorReviewView: React.FC<Props> = ({
         />
 
         {/* Advance Action */}
-        <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex justify-end">
+        <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex flex-col items-end gap-1.5">
           <button
-            disabled={!isReferralEditable}
+            disabled={!isReferralEditable || !areQuestionsValid}
             onClick={() => {
-              if (!isReferralEditable) return;
+              if (!isReferralEditable || !areQuestionsValid) return;
 
               const forwardedCaseId = activeCase.id;
               const forwardedCaseNumber = activeCase.caseNumber || activeCase.id;
@@ -565,6 +570,13 @@ export const DoctorReviewView: React.FC<Props> = ({
             <span>{isAr ? 'D10 · اعتماد الإحالة وإرسال الملف لمنسق رعاية ألو (C01)' : 'D10 · Approve Referral & Route to ALO Coordinator (C01)'}</span>
             <span>{isAr ? '←' : '→'}</span>
           </button>
+          {!areQuestionsValid && isReferralEditable && (
+            <span className="text-[11px] text-rose-500 font-medium">
+              {isAr
+                ? '⚠️ مطلوب استيفاء الأسئلة التوجيهية الثلاثة (10 أحرف لكل سؤال على الأقل) لاعتماد الإحالة'
+                : '⚠️ All 3 focus questions must be completed (min 10 characters each) to approve referral'}
+            </span>
+          )}
         </div>
       </div>
       </>

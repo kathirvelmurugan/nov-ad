@@ -24,6 +24,25 @@ export const FollowUpSatisfactionWidget: React.FC<Props> = ({
   onToggleTag,
   onCompleteFollowUp,
 }) => {
+  const [error, setError] = React.useState<string | null>(null);
+
+  const handleRatingClick = (star: number) => {
+    setError(null);
+    onRatingChange(star);
+  };
+
+  const handleComplete = () => {
+    if (rating === 0) {
+      setError(
+        isRTL
+          ? 'يرجى تقييم تجربة الاستشارة الطبية (من نجمة إلى 5 نجوم) قبل إتمام وإنهاء الملف.'
+          : 'Please rate your second opinion experience (1 to 5 stars) before closing the consultation.'
+      );
+      return;
+    }
+    setError(null);
+    onCompleteFollowUp();
+  };
   return (
     <section
       aria-label={isRTL ? 'تقييم الاستشارة' : 'Consultation Rating'}
@@ -62,7 +81,7 @@ export const FollowUpSatisfactionWidget: React.FC<Props> = ({
               role="radio"
               aria-checked={rating === star}
               aria-label={`${star} ${isRTL ? 'نجوم' : 'stars'}`}
-              onClick={() => onRatingChange(star)}
+              onClick={() => handleRatingClick(star)}
               onMouseEnter={() => setHoverRating(star)}
               onMouseLeave={() => setHoverRating(0)}
               onFocus={() => setHoverRating(star)}
@@ -159,11 +178,31 @@ export const FollowUpSatisfactionWidget: React.FC<Props> = ({
         })}
       </div>
 
+      {error && (
+        <div
+          role="alert"
+          style={{
+            backgroundColor: '#FDEDED',
+            border: '1px solid #D32F2F',
+            color: '#D32F2F',
+            borderRadius: '8px',
+            padding: '10px 16px',
+            fontSize: '13px',
+            fontWeight: 600,
+            textAlign: 'center',
+            maxWidth: '420px',
+            width: '100%',
+            boxSizing: 'border-box',
+          }}
+        >
+          {error}
+        </div>
+      )}
+
       {/* Complete Follow-Up Action Button */}
       <button
         type="button"
-        onClick={onCompleteFollowUp}
-        disabled={rating === 0}
+        onClick={handleComplete}
         aria-label={isRTL ? 'إتمام المتابعة والانتقال للخطوة التالية' : 'Complete follow-up and advance stage'}
         style={{
           marginTop: '8px',

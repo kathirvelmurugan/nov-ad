@@ -124,7 +124,13 @@ export const PartnerServicesView: React.FC<Props> = ({
     onUpdateCase({ internalOrders: updatedOrders });
   };
 
+  const isLabReady = internalOrders.lab.status === 'results_uploaded';
+  const isPharmacyReady = internalOrders.pharmacy.status === 'dispensed';
+  const isReceptionReady = internalOrders.reception.status === 'completed';
+  const canActivateD13 = isLabReady && isPharmacyReady && isReceptionReady;
+
   const handleDeliverReportAndActivate21Days = () => {
+    if (!canActivateD13) return;
     const expiry = new Date();
     expiry.setDate(expiry.getDate() + 21);
     
@@ -441,14 +447,35 @@ export const PartnerServicesView: React.FC<Props> = ({
               </p>
             </div>
 
-            <button
-              onClick={handleDeliverReportAndActivate21Days}
-              className="w-full md:w-auto bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white font-extrabold px-6 py-3.5 rounded-xl shadow-lg hover:shadow-teal-500/20 transition-all flex items-center justify-center gap-2.5 text-sm shrink-0"
-            >
-              <MessageSquare className="w-5 h-5" />
-              <span>تسليم التقرير وتفعيل متابعة الـ 21 يوماً</span>
-              <ArrowRight className="w-4 h-4 rotate-180" />
-            </button>
+            <div className="flex flex-col items-end gap-2 w-full md:w-auto shrink-0">
+              <button
+                disabled={!canActivateD13}
+                onClick={handleDeliverReportAndActivate21Days}
+                className="w-full md:w-auto bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white font-extrabold px-6 py-3.5 rounded-xl shadow-lg hover:shadow-teal-500/20 transition-all flex items-center justify-center gap-2.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <MessageSquare className="w-5 h-5" />
+                <span>تسليم التقرير وتفعيل متابعة الـ 21 يوماً</span>
+                <ArrowRight className="w-4 h-4 rotate-180" />
+              </button>
+              {!canActivateD13 && (
+                <div className="text-[11px] bg-slate-950/70 border border-amber-500/40 text-amber-300 px-3 py-1.5 rounded-lg flex flex-col gap-0.5">
+                  <span className="font-bold text-amber-200">⚠️ بانتظار اكتمال المتطلبات السريرية:</span>
+                  <div className="flex flex-wrap gap-2 text-[10px] font-mono">
+                    <span className={isLabReady ? 'text-emerald-400' : 'text-rose-400'}>
+                      المختبر: {isLabReady ? '✓ مكتمل' : 'معلق'}
+                    </span>
+                    <span>•</span>
+                    <span className={isPharmacyReady ? 'text-emerald-400' : 'text-rose-400'}>
+                      الصيدلية: {isPharmacyReady ? '✓ تم الصرف' : 'معلق'}
+                    </span>
+                    <span>•</span>
+                    <span className={isReceptionReady ? 'text-emerald-400' : 'text-rose-400'}>
+                      الاستقبال: {isReceptionReady ? '✓ مكتمل' : 'معلق'}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

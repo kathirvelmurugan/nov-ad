@@ -18,6 +18,8 @@ import {
 import { IntakeDoctorSelectionCard } from '../intake/IntakeDoctorSelectionCard';
 import { IntakeSymptomsAndDiagnosisSection } from '../intake/IntakeSymptomsAndDiagnosisSection';
 import { IntakeUploadZone } from '../intake/IntakeUploadZone';
+import { FieldError } from '../common/FieldError';
+import { FormErrorSummary } from '../common/FormErrorSummary';
 
 interface Props {
   activeCase: ClinicalCase;
@@ -57,7 +59,8 @@ export const PatientIntakeView: React.FC<Props> = ({
 }) => {
   const [, setSelectedFileForPreview] = useState<string | null>(null);
   const [isCaregiverMode, setIsCaregiverMode] = useState<boolean>(activeCase.caregiver?.isProxy ?? true);
-  const [privacyAgreed, setPrivacyAgreed] = useState<boolean>(true);
+  const [privacyAgreed, setPrivacyAgreed] = useState<boolean>(false);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string | undefined>>({});
   const [activeServiceId, setActiveServiceId] = useState<string>(selectedService);
 
   const isAr = lang === 'ar';
@@ -84,6 +87,9 @@ export const PatientIntakeView: React.FC<Props> = ({
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
+      {Object.keys(validationErrors).length > 0 && (
+        <FormErrorSummary errors={validationErrors} lang={lang} />
+      )}
       {/* Top Breadcrumb & Return to Landing Page / Timeline */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
         <div className="flex flex-wrap items-center gap-2">
@@ -298,11 +304,33 @@ export const PatientIntakeView: React.FC<Props> = ({
 
           <button
             onClick={() => {
+              const errors: Record<string, string | undefined> = {};
               const symp = (activeCase.symptoms || activeCase.symptomsAr || activeCase.symptomsEn || '').trim();
-              if (!symp) {
-                alert(isAr ? 'يرجى كتابة الشكوى أو الأعراض السريرية قبل إرسال الحالة إلى التمريض.' : 'Please describe your clinical symptoms before submitting.');
+              const diag = (activeCase.diagnosis || activeCase.diagnosisAr || activeCase.diagnosisEn || '').trim();
+
+              if (!privacyAgreed) {
+                errors.privacyConsent = isAr
+                  ? 'يجب الموافقة على إقرار الخصوصية وحماية البيانات الصحية قبل إرسال الملف.'
+                  : 'You must agree to the MOH Health Data Privacy Consent before submitting your case.';
+              }
+              if (!symp || symp.length < 10) {
+                errors.symptoms = isAr
+                  ? 'الأعراض والشكوى السريرية مطلوبة (10 أحرف على الأقل).'
+                  : 'Clinical symptoms and chief complaint are required (minimum 10 characters).';
+              }
+              if (!diag || diag.length < 3) {
+                errors.diagnosis = isAr
+                  ? 'التشخيص الطبي الأولي مطلوب (3 أحرف على الأقل).'
+                  : 'Medical Diagnosis is required (minimum 3 characters).';
+              }
+
+              if (Object.keys(errors).length > 0) {
+                setValidationErrors(errors);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
                 return;
               }
+
+              setValidationErrors({});
               const freshId = `case-${Date.now()}`;
               const freshCaseNum = `CASE-2026-${Math.floor(1000 + Math.random() * 9000)}`;
               const patPhone = userSession?.phone || activeCase.patientPhone || '';
@@ -317,9 +345,9 @@ export const PatientIntakeView: React.FC<Props> = ({
                 symptoms: symp,
                 symptomsAr: isAr ? symp : (activeCase.symptomsAr || ''),
                 symptomsEn: !isAr ? symp : (activeCase.symptomsEn || ''),
-                diagnosis: activeCase.diagnosis || '',
-                diagnosisAr: activeCase.diagnosisAr || '',
-                diagnosisEn: activeCase.diagnosisEn || '',
+                diagnosis: diag,
+                diagnosisAr: isAr ? diag : (activeCase.diagnosisAr || ''),
+                diagnosisEn: !isAr ? diag : (activeCase.diagnosisEn || ''),
                 specialty: activeCase.specialty || 'جراحة القلب والصدر',
                 specialtyAr: activeCase.specialtyAr || 'جراحة القلب والصدر',
                 specialtyEn: activeCase.specialtyEn || 'Cardiothoracic Surgery',
@@ -330,8 +358,7 @@ export const PatientIntakeView: React.FC<Props> = ({
                 updatedAt: new Date().toISOString(),
               });
             }}
-            disabled={!privacyAgreed}
-            className="w-full sm:w-auto bg-gradient-to-r from-alo-teal to-teal-700 hover:from-teal-700 hover:to-teal-800 disabled:opacity-50 text-white font-extrabold py-3 px-8 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-sm active:scale-95 cursor-pointer"
+            className="w-full sm:w-auto bg-gradient-to-r from-alo-teal to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white font-extrabold py-3 px-8 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-sm active:scale-95 cursor-pointer"
           >
             <span>P14 · {isAr ? 'إرسال الملف إلى تمريض الفرز (Submit Case)' : 'Submit case to ALO nurse'}</span>
             <span>{isAr ? '←' : '→'}</span>

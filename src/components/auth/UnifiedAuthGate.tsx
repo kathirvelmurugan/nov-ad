@@ -226,7 +226,7 @@ export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }:
 
     setIsLoading(true);
     await new Promise((r) => setTimeout(r, 300));
-    completeAuth(false);
+    completeAuth(false, activeRoleCode, resolvedStaff?.hospitalId, activeFullName);
   };
 
   const handleOtpSubmit = async (e: React.FormEvent) => {
@@ -265,7 +265,7 @@ export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }:
     setUserPin(raw, entered);
     apiClient.updateUserPin(raw, entered).catch(() => {});
     setIsForgotPin(false);
-    completeAuth(false);
+    completeAuth(false, activeRoleCode, resolvedStaff?.hospitalId, activeFullName);
   };
 
   const handleConsultantVerify = () => {

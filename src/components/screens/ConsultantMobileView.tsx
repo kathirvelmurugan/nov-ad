@@ -56,11 +56,12 @@ const ConsultantMobileView: React.FC<Props> = ({ activeCase, cases = [], onSelec
   const [answers, setAnswers] = useState<string[]>(relayed.map(() => ''));
   const baseAr = activeCase.treatingDoctor?.focusQuestions || ['', '', ''];
   const focusQuestionsEn = activeCase.treatingDoctor?.focusQuestionsEn || baseAr;
-  const [focusAnswers, setFocusAnswers] = useState<[string, string, string]>([
-    'TAVR is clinically indicated given the high surgical risk and anatomical suitability on aortic root CTA.',
-    'Recommend dual antiplatelet therapy (DAPT) with Aspirin 81mg and Clopidogrel 75mg for 3-6 months post-procedure.',
-    'Perform transthoracic echocardiogram (TTE) at 30 days and 6 months to evaluate prosthetic valve hemodynamics.'
-  ]);
+  const initialAnswers = (
+    activeCase.consultantAnswers || 
+    activeCase.metadata?.focusAnswers || 
+    ['', '', '']
+  ) as [string, string, string];
+  const [focusAnswers, setFocusAnswers] = useState<[string, string, string]>(initialAnswers);
 
   const tealPrimary = '#007B6E';
   const tealSecondary = '#00C6AE';
@@ -100,6 +101,9 @@ const ConsultantMobileView: React.FC<Props> = ({ activeCase, cases = [], onSelec
       focusAnswers[1] || '',
       focusAnswers[2] || '',
     ];
+    if (cleanOpinion.length < 50 || cleanedAnswers.some((ans) => ans.trim().length < 15)) {
+      return;
+    }
     onUpdateCase({
       currentStage: isWritten ? 'OPINION_READY' : activeCase.currentStage,
       stage: isWritten ? 6 : activeCase.stage,

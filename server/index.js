@@ -259,12 +259,51 @@ apiRouter.get('/cases', async (req, res) => {
   }
 });
 
+// ── Stage Progression Hierarchy ─────────────────────────────────────────────
+const STAGE_ORDER = {
+  INTAKE_RECEIVED: 1,
+  NURSE_CHECK: 2,
+  DOCTOR_REVIEW: 3,
+  AWAITING_PAYMENT: 4,
+  WITH_CONSULTANT: 5,
+  OPINION_READY: 6,
+  PARTNER_SERVICES: 7,
+  FOLLOW_UP_21_DAYS: 8,
+  CLOSED: 9,
+};
+
 apiRouter.post('/cases', async (req, res) => {
   const c = req.body;
   if (!c.id || c.id === 'draft-intake') return res.status(400).json({ error: 'Valid case ID required' });
   const hasSymptoms = (c.symptoms && c.symptoms.trim().length > 0) || (c.symptomsAr && c.symptomsAr.trim().length > 0) || (c.symptomsEn && c.symptomsEn.trim().length > 0);
   if ((!c.stage || c.stage <= 1) && !hasSymptoms) {
     return res.status(400).json({ error: 'Cannot register empty case before explicit nurse submission' });
+  }
+
+  // Regression Guard: prevent backward stage transitions without admin override
+  try {
+    let currentStageInDb = null;
+    const { rows } = await pool.query('SELECT current_stage FROM clinical_cases WHERE id = $1', [c.id]);
+    if (rows && rows.length > 0) {
+      currentStageInDb = rows[0].current_stage;
+    } else {
+      const memCase = memoryCases.find((x) => x.id === c.id);
+      if (memCase) currentStageInDb = memCase.currentStage;
+    }
+
+    if (currentStageInDb && c.currentStage && c.currentStage !== currentStageInDb) {
+      const currentOrder = STAGE_ORDER[currentStageInDb] || 0;
+      const targetOrder = STAGE_ORDER[c.currentStage] || 0;
+      if (targetOrder < currentOrder) {
+        return res.status(409).json({
+          error: `Stage regression denied. Cannot move case from "${currentStageInDb}" (stage ${currentOrder}) back to "${c.currentStage}" (stage ${targetOrder}). Use admin force-stage override if intentional.`,
+          currentStage: currentStageInDb,
+          requestedStage: c.currentStage,
+        });
+      }
+    }
+  } catch (guardErr) {
+    // Non-blocking fallback
   }
   try {
     await pool.query(
@@ -287,6 +326,36 @@ apiRouter.delete('/cases/:id', async (req, res) => {
     memoryCases = memoryCases.filter((x) => x.id !== id);
   }
   return res.json({ success: true, deletedId: id });
+});
+
+// Admin override endpoint for intentional stage rollback
+apiRouter.post('/admin/cases/:id/force-stage', async (req, res) => {
+  const adminToken = req.headers['x-admin-token'];
+  if (adminToken !== 'ALO-ADMIN-OVERRIDE-2026') {
+    return res.status(403).json({ error: 'Admin token required' });
+  }
+  const { targetStage } = req.body;
+  if (!STAGE_ORDER[targetStage]) {
+    return res.status(400).json({ error: `Unknown stage: ${targetStage}` });
+  }
+  const targetStageNum = STAGE_ORDER[targetStage];
+  try {
+    await pool.query(
+      `UPDATE clinical_cases 
+       SET current_stage = $1, stage = $2, 
+           case_data = jsonb_set(jsonb_set(case_data, '{currentStage}', to_jsonb($1::text)), '{stage}', to_jsonb($2::int)),
+           updated_at = NOW() 
+       WHERE id = $3`,
+      [targetStage, targetStageNum, req.params.id]
+    );
+  } catch (err) {
+    const memIdx = memoryCases.findIndex((c) => c.id === req.params.id);
+    if (memIdx !== -1) {
+      memoryCases[memIdx].currentStage = targetStage;
+      memoryCases[memIdx].stage = targetStageNum;
+    }
+  }
+  return res.json({ success: true, id: req.params.id, targetStage, stage: targetStageNum });
 });
 
 // ── API Routes: Audit Logs ───────────────────────────────────────────────────

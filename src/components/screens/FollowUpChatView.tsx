@@ -229,33 +229,35 @@ const FollowUpChatView: React.FC<Props> = ({ activeCase, onAdvanceStage, onUpdat
             </button>
           )}
 
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <span style={{ fontSize: '14px', fontWeight: 600, color: TEAL_PRIMARY }}>
-              {isRTL ? 'الملف الشخصي:' : 'Persona:'}
-            </span>
-            <select
-              value={personaId}
-              onChange={(e) => setPersonaId(Number(e.target.value))}
-              aria-label={isRTL ? 'تبديل الملف الشخصي' : 'Switch Persona Profile'}
-              style={{
-                padding: '6px 12px',
-                borderRadius: '8px',
-                border: `1px solid ${TEAL_SECONDARY}`,
-                backgroundColor: '#FFFFFF',
-                color: TEAL_PRIMARY,
-                fontFamily: "'Cairo', sans-serif",
-                fontWeight: 600,
-                cursor: 'pointer',
-                outline: 'none',
-              }}
-            >
-              {Array.from({ length: 11 }, (_, i) => i + 1).map((p) => (
-                <option key={p} value={p}>
-                  P{p}
-                </option>
-              ))}
-            </select>
-          </div>
+          {import.meta.env.DEV && (
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <span style={{ fontSize: '14px', fontWeight: 600, color: TEAL_PRIMARY }}>
+                {isRTL ? 'الملف الشخصي:' : 'Persona:'}
+              </span>
+              <select
+                value={personaId}
+                onChange={(e) => setPersonaId(Number(e.target.value))}
+                aria-label={isRTL ? 'تبديل الملف الشخصي' : 'Switch Persona Profile'}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '8px',
+                  border: `1px solid ${TEAL_SECONDARY}`,
+                  backgroundColor: '#FFFFFF',
+                  color: TEAL_PRIMARY,
+                  fontFamily: "'Cairo', sans-serif",
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  outline: 'none',
+                }}
+              >
+                {Array.from({ length: 11 }, (_, i) => i + 1).map((p) => (
+                  <option key={p} value={p}>
+                    P{p}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
 
         <button

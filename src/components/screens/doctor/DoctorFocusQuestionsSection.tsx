@@ -29,41 +29,53 @@ export const DoctorFocusQuestionsSection: React.FC<Props> = ({
         </span>
       </div>
 
-      <div>
-        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-          {isAr ? 'السؤال الأول (خطة التدخل الجراحي أو العلاجي التخصصي):' : 'Question 1 (Primary Surgical or Interventional Strategy):'}
-        </label>
-        <textarea
-          rows={2}
-          value={questions[0]}
-          onChange={(e) => onQuestionChange(0, e.target.value)}
-          className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl p-2.5 text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-alo-teal outline-none leading-relaxed shadow-sm font-medium"
-        />
-      </div>
-
-      <div>
-        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-          {isAr ? 'السؤال الثاني (تقييم المخاطر والمضاعفات المحتملة):' : 'Question 2 (Risk Stratification & Complication Mitigation):'}
-        </label>
-        <textarea
-          rows={2}
-          value={questions[1]}
-          onChange={(e) => onQuestionChange(1, e.target.value)}
-          className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl p-2.5 text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-alo-teal outline-none leading-relaxed shadow-sm font-medium"
-        />
-      </div>
-
-      <div>
-        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-          {isAr ? 'السؤال الثالث (بروتوكول العلاج الدوائي والتأهيل والمتابعة):' : 'Question 3 (Post-Procedure Protocol & Long-term Rehabilitation):'}
-        </label>
-        <textarea
-          rows={2}
-          value={questions[2]}
-          onChange={(e) => onQuestionChange(2, e.target.value)}
-          className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl p-2.5 text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-alo-teal outline-none leading-relaxed shadow-sm font-medium"
-        />
-      </div>
+      {[
+        {
+          label: isAr ? 'السؤال الأول (خطة التدخل الجراحي أو العلاجي التخصصي):' : 'Question 1 (Primary Surgical or Interventional Strategy):',
+          placeholder: isAr ? 'أدخل السؤال السريري الأول (10 أحرف على الأقل)...' : 'Enter first clinical focus question (min 10 characters)...',
+          index: 0 as const,
+        },
+        {
+          label: isAr ? 'السؤال الثاني (تقييم المخاطر والمضاعفات المحتملة):' : 'Question 2 (Risk Stratification & Complication Mitigation):',
+          placeholder: isAr ? 'أدخل السؤال السريري الثاني (10 أحرف على الأقل)...' : 'Enter second clinical focus question (min 10 characters)...',
+          index: 1 as const,
+        },
+        {
+          label: isAr ? 'السؤال الثالث (بروتوكول العلاج الدوائي والتأهيل والمتابعة):' : 'Question 3 (Post-Procedure Protocol & Long-term Rehabilitation):',
+          placeholder: isAr ? 'أدخل السؤال السريري الثالث (10 أحرف على الأقل)...' : 'Enter third clinical focus question (min 10 characters)...',
+          index: 2 as const,
+        },
+      ].map(({ label, placeholder, index }) => {
+        const val = questions[index] || '';
+        const len = val.trim().length;
+        const isValid = len >= 10;
+        return (
+          <div key={index} className="space-y-1">
+            <div className="flex items-center justify-between">
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                {label}
+              </label>
+              <span className={`text-[10px] font-mono font-semibold ${isValid ? 'text-teal-600 dark:text-teal-400' : 'text-rose-500'}`}>
+                {len} / 10 {isAr ? 'حرف كحد أدنى' : 'min chars'}
+              </span>
+            </div>
+            <textarea
+              rows={2}
+              value={val}
+              placeholder={placeholder}
+              onChange={(e) => onQuestionChange(index, e.target.value)}
+              className={`w-full bg-white dark:bg-slate-900 border rounded-xl p-2.5 text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-alo-teal outline-none leading-relaxed shadow-sm font-medium ${
+                !isValid ? 'border-rose-300 dark:border-rose-700' : 'border-slate-300 dark:border-slate-700'
+              }`}
+            />
+            {!isValid && (
+              <p className="text-[10px] text-rose-500 font-medium">
+                {isAr ? '⚠️ يجب ألا يقل السؤال السريري عن 10 أحرف.' : '⚠️ Clinical question must be at least 10 characters.'}
+              </p>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 };
