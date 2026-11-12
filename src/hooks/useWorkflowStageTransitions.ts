@@ -1,7 +1,7 @@
 import React from 'react';
 import { PERSONAS } from '../data/personas';
 import { ClinicalCase, ClinicalStage, PaymentMethodId, Persona } from '../types';
-import { STAGE_ORDER, isCasePaid, isCaseVerified, LANG_KEY, VIEW_MODE_KEY, UserSession } from './workflowConstants';
+import { STAGE_ORDER, isCasePaid, isCaseVerified, LANG_KEY, VIEW_MODE_KEY, UserSession, DEFAULT_CONSULTANT, DEFAULT_TREATING_DOCTOR } from './workflowConstants';
 import { apiClient } from '../services/apiClient';
 
 interface TransitionParams {
@@ -190,6 +190,8 @@ export function useWorkflowStageTransitions({
           currentStage: 'WITH_CONSULTANT',
           stage: 5,
           paymentVerified: true,
+          consultant: c.consultant || DEFAULT_CONSULTANT,
+          treatingDoctor: c.treatingDoctor || DEFAULT_TREATING_DOCTOR,
           isCrossBorderDeidentified: true,
           dualTokenGenerated: true,
           egressToken: c.egressToken || 'ALO-KSA-9482',
@@ -218,6 +220,8 @@ export function useWorkflowStageTransitions({
           ...c,
           currentStage: 'PARTNER_SERVICES',
           stage: 7,
+          consultant: c.consultant || DEFAULT_CONSULTANT,
+          treatingDoctor: c.treatingDoctor || DEFAULT_TREATING_DOCTOR,
           reportReleased: true,
           doctorReleasedToPatient: true,
           coordinatorForwardedToDoctor: true,

@@ -304,7 +304,7 @@ export const NurseTriageView: React.FC<Props> = ({
           </div>
 
           <div className="space-y-2.5">
-            {activeCase.files.map((file) => (
+            {(activeCase.files || []).map((file) => (
               <div
                 key={file.id}
                 className="bg-slate-50 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs"

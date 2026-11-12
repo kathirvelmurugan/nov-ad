@@ -29,12 +29,12 @@ export const IntakeUploadZone: React.FC<Props> = ({
           </label>
         </div>
         <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold">
-          ✓ {activeCase.files.length} {isAr ? 'ملفات مكتملة' : 'Files Verified'}
+          ✓ {(activeCase.files || []).length} {isAr ? 'ملفات مكتملة' : 'Files Verified'}
         </span>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {activeCase.files.map((file) => (
+        {(activeCase.files || []).map((file) => (
           <div
             key={file.id}
             onClick={() => setSelectedFileForPreview(file.name)}

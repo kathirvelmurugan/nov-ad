@@ -30,7 +30,7 @@ export const ConsultantCaseReviewSection: React.FC<Props> = ({
           De-identified case · {activeCase.specialtyEn || activeCase.specialty} · {activeCase.diagnosisEn || activeCase.diagnosis}
         </p>
         <p style={{ fontSize: '13px', color: '#555', marginBottom: '20px' }}>
-          Nurse-verified summary · {activeCase.files.length} file(s). Patient identity hidden.
+          Nurse-verified summary · {(activeCase.files || []).length} file(s). Patient identity hidden.
         </p>
         <button
           type="button"

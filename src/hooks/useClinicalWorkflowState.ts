@@ -22,6 +22,8 @@ import {
   USER_SESSION_KEY,
   UserSession,
   FRESH_PRIMARY_CASE,
+  DEFAULT_CONSULTANT,
+  DEFAULT_TREATING_DOCTOR,
   STAGE_ORDER,
 } from './workflowConstants';
 import { useWorkflowStageTransitions } from './useWorkflowStageTransitions';
@@ -301,7 +303,7 @@ export function useClinicalWorkflowState() {
     ? cases.filter((c) => matchesSaudiPhone(c.patientPhone, userSession.phone))
     : cases;
 
-  const activeCase = (isPatientUser
+  const rawActiveCase = (isPatientUser
     ? (effectiveCases.find((c) => c.id === activeCaseId) || effectiveCases[0])
     : (cases.find((c) => c.id === activeCaseId) || cases[0])) || {
       ...FRESH_PRIMARY_CASE,
@@ -311,6 +313,13 @@ export function useClinicalWorkflowState() {
       patientNameAr: isPatientUser ? (userSession?.fullName || '') : '',
       patientNameEn: isPatientUser ? (userSession?.fullName || '') : '',
     };
+
+  const activeCase: ClinicalCase = {
+    ...rawActiveCase,
+    consultant: rawActiveCase.consultant || DEFAULT_CONSULTANT,
+    treatingDoctor: rawActiveCase.treatingDoctor || DEFAULT_TREATING_DOCTOR,
+    files: rawActiveCase.files || [],
+  };
 
   // ── Handlers ─────────────────────────────────────────────────────────────
   const handleUpdateCase = (updated: Partial<ClinicalCase>) => {

@@ -111,7 +111,7 @@ export const CoordinatorReportReleaseTab: React.FC<Props> = ({
             {activeCase.saudiEndorsement?.localClinicalNotes && (
               <div style={{ backgroundColor: '#FFFFFF', padding: '10px 12px', borderRadius: '8px', border: '1px solid #BBF7D0', fontSize: '12px', color: '#065F46' }}>
                 <strong>{isAr ? 'توجيهات الطبيب السعودي: ' : 'Saudi Doctor Directives: '}</strong>
-                {activeCase.saudiEndorsement.localClinicalNotes}
+                {activeCase.saudiEndorsement?.localClinicalNotes}
               </div>
             )}
           </div>

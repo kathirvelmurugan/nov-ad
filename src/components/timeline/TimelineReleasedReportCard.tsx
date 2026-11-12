@@ -50,7 +50,7 @@ export const TimelineReleasedReportCard: React.FC<TimelineReleasedReportCardProp
       {activeCase.saudiEndorsement?.localClinicalNotes && (
         <div className="text-xs text-emerald-900 dark:text-emerald-200 bg-white dark:bg-slate-900 p-3 rounded-xl border border-emerald-200/80 dark:border-emerald-800">
           <strong>{isAr ? 'توجيهات طبيبك السعودي: ' : 'Saudi Doctor Directives: '}</strong>
-          {activeCase.saudiEndorsement.localClinicalNotes}
+          {activeCase.saudiEndorsement?.localClinicalNotes}
         </div>
       )}
 

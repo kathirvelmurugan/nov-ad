@@ -81,8 +81,8 @@ export const WhatsAppToast: React.FC<Props> = ({
             code: 'W06',
             titleAr: 'فاتورة سداد الرأي الطبي الثاني',
             titleEn: 'Payment Invoice & Options Ready',
-            bodyAr: `صدرت فاتورة الباقة (${activeCase.pricing.totalSar} ر.س شامل الضريبة) بطرق الدفع المحددة.`,
-            bodyEn: `Invoice issued (${activeCase.pricing.totalSar} SAR incl. VAT) with your assigned payment options.`,
+            bodyAr: `صدرت فاتورة الباقة (${activeCase.pricing?.totalSar || 75} ر.س شامل الضريبة) بطرق الدفع المحددة.`,
+            bodyEn: `Invoice issued (${activeCase.pricing?.totalSar || 75} SAR incl. VAT) with your assigned payment options.`,
           };
         } else {
           payload = {
@@ -100,8 +100,8 @@ export const WhatsAppToast: React.FC<Props> = ({
           code: 'W08',
           titleAr: 'إحالة الملف للاستشاري الدولي',
           titleEn: 'Consultant Assigned',
-          bodyAr: `تم تفعيل الرمز ${activeCase.egressToken || 'ALO-KSA-9482'} وإحالة الملف إلى ${activeCase.consultant.name} في ${activeCase.consultant.center}.`,
-          bodyEn: `Dossier token ${activeCase.egressToken || 'ALO-KSA-9482'} dispatched to ${activeCase.consultant.name} at ${activeCase.consultant.center}.`,
+          bodyAr: `تم تفعيل الرمز ${activeCase.egressToken || 'ALO-KSA-9482'} وإحالة الملف إلى ${activeCase.consultant?.name || (isAr ? 'د. أرجون ميهتا' : 'Dr. Arjun Mehta')} في ${activeCase.consultant?.center || (isAr ? 'معهد كيمز للقلب' : 'KIMS Heart Institute')}.`,
+          bodyEn: `Dossier token ${activeCase.egressToken || 'ALO-KSA-9482'} dispatched to ${activeCase.consultant?.name || 'Dr. Arjun Mehta'} at ${activeCase.consultant?.center || 'KIMS Heart Institute'}.`,
         };
         break;
       case 'OPINION_READY':

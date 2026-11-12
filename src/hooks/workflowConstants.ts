@@ -33,6 +33,39 @@ export const DEFAULT_PARTNER_ORDERS = {
   physio: { sessions: 0, status: 'planned' as const },
 };
 
+export const DEFAULT_CONSULTANT = {
+  name: 'Dr. Arjun Mehta',
+  center: 'KIMS Heart Institute',
+  city: 'Hyderabad, India',
+  specialty: 'Interventional Cardiology',
+  subspecialty: 'Structural Heart & TAVR',
+  experienceYears: 18,
+  rating: 4.9,
+  casesReviewed: 340,
+};
+
+export const DEFAULT_TREATING_DOCTOR = {
+  id: 'doc-001',
+  name: 'د. عبدالله الشمري',
+  nameEn: 'Dr. Abdullah Al-Shammari',
+  hospital: 'مستشفى الملك فيصل التخصصي',
+  hospitalEn: 'King Faisal Specialist Hospital',
+  city: 'الرياض',
+  cityEn: 'Riyadh',
+  specialty: 'استشاري أمراض القلب وقسطرة الشرايين',
+  scfhsNumber: 'SCFHS-2024-KSA-8821',
+  focusQuestions: [
+    'هل مؤشرات تضيق الصمام الأبهري تستوجب التدخل عبر القسطرة (TAVR)؟',
+    'ما هو بروتوكول مضادات التخثر الموصى به بعد العملية؟',
+    'ما هو الجدول الزمني الأمثل لمتابعة كفاءة الصمام بالإيكو؟',
+  ] as [string, string, string],
+  focusQuestionsEn: [
+    'Is TAVR indicated based on aortic stenosis severity and CTA?',
+    'What is the recommended post-procedure antithrombotic protocol?',
+    'What is the optimal echocardiographic follow-up schedule?',
+  ] as [string, string, string],
+};
+
 // ─── Clean-Slate Initial Case (Zero Pre-Filled Data) ─────────────────────────
 export const FRESH_PRIMARY_CASE: ClinicalCase = {
   id: 'case-initial-01',
@@ -59,8 +92,8 @@ export const FRESH_PRIMARY_CASE: ClinicalCase = {
   currentStage: 'INTAKE_RECEIVED',
   stage: 1,
   doctorSelectionPreference: 'need_assistance',
-  treatingDoctor: undefined,
-  consultant: undefined,
+  treatingDoctor: DEFAULT_TREATING_DOCTOR,
+  consultant: DEFAULT_CONSULTANT,
   pricing: {
     tier: 1,
     tierName: 'Written',

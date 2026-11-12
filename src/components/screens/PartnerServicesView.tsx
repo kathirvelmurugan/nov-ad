@@ -71,9 +71,14 @@ export const PartnerServicesView: React.FC<Props> = ({
     onUpdateCase({
       internalOrders: updatedOrders,
       partnerOrders: {
-        ...activeCase.partnerOrders,
+        ...(activeCase.partnerOrders || {
+          lab: { test: 'Comprehensive Metabolic Panel', status: 'pending' },
+          pharmacy: { meds: [], substituteAllowed: true, status: 'pending' },
+          homeNurse: { area: '', visits: 0, status: 'scheduled' },
+          physio: { sessions: 0, status: 'planned' },
+        }),
         lab: {
-          ...activeCase.partnerOrders.lab,
+          test: activeCase.partnerOrders?.lab?.test || 'Comprehensive Metabolic Panel',
           status: newStatus === 'results_uploaded' ? 'completed' : 'pending',
         },
       },
@@ -92,9 +97,15 @@ export const PartnerServicesView: React.FC<Props> = ({
     onUpdateCase({
       internalOrders: updatedOrders,
       partnerOrders: {
-        ...activeCase.partnerOrders,
+        ...(activeCase.partnerOrders || {
+          lab: { test: 'Comprehensive Metabolic Panel', status: 'pending' },
+          pharmacy: { meds: [], substituteAllowed: true, status: 'pending' },
+          homeNurse: { area: '', visits: 0, status: 'scheduled' },
+          physio: { sessions: 0, status: 'planned' },
+        }),
         pharmacy: {
-          ...activeCase.partnerOrders.pharmacy,
+          meds: activeCase.partnerOrders?.pharmacy?.meds || [],
+          substituteAllowed: activeCase.partnerOrders?.pharmacy?.substituteAllowed ?? true,
           status: newStatus === 'dispensed' || newStatus === 'delivered' ? 'ready' : 'pending',
         },
       },
