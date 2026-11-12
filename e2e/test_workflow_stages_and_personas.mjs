@@ -483,7 +483,7 @@ async function runEndToEndTest() {
     }
 
     // Click Assign & Release Certified Report (PDF 1) to Patient (C08)
-    const releasePdf1Btn = pageC.locator('button:has-text("Assign & Release Certified Report (PDF 1) to Patient"), button:has-text("إسناد وإرسال التقرير المعتمد (PDF 1) إلى المريض"), button:has-text("C08")').first();
+    const releasePdf1Btn = pageC.locator('button:has-text("Assign & Release Certified Report"), button:has-text("إسناد وإرسال التقرير المعتمد")').first();
     await releasePdf1Btn.waitFor({ state: 'visible', timeout: 6000 });
     await releasePdf1Btn.click();
     console.log('   Clicked C08 Assign & Release Certified Report (PDF 1).');

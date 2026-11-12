@@ -421,7 +421,7 @@ export const PartnerServicesView: React.FC<Props> = ({
       </div>
 
       {/* Phase 6 Final Milestone Gate: Deliver Endorsed Report & Activate 21-Day Window (D13) */}
-      {!roleFilter && (
+      {(!roleFilter || roleFilter === 'REC') && (
         <div className="bg-gradient-to-l from-slate-900 via-teal-950/30 to-slate-900 border-2 border-teal-500/50 p-6 rounded-2xl shadow-2xl space-y-4">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div className="space-y-1.5">
