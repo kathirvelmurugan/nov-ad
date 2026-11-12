@@ -248,7 +248,16 @@ export function useClinicalWorkflowState() {
       };
       if (portal && portalCodeMap[portal]) {
         const matched = PERSONAS.find((p) => p.code === portalCodeMap[portal]);
-        if (matched) setActivePersona(matched);
+        if (matched) {
+          if (
+            !userSession?.isAuthenticated ||
+            !userSession.roleCode ||
+            userSession.roleCode === 'AD' ||
+            matched.code === userSession.roleCode
+          ) {
+            setActivePersona(matched);
+          }
+        }
       }
 
       // Restore subview from history state or URL param
@@ -262,8 +271,11 @@ export function useClinicalWorkflowState() {
         : 'landing') as 'landing' | 'intake' | 'timeline' | 'telehealth' | 'checkout';
 
       setViewMode('workstation');
-      setPatientSubView(targetSubView);
-      try { localStorage.setItem('alo_patient_subview_v3.0', targetSubView); } catch (err) {}
+
+      if (!userSession?.isAuthenticated || !userSession.roleCode || userSession.roleCode === 'P') {
+        setPatientSubView(targetSubView);
+        try { localStorage.setItem('alo_patient_subview_v3.0', targetSubView); } catch (err) {}
+      }
     };
 
     window.addEventListener('popstate', handlePopState);
@@ -272,7 +284,7 @@ export function useClinicalWorkflowState() {
       window.removeEventListener('popstate', handlePopState);
       window.removeEventListener('hashchange', handlePopState as any);
     };
-  }, []);
+  }, [userSession]);
 
   // ── Derived State (Patient Data Scoping) ─────────────────────────────────
   const isPatientUser = userSession?.roleCode === 'P';
@@ -366,6 +378,8 @@ export function useClinicalWorkflowState() {
   };
 
   const handleSelectPatientSubView = (subView: 'landing' | 'intake' | 'timeline' | 'telehealth' | 'checkout', skipPush?: boolean) => {
+    if (userSession?.isAuthenticated && userSession.roleCode && userSession.roleCode !== 'P' && userSession.roleCode !== 'AD') return;
+
     setPatientSubView(subView);
     setViewMode('workstation');
     const p = PERSONAS.find((x) => x.code === 'P') || PERSONAS[0];
@@ -414,10 +428,8 @@ export function useClinicalWorkflowState() {
     setActiveCaseId(cases[(currentIndex + 1) % cases.length].id);
   };
 
-  const handleSelectCaseFromPipeline = (selectedCase: ClinicalCase, heroPersonaCode: string) => {
+  const handleSelectCaseFromPipeline = (selectedCase: ClinicalCase, _heroPersonaCode: string) => {
     setActiveCaseId(selectedCase.id);
-    const targetPersona = PERSONAS.find((p) => p.code === heroPersonaCode) || PERSONAS[0];
-    transitions.handleSelectPersona(targetPersona);
     setIsPipelineBoardOpen(false);
   };
 
@@ -443,14 +455,22 @@ export function useClinicalWorkflowState() {
         pricing: { ...activeCase.pricing, paid: false, invoiceNumber: undefined },
         metadata: { isFreshTest: true, pdf1Released: false, pdf2Released: false, paymentVerified: false, paymentLinkIssued: false },
       });
-      setActivePersona(PERSONAS[0]); setPatientSubView('landing'); setSelectedServiceId('second-opinion');
+      if (!userSession?.roleCode || userSession.roleCode === 'P') {
+        setActivePersona(PERSONAS[0]);
+        setPatientSubView('landing');
+        setSelectedServiceId('second-opinion');
+      }
     }
   };
 
   const handleAddNewCase = (newCase: ClinicalCase) => {
     setCases((prev) => [newCase, ...prev]);
     setActiveCaseId(newCase.id);
-    setActivePersona(PERSONAS[0]); setPatientSubView('landing'); setSelectedServiceId('second-opinion');
+    if (!userSession?.roleCode || userSession.roleCode === 'P') {
+      setActivePersona(PERSONAS[0]);
+      setPatientSubView('landing');
+      setSelectedServiceId('second-opinion');
+    }
   };
 
   const handleAutoFill = () => {
