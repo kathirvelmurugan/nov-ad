@@ -189,13 +189,24 @@ async function runEndToEndTest() {
     console.log('\n▶ Step B1: [P] Patient Intake Submission...');
     await pageP.bringToFront();
 
+    // Verify pre-condition: fetch count of cases before clicking or filling
+    const casesBeforeStart = await fetchLiveCases();
+    console.log(`   Baseline cases count in DB before starting: ${casesBeforeStart.length}`);
+
     // Check if on Landing or Timeline, and start a new consultation
     const newCaseBtn = pageP.locator('button:has-text("New Consultation"), button:has-text("+ New Consultation"), button:has-text("طلب استشارة جديدة"), button:has-text("Start Your Case"), button:has-text("ابدأ طلبك السريري")').first();
     if (await newCaseBtn.isVisible({ timeout: 4000 }).catch(() => false)) {
       console.log('   Clicking Start Case / New Consultation button...');
       await newCaseBtn.click();
-      await pageP.waitForTimeout(1000);
+      await pageP.waitForTimeout(1500);
     }
+
+    // Step 1 Rule Verification: Clicking "Start New Case" alone MUST NOT create any new case in the database!
+    const casesAfterClickOnly = await fetchLiveCases();
+    if (casesAfterClickOnly.length > casesBeforeStart.length) {
+      throw new Error(`VIOLATION: Case was registered in database immediately after clicking Start New Case! Count went from ${casesBeforeStart.length} to ${casesAfterClickOnly.length}`);
+    }
+    console.log('   ✓ Verified Step 1: Clicking Start New Case alone did NOT register any phantom case in database.');
 
     // Fill Symptoms
     const symptomsTextarea = pageP.locator('textarea').first();
