@@ -31,6 +31,7 @@ interface Props {
   onOpenTelehealth?: () => void;
   onOpenPayment?: () => void;
   onRegisterCase?: () => void;
+  onOpenFollowUp?: () => void;
   userSession?: UserSession | null;
   lang?: 'ar' | 'en';
 }
@@ -47,6 +48,7 @@ export const PatientStatusTimelineView: React.FC<Props> = ({
   onOpenTelehealth,
   onOpenPayment,
   onRegisterCase,
+  onOpenFollowUp,
   userSession,
   lang = 'ar',
 }) => {
@@ -211,6 +213,7 @@ export const PatientStatusTimelineView: React.FC<Props> = ({
     !!activeCase.metadata?.pdf1Released ||
     !!activeCase.doctorReleasedToPatient;
   const [isReportModalOpen, setIsReportModalOpen] = React.useState(false);
+  const [selectedReportType, setSelectedReportType] = React.useState<'pdf1' | 'pdf2'>('pdf2');
 
   const content = getStageContent(
     stage,
@@ -363,7 +366,10 @@ export const PatientStatusTimelineView: React.FC<Props> = ({
           activeCase={activeCase}
           stage={stage}
           isAr={isAr}
-          onOpenReportModal={() => setIsReportModalOpen(true)}
+          onOpenReportModal={(type = 'pdf2') => {
+            setSelectedReportType(type);
+            setIsReportModalOpen(true);
+          }}
           onOpenTelehealth={onOpenTelehealth}
           onAdvanceStage={onAdvanceStage}
         />
@@ -381,12 +387,45 @@ export const PatientStatusTimelineView: React.FC<Props> = ({
             >
               <span>{isAr ? 'الانتقال إلى بوابة الدفع وسداد الفاتورة الآن →' : 'Open Payment Checkout & Complete Payment Now →'}</span>
             </button>
+          ) : (stage === 'CLOSED' || Boolean(activeCase.metadata?.pdf2Released) || activeCase.status === 'closed') ? (
+            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedReportType('pdf2');
+                  setIsReportModalOpen(true);
+                }}
+                className="w-full sm:w-auto bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-extrabold py-3 px-6 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-xs active:scale-95 cursor-pointer"
+              >
+                <span>📑 {isAr ? 'عرض وتحميل الملف الشامل النهائي (PDF 2) →' : 'View & Download Final Dossier (PDF 2) →'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedReportType('pdf1');
+                  setIsReportModalOpen(true);
+                }}
+                className="w-full sm:w-auto bg-white dark:bg-slate-800 text-teal-800 dark:text-teal-200 border border-teal-300 dark:border-teal-700 hover:bg-teal-50 font-bold py-3 px-4 rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 text-xs active:scale-95 cursor-pointer"
+              >
+                <span>📄 {isAr ? 'التقرير الأول (PDF 1)' : 'Certified Report (PDF 1)'}</span>
+              </button>
+            </div>
           ) : stage === 'PARTNER_SERVICES' && isReportReleased ? (
             <button
-              onClick={() => setIsReportModalOpen(true)}
+              onClick={() => {
+                setSelectedReportType('pdf1');
+                setIsReportModalOpen(true);
+              }}
               className="w-full sm:w-auto bg-gradient-to-r from-alo-teal to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white font-extrabold py-3 px-6 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-xs active:scale-95 cursor-pointer"
             >
               <span>{isAr ? 'عرض وطباعة التقرير الطبي المعتمد (PDF 1) →' : 'View & Print Certified Report (PDF 1) →'}</span>
+            </button>
+          ) : stage === 'FOLLOW_UP_21_DAYS' ? (
+            <button
+              onClick={onOpenFollowUp || onAdvanceStage}
+              className="w-full sm:w-auto bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-extrabold py-3 px-6 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-xs active:scale-95 cursor-pointer"
+            >
+              <span>💬 {isAr ? 'فتح محادثة المتابعة الطبية وتقييم الاستشارة →' : 'Open Follow-up Chat & Rating →'}</span>
             </button>
           ) : (
             <span className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-xs font-bold shadow-sm">
@@ -419,6 +458,7 @@ export const PatientStatusTimelineView: React.FC<Props> = ({
         onClose={() => setIsReportModalOpen(false)}
         activeCase={activeCase}
         lang={lang}
+        reportType={selectedReportType}
       />
     </div>
   );

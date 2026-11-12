@@ -1,15 +1,17 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ClinicalCase } from '../../types';
 import { TEAL_PRIMARY } from './types';
 import { ReportDemographicsHeader } from '../report/ReportDemographicsHeader';
 import { ReportQuestionsSection, QuestionAndAnswerItem } from '../report/ReportQuestionsSection';
 import { ReportSignaturesFooter } from '../report/ReportSignaturesFooter';
+import { ReportComprehensiveDossier } from '../report/ReportComprehensiveDossier';
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   activeCase: ClinicalCase;
   lang?: 'ar' | 'en';
+  reportType?: 'pdf1' | 'pdf2';
 }
 
 export const BilingualReportModal: React.FC<Props> = ({
@@ -17,7 +19,25 @@ export const BilingualReportModal: React.FC<Props> = ({
   onClose,
   activeCase,
   lang = 'ar',
+  reportType,
 }) => {
+  const isCaseClosedOrArchived =
+    activeCase?.currentStage === 'CLOSED' ||
+    Boolean(activeCase?.metadata?.pdf2Released) ||
+    Boolean(activeCase?.metadata?.archived) ||
+    activeCase?.status === 'closed';
+
+  const defaultType: 'pdf1' | 'pdf2' = reportType || (isCaseClosedOrArchived ? 'pdf2' : 'pdf1');
+  const [activeTab, setActiveTab] = useState<'pdf1' | 'pdf2'>(defaultType);
+
+  useEffect(() => {
+    if (reportType) {
+      setActiveTab(reportType);
+    } else if (isCaseClosedOrArchived) {
+      setActiveTab('pdf2');
+    }
+  }, [reportType, isCaseClosedOrArchived, isOpen]);
+
   if (!isOpen) return null;
 
   const isAr = lang === 'ar';
@@ -87,7 +107,7 @@ export const BilingualReportModal: React.FC<Props> = ({
       <div
         style={{
           width: '100%',
-          maxWidth: '920px',
+          maxWidth: '960px',
           maxHeight: '92vh',
           backgroundColor: '#ffffff',
           borderRadius: '16px',
@@ -109,19 +129,71 @@ export const BilingualReportModal: React.FC<Props> = ({
             padding: '12px 20px',
             backgroundColor: '#0f172a',
             color: '#ffffff',
+            flexWrap: 'wrap',
+            gap: '10px',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ fontSize: '20px' }}>📑</span>
+            <span style={{ fontSize: '20px' }}>{activeTab === 'pdf2' ? '📑' : '📄'}</span>
             <div>
               <div style={{ fontSize: '13px', fontWeight: 800 }}>
-                {isAr ? 'التقرير الطبي الدولي المعتمد ثنائي اللغة (عربي / English)' : 'Certified Bilingual Second Opinion Dossier'}
+                {activeTab === 'pdf2'
+                  ? (isAr ? 'الملف الطبي الشامل النهائي (PDF 2) · أرشفة دائمة' : 'Final Comprehensive Clinical Dossier (PDF 2) · Archive')
+                  : (isAr ? 'تقرير الرأي الطبي الثاني المعتمد (PDF 1)' : 'Certified Medical Second Opinion Report (PDF 1)')}
               </div>
               <div style={{ fontSize: '10px', color: '#94a3b8' }}>
-                Case Ref: {activeCase.caseNumber || 'ALO-2026-LIVE'} · ZATCA Ref: {invoiceNum}
+                Case Ref: {activeCase.caseNumber || activeCase.id || 'ALO-2026-LIVE'} · ZATCA Ref: {invoiceNum}
               </div>
             </div>
           </div>
+
+          {/* Report Type Selector Tabs */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              backgroundColor: '#1e293b',
+              padding: '3px',
+              borderRadius: '8px',
+              gap: '4px',
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setActiveTab('pdf1')}
+              style={{
+                backgroundColor: activeTab === 'pdf1' ? TEAL_PRIMARY : 'transparent',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '6px',
+                padding: '5px 12px',
+                fontSize: '11px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+            >
+              📄 {isAr ? 'التقرير الأول (PDF 1)' : 'Report (PDF 1)'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('pdf2')}
+              style={{
+                backgroundColor: activeTab === 'pdf2' ? TEAL_PRIMARY : 'transparent',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '6px',
+                padding: '5px 12px',
+                fontSize: '11px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+            >
+              📑 {isAr ? 'الملف الشامل (PDF 2)' : 'Final Dossier (PDF 2)'}
+            </button>
+          </div>
+
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <button
               type="button"
@@ -156,6 +228,7 @@ export const BilingualReportModal: React.FC<Props> = ({
                 fontWeight: 800,
                 cursor: 'pointer',
               }}
+              aria-label={isAr ? 'إغلاق' : 'Close'}
             >
               ✕
             </button>
@@ -173,29 +246,44 @@ export const BilingualReportModal: React.FC<Props> = ({
             gap: '20px',
           }}
         >
-          <ReportDemographicsHeader
-            activeCase={activeCase}
-            isAr={isAr}
-            patientName={patientName}
-            patientNameEn={patientNameEn}
-            treatingDocName={treatingDocName}
-            consultantName={consultantName}
-            invoiceNum={invoiceNum}
-          />
+          {activeTab === 'pdf2' ? (
+            <ReportComprehensiveDossier
+              activeCase={activeCase}
+              isAr={isAr}
+              patientName={patientName}
+              patientNameEn={patientNameEn}
+              treatingDocName={treatingDocName}
+              consultantName={consultantName}
+              invoiceNum={invoiceNum}
+            />
+          ) : (
+            <>
+              <ReportDemographicsHeader
+                activeCase={activeCase}
+                isAr={isAr}
+                patientName={patientName}
+                patientNameEn={patientNameEn}
+                treatingDocName={treatingDocName}
+                consultantName={consultantName}
+                invoiceNum={invoiceNum}
+              />
 
-          <ReportQuestionsSection
-            questionsAndAnswers={questionsAndAnswers}
-            isAr={isAr}
-          />
+              <ReportQuestionsSection
+                questionsAndAnswers={questionsAndAnswers}
+                isAr={isAr}
+              />
 
-          <ReportSignaturesFooter
-            activeCase={activeCase}
-            isAr={isAr}
-            treatingDocName={treatingDocName}
-            consultantName={consultantName}
-          />
+              <ReportSignaturesFooter
+                activeCase={activeCase}
+                isAr={isAr}
+                treatingDocName={treatingDocName}
+                consultantName={consultantName}
+              />
+            </>
+          )}
         </div>
       </div>
     </div>
   );
 };
+export default BilingualReportModal;

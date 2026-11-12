@@ -302,6 +302,22 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
       activeCase.allowedPaymentMethods.length > 0 &&
       !isPaid;
 
+    // Follow-up chat (21-day)
+    if (patientSubView === ('followup' as any) || (activeCase.currentStage === 'FOLLOW_UP_21_DAYS' && patientSubView !== 'timeline')) {
+      return (
+        <FollowUpChatView
+          key="patient-followup"
+          activeCase={activeCase}
+          onAdvanceStage={() => {
+            handleAdvanceStage();
+            handleSelectPatientSubView('timeline');
+          }}
+          onUpdateCase={handleUpdateCase}
+          onBackToTimeline={() => handleSelectPatientSubView('timeline')}
+        />
+      );
+    }
+
     // Status tracker
     if (patientSubView === 'timeline') {
       return (
@@ -317,6 +333,7 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
           onOpenTelehealth={() => handleSelectPatientSubView('telehealth')}
           onOpenPayment={() => { if (canPatientCheckout) handleSelectPatientSubView('checkout'); }}
           onRegisterCase={() => handleSelectPatientSubView('intake')}
+          onOpenFollowUp={() => handleSelectPatientSubView('followup' as any)}
           userSession={userSession}
           lang={lang}
         />
@@ -346,18 +363,6 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
           onBackToTimeline={() => handleSelectPatientSubView('timeline')}
           onUpdateCase={handleUpdateCase}
           lang={lang}
-        />
-      );
-    }
-
-    // Follow-up chat (21-day)
-    if (activeCase.currentStage === 'FOLLOW_UP_21_DAYS') {
-      return (
-        <FollowUpChatView
-          key="patient-followup"
-          activeCase={activeCase}
-          onAdvanceStage={handleAdvanceStage}
-          onUpdateCase={handleUpdateCase}
         />
       );
     }

@@ -8,6 +8,7 @@ interface Props {
   isDownloading: boolean;
   downloadComplete: boolean;
   onDownloadPDF: () => void;
+  onPreviewPDF?: () => void;
 }
 
 export const FollowUpReportDownloadCard: React.FC<Props> = ({
@@ -16,6 +17,7 @@ export const FollowUpReportDownloadCard: React.FC<Props> = ({
   isDownloading,
   downloadComplete,
   onDownloadPDF,
+  onPreviewPDF,
 }) => {
   return (
     <section
@@ -135,6 +137,31 @@ export const FollowUpReportDownloadCard: React.FC<Props> = ({
             </>
           )}
         </button>
+
+        {onPreviewPDF && (
+          <button
+            type="button"
+            onClick={onPreviewPDF}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '12px 20px',
+              borderRadius: '12px',
+              border: `2px solid ${TEAL_PRIMARY}`,
+              backgroundColor: '#FFFFFF',
+              color: TEAL_PRIMARY,
+              fontFamily: "'Cairo', sans-serif",
+              fontSize: '14px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            <span>👁️</span>
+            <span>{isRTL ? 'معاينة التقرير (PDF 1)' : 'Preview Report (PDF 1)'}</span>
+          </button>
+        )}
 
         <div
           style={{

@@ -11,6 +11,7 @@ import { CoordinatorTelehealthTab } from '../coordinator/CoordinatorTelehealthTa
 import { CoordinatorReportReleaseTab } from '../coordinator/CoordinatorReportReleaseTab';
 import { CoordinatorFollowUpTab } from '../coordinator/CoordinatorFollowUpTab';
 import { CoordinatorCaseClosureTab } from '../coordinator/CoordinatorCaseClosureTab';
+import { BilingualReportModal } from '../cockpit/BilingualReportModal';
 import { PortalCaseTrackerPanel, getStageBadgeMeta } from '../common/PortalCaseTrackerPanel';
 
 interface Props {
@@ -65,6 +66,8 @@ const CoordinatorPortalView: React.FC<Props> = ({
 
   const [activeTab, setActiveTab] = useState<'C01' | 'C07' | 'C08' | 'C09' | 'C10'>(getInitialTab);
   const [isReportPreviewOpen, setIsReportPreviewOpen] = useState(false);
+  const [isPDF2ModalOpen, setIsPDF2ModalOpen] = useState(false);
+  const [coordinatorReportType, setCoordinatorReportType] = useState<'pdf1' | 'pdf2'>('pdf2');
   const [selectedConsultationType, setSelectedConsultationType] = useState<'written' | 'video'>(
     activeCase?.consultationType === 'written' ? 'written' : 'video'
   );
@@ -281,7 +284,12 @@ const CoordinatorPortalView: React.FC<Props> = ({
 
   const confirmedSlotId = activeCase?.metadata?.confirmedSlotId as string | undefined;
   const pdf1Released = activeCase?.metadata?.pdf1Released as boolean | undefined;
-  const isArchived = activeCase?.metadata?.archived as boolean | undefined;
+  const isArchived = Boolean(
+    activeCase?.metadata?.archived ||
+    activeCase?.metadata?.pdf2Released ||
+    activeCase?.currentStage === 'CLOSED' ||
+    activeCase?.status === 'closed'
+  );
 
   const getTabStyle = (tab: 'C01' | 'C07' | 'C08' | 'C09' | 'C10'): React.CSSProperties => ({
     padding: '10px 20px',
@@ -466,10 +474,22 @@ const CoordinatorPortalView: React.FC<Props> = ({
             isArchived={isArchived}
             isProcessing={isProcessing}
             onIssuePDF2AndClose={handleIssuePDF2AndClose}
+            onOpenPDFModal={(type) => {
+              setCoordinatorReportType(type);
+              setIsPDF2ModalOpen(true);
+            }}
           />
         )}
 
       </main>
+
+      <BilingualReportModal
+        isOpen={isPDF2ModalOpen}
+        onClose={() => setIsPDF2ModalOpen(false)}
+        activeCase={activeCase}
+        lang={lang}
+        reportType={coordinatorReportType}
+      />
     </div>
   );
 };

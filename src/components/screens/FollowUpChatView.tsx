@@ -10,15 +10,18 @@ import {
 import { FollowUpReportDownloadCard } from '../followup/FollowUpReportDownloadCard';
 import { FollowUpChatThread, ChatMessage } from '../followup/FollowUpChatThread';
 import { FollowUpSatisfactionWidget } from '../followup/FollowUpSatisfactionWidget';
+import { BilingualReportModal } from '../cockpit/BilingualReportModal';
 
 interface Props {
   activeCase: ClinicalCase;
   onAdvanceStage: () => void;
   onUpdateCase: (updated: Partial<ClinicalCase>) => void;
+  onBackToTimeline?: () => void;
 }
 
-const FollowUpChatView: React.FC<Props> = ({ activeCase, onAdvanceStage, onUpdateCase }) => {
+const FollowUpChatView: React.FC<Props> = ({ activeCase, onAdvanceStage, onUpdateCase, onBackToTimeline }) => {
   const [lang, setLang] = useState<'ar' | 'en'>('ar');
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [personaId, setPersonaId] = useState<number>(1);
   const [daysRemaining, setDaysRemaining] = useState<number>(20);
   const [chatInput, setChatInput] = useState<string>('');
@@ -156,6 +159,22 @@ const FollowUpChatView: React.FC<Props> = ({ activeCase, onAdvanceStage, onUpdat
   };
 
   const handleCompleteFollowUp = () => {
+    const selectedTagsList = Array.from(selectedTags).map((idx) => tags[idx]);
+    onUpdateCase({
+      status: 'closed',
+      currentStage: 'CLOSED',
+      stage: 9,
+      metadata: {
+        ...(activeCase.metadata || {}),
+        rating: rating || (activeCase.metadata?.rating as number) || 5,
+        ratingTags: selectedTagsList.length > 0 ? selectedTagsList : (isRTL ? ['دقة التشخيص', 'سرعة الاستجابة'] : ['Diagnostic Accuracy', 'Fast Response']),
+        followUpCompleted: true,
+        followUpCompletedAt: new Date().toISOString(),
+        pdf2Released: true,
+        pdf2Timestamp: new Date().toISOString(),
+        archived: true,
+      },
+    });
     onAdvanceStage();
   };
 
@@ -186,32 +205,57 @@ const FollowUpChatView: React.FC<Props> = ({ activeCase, onAdvanceStage, onUpdat
           flexWrap: 'wrap',
         }}
       >
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <span style={{ fontSize: '14px', fontWeight: 600, color: TEAL_PRIMARY }}>
-            {isRTL ? 'الملف الشخصي:' : 'Persona:'}
-          </span>
-          <select
-            value={personaId}
-            onChange={(e) => setPersonaId(Number(e.target.value))}
-            aria-label={isRTL ? 'تبديل الملف الشخصي' : 'Switch Persona Profile'}
-            style={{
-              padding: '6px 12px',
-              borderRadius: '8px',
-              border: `1px solid ${TEAL_SECONDARY}`,
-              backgroundColor: '#FFFFFF',
-              color: TEAL_PRIMARY,
-              fontFamily: "'Cairo', sans-serif",
-              fontWeight: 600,
-              cursor: 'pointer',
-              outline: 'none',
-            }}
-          >
-            {Array.from({ length: 11 }, (_, i) => i + 1).map((p) => (
-              <option key={p} value={p}>
-                P{p}
-              </option>
-            ))}
-          </select>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+          {onBackToTimeline && (
+            <button
+              type="button"
+              onClick={onBackToTimeline}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '7px 14px',
+                borderRadius: '8px',
+                backgroundColor: '#FFFFFF',
+                border: '1px solid #CBD5E1',
+                color: '#334155',
+                fontFamily: "'Cairo', sans-serif",
+                fontSize: '13px',
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              <span>{isRTL ? '← العودة للمسار' : '← Back to Timeline'}</span>
+            </button>
+          )}
+
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <span style={{ fontSize: '14px', fontWeight: 600, color: TEAL_PRIMARY }}>
+              {isRTL ? 'الملف الشخصي:' : 'Persona:'}
+            </span>
+            <select
+              value={personaId}
+              onChange={(e) => setPersonaId(Number(e.target.value))}
+              aria-label={isRTL ? 'تبديل الملف الشخصي' : 'Switch Persona Profile'}
+              style={{
+                padding: '6px 12px',
+                borderRadius: '8px',
+                border: `1px solid ${TEAL_SECONDARY}`,
+                backgroundColor: '#FFFFFF',
+                color: TEAL_PRIMARY,
+                fontFamily: "'Cairo', sans-serif",
+                fontWeight: 600,
+                cursor: 'pointer',
+                outline: 'none',
+              }}
+            >
+              {Array.from({ length: 11 }, (_, i) => i + 1).map((p) => (
+                <option key={p} value={p}>
+                  P{p}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         <button
@@ -257,6 +301,7 @@ const FollowUpChatView: React.FC<Props> = ({ activeCase, onAdvanceStage, onUpdat
           isDownloading={isDownloading}
           downloadComplete={downloadComplete}
           onDownloadPDF={handleDownloadPDF}
+          onPreviewPDF={() => setIsReportModalOpen(true)}
         />
 
         <FollowUpChatThread
@@ -281,6 +326,14 @@ const FollowUpChatView: React.FC<Props> = ({ activeCase, onAdvanceStage, onUpdat
           onCompleteFollowUp={handleCompleteFollowUp}
         />
       </main>
+
+      <BilingualReportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        activeCase={activeCase}
+        lang={lang}
+        reportType="pdf1"
+      />
 
       <style>{`
         @keyframes spin {

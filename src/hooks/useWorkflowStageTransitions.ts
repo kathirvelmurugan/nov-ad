@@ -117,6 +117,9 @@ export function useWorkflowStageTransitions({
         setPatientSubView('timeline');
       }
     }
+    if (nextStage === 'FOLLOW_UP_21_DAYS') {
+      setPatientSubView('followup' as any);
+    }
     setPendingHandoff(null);
   };
 
