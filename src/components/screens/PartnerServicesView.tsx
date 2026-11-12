@@ -137,7 +137,6 @@ export const PartnerServicesView: React.FC<Props> = ({
         releasedToPatient: true,
       } : undefined,
     });
-    onAdvanceStage();
   };
 
   return (

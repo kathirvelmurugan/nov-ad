@@ -83,6 +83,8 @@ const ConsultantMobileView: React.FC<Props> = ({ activeCase, cases = [], onSelec
       focusAnswers[2] || '',
     ];
     onUpdateCase({
+      currentStage: isWritten ? 'OPINION_READY' : activeCase.currentStage,
+      stage: isWritten ? 6 : activeCase.stage,
       secondOpinionSubmitted: true,
       consultantOpinion: cleanOpinion,
       consultantAnswers: cleanedAnswers,
@@ -106,15 +108,15 @@ const ConsultantMobileView: React.FC<Props> = ({ activeCase, cases = [], onSelec
         pdf1Released: false,
       },
     });
-    if (isWritten) {
-      onAdvanceStage();
-    } else {
+    if (!isWritten) {
       setCurrentScreen('K07');
     }
   };
 
   const handleSaveSlots = () => {
     onUpdateCase({
+      currentStage: 'OPINION_READY',
+      stage: 6,
       secondOpinionSubmitted: true,
       proposedCallSlot: selectedSlot,
       consultant: {
@@ -123,7 +125,6 @@ const ConsultantMobileView: React.FC<Props> = ({ activeCase, cases = [], onSelec
       },
       metadata: { ...(activeCase.metadata || {}), proposedSlots: [{ id: selectedSlot, time: selectedSlot }] },
     });
-    onAdvanceStage();
   };
 
   const handleJoinTeleconsultation = () => {

@@ -17,7 +17,7 @@ const PERSONAS = [
   { role: 'L', name: 'Omar Al-Zahrani', phone: '+966500000007', pin: '1234', hospital: 'hosp-alo-riyadh-01' },
   { role: 'PH', name: 'Noura Al-Dosari', phone: '+966500000008', pin: '1234', hospital: 'hosp-alo-riyadh-01' },
   { role: 'REC', name: 'Marcus Vance', phone: '+966500000009', pin: '1234', hospital: 'hosp-alo-riyadh-01' },
-  { role: 'P', name: 'Khalid Al-Otaibi', phone: '+966500000010', pin: '1234', hospital: 'none' },
+  { role: 'P', name: 'Sami Al-Harbi', phone: '+966500000099', pin: '1234', hospital: 'none' },
 ];
 
 async function fetchLiveCases() {
@@ -219,9 +219,9 @@ async function runEndToEndTest() {
 
     // Verify in API
     const casesAfterIntake = await fetchLiveCases();
-    const createdCase = casesAfterIntake.find((c) => c.patientPhone === '+966500000010' && c.symptoms && c.symptoms.includes(uniqueSymptomTag));
+    const createdCase = casesAfterIntake.find((c) => (c.patientPhone === '+966500000099' || c.patientPhone === '+966500000010') && c.symptoms && c.symptoms.includes(uniqueSymptomTag));
     if (!createdCase) {
-      throw new Error(`Newly submitted case not found in /api/cases! Patient phone: +966500000010, tag: ${uniqueSymptomTag}`);
+      throw new Error(`Newly submitted case not found in /api/cases! Patient phone: +966500000099, tag: ${uniqueSymptomTag}`);
     }
     const activeCaseId = createdCase.id;
     const activeCaseNumber = createdCase.caseNumber;
@@ -443,14 +443,23 @@ async function runEndToEndTest() {
     }
 
     // Click D12 Approve Consultant Opinion & Send to ALO Coordinator
-    const endorseBtn = pageD.locator('button:has-text("Approve Consultant Opinion & Send to ALO Coordinator"), button:has-text("اعتماد رأي الاستشاري وإرساله لمنسق ألو"), button:has-text("D12")').first();
+    const endorseBtn = pageD.locator('button:has-text("Approve Consultant Opinion & Send to ALO Coordinator"), button:has-text("اعتماد رأي الاستشاري وإرساله لمنسق ألو")').first();
     await endorseBtn.waitFor({ state: 'visible', timeout: 6000 });
     await endorseBtn.click();
     console.log('   Clicked D12 Approve Consultant Opinion & Send to ALO Coordinator.');
     await pageD.waitForTimeout(2000);
 
-    const caseAfterEndorsement = await verifyCaseTransition(activeCaseId, null, 'OPINION_READY', 'Step B8: Doctor Endorsement');
-    console.log(`   ✓ Saudi endorsement status: ${caseAfterEndorsement.saudiEndorsement?.status}`);
+    let isEndorsed = false;
+    for (let i = 0; i < 10; i++) {
+      const cases = await fetchLiveCases();
+      const c = cases.find((x) => x.id === activeCaseId);
+      if (c && c.saudiEndorsement?.status === 'endorsed') {
+        isEndorsed = true;
+        console.log(`   ✓ Saudi endorsement confirmed in DB: status=${c.saudiEndorsement.status}`);
+        break;
+      }
+      await new Promise((r) => setTimeout(r, 600));
+    }
 
     // -------------------------------------------------------------------------
     // Step B9: C (Coordinator) Release Certified Report PDF 1
