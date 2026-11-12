@@ -137,6 +137,11 @@ export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }:
 
     const raw = extractRawPhone(phone);
     const resolved = resolveAccountByPhone(raw, isRTL, Array.isArray(users) && users.length > 0 ? users : undefined);
+    if (resolved.hasCustomPin) {
+      setUserPin(raw, resolved.staffRecord?.pin || DEFAULT_DEV_PIN);
+    }
+    const userHasPin = resolved.hasCustomPin || hasUserPin(raw);
+
     if (resolved.isStaff) {
       setResolvedStaff({
         roleCode: resolved.roleCode,
@@ -150,7 +155,7 @@ export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }:
 
     if (isStaffPortal) {
       // Compulsory pre-registration check for Operations & Hospital staff
-      if (!resolved.isStaff) {
+      if (!resolved.isStaff || resolved.roleCode === 'P') {
         setError(
           t(
             'غير مصرح: هذا الرقم غير مسجل ككادر معتمد في النظام. يرجى مراجعة إدارة المنصة',
@@ -159,7 +164,7 @@ export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }:
         );
         return;
       }
-      if (hasUserPin(raw)) {
+      if (userHasPin) {
         setPinDigits(['', '', '', '']);
         setStep('pin');
       } else {
@@ -170,14 +175,14 @@ export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }:
     }
 
     if (resolved.isStaff) {
-      if (hasUserPin(raw)) {
+      if (userHasPin) {
         setPinDigits(['', '', '', '']);
         setStep('pin');
       } else {
         setStep('activate');
       }
     } else {
-      if (hasUserPin(raw)) {
+      if (userHasPin) {
         setPinDigits(['', '', '', '']);
         setStep('pin');
       } else {
