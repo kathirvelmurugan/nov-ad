@@ -22,6 +22,7 @@ import {
   USER_SESSION_KEY,
   UserSession,
   FRESH_PRIMARY_CASE,
+  STAGE_ORDER,
 } from './workflowConstants';
 import { useWorkflowStageTransitions } from './useWorkflowStageTransitions';
 
@@ -305,25 +306,33 @@ export function useClinicalWorkflowState() {
 
   // ── Handlers ─────────────────────────────────────────────────────────────
   const handleUpdateCase = (updated: Partial<ClinicalCase>) => {
+    const syncedUpdate: Partial<ClinicalCase> = { ...updated };
+    if (updated.currentStage && updated.stage === undefined) {
+      const idx = STAGE_ORDER.indexOf(updated.currentStage);
+      if (idx >= 0) syncedUpdate.stage = idx + 1;
+    }
+    if (isPatientUser && syncedUpdate.currentStage === 'NURSE_CHECK') {
+      setPatientSubView('timeline');
+    }
     setCases((prev) => {
-      const targetId = updated.id || activeCase.id || `case-${Date.now()}`;
+      const targetId = syncedUpdate.id || activeCase.id || `case-${Date.now()}`;
       const exists = prev.some((c) => c.id === targetId);
-      const phoneToSet = updated.patientPhone || (isPatientUser ? userSession?.phone : activeCase.patientPhone);
+      const phoneToSet = syncedUpdate.patientPhone || (isPatientUser ? userSession?.phone : activeCase.patientPhone);
       let updatedCase: ClinicalCase;
       let nextCases: ClinicalCase[];
       if (!exists) {
-        updatedCase = { ...activeCase, ...updated, id: targetId, ...(phoneToSet ? { patientPhone: phoneToSet } : {}) };
+        updatedCase = { ...activeCase, ...syncedUpdate, id: targetId, ...(phoneToSet ? { patientPhone: phoneToSet } : {}) };
         setActiveCaseId(updatedCase.id);
         nextCases = [updatedCase, ...prev];
       } else {
         nextCases = prev.map((c) => {
           if (c.id === targetId || c.id === activeCase.id) {
-            updatedCase = { ...c, ...updated, id: targetId, ...(phoneToSet ? { patientPhone: phoneToSet } : {}) };
+            updatedCase = { ...c, ...syncedUpdate, id: targetId, ...(phoneToSet ? { patientPhone: phoneToSet } : {}) };
             return updatedCase;
           }
           return c;
         });
-        if (!updatedCase!) updatedCase = { ...activeCase, ...updated, id: targetId, ...(phoneToSet ? { patientPhone: phoneToSet } : {}) };
+        if (!updatedCase!) updatedCase = { ...activeCase, ...syncedUpdate, id: targetId, ...(phoneToSet ? { patientPhone: phoneToSet } : {}) };
       }
       apiClient.saveCase(updatedCase).catch(() => {});
       return nextCases;

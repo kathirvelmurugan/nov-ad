@@ -118,7 +118,6 @@ export function useWorkflowStageTransitions({
       }
     }
     setPendingHandoff(null);
-    setIsWhatsAppDrawerOpen(true);
   };
 
   const handleAssignPaymentToPatient = (
@@ -151,7 +150,6 @@ export function useWorkflowStageTransitions({
         paymentVerified: false,
       },
     });
-    setIsWhatsAppDrawerOpen(true);
   };
 
   const handleCompletePatientPayment = () => {
@@ -173,7 +171,6 @@ export function useWorkflowStageTransitions({
     if (!userSession?.roleCode || userSession.roleCode === 'P') {
       setPatientSubView('timeline');
     }
-    setIsWhatsAppDrawerOpen(true);
   };
 
   const handleVerifyPaymentAndDispatch = () => {
@@ -191,6 +188,7 @@ export function useWorkflowStageTransitions({
         const updated: ClinicalCase = {
           ...c,
           currentStage: 'WITH_CONSULTANT',
+          stage: 5,
           paymentVerified: true,
           isCrossBorderDeidentified: true,
           dualTokenGenerated: true,
@@ -207,7 +205,6 @@ export function useWorkflowStageTransitions({
         return updated;
       })
     );
-    setIsWhatsAppDrawerOpen(true);
   };
 
   const handleReleaseReportToPatient = () => {
@@ -220,6 +217,7 @@ export function useWorkflowStageTransitions({
         const updated: ClinicalCase = {
           ...c,
           currentStage: 'PARTNER_SERVICES',
+          stage: 7,
           reportReleased: true,
           doctorReleasedToPatient: true,
           coordinatorForwardedToDoctor: true,
@@ -234,14 +232,12 @@ export function useWorkflowStageTransitions({
         return updated;
       })
     );
-    setIsWhatsAppDrawerOpen(true);
   };
 
   const handleConfirmHandoff = () => {
     if (!pendingHandoff) return;
     handleUpdateCase({ currentStage: pendingHandoff.toStage });
     setPendingHandoff(null);
-    setIsWhatsAppDrawerOpen(true);
   };
 
   const handleAutoDemoNextStage = () => {
