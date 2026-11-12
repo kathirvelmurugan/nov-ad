@@ -10,6 +10,7 @@ import {
   Activity,
   FolderPlus,
   PlusCircle,
+  Plus,
   ArrowRight,
   ArrowLeft,
 } from 'lucide-react';
@@ -31,6 +32,7 @@ interface Props {
   onOpenTelehealth?: () => void;
   onOpenPayment?: () => void;
   onRegisterCase?: () => void;
+  onStartNewCase?: () => void;
   onOpenFollowUp?: () => void;
   userSession?: UserSession | null;
   lang?: 'ar' | 'en';
@@ -48,6 +50,7 @@ export const PatientStatusTimelineView: React.FC<Props> = ({
   onOpenTelehealth,
   onOpenPayment,
   onRegisterCase,
+  onStartNewCase,
   onOpenFollowUp,
   userSession,
   lang = 'ar',
@@ -138,7 +141,8 @@ export const PatientStatusTimelineView: React.FC<Props> = ({
             <button
               type="button"
               onClick={() => {
-                if (onRegisterCase) onRegisterCase();
+                if (onStartNewCase) onStartNewCase();
+                else if (onRegisterCase) onRegisterCase();
                 else if (onBackToLanding) onBackToLanding();
               }}
               className="w-full sm:w-auto bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-black text-sm py-3.5 px-8 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
@@ -241,33 +245,51 @@ export const PatientStatusTimelineView: React.FC<Props> = ({
       )}
       
       {/* Patient Own Cases Switcher */}
-      {cases && cases.length > 1 && (
-        <div className="card-clinical p-3.5 bg-gradient-to-r from-teal-50/60 to-slate-50 dark:from-slate-900/80 dark:to-teal-950/30 border border-teal-200 dark:border-teal-800">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-black text-alo-navy dark:text-slate-200">
-              {isAr ? `ملفاتي الطبية المسجلة (${cases.length} حالات)` : `My Registered Cases (${cases.length} cases)`}
-            </span>
-            <span className="text-[11px] text-slate-500">
-              {isAr ? 'انقر للتبديل بين حالاتك السريرية' : 'Click to switch between your cases'}
-            </span>
+      {cases && cases.length > 0 && (
+        <div className="card-clinical p-3.5 bg-gradient-to-r from-teal-50/60 to-slate-50 dark:from-slate-900/80 dark:to-teal-950/30 border border-teal-200 dark:border-teal-800 rounded-2xl shadow-xs">
+          <div className="flex items-center justify-between mb-2.5">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-black text-alo-navy dark:text-slate-200">
+                {isAr ? `ملفاتي الطبية المسجلة (${cases.length})` : `My Registered Cases (${cases.length})`}
+              </span>
+              <span className="text-[11px] text-slate-500 hidden sm:inline">
+                {isAr ? '· انقر للتبديل بين ملفاتك الطبية' : '· Click to switch between your cases'}
+              </span>
+            </div>
+            {onStartNewCase && (
+              <button
+                type="button"
+                onClick={onStartNewCase}
+                className="inline-flex items-center gap-1 text-[11px] font-black text-emerald-700 dark:text-emerald-300 hover:text-emerald-800 bg-emerald-100/70 hover:bg-emerald-200/80 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 px-2.5 py-1 rounded-lg border border-emerald-300/80 dark:border-emerald-700 transition-all cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>{isAr ? 'إضافة استشارة جديدة' : '+ Add New Case'}</span>
+              </button>
+            )}
           </div>
           <div className="flex flex-wrap gap-2">
             {cases.map((c) => {
               const isSelected = c.id === activeCase.id;
+              const stageNum = c.stage || (c.currentStage ? STAGES.findIndex((s) => s.stage === c.currentStage) + 1 : 1);
               return (
                 <button
                   key={c.id}
                   type="button"
                   onClick={() => onSelectCase?.(c.id)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                  className={`px-3 py-2 rounded-xl text-xs font-bold transition-all border flex items-center gap-2 cursor-pointer ${
                     isSelected
-                      ? 'bg-alo-teal text-white border-teal-600 shadow-sm'
-                      : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:border-alo-teal'
+                      ? 'bg-alo-teal text-white border-teal-600 shadow-md ring-2 ring-teal-500/30'
+                      : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:border-alo-teal shadow-2xs'
                   }`}
                 >
-                  <span className="font-mono">{c.caseNumber || c.id}</span>
-                  <span>·</span>
-                  <span>{isAr ? c.specialtyAr || c.specialty : c.specialtyEn || c.specialty}</span>
+                  <span className="font-mono font-black">{c.caseNumber || c.id}</span>
+                  <span className="opacity-50">·</span>
+                  <span>{isAr ? c.specialtyAr || c.specialty || 'استشارة عامة' : c.specialtyEn || c.specialty || 'Consultation'}</span>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono ${
+                    isSelected ? 'bg-teal-800 text-teal-100' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                  }`}>
+                    {isAr ? `مرحلة ${stageNum}` : `Stage ${stageNum}`}
+                  </span>
                 </button>
               );
             })}
@@ -301,17 +323,30 @@ export const PatientStatusTimelineView: React.FC<Props> = ({
             </p>
           </div>
 
-          {/* Quick Isolated Reset (QA Only) */}
-          {isDemoMode && onResetActiveCase && (
-            <button
-              onClick={onResetActiveCase}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-rose-900/60 text-slate-300 hover:text-rose-200 border border-slate-700 hover:border-rose-500/50 text-xs font-bold transition-all"
-              title={isAr ? 'إعادة ضبط مسار هذا المريض فقط' : 'Reset this patient case only'}
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>{isAr ? 'إعادة ضبط هذه الحالة فقط' : 'Reset This Case'}</span>
-            </button>
-          )}
+          <div className="flex items-center gap-2 shrink-0">
+            {onStartNewCase && (
+              <button
+                type="button"
+                onClick={onStartNewCase}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs transition-all shadow-md active:scale-95 cursor-pointer"
+              >
+                <Plus className="w-4 h-4 stroke-[3]" />
+                <span>{isAr ? 'طلب استشارة جديدة' : 'New Consultation'}</span>
+              </button>
+            )}
+
+            {/* Quick Isolated Reset (QA Only) */}
+            {isDemoMode && onResetActiveCase && (
+              <button
+                onClick={onResetActiveCase}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-rose-900/60 text-slate-300 hover:text-rose-200 border border-slate-700 hover:border-rose-500/50 text-xs font-bold transition-all"
+                title={isAr ? 'إعادة ضبط مسار هذا المريض فقط' : 'Reset this patient case only'}
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>{isAr ? 'إعادة ضبط هذه الحالة فقط' : 'Reset This Case'}</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

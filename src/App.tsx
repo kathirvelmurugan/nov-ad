@@ -92,6 +92,7 @@ export const App: React.FC = () => {
           handleSelectPersona={state.handleSelectPersona}
           handleSelectPatientSubView={state.handleSelectPatientSubView}
           handleSelectServiceFromLanding={state.handleSelectServiceFromLanding}
+          handleStartNewCase={state.handleStartNewCase}
           handleResetActiveCase={state.handleResetActiveCase}
           handleToggleLang={state.handleToggleLang}
           handleLogout={state.handleLogout}

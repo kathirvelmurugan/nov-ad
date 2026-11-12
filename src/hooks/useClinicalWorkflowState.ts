@@ -338,12 +338,13 @@ export function useClinicalWorkflowState() {
       let updatedCase: ClinicalCase;
       let nextCases: ClinicalCase[];
       if (!exists) {
-        updatedCase = { ...activeCase, ...syncedUpdate, id: targetId, ...(phoneToSet ? { patientPhone: phoneToSet } : {}) };
+        const baseCase = (activeCase && activeCase.id === targetId) ? activeCase : FRESH_PRIMARY_CASE;
+        updatedCase = { ...baseCase, ...syncedUpdate, id: targetId, ...(phoneToSet ? { patientPhone: phoneToSet } : {}) };
         setActiveCaseId(updatedCase.id);
         nextCases = [updatedCase, ...prev];
       } else {
         nextCases = prev.map((c) => {
-          if (c.id === targetId || c.id === activeCase.id) {
+          if (c.id === targetId) {
             updatedCase = { ...c, ...syncedUpdate, id: targetId, ...(phoneToSet ? { patientPhone: phoneToSet } : {}) };
             return updatedCase;
           }
@@ -439,6 +440,51 @@ export function useClinicalWorkflowState() {
     handleSelectPatientSubView('intake');
   };
 
+  const handleStartNewCase = () => {
+    const newId = `case-${Date.now()}`;
+    const newCaseNumber = `CASE-2026-${Math.floor(1000 + Math.random() * 9000)}`;
+    const phoneToSet = isPatientUser ? userSession?.phone : undefined;
+    const nameToSet = isPatientUser ? (userSession?.fullName || 'المريض') : 'المريض';
+    const newCase: ClinicalCase = {
+      ...FRESH_PRIMARY_CASE,
+      id: newId,
+      caseNumber: newCaseNumber,
+      patientPhone: phoneToSet,
+      patientName: nameToSet,
+      patientNameAr: nameToSet,
+      patientNameEn: isPatientUser ? (userSession?.fullName || 'Patient') : 'Patient',
+      currentStage: 'INTAKE_RECEIVED',
+      stage: 1,
+      status: 'open',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      symptoms: '',
+      symptomsAr: '',
+      symptomsEn: '',
+      diagnosis: '',
+      diagnosisAr: '',
+      diagnosisEn: '',
+      specialty: 'جراحة القلب والصدر',
+      specialtyAr: 'جراحة القلب والصدر',
+      specialtyEn: 'Cardiothoracic Surgery',
+      files: [],
+      pricing: { ...FRESH_PRIMARY_CASE.pricing, paid: false, invoiceNumber: undefined },
+      metadata: { isFreshTest: true, pdf1Released: false, pdf2Released: false, paymentVerified: false, paymentLinkIssued: false },
+    };
+    setCases((prev) => [newCase, ...prev]);
+    setActiveCaseId(newId);
+    setPatientSubView('intake');
+    if (typeof window !== 'undefined') {
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.set('subview', 'intake');
+        url.searchParams.set('caseId', newId);
+        window.history.pushState({ portal: 'patient', subView: 'intake', caseId: newId, viewMode: 'workstation' }, '', url.pathname + url.search);
+      } catch (err) {}
+    }
+    apiClient.saveCase(newCase).catch(() => {});
+  };
+
   const handleStartCaseToCockpit = () => {
     setViewMode('studio');
     const patientPersona = PERSONAS.find((p) => p.code === 'P') || PERSONAS[0];
@@ -520,6 +566,7 @@ export function useClinicalWorkflowState() {
     // Handlers
     handleUpdateCase, handleLogout, handleToggleLang, handleToggleTheme, handleToggleViewMode,
     handleSelectPatientSubView, handleSelectServiceFromLanding, handleStartCaseToCockpit,
+    handleStartNewCase,
     handleSelectPersona: transitions.handleSelectPersona, handleSetStage: transitions.handleSetStage,
     handleAdvanceStage: transitions.handleAdvanceStage,
     handleAssignPaymentToPatient: transitions.handleAssignPaymentToPatient,

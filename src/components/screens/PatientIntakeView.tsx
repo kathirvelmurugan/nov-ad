@@ -27,6 +27,9 @@ interface Props {
   selectedService?: string;
   onSelectService?: (serviceId: string) => void;
   onBackToLanding?: () => void;
+  onBackToTimeline?: () => void;
+  hasExistingCases?: boolean;
+  onStartNewCase?: () => void;
   userSession?: UserSession | null;
 }
 
@@ -41,12 +44,15 @@ const INTAKE_SERVICES = [
 
 export const PatientIntakeView: React.FC<Props> = ({
   activeCase,
-  onAdvanceStage,
+  onAdvanceStage: _onAdvanceStage,
   onUpdateCase,
   lang = 'ar',
   selectedService = 'second-opinion',
   onSelectService,
   onBackToLanding,
+  onBackToTimeline,
+  hasExistingCases = false,
+  onStartNewCase,
   userSession,
 }) => {
   const [, setSelectedFileForPreview] = useState<string | null>(null);
@@ -59,6 +65,13 @@ export const PatientIntakeView: React.FC<Props> = ({
   useEffect(() => {
     setActiveServiceId(selectedService);
   }, [selectedService]);
+
+  // If a submitted case is active when opening intake, spawn a fresh draft so we don't mutate the existing case
+  useEffect(() => {
+    if (activeCase && activeCase.stage && activeCase.stage > 1 && onStartNewCase) {
+      onStartNewCase();
+    }
+  }, [activeCase?.id, activeCase?.stage, onStartNewCase]);
 
   const handleSwitchService = (serviceId: string) => {
     setActiveServiceId(serviceId);
@@ -75,26 +88,36 @@ export const PatientIntakeView: React.FC<Props> = ({
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      {/* Top Breadcrumb & Return to Landing Page */}
-      {onBackToLanding && (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
-          <button
-            onClick={onBackToLanding}
-            className="inline-flex items-center gap-2 text-xs font-black text-emerald-800 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100/90 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-900/50 px-3.5 py-2 rounded-xl border border-emerald-200 dark:border-emerald-800 transition-all cursor-pointer active:scale-95 shrink-0"
-          >
-            {isAr ? <ArrowRight className="w-4 h-4" /> : <ArrowLeft className="w-4 h-4" />}
-            <span>{isAr ? '← العودة إلى الصفحة الرئيسية واختيار الخدمات' : '← Back to Landing & Service Selection'}</span>
-          </button>
-
-          <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
-            <span>{isAr ? 'الخدمة المختارة:' : 'Active Service:'}</span>
-            <span className="inline-flex items-center gap-1.5 bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-200 px-3 py-1 rounded-full font-bold border border-emerald-300 dark:border-emerald-800 text-[11px]">
-              <currentServiceMeta.icon className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-300" />
-              <span>{isAr ? currentServiceMeta.titleAr : currentServiceMeta.titleEn}</span>
-            </span>
-          </div>
+      {/* Top Breadcrumb & Return to Landing Page / Timeline */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
+        <div className="flex flex-wrap items-center gap-2">
+          {onBackToLanding && (
+            <button
+              onClick={onBackToLanding}
+              className="inline-flex items-center gap-2 text-xs font-black text-emerald-800 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100/90 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-900/50 px-3.5 py-2 rounded-xl border border-emerald-200 dark:border-emerald-800 transition-all cursor-pointer active:scale-95 shrink-0"
+            >
+              {isAr ? <ArrowRight className="w-4 h-4" /> : <ArrowLeft className="w-4 h-4" />}
+              <span>{isAr ? '← الرئيسية واختيار الخدمات' : '← Home & Services'}</span>
+            </button>
+          )}
+          {hasExistingCases && onBackToTimeline && (
+            <button
+              onClick={onBackToTimeline}
+              className="inline-flex items-center gap-1.5 text-xs font-black text-teal-800 hover:text-teal-900 bg-teal-50 hover:bg-teal-100/90 dark:bg-teal-950/40 dark:text-teal-300 dark:hover:bg-teal-900/50 px-3.5 py-2 rounded-xl border border-teal-200 dark:border-teal-800 transition-all cursor-pointer active:scale-95 shrink-0"
+            >
+              <span>{isAr ? 'ملفاتي السابقة' : 'My Cases'}</span>
+            </button>
+          )}
         </div>
-      )}
+
+        <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
+          <span>{isAr ? 'الخدمة المختارة:' : 'Active Service:'}</span>
+          <span className="inline-flex items-center gap-1.5 bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-200 px-3 py-1 rounded-full font-bold border border-emerald-300 dark:border-emerald-800 text-[11px]">
+            <currentServiceMeta.icon className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-300" />
+            <span>{isAr ? currentServiceMeta.titleAr : currentServiceMeta.titleEn}</span>
+          </span>
+        </div>
+      </div>
 
       {/* 6-Service Selection Bar */}
       <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-2.5">
@@ -279,8 +302,10 @@ export const PatientIntakeView: React.FC<Props> = ({
 
           <button
             onClick={() => {
-              const freshId = activeCase.id && !activeCase.id.startsWith('seed-') && !activeCase.id.startsWith('case-initial-') ? activeCase.id : `case-${Date.now()}`;
-              const freshCaseNum = activeCase.caseNumber || `CASE-2026-${Math.floor(1000 + Math.random() * 9000)}`;
+              const isOldSubmittedCase = !!(activeCase.stage && activeCase.stage > 1);
+              const isInvalidId = !activeCase.id || activeCase.id.startsWith('seed-') || activeCase.id.startsWith('case-initial-');
+              const freshId = isOldSubmittedCase || isInvalidId ? `case-${Date.now()}` : activeCase.id;
+              const freshCaseNum = isOldSubmittedCase || !activeCase.caseNumber ? `CASE-2026-${Math.floor(1000 + Math.random() * 9000)}` : activeCase.caseNumber;
               const patPhone = userSession?.phone || activeCase.patientPhone || '';
               onUpdateCase({
                 id: freshId,
@@ -291,7 +316,7 @@ export const PatientIntakeView: React.FC<Props> = ({
                 patientNameEn: activeCase.patientNameEn || (!isAr ? (activeCase.patientName || userSession?.fullName || 'ALO Patient') : undefined),
                 currentStage: 'NURSE_CHECK',
                 stage: 2,
-                createdAt: activeCase.createdAt || new Date().toISOString(),
+                createdAt: isOldSubmittedCase ? new Date().toISOString() : (activeCase.createdAt || new Date().toISOString()),
                 updatedAt: new Date().toISOString(),
               });
             }}

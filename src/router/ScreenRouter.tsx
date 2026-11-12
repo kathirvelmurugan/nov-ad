@@ -51,6 +51,7 @@ interface ScreenRouterProps {
   handleSelectPersona: (p: Persona) => void;
   handleSelectPatientSubView: (v: 'landing' | 'intake' | 'timeline' | 'telehealth' | 'checkout') => void;
   handleSelectServiceFromLanding: (id: string) => void;
+  handleStartNewCase?: () => void;
   handleResetActiveCase: () => void;
   handleToggleLang: () => void;
   handleLogout: () => void;
@@ -79,6 +80,7 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
   handleSelectPersona,
   handleSelectPatientSubView,
   handleSelectServiceFromLanding,
+  handleStartNewCase,
   handleResetActiveCase,
   handleToggleLang,
   handleLogout,
@@ -262,13 +264,19 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
           activeCase={activeCase}
           lang={lang}
           onToggleLang={handleToggleLang}
-          onSelectService={handleSelectServiceFromLanding}
+          onSelectService={(serviceId) => {
+            if (userSession?.roleCode === 'P' && activeCase && activeCase.stage && activeCase.stage > 1 && handleStartNewCase) {
+              handleStartNewCase();
+            }
+            handleSelectServiceFromLanding(serviceId);
+          }}
           onOpenMyCases={() => {
             if (!userSession && onOpenLogin) onOpenLogin();
             else handleSelectPatientSubView('timeline');
           }}
           onStartCase={() => {
             if (!userSession && onOpenLogin) onOpenLogin();
+            else if (handleStartNewCase) handleStartNewCase();
             else handleSelectPatientSubView('intake');
           }}
           onLogout={handleLogout}
@@ -290,6 +298,9 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
           selectedService={selectedServiceId}
           onSelectService={setSelectedServiceId}
           onBackToLanding={() => handleSelectPatientSubView('landing')}
+          onBackToTimeline={() => handleSelectPatientSubView('timeline')}
+          hasExistingCases={cases && cases.length > 0 && cases.some((c) => c.stage && c.stage > 1)}
+          onStartNewCase={handleStartNewCase}
           userSession={userSession}
         />
       );
@@ -332,7 +343,8 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
           onBackToLanding={() => handleSelectPatientSubView('landing')}
           onOpenTelehealth={() => handleSelectPatientSubView('telehealth')}
           onOpenPayment={() => { if (canPatientCheckout) handleSelectPatientSubView('checkout'); }}
-          onRegisterCase={() => handleSelectPatientSubView('intake')}
+          onRegisterCase={handleStartNewCase || (() => handleSelectPatientSubView('intake'))}
+          onStartNewCase={handleStartNewCase}
           onOpenFollowUp={() => handleSelectPatientSubView('followup' as any)}
           userSession={userSession}
           lang={lang}
