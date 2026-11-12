@@ -1,6 +1,7 @@
 import React from 'react';
 import { PERSONAS } from '../data/personas';
 import { Persona, ClinicalCase } from '../types';
+import { getStageBadgeMeta } from './common/PortalCaseTrackerPanel';
 import { 
   RefreshCw, 
   RotateCcw,
@@ -120,6 +121,8 @@ export const TopProfileSwitcher: React.FC<Props> = ({
     ? (activeCase.patientNameAr || activeCase.patientName || '')
     : (activeCase.patientNameEn || activeCase.patientName || '');
 
+  const stageMeta = activeCase?.caseNumber ? getStageBadgeMeta(activeCase.currentStage, isAr) : null;
+
   return (
     <header className="sticky top-0 z-50 bg-white/95 dark:bg-alo-darkCard/95 backdrop-blur-md border-b border-slate-200/80 dark:border-alo-darkBorder shadow-sm transition-colors">
       {/* Top Utility Ribbon */}
@@ -151,6 +154,11 @@ export const TopProfileSwitcher: React.FC<Props> = ({
                     {cleanPatientName}
                   </span>
                 </>
+              )}
+              {stageMeta && (
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${stageMeta.colorClass}`}>
+                  {stageMeta.label}
+                </span>
               )}
             </div>
 
@@ -268,10 +276,14 @@ export const TopProfileSwitcher: React.FC<Props> = ({
               <span className="font-extrabold text-slate-900 dark:text-white shrink-0">
                 {activePersona.avatar} {activeLabel}
               </span>
-              <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">·</span>
-              <span className="bg-emerald-100/80 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-200 px-2 py-0.5 rounded font-mono font-bold text-[10px] border border-emerald-300 dark:border-emerald-800 shrink-0">
-                {activeCase.caseNumber} · {cleanPatientName}
-              </span>
+              {activeCase.caseNumber && (
+                <>
+                  <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">·</span>
+                  <span className="bg-emerald-100/80 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-200 px-2 py-0.5 rounded font-mono font-bold text-[10px] border border-emerald-300 dark:border-emerald-800 shrink-0">
+                    {activeCase.caseNumber}{cleanPatientName ? ` · ${cleanPatientName}` : ''}{stageMeta ? ` · ${stageMeta.label}` : ''}
+                  </span>
+                </>
+              )}
               <span className="text-slate-300 dark:text-slate-700 hidden md:inline">·</span>
               <span className="text-[11px] text-slate-600 dark:text-slate-300 truncate hidden md:inline">
                 {activeScope}
