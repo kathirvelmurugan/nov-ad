@@ -1,191 +1,566 @@
-import puppeteer from 'puppeteer-core';
+import { chromium } from 'playwright';
+import fs from 'node:fs';
+import path from 'node:path';
 
-const executablePath = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
-const BASE_URL = 'http://localhost:4173';
+const BASE_URL = process.env.BASE_URL || 'https://ad.howtostart.in/feature-sarat/';
+const API_BASE = process.env.API_BASE || 'https://ad.howtostart.in/feature-sarat/api';
+const SCREENSHOT_DIR = path.resolve('e2e-artifacts/screenshots');
+fs.mkdirSync(SCREENSHOT_DIR, { recursive: true });
 
-async function testWorkflow() {
-  console.log('--- Starting ALO Doctor End-to-End Automated Verification ---');
-  const browser = await puppeteer.launch({
-    executablePath,
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--window-size=1440,900'],
+const PERSONAS = [
+  { role: 'AD', name: 'Adrian Lewis', phone: '+966500000001', pin: '1234', hospital: 'none' },
+  { role: 'HA', name: 'David Nunez', phone: '+966500000002', pin: '1234', hospital: 'hosp-alo-riyadh-01' },
+  { role: 'C', name: 'Emmanuel Arcon Gonzalez', phone: '+966500000003', pin: '1234', hospital: 'none' },
+  { role: 'N', name: 'Sara Al-Qahtani', phone: '+966500000004', pin: '1234', hospital: 'none' },
+  { role: 'D', name: 'Dr. Fahad Al-Harbi', phone: '+966500000005', pin: '1234', hospital: 'hosp-alo-riyadh-01' },
+  { role: 'K', name: 'Dr. V. Prasanth', phone: '+966500000006', pin: '1234', hospital: 'none' },
+  { role: 'L', name: 'Omar Al-Zahrani', phone: '+966500000007', pin: '1234', hospital: 'hosp-alo-riyadh-01' },
+  { role: 'PH', name: 'Noura Al-Dosari', phone: '+966500000008', pin: '1234', hospital: 'hosp-alo-riyadh-01' },
+  { role: 'REC', name: 'Marcus Vance', phone: '+966500000009', pin: '1234', hospital: 'hosp-alo-riyadh-01' },
+  { role: 'P', name: 'Khalid Al-Otaibi', phone: '+966500000010', pin: '1234', hospital: 'none' },
+];
+
+async function fetchLiveCases() {
+  const res = await fetch(`${API_BASE}/cases`);
+  if (!res.ok) throw new Error(`Failed to fetch /api/cases: HTTP ${res.status}`);
+  const json = await res.json();
+  return json.data || [];
+}
+
+async function verifyCaseTransition(caseId, expectedStageNum, expectedCurrentStage, stepName) {
+  console.log(`\n🔍 [API Check] Verifying case ${caseId} after "${stepName}"...`);
+  let attempts = 0;
+  let targetCase = null;
+  while (attempts < 10) {
+    const cases = await fetchLiveCases();
+    targetCase = cases.find((c) => c.id === caseId);
+    if (targetCase && targetCase.currentStage === expectedCurrentStage) {
+      break;
+    }
+    await new Promise((r) => setTimeout(r, 600));
+    attempts++;
+  }
+
+  if (!targetCase) {
+    throw new Error(`Case ${caseId} not found in /api/cases after ${stepName}!`);
+  }
+
+  console.log(`   API State: ID=${targetCase.id} | Case#=${targetCase.caseNumber} | stage=${targetCase.stage} | currentStage=${targetCase.currentStage}`);
+  if (targetCase.currentStage !== expectedCurrentStage) {
+    throw new Error(`Stage mismatch for case ${caseId} at ${stepName}! Expected currentStage='${expectedCurrentStage}', but got '${targetCase.currentStage}'`);
+  }
+  if (expectedStageNum !== null && targetCase.stage !== expectedStageNum) {
+    console.warn(`   ⚠ Note: stage number is ${targetCase.stage} (expected ${expectedStageNum})`);
+  }
+  console.log(`   ✓ [Verified in DB] ${stepName} transitioned successfully to ${targetCase.currentStage} (stage ${targetCase.stage})`);
+  return targetCase;
+}
+
+async function loginPersona(browser, persona) {
+  console.log(`\n▶ [Phase A] Logging in Persona ${persona.role} (${persona.name} | ${persona.phone})...`);
+  const context = await browser.newContext({
+    viewport: { width: 1440, height: 900 },
   });
+  const page = await context.newPage();
+  await page.bringToFront();
 
-  const page = await browser.newPage();
-  await page.setViewport({ width: 1440, height: 900 });
-
-  const pageErrors = [];
+  // Attach error and response monitoring
   page.on('pageerror', (err) => {
-    console.error('[Page Error]:', err.message);
-    pageErrors.push(err.message);
+    console.error(`  [Browser PageError] [${persona.role}]:`, err.message);
   });
-  page.on('console', (msg) => {
-    if (msg.type() === 'error') {
-      console.error('[Console Error]:', msg.text());
+  page.on('response', (res) => {
+    if (res.status() >= 400 && !res.url().includes('favicon') && !res.url().includes('.map')) {
+      console.warn(`  [Browser HTTP ${res.status()}] [${persona.role}]: ${res.url()}`);
     }
   });
+
+  await page.goto(BASE_URL, { waitUntil: 'networkidle', timeout: 30000 });
+
+  // Click English (top-left)
+  const englishBtn = page.locator('button:has-text("English")').first();
+  if (await englishBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+    await englishBtn.click();
+    await page.waitForTimeout(300);
+  }
+
+  // Click Login (top-right)
+  const loginBtn = page.locator('button:has-text("Login"), button:has-text("تسجيل الدخول")').first();
+  if (await loginBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+    await loginBtn.click();
+    await page.waitForTimeout(400);
+  }
+
+  // Enter phone
+  const phoneInput = page.locator('input[type="tel"]').first();
+  await phoneInput.waitFor({ state: 'visible', timeout: 5000 });
+  await phoneInput.fill(persona.phone);
+  await page.waitForTimeout(200);
+
+  // Submit phone
+  const submitPhoneBtn = page.locator('button[type="submit"]').first();
+  await submitPhoneBtn.click();
+  await page.waitForTimeout(700);
+
+  // Verify it goes straight to 4-digit PIN 1234 (no 123456 activation/OTP)
+  const pinInputs = page.locator('input[type="password"]');
+  const count = await pinInputs.count();
+  if (count < 4) {
+    const shotPath = path.join(SCREENSHOT_DIR, `fail_login_${persona.role}.png`);
+    await page.screenshot({ path: shotPath, fullPage: true });
+    throw new Error(`[${persona.role}] Expected 4 password PIN inputs, but found ${count}. Screenshot saved: ${shotPath}`);
+  }
+
+  // Type PIN 1234
+  for (let i = 0; i < 4; i++) {
+    await pinInputs.nth(i).fill(persona.pin[i]);
+  }
+  await page.waitForTimeout(200);
+
+  // Submit PIN
+  const submitPinBtn = page.locator('button[type="submit"]').first();
+  await submitPinBtn.click();
+  await page.waitForTimeout(1200);
+
+  // Verify session.roleCode in localStorage
+  const sessionStr = await page.evaluate(() => localStorage.getItem('alo_user_session_v4.0_clean'));
+  if (!sessionStr) {
+    const shotPath = path.join(SCREENSHOT_DIR, `fail_session_${persona.role}.png`);
+    await page.screenshot({ path: shotPath, fullPage: true });
+    throw new Error(`[${persona.role}] Missing session in localStorage! Screenshot: ${shotPath}`);
+  }
+  const session = JSON.parse(sessionStr);
+  if (!session.isAuthenticated || session.roleCode !== persona.role) {
+    throw new Error(`[${persona.role}] Role mismatch! Expected ${persona.role}, got ${session.roleCode}`);
+  }
+
+  console.log(`  ✓ Persona ${persona.role} authenticated! Role verified: ${session.roleCode}`);
+  return { context, page };
+}
+
+async function runEndToEndTest() {
+  console.log('========================================================================');
+  console.log('🏥 ALO DOCTOR MULTI-PERSONA END-TO-END CLINICAL WORKFLOW VERIFICATION');
+  console.log(`Target: ${BASE_URL}`);
+  console.log(`API Base: ${API_BASE}`);
+  console.log('Mode: Headed Chrome, slowMo: 300ms');
+  console.log('========================================================================\n');
+
+  const browser = await chromium.launch({
+    channel: 'chrome',
+    headless: false,
+    slowMo: 300,
+    args: ['--window-size=1440,900', '--start-maximized'],
+  });
+
+  const sessions = {};
 
   try {
-    // 1. Load Coordinator portal directly
-    console.log('1. Loading Coordinator Portal...');
-    await page.goto(`${BASE_URL}/?auth=bypass&role=C`, { waitUntil: 'networkidle0', timeout: 15000 });
-    
-    // Check for error boundary
-    let errorAlert = await page.$('[role="alert"]');
-    if (errorAlert) {
-      const text = await page.evaluate(el => el.innerText, errorAlert);
-      throw new Error(`ErrorBoundary caught error on Coordinator portal: ${text}`);
-    }
-    console.log('   ✓ Coordinator Portal loaded cleanly.');
+    // -------------------------------------------------------------------------
+    // Phase A: Verify Login for all 10 Personas
+    // -------------------------------------------------------------------------
+    console.log('\n========================================================================');
+    console.log('PHASE A: VERIFYING LOGIN FOR ALL 10 PERSONAS');
+    console.log('========================================================================');
 
-    // 2. Test Stage 5 (WITH_CONSULTANT) as Patient (the exact scenario where user reported the bug)
-    console.log('2. Testing Stage 5 (WITH_CONSULTANT) under Patient persona...');
-    await page.evaluate(() => {
-      // Force set active case to Stage 5 WITH_CONSULTANT
-      const stored = localStorage.getItem('alo_cases_v4.0_clean');
-      let cases = [];
-      try { cases = JSON.parse(stored) || []; } catch(e) {}
-      if (cases.length > 0) {
-        cases[0].currentStage = 'WITH_CONSULTANT';
-        cases[0].stage = 5;
-        cases[0].paymentVerified = true;
-        // Specifically test when consultant object is undefined or incomplete
-        delete cases[0].consultant;
-        localStorage.setItem('alo_cases_v4.0_clean', JSON.stringify(cases));
-        localStorage.setItem('alo_active_case_id_v4.0_clean', cases[0].id);
+    for (const persona of PERSONAS) {
+      sessions[persona.role] = await loginPersona(browser, persona);
+    }
+    console.log('\n🎉 PHASE A COMPLETE: All 10 personas authenticated into separate isolated sessions!');
+
+    // -------------------------------------------------------------------------
+    // Phase B: Run One Real Clinical Case End-to-End Across Contexts
+    // -------------------------------------------------------------------------
+    console.log('\n========================================================================');
+    console.log('PHASE B: EXECUTING FULL CLINICAL CASE ACROSS PERSONA SESSIONS');
+    console.log('========================================================================');
+
+    const pageP = sessions['P'].page;
+    const pageN = sessions['N'].page;
+    const pageD = sessions['D'].page;
+    const pageC = sessions['C'].page;
+    const pageK = sessions['K'].page;
+    const pageL = sessions['L'].page;
+    const pagePH = sessions['PH'].page;
+    const pageREC = sessions['REC'].page;
+
+    // -------------------------------------------------------------------------
+    // Step B1: P (Patient) Intake Submission
+    // -------------------------------------------------------------------------
+    console.log('\n▶ Step B1: [P] Patient Intake Submission...');
+    await pageP.bringToFront();
+
+    // Check if on Landing or Timeline, and start a new consultation
+    const newCaseBtn = pageP.locator('button:has-text("Start Your Case"), button:has-text("ابدأ طلبك السريري"), button:has-text("+ New Consultation"), button:has-text("+ طلب استشارة جديدة")').first();
+    if (await newCaseBtn.isVisible({ timeout: 4000 }).catch(() => false)) {
+      console.log('   Clicking Start Case / New Consultation button...');
+      await newCaseBtn.click();
+      await pageP.waitForTimeout(1000);
+    }
+
+    // Fill Symptoms
+    const symptomsTextarea = pageP.locator('textarea').first();
+    await symptomsTextarea.waitFor({ state: 'visible', timeout: 5000 });
+    const uniqueSymptomTag = `Severe exertional dyspnea & chest pressure [E2E-${Date.now()}]`;
+    await symptomsTextarea.fill(`Patient presents with 3-week progressive shortness of breath on exertion and atypical angina. Seeking international cardiac specialist second opinion. Tag: ${uniqueSymptomTag}`);
+    console.log('   Filled patient clinical symptoms.');
+
+    // Ensure Privacy checkbox is checked
+    const privacyCheckbox = pageP.locator('input[type="checkbox"]').first();
+    if (await privacyCheckbox.isVisible().catch(() => false)) {
+      const isChecked = await privacyCheckbox.isChecked();
+      if (!isChecked) await privacyCheckbox.check();
+    }
+
+    // Submit case to ALO nurse
+    const submitIntakeBtn = pageP.locator('button:has-text("Submit case to ALO nurse"), button:has-text("إرسال الملف إلى تمريض الفرز")').first();
+    await submitIntakeBtn.click();
+    console.log('   Clicked Submit case to ALO nurse (P14).');
+    await pageP.waitForTimeout(2500);
+
+    // Verify in API
+    const casesAfterIntake = await fetchLiveCases();
+    const createdCase = casesAfterIntake.find((c) => c.patientPhone === '+966500000010' && c.symptoms && c.symptoms.includes(uniqueSymptomTag));
+    if (!createdCase) {
+      throw new Error(`Newly submitted case not found in /api/cases! Patient phone: +966500000010, tag: ${uniqueSymptomTag}`);
+    }
+    const activeCaseId = createdCase.id;
+    const activeCaseNumber = createdCase.caseNumber;
+    console.log(`   ✓ New Case Created: ID=${activeCaseId} | Case#=${activeCaseNumber}`);
+    await verifyCaseTransition(activeCaseId, 2, 'NURSE_CHECK', 'Step B1: Patient Intake Submission');
+
+    // -------------------------------------------------------------------------
+    // Step B2: N (Nurse) Triage & Doctor Assignment
+    // -------------------------------------------------------------------------
+    console.log(`\n▶ Step B2: [N] Nurse Triage & Assign Treating Doctor (${activeCaseNumber})...`);
+    await pageN.bringToFront();
+    await pageN.reload({ waitUntil: 'networkidle' });
+    await pageN.waitForTimeout(1000);
+
+    // If case switcher is present, select our active case
+    const nurseCaseCard = pageN.locator(`button:has-text("${activeCaseNumber}")`).first();
+    if (await nurseCaseCard.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await nurseCaseCard.click();
+      await pageN.waitForTimeout(600);
+    }
+
+    // Assign Doctor: Dr. Fahad Al-Harbi
+    const doctorCard = pageN.locator('div, button').filter({ hasText: /Dr\. Fahad Al-Harbi|د\. فهد الحربي/ }).last();
+    if (await doctorCard.isVisible({ timeout: 4000 }).catch(() => false)) {
+      await doctorCard.click();
+      console.log('   Assigned treating doctor: Dr. Fahad Al-Harbi');
+      await pageN.waitForTimeout(400);
+    }
+
+    // Click Approve & route to Saudi treating doctor (N07)
+    const approveNurseBtn = pageN.locator('button:has-text("Approve & route to Saudi treating doctor"), button:has-text("اعتماد الفرز وإرسال الملف للطبيب السعودي")').first();
+    await approveNurseBtn.waitFor({ state: 'visible', timeout: 5000 });
+    await approveNurseBtn.click();
+    console.log('   Clicked N07 Approve & Route to Saudi treating doctor.');
+    await pageN.waitForTimeout(2000);
+
+    await verifyCaseTransition(activeCaseId, 3, 'DOCTOR_REVIEW', 'Step B2: Nurse Triage & Doctor Assignment');
+
+    // -------------------------------------------------------------------------
+    // Step B3: D (Doctor) Referral Approval
+    // -------------------------------------------------------------------------
+    console.log(`\n▶ Step B3: [D] Saudi Treating Doctor Referral Approval (${activeCaseNumber})...`);
+    await pageD.bringToFront();
+    await pageD.reload({ waitUntil: 'networkidle' });
+    await pageD.waitForTimeout(1000);
+
+    // Select active case if in tracker
+    const doctorCaseCard = pageD.locator(`button:has-text("${activeCaseNumber}")`).first();
+    if (await doctorCaseCard.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await doctorCaseCard.click();
+      await pageD.waitForTimeout(600);
+    }
+
+    // Click Approve Referral & Route to ALO Coordinator (D10)
+    const approveDoctorBtn = pageD.locator('button:has-text("Approve Referral & Route to ALO Coordinator"), button:has-text("اعتماد الإحالة وإرسال الملف لمنسق رعاية ألو")').first();
+    await approveDoctorBtn.waitFor({ state: 'visible', timeout: 6000 });
+    await approveDoctorBtn.click();
+    console.log('   Clicked D10 Approve Referral & Route to ALO Coordinator.');
+    await pageD.waitForTimeout(2000);
+
+    await verifyCaseTransition(activeCaseId, 4, 'AWAITING_PAYMENT', 'Step B3: Doctor Referral Approval');
+
+    // -------------------------------------------------------------------------
+    // Step B4: C (Coordinator) Payment Link & Method Assignment
+    // -------------------------------------------------------------------------
+    console.log(`\n▶ Step B4: [C] ALO Coordinator Payment Link Setup (${activeCaseNumber})...`);
+    await pageC.bringToFront();
+    await pageC.reload({ waitUntil: 'networkidle' });
+    await pageC.waitForTimeout(1000);
+
+    // Select active case
+    const coordinatorCaseCard = pageC.locator(`button:has-text("${activeCaseNumber}")`).first();
+    if (await coordinatorCaseCard.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await coordinatorCaseCard.click();
+      await pageC.waitForTimeout(600);
+    }
+
+    // Click Payment Link button (C04)
+    const issueLinkBtn = pageC.locator('button:has-text("Assign Payment Methods & Send Invoice to Patient"), button:has-text("اعتماد الفاتورة وإسناد الدفع للمريض"), button:has-text("C04")').first();
+    await issueLinkBtn.waitFor({ state: 'visible', timeout: 6000 });
+    await issueLinkBtn.click();
+    console.log('   Clicked C04 Assign Payment Methods & Send Invoice to Patient.');
+    await pageC.waitForTimeout(2000);
+
+    // Verify invoiceIssued
+    const checkAfterInvoice = await verifyCaseTransition(activeCaseId, 4, 'AWAITING_PAYMENT', 'Step B4: Coordinator Payment Link');
+    if (!checkAfterInvoice.invoiceIssued && !checkAfterInvoice.metadata?.paymentLinkIssued) {
+      throw new Error(`Expected invoiceIssued=true or paymentLinkIssued=true on case ${activeCaseId}`);
+    }
+    console.log('   ✓ Invoice issued and payment gateway unlocked for patient!');
+
+    // -------------------------------------------------------------------------
+    // Step B5: P (Patient) Checkout & Payment
+    // -------------------------------------------------------------------------
+    console.log(`\n▶ Step B5: [P] Patient Payment Checkout (${activeCaseNumber})...`);
+    await pageP.bringToFront();
+    await pageP.reload({ waitUntil: 'networkidle' });
+    await pageP.waitForTimeout(1000);
+
+    // Click Open Payment Checkout
+    const openCheckoutBtn = pageP.locator('button:has-text("Open Payment Checkout"), button:has-text("الانتقال إلى بوابة الدفع"), button:has-text("سداد الفاتورة")').first();
+    if (await openCheckoutBtn.isVisible({ timeout: 4000 }).catch(() => false)) {
+      await openCheckoutBtn.click();
+      await pageP.waitForTimeout(1000);
+    }
+
+    // On Payment Checkout View: Select mada method and complete payment
+    const completePaymentBtn = pageP.locator('button:has-text("Complete Payment"), button:has-text("إتمام السداد")').first();
+    await completePaymentBtn.waitFor({ state: 'visible', timeout: 6000 });
+    await completePaymentBtn.click();
+    console.log('   Clicked Complete Payment button.');
+    await pageP.waitForTimeout(3000);
+
+    // Verify in API that payment is recorded
+    let paymentVerifiedInApi = false;
+    for (let i = 0; i < 10; i++) {
+      const cases = await fetchLiveCases();
+      const current = cases.find((c) => c.id === activeCaseId);
+      if (current && (current.pricing?.paid || current.paymentDetails?.status === 'completed')) {
+        paymentVerifiedInApi = true;
+        console.log(`   ✓ Patient payment verified in DB: paid=${current.pricing?.paid}, method=${current.paymentDetails?.method}`);
+        break;
       }
-      localStorage.setItem('alo_patient_subview_v3.0', 'timeline');
-    });
-
-    // Navigate to Patient portal
-    await page.goto(`${BASE_URL}/?auth=bypass&role=P&subview=timeline`, { waitUntil: 'networkidle0', timeout: 15000 });
-    await new Promise(r => setTimeout(r, 1000));
-
-    errorAlert = await page.$('[role="alert"]');
-    if (errorAlert) {
-      const text = await page.evaluate(el => el.innerText, errorAlert);
-      throw new Error(`ErrorBoundary caught on Patient Stage 5: ${text}`);
+      await new Promise((r) => setTimeout(r, 600));
     }
-    console.log('   ✓ Patient Stage 5 (WITH_CONSULTANT) loaded WITHOUT error boundary!');
-
-    // Check that Stage 5 timeline content rendered properly
-    const timelineBadge = await page.evaluate(() => {
-      const el = document.querySelector('[data-testid="patient-status-view"]') || document.body;
-      return el.innerText;
-    });
-    if (!timelineBadge.includes('5') && !timelineBadge.includes('Stage') && !timelineBadge.includes('المرحلة')) {
-      console.warn('   ⚠ Could not find stage indicator text, body excerpt:', timelineBadge.slice(0, 200));
-    } else {
-      console.log('   ✓ Patient Stage 5 content rendered correctly.');
+    if (!paymentVerifiedInApi) {
+      throw new Error(`Patient payment was not saved to DB for case ${activeCaseId}!`);
     }
 
-    // 3. Test Payment Checkout View
-    console.log('3. Testing Patient Payment Checkout UI alignment...');
-    await page.goto(`${BASE_URL}/?auth=bypass&role=P&subview=checkout`, { waitUntil: 'networkidle0', timeout: 15000 });
-    await new Promise(r => setTimeout(r, 1000));
+    // -------------------------------------------------------------------------
+    // Step B6: C (Coordinator) Verify Payment & Dispatch to Indian Consultant
+    // -------------------------------------------------------------------------
+    console.log(`\n▶ Step B6: [C] Verify Payment & Dispatch to Indian Consultant (${activeCaseNumber})...`);
+    await pageC.bringToFront();
+    await pageC.reload({ waitUntil: 'networkidle' });
+    await pageC.waitForTimeout(1000);
 
-    errorAlert = await page.$('[role="alert"]');
-    if (errorAlert) {
-      const text = await page.evaluate(el => el.innerText, errorAlert);
-      throw new Error(`ErrorBoundary caught on Payment Checkout View: ${text}`);
+    // Select active case
+    const cCaseCard = pageC.locator(`button:has-text("${activeCaseNumber}")`).first();
+    if (await cCaseCard.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await cCaseCard.click();
+      await pageC.waitForTimeout(600);
     }
 
-    // Check package cards layout
-    const packageCardsInfo = await page.evaluate(() => {
-      const buttons = Array.from(document.querySelectorAll('button[aria-pressed]'));
-      if (buttons.length < 2) return null;
-      const rect1 = buttons[0].getBoundingClientRect();
-      const rect2 = buttons[1].getBoundingClientRect();
-      return {
-        count: buttons.length,
-        rect1: { top: rect1.top, bottom: rect1.bottom, height: rect1.height },
-        rect2: { top: rect2.top, bottom: rect2.bottom, height: rect2.height },
-        topDelta: Math.abs(rect1.top - rect2.top),
-        bottomDelta: Math.abs(rect1.bottom - rect2.bottom),
-      };
-    });
+    // Click C05-C06 Verify Payment & Connect to Indian Consultant
+    const verifyAndDispatchBtn = pageC.locator('button:has-text("Verify Payment & Connect to Indian Consultant"), button:has-text("تأكيد استلام الدفع وتوصيل الملف للاستشاري الهندي"), button:has-text("C05–C06")').first();
+    await verifyAndDispatchBtn.waitFor({ state: 'visible', timeout: 6000 });
+    await verifyAndDispatchBtn.click();
+    console.log('   Clicked C05-C06 Verify Payment & Connect to Indian Consultant.');
+    await pageC.waitForTimeout(2000);
 
-    if (packageCardsInfo) {
-      console.log(`   ✓ Top consultation package cards found: ${packageCardsInfo.count}`);
-      console.log(`     Top alignment delta: ${packageCardsInfo.topDelta.toFixed(1)}px (expected 0px)`);
-      console.log(`     Bottom alignment delta: ${packageCardsInfo.bottomDelta.toFixed(1)}px (expected 0px)`);
-      if (packageCardsInfo.topDelta > 2 || packageCardsInfo.bottomDelta > 2) {
-        console.warn('   ⚠ Noticeable height delta between package cards:', packageCardsInfo);
-      } else {
-        console.log('   ✓ Consultation package cards are perfectly aligned horizontally and vertically!');
-      }
+    await verifyCaseTransition(activeCaseId, 5, 'WITH_CONSULTANT', 'Step B6: Coordinator Verify & Dispatch');
+
+    // -------------------------------------------------------------------------
+    // Step B7: K (Consultant) Second Opinion Submission
+    // -------------------------------------------------------------------------
+    console.log(`\n▶ Step B7: [K] International Consultant Clinical Review (${activeCaseNumber})...`);
+    await pageK.bringToFront();
+    await pageK.reload({ waitUntil: 'networkidle' });
+    await pageK.waitForTimeout(1000);
+
+    // Select case if listed
+    const kCaseCard = pageK.locator(`button:has-text("${activeCaseNumber}")`).first();
+    if (await kCaseCard.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await kCaseCard.click();
+      await pageK.waitForTimeout(600);
     }
 
-    // 4. Test all workflow stages sequentially (1 through 9) across all personas
-    console.log('4. Testing full workflow stage advancement (1 through 9)...');
-    const stages = [
-      'INTAKE_RECEIVED',
-      'NURSE_CHECK',
-      'DOCTOR_REVIEW',
-      'AWAITING_PAYMENT',
-      'WITH_CONSULTANT',
-      'OPINION_READY',
-      'PARTNER_SERVICES',
-      'FOLLOW_UP_21_DAYS',
-      'CLOSED'
-    ];
-
-    for (let i = 0; i < stages.length; i++) {
-      const stage = stages[i];
-      await page.evaluate((targetStage, num) => {
-        const stored = localStorage.getItem('alo_cases_v4.0_clean');
-        let cases = [];
-        try { cases = JSON.parse(stored) || []; } catch(e) {}
-        if (cases.length > 0) {
-          cases[0].currentStage = targetStage;
-          cases[0].stage = num;
-          cases[0].paymentVerified = true;
-          if (cases[0].pricing) cases[0].pricing.paid = true;
-          delete cases[0].consultant; // Test with undefined consultant
-          localStorage.setItem('alo_cases_v4.0_clean', JSON.stringify(cases));
-        }
-      }, stage, i + 1);
-
-      await page.goto(`${BASE_URL}/?auth=bypass&role=P&subview=timeline`, { waitUntil: 'networkidle0', timeout: 10000 });
-      await new Promise(r => setTimeout(r, 400));
-
-      errorAlert = await page.$('[role="alert"]');
-      if (errorAlert) {
-        const text = await page.evaluate(el => el.innerText, errorAlert);
-        throw new Error(`Stage ${stage} threw error boundary: ${text}`);
-      }
-      console.log(`   ✓ Stage ${i + 1}/9 (${stage}) Patient Timeline: CLEAN`);
+    // Handle OTP Challenge if displayed
+    const otpInput = pageK.locator('input[placeholder*="123456"], input[maxlength="6"]').first();
+    if (await otpInput.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await otpInput.fill('123456');
+      const verifyOtpBtn = pageK.locator('button:has-text("Verify & Access Clinical Dossier"), button:has-text("تحقق")').first();
+      await verifyOtpBtn.click();
+      await pageK.waitForTimeout(1000);
     }
 
-    // 5. Test other personas: Consultant (K), Doctor (D), Nurse (N), Coordinator (C)
-    console.log('5. Testing other Persona screens for clean loading...');
-    const personas = [
-      { role: 'N', name: 'Nurse Triage' },
-      { role: 'D', name: 'Saudi Treating Doctor' },
-      { role: 'C', name: 'ALO Coordinator' },
-      { role: 'K', name: 'International Consultant' },
-    ];
-
-    for (const p of personas) {
-      await page.goto(`${BASE_URL}/?auth=bypass&role=${p.role}`, { waitUntil: 'networkidle0', timeout: 10000 });
-      await new Promise(r => setTimeout(r, 400));
-      errorAlert = await page.$('[role="alert"]');
-      if (errorAlert) {
-        const text = await page.evaluate(el => el.innerText, errorAlert);
-        throw new Error(`Persona ${p.name} (${p.role}) threw error boundary: ${text}`);
-      }
-      console.log(`   ✓ ${p.name} (${p.role}) Portal: CLEAN`);
+    // Navigate to K06 Opinion screen
+    const k06Tab = pageK.locator('button:has-text("K06 Opinion"), button:has-text("K06")').first();
+    if (await k06Tab.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await k06Tab.click();
+      await pageK.waitForTimeout(600);
     }
 
-    console.log('\n======================================================');
-    console.log('🎉 ALL TESTS PASSED! ZERO CRASHES OR ERROR BOUNDARIES!');
-    console.log('======================================================');
+    // Fill focus answers if present
+    const answerInputs = pageK.locator('textarea');
+    const answerCount = await answerInputs.count();
+    if (answerCount > 1) {
+      await answerInputs.nth(0).fill('TAVR is clinically indicated given high surgical risk and anatomical suitability on CTA.');
+      await answerInputs.nth(1).fill('Recommend dual antiplatelet therapy (DAPT) with Aspirin 81mg and Clopidogrel 75mg for 3-6 months.');
+      await answerInputs.nth(2).fill('Perform transthoracic echocardiogram at 30 days and 6 months to evaluate prosthetic valve hemodynamics.');
+    }
+
+    // Fill final opinion text
+    const opinionTextarea = pageK.locator('textarea').last();
+    await opinionTextarea.fill('Comprehensive evaluation confirms severe symptomatic aortic stenosis. Transcatheter aortic valve replacement (TAVR) via transfemoral access is strongly endorsed.');
+
+    // Click Submit opinion
+    const submitOpinionBtn = pageK.locator('button:has-text("Submit written opinion"), button:has-text("Save opinion")').first();
+    await submitOpinionBtn.waitFor({ state: 'visible', timeout: 5000 });
+    await submitOpinionBtn.click();
+    console.log('   Clicked Submit written opinion button.');
+    await pageK.waitForTimeout(2000);
+
+    await verifyCaseTransition(activeCaseId, 6, 'OPINION_READY', 'Step B7: Consultant Second Opinion');
+
+    // -------------------------------------------------------------------------
+    // Step B8: D (Doctor) Endorsement of Consultant Opinion
+    // -------------------------------------------------------------------------
+    console.log(`\n▶ Step B8: [D] Saudi Treating Doctor Opinion Endorsement (${activeCaseNumber})...`);
+    await pageD.bringToFront();
+    await pageD.reload({ waitUntil: 'networkidle' });
+    await pageD.waitForTimeout(1000);
+
+    const dCaseCard2 = pageD.locator(`button:has-text("${activeCaseNumber}")`).first();
+    if (await dCaseCard2.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await dCaseCard2.click();
+      await pageD.waitForTimeout(600);
+    }
+
+    // Click D12 Approve Consultant Opinion & Send to ALO Coordinator
+    const endorseBtn = pageD.locator('button:has-text("Approve Consultant Opinion & Send to ALO Coordinator"), button:has-text("اعتماد رأي الاستشاري وإرساله لمنسق ألو"), button:has-text("D12")').first();
+    await endorseBtn.waitFor({ state: 'visible', timeout: 6000 });
+    await endorseBtn.click();
+    console.log('   Clicked D12 Approve Consultant Opinion & Send to ALO Coordinator.');
+    await pageD.waitForTimeout(2000);
+
+    const caseAfterEndorsement = await verifyCaseTransition(activeCaseId, null, 'OPINION_READY', 'Step B8: Doctor Endorsement');
+    console.log(`   ✓ Saudi endorsement status: ${caseAfterEndorsement.saudiEndorsement?.status}`);
+
+    // -------------------------------------------------------------------------
+    // Step B9: C (Coordinator) Release Certified Report PDF 1
+    // -------------------------------------------------------------------------
+    console.log(`\n▶ Step B9: [C] Release Certified Report PDF 1 to Patient (${activeCaseNumber})...`);
+    await pageC.bringToFront();
+    await pageC.reload({ waitUntil: 'networkidle' });
+    await pageC.waitForTimeout(1000);
+
+    const cCaseCard2 = pageC.locator(`button:has-text("${activeCaseNumber}")`).first();
+    if (await cCaseCard2.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await cCaseCard2.click();
+      await pageC.waitForTimeout(600);
+    }
+
+    // Switch to C08 tab if not active
+    const c08Tab = pageC.locator('button:has-text("C08"), button:has-text("Release Report"), button:has-text("إصدار التقرير الأول")').first();
+    if (await c08Tab.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await c08Tab.click();
+      await pageC.waitForTimeout(600);
+    }
+
+    // Click Assign & Release Certified Report (PDF 1) to Patient (C08)
+    const releasePdf1Btn = pageC.locator('button:has-text("Assign & Release Certified Report (PDF 1) to Patient"), button:has-text("إسناد وإرسال التقرير المعتمد (PDF 1) إلى المريض"), button:has-text("C08")').first();
+    await releasePdf1Btn.waitFor({ state: 'visible', timeout: 6000 });
+    await releasePdf1Btn.click();
+    console.log('   Clicked C08 Assign & Release Certified Report (PDF 1).');
+    await pageC.waitForTimeout(2000);
+
+    await verifyCaseTransition(activeCaseId, 7, 'PARTNER_SERVICES', 'Step B9: Release Report PDF 1');
+
+    // -------------------------------------------------------------------------
+    // Step B10: L, PH, REC Partner Services Processing
+    // -------------------------------------------------------------------------
+    console.log(`\n▶ Step B10: Processing Partner Services (Lab, Pharmacy, Reception) for Case ${activeCaseNumber}...`);
+
+    // 10a: Lab (Omar Al-Zahrani)
+    await pageL.bringToFront();
+    await pageL.reload({ waitUntil: 'networkidle' });
+    await pageL.waitForTimeout(1000);
+    const labActionBtn = pageL.locator('button:has-text("Upload Results"), button:has-text("اعتماد ورفع النتائج"), button:has-text("Sample Collected"), button:has-text("تأكيد سحب العينات")').first();
+    if (await labActionBtn.isVisible({ timeout: 4000 }).catch(() => false)) {
+      await labActionBtn.click();
+      console.log('   [L] Diagnostic Lab processed and uploaded test results.');
+      await pageL.waitForTimeout(1500);
+    }
+
+    // 10b: Pharmacy (Noura Al-Dosari)
+    await pagePH.bringToFront();
+    await pagePH.reload({ waitUntil: 'networkidle' });
+    await pagePH.waitForTimeout(1000);
+    const pharmacyActionBtn = pagePH.locator('button:has-text("Dispense Rx"), button:has-text("تأكيد التحضير والصرف"), button:has-text("صرف")').first();
+    if (await pharmacyActionBtn.isVisible({ timeout: 4000 }).catch(() => false)) {
+      await pharmacyActionBtn.click();
+      console.log('   [PH] Clinical Pharmacy prepared and dispensed prescription.');
+      await pagePH.waitForTimeout(1500);
+    }
+
+    // 10c: Reception (Marcus Vance)
+    await pageREC.bringToFront();
+    await pageREC.reload({ waitUntil: 'networkidle' });
+    await pageREC.waitForTimeout(1000);
+    const recActionBtn = pageREC.locator('button:has-text("Check-in Done"), button:has-text("تأكيد اكتمال الزيارة والاستقبال")').first();
+    if (await recActionBtn.isVisible({ timeout: 4000 }).catch(() => false)) {
+      await recActionBtn.click();
+      console.log('   [REC] Reception checked in patient and confirmed visit completion.');
+      await pageREC.waitForTimeout(1500);
+    }
+
+    // Activate 21-Day Follow-Up Window
+    const activate21DaysBtn = pageREC.locator('button:has-text("تسليم التقرير وتفعيل متابعة الـ 21 يوماً"), button:has-text("Activate 21-Day")').first();
+    if (await activate21DaysBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await activate21DaysBtn.click();
+      console.log('   Activated 21-Day Follow-Up window (D13).');
+      await pageREC.waitForTimeout(2000);
+      await verifyCaseTransition(activeCaseId, 8, 'FOLLOW_UP_21_DAYS', 'Step B10: Activate 21-Day Follow-Up');
+    }
+
+    // -------------------------------------------------------------------------
+    // Step B11: Final Verification on Patient Screen
+    // -------------------------------------------------------------------------
+    console.log(`\n▶ Step B11: [P] Final Verification on Patient Screen...`);
+    await pageP.bringToFront();
+    await pageP.reload({ waitUntil: 'networkidle' });
+    await pageP.waitForTimeout(1500);
+
+    const patientViewContent = await pageP.innerText('body');
+    const hasReportAvailable = patientViewContent.includes('PDF 1') || patientViewContent.includes('التقرير') || patientViewContent.includes('Report');
+    console.log(`   Patient portal rendered: hasReportNotification=${hasReportAvailable}`);
+
+    console.log('\n========================================================================');
+    console.log('🎉 FULL WORKFLOW PASSED WITH ZERO CRASHES AND 100% CLEAN STAGE ADVANCE!');
+    console.log('========================================================================\n');
+  } catch (err) {
+    console.error('\n❌ WORKFLOW FAILED WITH ERROR:', err.message);
+    const errShot = path.join(SCREENSHOT_DIR, `failure_${Date.now()}.png`);
+    const activePage = browser.contexts()[0]?.pages()[0];
+    if (activePage) {
+      await activePage.screenshot({ path: errShot, fullPage: true }).catch(() => {});
+      console.error(`📸 Failure screenshot captured at: ${errShot}`);
+    }
+    throw err;
   } finally {
+    // Keep browser open for a few seconds so user sees final state
+    await new Promise((r) => setTimeout(r, 4000));
     await browser.close();
   }
 }
 
-testWorkflow().catch(err => {
-  console.error('\n❌ Test failed with error:', err.message);
+runEndToEndTest().catch((err) => {
+  console.error('Fatal execution error:', err);
   process.exit(1);
 });

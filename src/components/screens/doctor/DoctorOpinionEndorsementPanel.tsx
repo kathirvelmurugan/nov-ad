@@ -64,7 +64,6 @@ export const DoctorOpinionEndorsementPanel: React.FC<Props> = ({
         pdf1Released: false,
       },
     });
-    onAdvanceStage();
   };
 
   const handleRequestRevision = () => {
