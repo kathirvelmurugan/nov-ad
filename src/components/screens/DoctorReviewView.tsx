@@ -81,8 +81,8 @@ export const DoctorReviewView: React.FC<Props> = ({
   const questions = localQuestions;
   const hasConsultantOpinion =
     activeCase?.currentStage === 'OPINION_READY' ||
-    !!activeCase?.secondOpinionSubmitted ||
-    ['PARTNER_SERVICES', 'FOLLOW_UP_21_DAYS', 'CLOSED'].includes(activeCase?.currentStage || '');
+    ['PARTNER_SERVICES', 'FOLLOW_UP_21_DAYS', 'CLOSED'].includes(activeCase?.currentStage || '') ||
+    (activeCase?.currentStage !== 'DOCTOR_REVIEW' && !!activeCase?.secondOpinionSubmitted);
 
   const [viewTab, setViewTab] = React.useState<'opinion' | 'referral'>(
     hasConsultantOpinion ? 'opinion' : 'referral'
