@@ -13,7 +13,8 @@ import {
   HelpCircle,
   Sparkles,
   UserPlus,
-  LogOut
+  LogOut,
+  Activity
 } from 'lucide-react';
 
 const PATIENT_FIRST_NAMES: Record<string, { ar: string; en: string }> = {
@@ -178,10 +179,24 @@ export const TopProfileSwitcher: React.FC<Props> = ({
           </div>
         </div>
 
-
-
-        {/* Right Section: Theme + Lang + Logout */}
+        {/* Right Section: Pipeline Board + Theme + Lang + Logout */}
         <div className="flex items-center gap-2.5">
+          {/* Track Cases Pipeline Board Button */}
+          {onOpenPipelineBoard && activePersona.code !== 'P' && (
+            <button
+              onClick={onOpenPipelineBoard}
+              className="flex items-center gap-1.5 bg-teal-50 hover:bg-teal-100 text-alo-teal dark:bg-teal-950/50 dark:text-teal-300 border border-teal-300 dark:border-teal-700 px-2.5 py-1 rounded-lg font-extrabold text-xs cursor-pointer transition-all shadow-sm active:scale-95"
+              title={isAr ? 'فتح لوحة تتبع الحالات السريرية' : 'Open Clinical Command Center / Patient Pipeline Board'}
+              aria-label={isAr ? 'تتبع الحالات' : 'Track Cases'}
+            >
+              <Activity className="w-3.5 h-3.5" />
+              <span>{isAr ? 'تتبع الحالات' : 'Track Cases'}</span>
+              <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] bg-alo-teal text-white dark:bg-teal-300 dark:text-teal-950 text-[10px] font-extrabold rounded-full px-1 leading-none">
+                {cases.length}
+              </span>
+            </button>
+          )}
+
           {/* Theme Toggle (Light Clinical Calm / Dark Luminous) */}
           <button
             onClick={onToggleTheme}
