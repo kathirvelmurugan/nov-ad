@@ -212,12 +212,13 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         />
       ) : (
         <>
-          {/* Stage Progress Bar (strictly gated behind ?demo=1) */}
-          {isDemoMode && !(activePersona.code === 'P' && patientSubView === 'landing') && (
+          {/* Stage Progress Bar (visible in demo mode or for clinical staff portals with an active case) */}
+          {(isDemoMode || (Boolean(activeCase?.caseNumber) && !['P', 'AD', 'HA'].includes(activePersona.code))) && !(activePersona.code === 'P' && patientSubView === 'landing') && (
             <StageProgressBar
               currentStage={activeCase.currentStage}
               onSetStage={handleSetStage}
               lang={lang}
+              readOnly={!isDemoMode}
             />
           )}
 

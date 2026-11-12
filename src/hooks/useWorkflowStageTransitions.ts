@@ -2,6 +2,7 @@ import React from 'react';
 import { PERSONAS } from '../data/personas';
 import { ClinicalCase, ClinicalStage, PaymentMethodId, Persona } from '../types';
 import { STAGE_ORDER, isCasePaid, isCaseVerified, LANG_KEY, VIEW_MODE_KEY, UserSession } from './workflowConstants';
+import { apiClient } from '../services/apiClient';
 
 interface TransitionParams {
   activeCase: ClinicalCase;
@@ -155,18 +156,19 @@ export function useWorkflowStageTransitions({
 
   const handleCompletePatientPayment = () => {
     setCases((prev) =>
-      prev.map((c) =>
-        c.id === activeCase.id
-          ? {
-              ...c,
-              currentStage: 'AWAITING_PAYMENT',
-              paymentVerified: false,
-              pricing: { ...c.pricing, paid: true },
-              paymentDetails: { ...(c.paymentDetails || {}), status: 'completed' },
-              metadata: { ...(c.metadata || {}), paymentVerified: false },
-            }
-          : c
-      )
+      prev.map((c) => {
+        if (c.id !== activeCase.id) return c;
+        const updated: ClinicalCase = {
+          ...c,
+          currentStage: 'AWAITING_PAYMENT',
+          paymentVerified: false,
+          pricing: { ...c.pricing, paid: true },
+          paymentDetails: { ...(c.paymentDetails || {}), status: 'completed' },
+          metadata: { ...(c.metadata || {}), paymentVerified: false },
+        };
+        apiClient.saveCase(updated).catch(() => {});
+        return updated;
+      })
     );
     if (!userSession?.roleCode || userSession.roleCode === 'P') {
       setPatientSubView('timeline');
@@ -177,55 +179,60 @@ export function useWorkflowStageTransitions({
   const handleVerifyPaymentAndDispatch = () => {
     if (!isCasePaid(activeCase)) return;
     setCases((prev) =>
-      prev.map((c) =>
-        c.id === activeCase.id
-          ? {
-              ...c,
-              currentStage: 'WITH_CONSULTANT',
-              paymentVerified: true,
-              isCrossBorderDeidentified: true,
-              dualTokenGenerated: true,
-              egressToken: c.egressToken || 'ALO-KSA-9482',
-              consultantToken: c.consultantToken || {
-                token: 'ALO-MAGIC-REV-72H-DR-ARJUN',
-                expiresAt: new Date(Date.now() + 72 * 3600 * 1000).toISOString(),
-                otpVerified: false,
-                sessionCookieActive: false,
-                sessionExpiresAt: new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString(),
-              },
-              metadata: {
-                ...(c.metadata || {}),
-                paymentVerified: true,
-                consultantLinkSent: true,
-              },
-            }
-          : c
-      )
+      prev.map((c) => {
+        if (c.id !== activeCase.id) return c;
+        const consultantToken = c.consultantToken || {
+          token: 'ALO-MAGIC-REV-72H-DR-ARJUN',
+          expiresAt: new Date(Date.now() + 72 * 3600 * 1000).toISOString(),
+          otpVerified: false,
+          sessionCookieActive: false,
+          sessionExpiresAt: new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString(),
+        };
+        const updated: ClinicalCase = {
+          ...c,
+          currentStage: 'WITH_CONSULTANT',
+          paymentVerified: true,
+          isCrossBorderDeidentified: true,
+          dualTokenGenerated: true,
+          egressToken: c.egressToken || 'ALO-KSA-9482',
+          consultantToken,
+          metadata: {
+            ...(c.metadata || {}),
+            paymentVerified: true,
+            consultantLinkSent: true,
+            dispatchedToConsultantAt: new Date().toISOString(),
+          },
+        };
+        apiClient.saveCase(updated).catch(() => {});
+        return updated;
+      })
     );
     setIsWhatsAppDrawerOpen(true);
   };
 
   const handleReleaseReportToPatient = () => {
     setCases((prev) =>
-      prev.map((c) =>
-        c.id === activeCase.id
-          ? {
-              ...c,
-              currentStage: 'PARTNER_SERVICES',
-              reportReleased: true,
-              doctorReleasedToPatient: true,
-              coordinatorForwardedToDoctor: true,
-              saudiEndorsement: c.saudiEndorsement
-                ? { ...c.saudiEndorsement, releasedToPatient: true }
-                : c.saudiEndorsement,
-              metadata: {
-                ...(c.metadata || {}),
-                pdf1Released: true,
-                pdf1Timestamp: new Date().toISOString(),
-              },
-            }
-          : c
-      )
+      prev.map((c) => {
+        if (c.id !== activeCase.id) return c;
+        const saudiEndorsement = c.saudiEndorsement
+          ? { ...c.saudiEndorsement, releasedToPatient: true }
+          : c.saudiEndorsement;
+        const updated: ClinicalCase = {
+          ...c,
+          currentStage: 'PARTNER_SERVICES',
+          reportReleased: true,
+          doctorReleasedToPatient: true,
+          coordinatorForwardedToDoctor: true,
+          saudiEndorsement,
+          metadata: {
+            ...(c.metadata || {}),
+            pdf1Released: true,
+            pdf1Timestamp: new Date().toISOString(),
+          },
+        };
+        apiClient.saveCase(updated).catch(() => {});
+        return updated;
+      })
     );
     setIsWhatsAppDrawerOpen(true);
   };

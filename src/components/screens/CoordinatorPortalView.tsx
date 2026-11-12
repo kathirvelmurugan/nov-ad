@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ClinicalCase, PaymentMethodId } from '../../types';
 import {
   TEAL_PRIMARY,
@@ -11,6 +11,7 @@ import { CoordinatorTelehealthTab } from '../coordinator/CoordinatorTelehealthTa
 import { CoordinatorReportReleaseTab } from '../coordinator/CoordinatorReportReleaseTab';
 import { CoordinatorFollowUpTab } from '../coordinator/CoordinatorFollowUpTab';
 import { CoordinatorCaseClosureTab } from '../coordinator/CoordinatorCaseClosureTab';
+import { PortalCaseTrackerPanel, getStageBadgeMeta } from '../common/PortalCaseTrackerPanel';
 
 interface Props {
   activeCase: ClinicalCase;
@@ -27,6 +28,12 @@ interface Props {
   lang: 'ar' | 'en';
 }
 
+const isActionableForCoordinator = (c: ClinicalCase): boolean =>
+  c.currentStage === 'AWAITING_PAYMENT' ||
+  (c.currentStage === 'PARTNER_SERVICES' && !c.reportReleased) ||
+  c.currentStage === 'FOLLOW_UP_21_DAYS' ||
+  (c.saudiEndorsement?.status === 'endorsed' && !c.reportReleased);
+
 const CoordinatorPortalView: React.FC<Props> = ({
   activeCase,
   cases = [],
@@ -38,45 +45,62 @@ const CoordinatorPortalView: React.FC<Props> = ({
   onUpdateCase,
   lang,
 }) => {
-  const isPaid = !!activeCase.pricing?.paid || activeCase.paymentDetails?.status === 'completed';
-  const isPaymentVerified = !!activeCase.paymentVerified || !!activeCase.metadata?.paymentVerified;
-  const isInvoiceIssued = !!activeCase.invoiceIssued;
+  const didAutoFocusRef = useRef(false);
+
+  const isPaid = !!activeCase?.pricing?.paid || activeCase?.paymentDetails?.status === 'completed';
+  const isPaymentVerified = !!activeCase?.paymentVerified || !!activeCase?.metadata?.paymentVerified;
+  const isInvoiceIssued = !!activeCase?.invoiceIssued;
   const isSaudiDoctorApproved =
-    activeCase.saudiEndorsement?.status === 'endorsed' ||
-    !!activeCase.metadata?.saudiDoctorApprovedOpinion;
+    activeCase?.saudiEndorsement?.status === 'endorsed' ||
+    !!activeCase?.metadata?.saudiDoctorApprovedOpinion;
 
   const getInitialTab = (): 'C01' | 'C07' | 'C08' | 'C09' | 'C10' => {
-    if (activeCase.currentStage === 'AWAITING_PAYMENT' || (isPaid && !isPaymentVerified)) return 'C01';
-    if (activeCase.currentStage === 'PARTNER_SERVICES' || (isSaudiDoctorApproved && !activeCase.reportReleased)) return 'C08';
-    if (activeCase.currentStage === 'CLOSED') return 'C10';
-    if (activeCase.currentStage === 'FOLLOW_UP_21_DAYS') return 'C09';
-    if (activeCase.consultationType === 'video' && isPaid && isPaymentVerified) return 'C07';
+    if (activeCase?.currentStage === 'AWAITING_PAYMENT' || (isPaid && !isPaymentVerified)) return 'C01';
+    if (activeCase?.currentStage === 'PARTNER_SERVICES' || (isSaudiDoctorApproved && !activeCase?.reportReleased)) return 'C08';
+    if (activeCase?.currentStage === 'CLOSED') return 'C10';
+    if (activeCase?.currentStage === 'FOLLOW_UP_21_DAYS') return 'C09';
+    if (activeCase?.consultationType === 'video' && isPaid && isPaymentVerified) return 'C07';
     return 'C01';
   };
 
   const [activeTab, setActiveTab] = useState<'C01' | 'C07' | 'C08' | 'C09' | 'C10'>(getInitialTab);
   const [isReportPreviewOpen, setIsReportPreviewOpen] = useState(false);
   const [selectedConsultationType, setSelectedConsultationType] = useState<'written' | 'video'>(
-    activeCase.consultationType === 'written' ? 'written' : 'video'
+    activeCase?.consultationType === 'written' ? 'written' : 'video'
   );
   const [selectedMethods, setSelectedMethods] = useState<PaymentMethodId[]>(
-    activeCase.allowedPaymentMethods && activeCase.allowedPaymentMethods.length > 0
+    activeCase?.allowedPaymentMethods && activeCase.allowedPaymentMethods.length > 0
       ? activeCase.allowedPaymentMethods
       : ['mada', 'applepay', 'visa', 'tabby']
   );
 
   useEffect(() => {
     setActiveTab(getInitialTab());
-  }, [activeCase.currentStage, activeCase.id, isPaid, isPaymentVerified]);
+  }, [activeCase?.currentStage, activeCase?.id, isPaid, isPaymentVerified]);
 
   useEffect(() => {
-    setSelectedConsultationType(activeCase.consultationType === 'written' ? 'written' : 'video');
-    if (activeCase.allowedPaymentMethods && activeCase.allowedPaymentMethods.length > 0) {
+    setSelectedConsultationType(activeCase?.consultationType === 'written' ? 'written' : 'video');
+    if (activeCase?.allowedPaymentMethods && activeCase.allowedPaymentMethods.length > 0) {
       setSelectedMethods(activeCase.allowedPaymentMethods);
     } else {
       setSelectedMethods(['mada', 'applepay', 'visa', 'tabby']);
     }
-  }, [activeCase.id, activeCase.consultationType]);
+  }, [activeCase?.id, activeCase?.consultationType]);
+
+  useEffect(() => {
+    if (!didAutoFocusRef.current && onSelectCase && cases.length > 0) {
+      const stage = activeCase?.currentStage;
+      if (stage === 'INTAKE_RECEIVED' || stage === 'NURSE_CHECK' || stage === 'DOCTOR_REVIEW') {
+        const firstActionable = cases.find(isActionableForCoordinator);
+        if (firstActionable && firstActionable.id !== activeCase?.id) {
+          didAutoFocusRef.current = true;
+          onSelectCase(firstActionable.id);
+        }
+      } else {
+        didAutoFocusRef.current = true;
+      }
+    }
+  }, [cases, activeCase?.currentStage, activeCase?.id, onSelectCase]);
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [relayMessage, setRelayMessage] = useState('');
@@ -85,19 +109,24 @@ const CoordinatorPortalView: React.FC<Props> = ({
   const dir = isAr ? 'rtl' : 'ltr';
   const fontFamily = isAr ? "'Cairo', sans-serif" : "'Inter', sans-serif";
 
+  const handleSelectCase = (caseId: string) => {
+    didAutoFocusRef.current = true;
+    onSelectCase?.(caseId);
+  };
+
   const handleConfirmSlot = (slotId: string) => {
-    const paid = !!activeCase.pricing?.paid || activeCase.paymentDetails?.status === 'completed';
+    const paid = !!activeCase?.pricing?.paid || activeCase?.paymentDetails?.status === 'completed';
     if (!paid) {
       alert(isAr ? 'لا يمكن تأكيد موعد المكالمة قبل تأكيد السداد.' : 'Call time can be confirmed only after payment.');
       return;
     }
-    if (activeCase.consultationType === 'written') {
+    if (activeCase?.consultationType === 'written') {
       alert(isAr ? 'رأي مكتوب فقط — لا توجد مكالمة.' : 'Written opinion only — no call.');
       return;
     }
     onUpdateCase({ 
       metadata: { 
-        ...(activeCase.metadata || {}), 
+        ...(activeCase?.metadata || {}), 
         confirmedSlotId: slotId,
         stage: 'C08'
       } 
@@ -120,7 +149,7 @@ const CoordinatorPortalView: React.FC<Props> = ({
         doctorReleasedToPatient: true,
         coordinatorForwardedToDoctor: true,
         metadata: {
-          ...(activeCase.metadata || {}),
+          ...(activeCase?.metadata || {}),
           pdf1Released: true,
           pdf1Timestamp: new Date().toISOString(),
           stage: 'C09'
@@ -133,7 +162,7 @@ const CoordinatorPortalView: React.FC<Props> = ({
     }
   };
 
-  const incomingQuestions = (activeCase.metadata?.patientQuestions as string[]) || [
+  const incomingQuestions = (activeCase?.metadata?.patientQuestions as string[]) || [
     isAr ? 'هل يمكنني تناول الدواء مع الحليب؟' : 'Can I take the medication with milk?',
     isAr ? 'متى يجب أن أبدأ العلاج الطبيعي؟' : 'When should I start physical therapy?',
   ];
@@ -159,10 +188,10 @@ const CoordinatorPortalView: React.FC<Props> = ({
     setIsProcessing(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 800));
-      const existingRelays = (activeCase.metadata?.relayedQuestions as string[]) || [];
+      const existingRelays = (activeCase?.metadata?.relayedQuestions as string[]) || [];
       onUpdateCase({
         metadata: {
-          ...(activeCase.metadata || {}),
+          ...(activeCase?.metadata || {}),
           relayedQuestions: [...existingRelays, text],
         }
       });
@@ -179,7 +208,7 @@ const CoordinatorPortalView: React.FC<Props> = ({
       onUpdateCase({
         status: 'closed',
         metadata: {
-          ...(activeCase.metadata || {}),
+          ...(activeCase?.metadata || {}),
           pdf2Released: true,
           pdf2Timestamp: new Date().toISOString(),
           archived: true,
@@ -213,15 +242,15 @@ const CoordinatorPortalView: React.FC<Props> = ({
       onAssignPaymentToPatient(selectedMethods, tierData);
       return;
     }
-    const invoiceNumber = activeCase.pricing?.invoiceNumber || `INV-2026-${Math.floor(100000 + Math.random() * 900000)}`;
+    const invoiceNumber = activeCase?.pricing?.invoiceNumber || `INV-2026-${Math.floor(100000 + Math.random() * 900000)}`;
     onUpdateCase({
       invoiceIssued: true,
       allowedPaymentMethods: selectedMethods,
       paymentAssignedAt: new Date().toISOString(),
       consultationType: selectedConsultationType,
       tier: tierData.tier,
-      pricing: { ...activeCase.pricing, ...tierData, vatPercent: 15, tabbyInstallmentSar: Number((tierData.totalSar / 4).toFixed(2)), invoiceNumber, paid: false },
-      metadata: { ...(activeCase.metadata || {}), paymentLinkIssued: true, paymentLinkIssuedAt: new Date().toISOString(), assignedPaymentMethods: selectedMethods },
+      pricing: { ...activeCase?.pricing, ...tierData, vatPercent: 15, tabbyInstallmentSar: Number((tierData.totalSar / 4).toFixed(2)), invoiceNumber, paid: false },
+      metadata: { ...(activeCase?.metadata || {}), paymentLinkIssued: true, paymentLinkIssuedAt: new Date().toISOString(), assignedPaymentMethods: selectedMethods },
     });
   };
 
@@ -236,21 +265,21 @@ const CoordinatorPortalView: React.FC<Props> = ({
       paymentVerified: true,
       isCrossBorderDeidentified: true,
       dualTokenGenerated: true,
-      egressToken: activeCase.egressToken || 'ALO-KSA-9482',
-      metadata: { ...(activeCase.metadata || {}), paymentVerified: true, consultantLinkSent: true },
+      egressToken: activeCase?.egressToken || 'ALO-KSA-9482',
+      metadata: { ...(activeCase?.metadata || {}), paymentVerified: true, consultantLinkSent: true },
     });
     onAdvanceStage();
   };
 
-  const proposedSlots = (activeCase.metadata?.proposedSlots as Array<{ id: string; time: string }>) || [
+  const proposedSlots = (activeCase?.metadata?.proposedSlots as Array<{ id: string; time: string }>) || [
     { id: 'slot_1', time: isAr ? 'غداً، 10:00 صباحاً بتوقيت الهند' : 'Tomorrow, 10:00 AM IST' },
     { id: 'slot_2', time: isAr ? 'غداً، 02:00 ظهراً بتوقيت الهند' : 'Tomorrow, 02:00 PM IST' },
     { id: 'slot_3', time: isAr ? 'بعد غد، 11:30 صباحاً بتوقيت الهند' : 'Day After, 11:30 AM IST' },
   ];
 
-  const confirmedSlotId = activeCase.metadata?.confirmedSlotId as string | undefined;
-  const pdf1Released = activeCase.metadata?.pdf1Released as boolean | undefined;
-  const isArchived = activeCase.metadata?.archived as boolean | undefined;
+  const confirmedSlotId = activeCase?.metadata?.confirmedSlotId as string | undefined;
+  const pdf1Released = activeCase?.metadata?.pdf1Released as boolean | undefined;
+  const isArchived = activeCase?.metadata?.archived as boolean | undefined;
 
   const getTabStyle = (tab: 'C01' | 'C07' | 'C08' | 'C09' | 'C10'): React.CSSProperties => ({
     padding: '10px 20px',
@@ -265,6 +294,8 @@ const CoordinatorPortalView: React.FC<Props> = ({
     boxShadow: activeTab === tab ? `0 4px 12px ${TEAL_PRIMARY}40` : '0 1px 3px rgba(0,0,0,0.1)',
     transition: 'all 0.2s ease',
   });
+
+  const stageMeta = getStageBadgeMeta(activeCase.currentStage, isAr);
 
   return (
     <div data-testid="coordinator-portal-view" style={{
@@ -288,10 +319,13 @@ const CoordinatorPortalView: React.FC<Props> = ({
             {isAr ? 'بوابة المنسق الطبي' : 'Coordinator Portal'}
           </h1>
           <p style={{ margin: '4px 0 0', fontSize: '14px', color: '#718096', fontFamily }}>
-            {isAr ? 'رقم الحالة: ' : 'Case ID: '}{activeCase.id || 'ALO-2024-001'}
+            {isAr ? 'رقم الحالة: ' : 'Case ID: '}{activeCase.caseNumber || activeCase.id || 'ALO-2024-001'}
           </p>
         </div>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${stageMeta.colorClass}`}>
+            {stageMeta.label}
+          </span>
           {isArchived && (
             <span style={getBadgeStyle('success', fontFamily)}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -308,49 +342,17 @@ const CoordinatorPortalView: React.FC<Props> = ({
         </div>
       </header>
 
-      {cases && cases.length > 1 && (
-        <div style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: '12px',
-          padding: '12px 16px',
-          marginBottom: '20px',
-          border: '1px solid #E2E8F0',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '8px',
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '12px', fontWeight: 800, color: TEAL_PRIMARY }}>
-              {isAr ? `قائمة حالات التنسيق الطبي (${cases.length} حالات)` : `Coordinator Cases Queue (${cases.length} cases)`}
-            </span>
-            <span style={{ fontSize: '11px', color: '#718096' }}>
-              {isAr ? 'انقر للتبديل بين ملفات التنسيق الطبي' : 'Click to switch active coordination dossier'}
-            </span>
-          </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-            {cases.map((c) => {
-              const isSelected = c.id === activeCase.id;
-              return (
-                <button
-                  key={c.id}
-                  type="button"
-                  onClick={() => onSelectCase?.(c.id)}
-                  style={{
-                    padding: '6px 12px',
-                    borderRadius: '8px',
-                    fontSize: '11px',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    border: isSelected ? `2px solid ${TEAL_PRIMARY}` : '1px solid #CBD5E0',
-                    backgroundColor: isSelected ? TEAL_PRIMARY : '#FFFFFF',
-                    color: isSelected ? '#FFFFFF' : '#2D3748',
-                  }}
-                >
-                  {c.caseNumber || c.id} · {isAr ? c.specialtyAr || c.specialty : c.specialtyEn || c.specialty}
-                </button>
-              );
-            })}
-          </div>
+      {cases && cases.length > 0 && (
+        <div style={{ maxWidth: '900px', margin: '0 auto 24px', maxHeight: '340px', display: 'flex' }}>
+          <PortalCaseTrackerPanel
+            cases={cases}
+            activeCaseId={activeCase.id}
+            onSelectCase={handleSelectCase}
+            lang={lang}
+            portalTitleAr="قائمة حالات التنسيق الطبي والتتبع"
+            portalTitleEn="ALO Coordinator Queue & Case Tracking"
+            actionablePredicate={isActionableForCoordinator}
+          />
         </div>
       )}
 
@@ -358,7 +360,7 @@ const CoordinatorPortalView: React.FC<Props> = ({
         <button role="tab" aria-selected={activeTab === 'C01'} style={getTabStyle('C01')} onClick={() => setActiveTab('C01')}>
           C01 - {isAr ? 'الإحالة والفاتورة' : 'Referral & Invoice'}
         </button>
-        {activeCase.consultationType === 'video' && (
+        {activeCase?.consultationType === 'video' && (
           <button 
             role="tab" 
             aria-selected={activeTab === 'C07'} 
