@@ -47,8 +47,6 @@ export const DoctorOpinionEndorsementPanel: React.FC<Props> = ({
 
   const handleApproveToCoordinator = () => {
     onUpdateCase({
-      reportReleased: false,
-      doctorReleasedToPatient: false,
       saudiEndorsement: {
         status: 'endorsed',
         doctorName: activeCase.treatingDoctor?.name || (isAr ? 'د. عبدالله الشمري' : 'Dr. Abdullah Al-Shammari'),
@@ -58,14 +56,12 @@ export const DoctorOpinionEndorsementPanel: React.FC<Props> = ({
         localClinicalNotes: localDirectives.trim() || undefined,
         requiresLocalLab: !!activeCase.internalOrders?.lab?.ordered,
         prescriptionIssued: !!activeCase.internalOrders?.pharmacy?.ordered,
-        releasedToPatient: false,
+        releasedToPatient: true,
       } as any,
       metadata: {
         ...(activeCase.metadata || {}),
         saudiDoctorApprovedOpinion: true,
         saudiApprovedAt: new Date().toISOString(),
-        pdf1Released: false,
-        coordinatorForwardedToDoctor: true,
       },
     });
     onEndorseSuccess?.();
@@ -94,11 +90,11 @@ export const DoctorOpinionEndorsementPanel: React.FC<Props> = ({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <span className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200 font-mono text-[11px] px-2.5 py-1 rounded-md font-extrabold border border-emerald-300 dark:border-emerald-700">
-              D11–D12 · {isAr ? 'مراجعة رأي الاستشاري الدولي والاعتماد' : 'Consultant Opinion Review & Endorsement'}
+              D11–D12 · {isAr ? 'تم التدقيق والتوزيع من منسق الرعاية — مراجعة واعتماد الطبيب السعودي' : 'Verified & Dispatched by Coordinator — Saudi Doctor Endorsement'}
             </span>
             {isEndorsed && (
               <span className="bg-emerald-600 text-white text-[11px] font-bold px-2.5 py-1 rounded-full">
-                ✓ {isAr ? 'تم الاعتماد والإرسال للمنسق' : 'Approved & Sent to Coordinator'}
+                ✓ {isAr ? 'تم الاعتماد السريري المحلي بنجاح' : 'Local Clinical Endorsement Completed'}
               </span>
             )}
             {isRevisionRequested && (

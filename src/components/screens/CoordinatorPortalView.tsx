@@ -34,7 +34,8 @@ const isActionableForCoordinator = (c: ClinicalCase): boolean =>
   c.currentStage === 'AWAITING_PAYMENT' ||
   (c.currentStage === 'PARTNER_SERVICES' && !c.reportReleased) ||
   c.currentStage === 'FOLLOW_UP_21_DAYS' ||
-  (c.saudiEndorsement?.status === 'endorsed' && !c.reportReleased);
+  (c.saudiEndorsement?.status === 'endorsed' && !c.reportReleased) ||
+  (Boolean(c.secondOpinionSubmitted || c.currentStage === 'OPINION_READY') && !c.reportReleased && !c.metadata?.coordinatorDispatched);
 
 const CoordinatorPortalView: React.FC<Props> = ({
   activeCase: propsActiveCase,
@@ -60,7 +61,11 @@ const CoordinatorPortalView: React.FC<Props> = ({
 
   const getInitialTab = (): 'C01' | 'C07' | 'C08' | 'C09' | 'C10' => {
     if (activeCase?.currentStage === 'AWAITING_PAYMENT' || (isPaid && !isPaymentVerified)) return 'C01';
-    if (activeCase?.currentStage === 'PARTNER_SERVICES' || (isSaudiDoctorApproved && !activeCase?.reportReleased)) return 'C08';
+    if (
+      activeCase?.currentStage === 'PARTNER_SERVICES' ||
+      (Boolean(activeCase?.secondOpinionSubmitted || activeCase?.currentStage === 'OPINION_READY') && !activeCase?.reportReleased) ||
+      (isSaudiDoctorApproved && !activeCase?.reportReleased)
+    ) return 'C08';
     if (activeCase?.currentStage === 'CLOSED') return 'C10';
     if (activeCase?.currentStage === 'FOLLOW_UP_21_DAYS') return 'C09';
     if (activeCase?.consultationType === 'video' && isPaid && isPaymentVerified) return 'C07';
@@ -127,20 +132,20 @@ const CoordinatorPortalView: React.FC<Props> = ({
   };
 
   const handleReleasePDF1 = async () => {
-    if (!isSaudiDoctorApproved) return;
     setIsProcessing(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 600));
-      if (onReleaseReportToPatient) {
-        onReleaseReportToPatient();
-        return;
-      }
       onUpdateCase({
         reportReleased: true,
         doctorReleasedToPatient: true,
         coordinatorForwardedToDoctor: true,
         metadata: {
           ...(activeCase?.metadata || {}),
+          coordinatorVerifiedOpinion: true,
+          coordinatorDispatched: true,
+          coordinatorDispatchedAt: new Date().toISOString(),
+          dispatchedToDoctor: true,
+          dispatchedToPatient: true,
           pdf1Released: true,
           pdf1Timestamp: new Date().toISOString(),
           stage: 'C09'

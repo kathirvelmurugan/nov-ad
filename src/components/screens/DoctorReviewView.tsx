@@ -65,7 +65,9 @@ export const DoctorReviewView: React.FC<Props> = ({
 
   const isActionableForDoctor = (c: ClinicalCase) =>
     c.currentStage === 'DOCTOR_REVIEW' ||
-    (c.currentStage === 'OPINION_READY' && c.saudiEndorsement?.status !== 'endorsed');
+    (c.currentStage === 'OPINION_READY' &&
+      (Boolean(c.metadata?.coordinatorDispatched) || Boolean(c.reportReleased)) &&
+      c.saudiEndorsement?.status !== 'endorsed');
 
   const handleQuestionChange = (index: 0 | 1 | 2, value: string) => {
     if (!isReferralEditable) return;
@@ -349,8 +351,8 @@ export const DoctorReviewView: React.FC<Props> = ({
               caseId: forwardedCaseId,
               caseNumber: forwardedCaseNumber,
               patientName: forwardedPatient,
-              targetStageAr: 'منسق رعاية ألو (C08)',
-              targetStageEn: 'ALO Coordinator (C08)',
+              targetStageAr: 'الخدمات المرافقة ومتابعة الحالة',
+              targetStageEn: 'Hospital Partner Services & Care Coordination',
             });
             setSelectedCaseId(null);
             onSelectCase?.('');

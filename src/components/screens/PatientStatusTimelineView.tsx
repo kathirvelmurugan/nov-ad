@@ -478,7 +478,7 @@ export const PatientStatusTimelineView: React.FC<Props> = ({
                       ? (isAr ? 'تم السداد — بانتظار تحقق منسق ألو وتوصيل الاستشاري' : 'Paid — awaiting ALO Coordinator verification')
                       : (isAr ? 'بانتظار إعداد الفاتورة وطرق الدفع من منسق رعاية ألو' : 'Awaiting ALO Coordinator payment setup'))
                   : stage === 'OPINION_READY'
-                  ? (isAr ? 'بانتظار مراجعة واعتماد التقرير من الطبيب السعودي المعالج' : 'Awaiting Saudi Treating Doctor endorsement')
+                  ? (isAr ? 'تم استلام الرأي — بانتظار تدقيق منسق رعاية ألو وتوزيعه بالتزامن' : 'Opinion submitted — awaiting ALO Coordinator verification & dispatch')
                   : (isAr ? 'بانتظار إسناد التقرير المعتمد من منسق رعاية ألو' : 'Awaiting ALO Coordinator report assignment')}
               </span>
             </span>

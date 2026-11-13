@@ -171,19 +171,19 @@ export function getStageContent(
       };
     case 'OPINION_READY':
       return {
-        badgeAr: 'المرحلة 6 من 9 · بانتظار اعتماد الطبيب السعودي المعالج',
-        badgeEn: 'Stage 6 of 9 · Saudi Doctor Opinion Review',
-        titleAr: 'أنهى الاستشاري الدولي رأيه — يراجع طبيبك السعودي التقرير لاعتماده',
-        titleEn: 'Indian specialist submitted opinion — awaiting Saudi Doctor endorsement',
-        descAr: 'أتم الاستشاري الدولي دراسة الحالة والإجابة على الأسئلة السريرية. يقوم طبيبك السعودي المعالج الآن بمراجعة الرأي واعتماده وإرساله لمنسق رعاية ألو قبل تسليم التقرير النهائي.',
-        descEn: 'Your Indian Consultant has completed the second opinion review. Your Saudi Treating Doctor is reviewing and endorsing the opinion before sending it to the ALO Coordinator.',
-        queueStatusAr: 'التقرير مقفل حالياً — بانتظار مراجعة واعتماد الطبيب السعودي المعالج (D11–D12)',
-        queueStatusEn: 'Report locked — awaiting Saudi Treating Doctor review & endorsement (D11–D12)',
-        nextRoleCode: 'D',
-        nextRoleLabelAr: 'الانتقال إلى شاشة الطبيب السعودي (D11–D12) لمراجعة واعتماد الرأي →',
-        nextRoleLabelEn: 'Switch to Saudi Doctor (D11–D12) to review & approve opinion →',
-        slaAr: 'مراجعة الطبيب السعودي المعالج',
-        slaEn: 'Saudi Physician Endorsement Pending',
+        badgeAr: 'المرحلة 6 من 9 · تدقيق منسق رعاية ألو والتوزيع',
+        badgeEn: 'Stage 6 of 9 · ALO Coordinator Verification & Dispatch',
+        titleAr: 'أنهى الاستشاري الدولي رأيه — يراجع منسق رعاية ألو التقرير لاعتماده وتوزيعه للمريض والطبيب',
+        titleEn: 'Consultant submitted opinion — ALO Coordinator verifying & dispatching to patient and doctor',
+        descAr: 'أتم الاستشاري الدولي تقديم الرأي المكتوب بنجاح وإحالته إلى منسق رعاية ألو للتحقق السريري والإداري وتوزيعه بالتزامن للمريض والطبيب السعودي المعالج.',
+        descEn: 'Written opinion submitted successfully and forwarded to the ALO Care Coordinator for verification and simultaneous dispatch to both patient and Saudi doctor.',
+        queueStatusAr: 'بانتظار تدقيق منسق رعاية ألو وتوزيع التقرير الطبي (C08)',
+        queueStatusEn: 'Pending ALO Care Coordinator verification & simultaneous dispatch (C08)',
+        nextRoleCode: 'C',
+        nextRoleLabelAr: 'الانتقال إلى شاشة منسق رعاية ألو (C08) لتدقيق وتوزيع التقرير →',
+        nextRoleLabelEn: 'Switch to ALO Coordinator (C08) to verify & dispatch report →',
+        slaAr: 'تدقيق وتوزيع منسق الرعاية',
+        slaEn: 'Coordinator Verification & Dispatch',
       };
     case 'PARTNER_SERVICES':
       if (!isReportReleased) {

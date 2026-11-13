@@ -96,7 +96,7 @@ export const ConsultantWrittenOpinionSection: React.FC<Props> = ({
             >
               {isCaseClosed
                 ? 'Case Successfully Closed & Archived'
-                : 'Written Opinion Submitted & Clinical Review Completed'}
+                : 'Written Opinion submitted successfully and forwarded to the ALO Care Coordinator'}
             </h3>
             <p
               style={{
@@ -108,7 +108,7 @@ export const ConsultantWrittenOpinionSection: React.FC<Props> = ({
             >
               {isCaseClosed
                 ? 'The ALO Care Coordinator has finalized all follow-up inquiries and released the Final Comprehensive Dossier (PDF 2). The case is officially closed and archived.'
-                : 'Your second opinion report and answers to the Saudi treating doctor focus questions have been safely submitted. Ongoing 21-day patient follow-up and care coordination are directly managed by the ALO Care Coordination team.'}
+                : 'Written Opinion submitted successfully and forwarded to the ALO Care Coordinator.'}
             </p>
           </div>
         </div>
