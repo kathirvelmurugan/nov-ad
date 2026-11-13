@@ -109,13 +109,6 @@ export const DoctorReviewView: React.FC<Props> = ({
     return cases.filter(isActionableForDoctor);
   }, [cases]);
 
-  // Clear selection if actionable queue reaches 0
-  React.useEffect(() => {
-    if (pendingDoctorCases.length === 0 && selectedCaseId) {
-      setSelectedCaseId(null);
-    }
-  }, [pendingDoctorCases.length, selectedCaseId]);
-
   const isCurrentStageDoctor = !!currentCase && isActionableForDoctor(currentCase);
   const isReferralEditable = currentCase?.currentStage === 'DOCTOR_REVIEW';
 
@@ -177,34 +170,36 @@ export const DoctorReviewView: React.FC<Props> = ({
         />
       </div>
 
-      {pendingDoctorCases.length === 0 ? (
-        <div className="card-clinical p-8 text-center space-y-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xs">
-          <div className="w-12 h-12 mx-auto rounded-full bg-emerald-50 dark:bg-emerald-950/50 flex items-center justify-center text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
-            <CheckCircle2 className="w-6 h-6" />
+      {!currentCase ? (
+        pendingDoctorCases.length === 0 ? (
+          <div className="card-clinical p-8 text-center space-y-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xs">
+            <div className="w-12 h-12 mx-auto rounded-full bg-emerald-50 dark:bg-emerald-950/50 flex items-center justify-center text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+              <CheckCircle2 className="w-6 h-6" />
+            </div>
+            <h3 className="text-base font-black text-slate-800 dark:text-slate-100">
+              {isAr ? 'لا توجد حالات معلقة في قائمة الإجراءات' : 'No Actionable Cases Pending Doctor Review'}
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
+              {isAr
+                ? 'صندوق إحالات الطبيب المعالج مكتمل ومحدّث بالكامل. لا توجد حالات تتطلب إجراء حالياً. يمكنك النقر على أي حالة في تبويب "تتبع جميع الحالات" أعلاه للاطلاع على تفاصيلها في وضع التتبع.'
+                : 'Physician referral queue is up to date. There are no cases pending doctor review at this time. You can click on any case in the "Track All Cases" tab above to view its dossier in tracking mode.'}
+            </p>
           </div>
-          <h3 className="text-base font-black text-slate-800 dark:text-slate-100">
-            {isAr ? 'لا توجد حالات معلقة في قائمة الإجراءات' : 'No Actionable Cases Pending Doctor Review'}
-          </h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
-            {isAr
-              ? 'صندوق إحالات الطبيب المعالج مكتمل ومحدّث بالكامل. لا توجد حالات تتطلب إجراء حالياً.'
-              : 'Physician referral queue is up to date. There are no cases pending doctor review at this time.'}
-          </p>
-        </div>
-      ) : !currentCase ? (
-        <div className="card-clinical p-8 text-center space-y-3 bg-white dark:bg-slate-900 border border-dashed border-slate-300 dark:border-slate-700 rounded-2xl shadow-xs">
-          <div className="w-12 h-12 mx-auto rounded-full bg-teal-50 dark:bg-teal-950/50 flex items-center justify-center text-[#007B6E] dark:text-[#00C6AE] border border-teal-200 dark:border-teal-800">
-            <MousePointerClick className="w-6 h-6" />
+        ) : (
+          <div className="card-clinical p-8 text-center space-y-3 bg-white dark:bg-slate-900 border border-dashed border-slate-300 dark:border-slate-700 rounded-2xl shadow-xs">
+            <div className="w-12 h-12 mx-auto rounded-full bg-teal-50 dark:bg-teal-950/50 flex items-center justify-center text-[#007B6E] dark:text-[#00C6AE] border border-teal-200 dark:border-teal-800">
+              <MousePointerClick className="w-6 h-6" />
+            </div>
+            <h3 className="text-base font-black text-slate-800 dark:text-slate-100">
+              {isAr ? 'يرجى اختيار حالة من قائمة الإحالات وتتبع الحالات أعلاه' : 'Select a Case from the Referral Queue Above'}
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
+              {isAr
+                ? 'انقر على أي حالة في القائمة أعلاه لعرض ملف المريض، مراجعة رأي الاستشاري، وإصدار أوامر العيادة وتحديد الموعد الحضوري.'
+                : 'Click on any case card in the tracker above to review patient dossier, consultant opinion, and configure clinic orders.'}
+            </p>
           </div>
-          <h3 className="text-base font-black text-slate-800 dark:text-slate-100">
-            {isAr ? 'يرجى اختيار حالة من قائمة الإحالات وتتبع الحالات أعلاه' : 'Select a Case from the Referral Queue Above'}
-          </h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
-            {isAr
-              ? 'انقر على أي حالة في القائمة أعلاه لعرض ملف المريض، مراجعة رأي الاستشاري، وإصدار أوامر العيادة وتحديد الموعد الحضوري.'
-              : 'Click on any case card in the tracker above to review patient dossier, consultant opinion, and configure clinic orders.'}
-          </p>
-        </div>
+        )
       ) : (
         <>
           {/* Active Case Details Header Bar with Close Button */}
