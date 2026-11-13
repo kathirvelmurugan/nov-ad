@@ -170,7 +170,7 @@ const CoordinatorPortalView: React.FC<Props> = ({
     isAr ? 'متى يجب أن أبدأ العلاج الطبيعي؟' : 'When should I start physical therapy?',
   ];
 
-  if (!activeCase || !activeCase.caseNumber) {
+  if (!activeCase || !activeCase.caseNumber || cases.length === 0) {
     return (
       <div data-testid="coordinator-empty" className="max-w-2xl mx-auto my-12 text-center p-10 card-clinical space-y-4">
         <h3 className="text-xl font-black text-alo-navy dark:text-slate-100">

@@ -258,12 +258,21 @@ export function useClinicalWorkflowState() {
       try {
         const remoteCases = await apiClient.fetchCases();
         if (mounted && Array.isArray(remoteCases)) {
-          const sorted = [...remoteCases].sort((a, b) => {
-            const timeA = new Date(a.createdAt || 0).getTime() || 0;
-            const timeB = new Date(b.createdAt || 0).getTime() || 0;
-            return timeB - timeA;
-          });
-          setCases(sorted);
+          if (remoteCases.length === 0) {
+            setCases([]);
+            setActiveCaseId('');
+            try {
+              localStorage.removeItem(STORAGE_KEY);
+              localStorage.removeItem(ACTIVE_CASE_KEY);
+            } catch (e) {}
+          } else {
+            const sorted = [...remoteCases].sort((a, b) => {
+              const timeA = new Date(a.createdAt || 0).getTime() || 0;
+              const timeB = new Date(b.createdAt || 0).getTime() || 0;
+              return timeB - timeA;
+            });
+            setCases(sorted);
+          }
         }
       } catch (e) {}
     };

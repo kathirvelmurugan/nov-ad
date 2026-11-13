@@ -145,6 +145,22 @@ export const PartnerServicesView: React.FC<Props> = ({
     });
   };
 
+  if (!activeCase || !activeCase.caseNumber || cases.length === 0) {
+    return (
+      <div data-testid="partner-services-empty" className="max-w-2xl mx-auto my-12 text-center p-10 card-clinical space-y-4" dir="rtl">
+        <div className="w-16 h-16 rounded-2xl bg-teal-50 dark:bg-teal-950/50 text-alo-teal flex items-center justify-center mx-auto text-2xl border border-teal-200 dark:border-teal-800 shadow-inner">
+          <Building2 className="w-8 h-8 text-alo-teal" />
+        </div>
+        <h3 className="text-xl font-black text-alo-navy dark:text-slate-100">
+          لا توجد حالات حالياً في طابور الخدمات المساندة
+        </h3>
+        <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
+          جميع طلبات المختبر والصيدلية والاستقبال مكتملة. ستظهر الحالات المحالة من الأطباء هنا فور اعتمادها.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-12 font-sans" dir="rtl">
       {/* Multi-Case Facility Queue Switcher (Clean Horizontal Scroll) */}

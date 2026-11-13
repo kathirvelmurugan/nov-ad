@@ -60,10 +60,9 @@ export const PatientStatusTimelineView: React.FC<Props> = ({
   // Determine if this patient has any real registered/submitted clinical cases
   const isCaseRegistered = (c: ClinicalCase | undefined | null): boolean => {
     if (!c) return false;
+    if (c.id === 'draft-intake' || c.status === 'draft') return false;
     if (c.caseNumber && c.caseNumber.trim().length > 0) return true;
-    if (c.metadata?.isFreshTest && !c.caseNumber && !c.patientPhone) return false;
-    if (c.patientPhone && c.patientPhone.trim().length > 0 && c.specialty && c.specialty.trim().length > 0) return true;
-    if (c.specialty && c.specialty.trim().length > 0 && c.symptoms && c.symptoms.trim().length > 0) return true;
+    if ((c.stage && c.stage > 1) || (c.symptoms && c.symptoms.trim().length > 0)) return true;
     return false;
   };
 

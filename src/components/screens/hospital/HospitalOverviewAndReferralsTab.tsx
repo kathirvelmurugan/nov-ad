@@ -135,6 +135,13 @@ export const HospitalOverviewAndReferralsTab: React.FC<HospitalOverviewAndReferr
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-sm">
+              {referrals.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="py-8 text-center text-xs text-slate-400">
+                    {isRTL ? 'لا توجد إحالات مسجلة للمركز الطبي حالياً' : 'No clinical referrals recorded for this medical center'}
+                  </td>
+                </tr>
+              )}
               {referrals.map((item) => (
                 <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
                   <td className="py-3.5 px-4">

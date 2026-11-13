@@ -244,6 +244,54 @@ apiRouter.post('/admin/clean-slate', async (req, res) => {
   }
 });
 
+// ── Purge Patients and Case Histories Endpoint ──────────────────────────────
+apiRouter.post('/admin/purge-patients-and-cases', async (req, res) => {
+  try {
+    // 1. Wipe all clinical cases
+    try { await pool.query('TRUNCATE TABLE clinical_cases CASCADE'); } catch (e) {
+      try { await pool.query('DELETE FROM clinical_cases'); } catch {}
+    }
+    try { await pool.query('DELETE FROM cases'); } catch {}
+    
+    // 2. Remove all patient records from platform_users, keeping all staff/provider logins intact
+    try {
+      await pool.query("DELETE FROM platform_users WHERE role_code = 'P' OR role_code ILIKE '%patient%'");
+    } catch (e) {
+      console.warn('Could not delete patients from platform_users:', e.message);
+    }
+    
+    // 3. Clear memory caches
+    memoryCases = [];
+    memoryUsers = memoryUsers.filter((u) => u.roleCode !== 'P' && !u.roleCode?.toLowerCase().includes('patient'));
+    
+    console.log('✅ Purged all patient data and clinical cases from database and memory.');
+    return res.json({
+      success: true,
+      message: 'All patient records and clinical case histories removed successfully. Staff and provider logins preserved.',
+    });
+  } catch (err) {
+    console.error('Purge patients and cases failed:', err);
+    memoryCases = [];
+    memoryUsers = memoryUsers.filter((u) => u.roleCode !== 'P');
+    return res.status(500).json({ error: 'Failed to purge patient and case data', details: String(err) });
+  }
+});
+
+// Delete all cases endpoint
+apiRouter.delete('/cases', async (req, res) => {
+  try {
+    try { await pool.query('TRUNCATE TABLE clinical_cases CASCADE'); } catch (e) {
+      try { await pool.query('DELETE FROM clinical_cases'); } catch {}
+    }
+    try { await pool.query('DELETE FROM cases'); } catch {}
+    memoryCases = [];
+    return res.json({ success: true, message: 'All cases deleted' });
+  } catch (err) {
+    memoryCases = [];
+    return res.status(500).json({ error: 'Failed to delete cases', details: String(err) });
+  }
+});
+
 // ── API Routes: Cases ────────────────────────────────────────────────────────
 apiRouter.get('/cases', async (req, res) => {
   try {
