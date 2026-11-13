@@ -74,9 +74,9 @@ export function useWorkflowStageTransitions({
         url.searchParams.set('portal', portal);
         if (p.code !== 'P') {
           url.searchParams.delete('subview');
-          if (activeCase?.id) url.searchParams.set('caseId', activeCase.id);
+          url.searchParams.delete('caseId');
         }
-        window.history.pushState({ portal, caseId: activeCase?.id, viewMode }, '', url.pathname + url.search);
+        window.history.pushState({ portal, viewMode }, '', url.pathname + url.search);
       } catch (e) {}
     }
   };

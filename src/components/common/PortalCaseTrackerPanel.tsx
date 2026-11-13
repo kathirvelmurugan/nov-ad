@@ -114,7 +114,7 @@ const PortalCaseTrackerPanel: React.FC<PortalCaseTrackerPanelProps> = ({
     const spec = (c.specialty || (c as any).specialtyAr || (c as any).specialtyEn || '').toLowerCase();
     return num.includes(q) || pName.includes(q) || spec.includes(q);
   });
-  const activeCase = validCases.find((c) => c.id === activeCaseId) || validCases[0];
+  const activeCase = activeCaseId ? validCases.find((c) => c.id === activeCaseId) : undefined;
   const title = isAr ? portalTitleAr : portalTitleEn;
 
   const getPaymentPill = (c: ClinicalCase) => {

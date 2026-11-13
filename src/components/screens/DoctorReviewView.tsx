@@ -1,6 +1,6 @@
 import React from 'react';
 import { ClinicalCase, Persona, UserSession } from '../../types';
-import { Check, Timer, ShieldCheck, FileCheck2, Stethoscope, Eye, CheckCircle2, X } from 'lucide-react';
+import { Check, Timer, ShieldCheck, FileCheck2, Stethoscope, Eye, CheckCircle2, X, MousePointerClick } from 'lucide-react';
 import { useSlaCountdown } from '../../hooks/useSlaCountdown';
 import { DoctorOpinionEndorsementPanel } from './doctor/DoctorOpinionEndorsementPanel';
 import { DoctorFocusQuestionsSection } from './doctor/DoctorFocusQuestionsSection';
@@ -19,7 +19,7 @@ interface Props {
 }
 
 export const DoctorReviewView: React.FC<Props> = ({
-  activeCase,
+  activeCase: propsActiveCase,
   cases = [],
   onSelectCase,
   onAdvanceStage,
@@ -28,6 +28,10 @@ export const DoctorReviewView: React.FC<Props> = ({
   userSession,
   activePersona,
 }) => {
+  const [selectedCaseId, setSelectedCaseId] = React.useState<string | null>(null);
+  const currentCase = selectedCaseId ? (cases.find((c) => c.id === selectedCaseId) || null) : null;
+  const activeCase = (currentCase || propsActiveCase) as ClinicalCase;
+
   const isAr = lang === 'ar';
   const doctorName = userSession?.fullName || activePersona?.name || activeCase?.treatingDoctor?.name || (isAr ? 'الطبيب السعودي المعالج' : 'Saudi Treating Doctor');
   const partnerHospital = activeCase?.treatingDoctor?.hospital || (isAr ? 'المستشفى الشريك المعتمد' : 'Partner Accredited Hospital');
@@ -101,23 +105,18 @@ export const DoctorReviewView: React.FC<Props> = ({
     return cases.filter(isActionableForDoctor);
   }, [cases]);
 
-  const isCurrentStageDoctor = !!activeCase && isActionableForDoctor(activeCase);
-  const isReferralEditable = activeCase?.currentStage === 'DOCTOR_REVIEW';
+  const isCurrentStageDoctor = !!currentCase && isActionableForDoctor(currentCase);
+  const isReferralEditable = currentCase?.currentStage === 'DOCTOR_REVIEW';
 
-  const didAutoFocusDoctorRef = React.useRef(false);
-  React.useEffect(() => {
-    if (!didAutoFocusDoctorRef.current && onSelectCase && cases.length > 0) {
-      if (!isCurrentStageDoctor && pendingDoctorCases.length > 0) {
-        didAutoFocusDoctorRef.current = true;
-        onSelectCase(pendingDoctorCases[0].id);
-      }
-    }
-  }, [cases, isCurrentStageDoctor, pendingDoctorCases, onSelectCase]);
+  const handleSelectCase = (caseId: string) => {
+    setSelectedCaseId(caseId);
+    onSelectCase?.(caseId);
+  };
 
   const [forwardedBanner, setForwardedBanner] = React.useState<{ caseId: string; caseNumber: string; patientName: string } | null>(null);
 
   // Zero-Case Dedicated Empty State
-  if (!activeCase || !activeCase.caseNumber || cases.length === 0) {
+  if (cases.length === 0) {
     return (
       <div data-testid="doctor-review-view" data-subview="empty" className="max-w-2xl mx-auto my-12 text-center p-10 card-clinical space-y-4">
         <div className="w-16 h-16 rounded-2xl bg-teal-50 dark:bg-teal-950/50 text-alo-teal flex items-center justify-center mx-auto text-2xl border border-teal-200 dark:border-teal-800 shadow-inner">
@@ -135,24 +134,63 @@ export const DoctorReviewView: React.FC<Props> = ({
     );
   }
 
-  const stageMeta = !isCurrentStageDoctor ? getStageBadgeMeta(activeCase.currentStage, isAr) : null;
+  const stageMeta = currentCase && !isCurrentStageDoctor ? getStageBadgeMeta(currentCase.currentStage, isAr) : null;
 
   return (
     <div data-testid="doctor-review-view" className="max-w-4xl mx-auto space-y-6">
       {/* Integrated Portal Case Tracker Panel */}
-      {cases.length > 0 && (
-        <div className="w-full">
-          <PortalCaseTrackerPanel
-            cases={cases}
-            activeCaseId={activeCase.id}
-            onSelectCase={onSelectCase}
-            lang={lang}
-            portalTitleAr="مراجعة الطبيب المعالج وتتبع الحالات"
-            portalTitleEn="Saudi Doctor Queue & Case Tracking"
-            actionablePredicate={isActionableForDoctor}
-          />
+      <div className="w-full">
+        <PortalCaseTrackerPanel
+          cases={cases}
+          activeCaseId={selectedCaseId || ''}
+          onSelectCase={handleSelectCase}
+          lang={lang}
+          portalTitleAr="مراجعة الطبيب المعالج وتتبع الحالات"
+          portalTitleEn="Saudi Doctor Queue & Case Tracking"
+          actionablePredicate={isActionableForDoctor}
+        />
+      </div>
+
+      {!currentCase ? (
+        <div className="card-clinical p-8 text-center space-y-3 bg-white dark:bg-slate-900 border border-dashed border-slate-300 dark:border-slate-700 rounded-2xl shadow-xs">
+          <div className="w-12 h-12 mx-auto rounded-full bg-teal-50 dark:bg-teal-950/50 flex items-center justify-center text-[#007B6E] dark:text-[#00C6AE] border border-teal-200 dark:border-teal-800">
+            <MousePointerClick className="w-6 h-6" />
+          </div>
+          <h3 className="text-base font-black text-slate-800 dark:text-slate-100">
+            {isAr ? 'يرجى اختيار حالة من قائمة الإحالات وتتبع الحالات أعلاه' : 'Select a Case from the Referral Queue Above'}
+          </h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
+            {isAr
+              ? 'انقر على أي حالة في القائمة أعلاه لعرض ملف المريض، مراجعة رأي الاستشاري، وإصدار أوامر العيادة وتحديد الموعد الحضوري.'
+              : 'Click on any case card in the tracker above to review patient dossier, consultant opinion, and configure clinic orders.'}
+          </p>
         </div>
-      )}
+      ) : (
+        <>
+          {/* Active Case Details Header Bar with Close Button */}
+          <div className="flex items-center justify-between bg-teal-50/80 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800/60 rounded-xl px-4 py-2.5 text-xs shadow-2xs">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="font-bold text-teal-900 dark:text-teal-200">
+                {isAr ? 'عرض تفاصيل الحالة:' : 'Viewing Case Details:'}
+              </span>
+              <span className="font-mono font-bold text-[#007B6E] dark:text-[#00C6AE]">
+                {currentCase.caseNumber || currentCase.id}
+              </span>
+              <span className="text-slate-400">·</span>
+              <span className="font-bold text-slate-700 dark:text-slate-200">
+                {isAr ? (currentCase.patientNameAr || currentCase.patientName) : (currentCase.patientNameEn || currentCase.patientName)}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSelectedCaseId(null)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold transition-colors cursor-pointer shadow-2xs"
+            >
+              <X className="w-3.5 h-3.5" />
+              <span>{isAr ? 'إغلاق التفاصيل والعودة للقائمة' : 'Close Details'}</span>
+            </button>
+          </div>
 
       {/* D10 Forwarded Confirmation Banner */}
       {forwardedBanner && (
@@ -184,7 +222,7 @@ export const DoctorReviewView: React.FC<Props> = ({
           <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
-              onClick={() => onSelectCase?.(forwardedBanner.caseId)}
+              onClick={() => handleSelectCase(forwardedBanner.caseId)}
               className="text-xs font-extrabold px-4 py-2 rounded-lg bg-white dark:bg-slate-800 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors shadow-sm cursor-pointer whitespace-nowrap"
             >
               {isAr ? 'عرض في التتبع' : 'View in Tracker'}
@@ -218,7 +256,7 @@ export const DoctorReviewView: React.FC<Props> = ({
           {pendingDoctorCases.length > 0 && (
             <button
               type="button"
-              onClick={() => onSelectCase?.(pendingDoctorCases[0].id)}
+              onClick={() => handleSelectCase(pendingDoctorCases[0].id)}
               className="text-xs font-extrabold px-4 py-2 rounded-lg bg-alo-teal text-white hover:bg-teal-700 transition-colors shadow-sm cursor-pointer"
             >
               {isAr ? 'الانتقال إلى الحالة المنتظرة لمراجعتك' : 'Jump to Next Actionable Case'}
@@ -562,7 +600,7 @@ export const DoctorReviewView: React.FC<Props> = ({
                 pricing: { ...activeCase.pricing, paid: false, invoiceNumber: undefined },
                 metadata: { ...(activeCase.metadata || {}), paymentLinkIssued: false, paymentVerified: false },
               });
-              if (nextPending && onSelectCase) onSelectCase(nextPending.id);
+              setSelectedCaseId(null);
             }}
             className="w-full sm:w-auto bg-gradient-to-r from-alo-teal to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white font-extrabold py-3 px-8 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-sm active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -579,6 +617,8 @@ export const DoctorReviewView: React.FC<Props> = ({
           )}
         </div>
       </div>
+      </>
+      )}
       </>
       )}
     </div>

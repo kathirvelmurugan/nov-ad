@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ClinicalCase, PaymentMethodId } from '../../types';
+import { MousePointerClick, X } from 'lucide-react';
 import {
   TEAL_PRIMARY,
   TEAL_ACCENT,
@@ -15,7 +16,7 @@ import { BilingualReportModal } from '../cockpit/BilingualReportModal';
 import { PortalCaseTrackerPanel, getStageBadgeMeta } from '../common/PortalCaseTrackerPanel';
 
 interface Props {
-  activeCase: ClinicalCase;
+  activeCase?: ClinicalCase;
   cases?: ClinicalCase[];
   onSelectCase?: (caseId: string) => void;
   onAdvanceStage: () => void;
@@ -36,7 +37,7 @@ const isActionableForCoordinator = (c: ClinicalCase): boolean =>
   (c.saudiEndorsement?.status === 'endorsed' && !c.reportReleased);
 
 const CoordinatorPortalView: React.FC<Props> = ({
-  activeCase,
+  activeCase: propsActiveCase,
   cases = [],
   onSelectCase,
   onAdvanceStage,
@@ -46,7 +47,9 @@ const CoordinatorPortalView: React.FC<Props> = ({
   onUpdateCase,
   lang,
 }) => {
-  const didAutoFocusRef = useRef(false);
+  const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
+  const currentCase = selectedCaseId ? (cases.find((c) => c.id === selectedCaseId) || null) : null;
+  const activeCase = (currentCase || propsActiveCase) as ClinicalCase;
 
   const isPaid = !!activeCase?.pricing?.paid || activeCase?.paymentDetails?.status === 'completed';
   const isPaymentVerified = !!activeCase?.paymentVerified || !!activeCase?.metadata?.paymentVerified;
@@ -90,21 +93,6 @@ const CoordinatorPortalView: React.FC<Props> = ({
     }
   }, [activeCase?.id, activeCase?.consultationType]);
 
-  useEffect(() => {
-    if (!didAutoFocusRef.current && onSelectCase && cases.length > 0) {
-      const stage = activeCase?.currentStage;
-      if (stage === 'INTAKE_RECEIVED' || stage === 'NURSE_CHECK' || stage === 'DOCTOR_REVIEW') {
-        const firstActionable = cases.find(isActionableForCoordinator);
-        if (firstActionable && firstActionable.id !== activeCase?.id) {
-          didAutoFocusRef.current = true;
-          onSelectCase(firstActionable.id);
-        }
-      } else {
-        didAutoFocusRef.current = true;
-      }
-    }
-  }, [cases, activeCase?.currentStage, activeCase?.id, onSelectCase]);
-
   const [isProcessing, setIsProcessing] = useState(false);
   const [relayMessage, setRelayMessage] = useState('');
 
@@ -113,7 +101,7 @@ const CoordinatorPortalView: React.FC<Props> = ({
   const fontFamily = isAr ? "'Cairo', sans-serif" : "'Inter', sans-serif";
 
   const handleSelectCase = (caseId: string) => {
-    didAutoFocusRef.current = true;
+    setSelectedCaseId(caseId);
     onSelectCase?.(caseId);
   };
 
@@ -170,7 +158,7 @@ const CoordinatorPortalView: React.FC<Props> = ({
     isAr ? 'متى يجب أن أبدأ العلاج الطبيعي؟' : 'When should I start physical therapy?',
   ];
 
-  if (!activeCase || !activeCase.caseNumber || cases.length === 0) {
+  if (cases.length === 0) {
     return (
       <div data-testid="coordinator-empty" className="max-w-2xl mx-auto my-12 text-center p-10 card-clinical space-y-4">
         <h3 className="text-xl font-black text-alo-navy dark:text-slate-100">
@@ -307,7 +295,7 @@ const CoordinatorPortalView: React.FC<Props> = ({
     flexShrink: 0,
   });
 
-  const stageMeta = getStageBadgeMeta(activeCase.currentStage, isAr);
+  const stageMeta = currentCase ? getStageBadgeMeta(currentCase.currentStage, isAr) : null;
 
   return (
     <div
@@ -322,55 +310,132 @@ const CoordinatorPortalView: React.FC<Props> = ({
         color: '#1A202C',
       }}
     >
-      <header style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '32px',
-        borderBottom: `2px solid ${TEAL_BG}`,
-        paddingBottom: '16px',
-      }}>
-        <div>
-          <h1 style={{ margin: 0, fontSize: '24px', color: TEAL_PRIMARY, fontFamily }}>
-            {isAr ? 'بوابة المنسق الطبي' : 'Coordinator Portal'}
-          </h1>
-          <p style={{ margin: '4px 0 0', fontSize: '14px', color: '#718096', fontFamily }}>
-            {isAr ? 'رقم الحالة: ' : 'Case ID: '}{activeCase.caseNumber || activeCase.id || 'ALO-2024-001'}
+      {/* Integrated Portal Case Tracker Panel */}
+      <div style={{ maxWidth: '900px', margin: '0 auto 20px', width: '100%' }}>
+        <PortalCaseTrackerPanel
+          cases={cases}
+          activeCaseId={selectedCaseId || ''}
+          onSelectCase={handleSelectCase}
+          lang={lang}
+          portalTitleAr="قائمة حالات التنسيق الطبي والتتبع"
+          portalTitleEn="ALO Coordinator Queue & Case Tracking"
+          actionablePredicate={isActionableForCoordinator}
+        />
+      </div>
+
+      {!currentCase ? (
+        <div
+          className="card-clinical text-center space-y-3 bg-white dark:bg-slate-900 border border-dashed border-slate-300 dark:border-slate-700 rounded-2xl shadow-xs"
+          style={{
+            maxWidth: '900px',
+            margin: '20px auto',
+            padding: '36px 24px',
+            textAlign: 'center',
+            backgroundColor: '#FFFFFF',
+            borderRadius: '16px',
+            border: '1px dashed #CBD5E0',
+          }}
+        >
+          <div
+            style={{
+              width: '48px',
+              height: '48px',
+              margin: '0 auto 12px',
+              borderRadius: '50%',
+              backgroundColor: '#E6FAF7',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: TEAL_PRIMARY,
+              border: `1px solid ${TEAL_ACCENT}50`,
+            }}
+          >
+            <MousePointerClick size={24} />
+          </div>
+          <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#1A202C', margin: '0 0 8px', fontFamily }}>
+            {isAr ? 'يرجى اختيار حالة من قائمة التنسيق الطبي والتتبع أعلاه' : 'Select a Case from the Coordination Queue Above'}
+          </h3>
+          <p style={{ fontSize: '13px', color: '#718096', margin: '0 auto', maxWidth: '480px', lineHeight: '1.6', fontFamily }}>
+            {isAr
+              ? 'انقر على أي حالة في قائمة التنسيق أعلاه لعرض التفاصيل وتحديد باقة السداد، تأكيد المواعيد، أو إصدار التقارير ومتابعة الاستشارة.'
+              : 'Click on any case card in the queue above to review details, issue payment links, confirm call slots, or release reports.'}
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${stageMeta.colorClass}`}>
-            {stageMeta.label}
-          </span>
-          {isArchived && (
-            <span style={getBadgeStyle('success', fontFamily)}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4" />
-              </svg>
-              {isAr ? 'الحالة مؤرشفة' : 'Case Archived'}
-            </span>
-          )}
-          {!isArchived && activeTab !== 'C10' && (
-            <span style={getBadgeStyle('info', fontFamily)}>
-              {isAr ? 'الحالة نشطة' : 'Case Active'}
-            </span>
-          )}
-        </div>
-      </header>
+      ) : (
+        <>
+          <header style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '24px',
+            borderBottom: `2px solid ${TEAL_BG}`,
+            paddingBottom: '16px',
+            maxWidth: '900px',
+            margin: '0 auto 24px',
+            width: '100%',
+          }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <h1 style={{ margin: 0, fontSize: '22px', color: TEAL_PRIMARY, fontFamily }}>
+                  {isAr ? 'بوابة المنسق الطبي' : 'Coordinator Portal'}
+                </h1>
+                <span style={{ fontSize: '12px', fontWeight: 700, color: '#4A5568', backgroundColor: '#EDF2F7', padding: '2px 8px', borderRadius: '6px' }}>
+                  {currentCase.caseNumber || currentCase.id}
+                </span>
+              </div>
+              <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#718096', fontFamily }}>
+                {isAr ? 'المريض: ' : 'Patient: '}
+                <strong style={{ color: '#2D3748' }}>
+                  {isAr ? (currentCase.patientNameAr || currentCase.patientName) : (currentCase.patientNameEn || currentCase.patientName)}
+                </strong>
+                {' · '}{isAr ? (currentCase.specialtyAr || currentCase.specialty) : (currentCase.specialtyEn || currentCase.specialty)}
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              {stageMeta && (
+                <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${stageMeta.colorClass}`}>
+                  {stageMeta.label}
+                </span>
+              )}
+              {isArchived && (
+                <span style={getBadgeStyle('success', fontFamily)}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4" />
+                  </svg>
+                  {isAr ? 'الحالة مؤرشفة' : 'Case Archived'}
+                </span>
+              )}
+              {!isArchived && activeTab !== 'C10' && (
+                <span style={getBadgeStyle('info', fontFamily)}>
+                  {isAr ? 'الحالة نشطة' : 'Case Active'}
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={() => setSelectedCaseId(null)}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '6px 12px',
+                  backgroundColor: '#FFFFFF',
+                  color: '#4A5568',
+                  border: '1px solid #CBD5E0',
+                  borderRadius: '8px',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  fontFamily,
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                }}
+              >
+                <X size={14} />
+                <span>{isAr ? 'إغلاق التفاصيل والعودة للقائمة' : 'Close Details'}</span>
+              </button>
+            </div>
+          </header>
 
-      {cases && cases.length > 0 && (
-        <div style={{ maxWidth: '900px', margin: '0 auto 20px', width: '100%' }}>
-          <PortalCaseTrackerPanel
-            cases={cases}
-            activeCaseId={activeCase.id}
-            onSelectCase={handleSelectCase}
-            lang={lang}
-            portalTitleAr="قائمة حالات التنسيق الطبي والتتبع"
-            portalTitleEn="ALO Coordinator Queue & Case Tracking"
-            actionablePredicate={isActionableForCoordinator}
-          />
-        </div>
-      )}
+          <div style={{ maxWidth: '900px', margin: '0 auto', width: '100%' }}>
 
       <nav style={{ display: 'flex', gap: '8px', marginBottom: '24px', overflowX: 'auto', paddingBottom: '6px' }} role="tablist" aria-label={isAr ? 'مراحل التنسيق' : 'Coordination Stages'}>
         <button key="tab-c01" role="tab" aria-selected={activeTab === 'C01'} style={getTabStyle('C01')} onClick={() => setActiveTab('C01')}>
@@ -484,6 +549,9 @@ const CoordinatorPortalView: React.FC<Props> = ({
         )}
 
       </main>
+      </div>
+      </>
+      )}
 
       <BilingualReportModal
         isOpen={isPDF2ModalOpen}
