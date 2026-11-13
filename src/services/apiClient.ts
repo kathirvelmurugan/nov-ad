@@ -1,5 +1,5 @@
 import { TenantHospital, StaffAccountRecord, ClinicalCase, AuditLogEntry } from '../types';
-import { TENANTS_KEY, PLATFORM_USERS_KEY, STORAGE_KEY } from '../hooks/workflowConstants';
+import { TENANTS_KEY, PLATFORM_USERS_KEY, STORAGE_KEY, ACTIVE_CASE_KEY } from '../hooks/workflowConstants';
 
 function getApiBase(): string {
   if (typeof window === 'undefined') return '';
@@ -184,6 +184,18 @@ export const apiClient = {
     } catch (e) {
       console.warn('[API] Failed to sync case to backend:', e);
     }
+  },
+
+  async purgeAllCases(): Promise<void> {
+    try {
+      await safeFetch('/api/cases', { method: 'DELETE' });
+    } catch (e) {
+      console.warn('[API] Failed to purge cases from backend:', e);
+    }
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(ACTIVE_CASE_KEY);
+    } catch {}
   },
 
   // ── Audit Logs ────────────────────────────────────────────────────────────

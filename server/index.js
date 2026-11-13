@@ -318,6 +318,15 @@ apiRouter.post('/cases', async (req, res) => {
   return res.json({ success: true, data: c });
 });
 
+apiRouter.delete('/cases', async (req, res) => {
+  try {
+    await pool.query('TRUNCATE TABLE clinical_cases CASCADE');
+    try { await pool.query('TRUNCATE TABLE cases CASCADE'); } catch {}
+  } catch (err) {}
+  memoryCases = [];
+  return res.json({ success: true, message: 'All patient cases successfully purged' });
+});
+
 apiRouter.delete('/cases/:id', async (req, res) => {
   const { id } = req.params;
   try {

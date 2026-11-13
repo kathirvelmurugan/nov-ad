@@ -18,18 +18,7 @@ import {
   Activity
 } from 'lucide-react';
 
-const PATIENT_FIRST_NAMES: Record<string, { ar: string; en: string }> = {
-  'case-001': { ar: 'مريض', en: 'Patient' },
-  'case-002': { ar: 'فاطمة', en: 'Fatima' },
-  'case-003': { ar: 'طارق', en: 'Tariq' },
-  'case-004': { ar: 'ريم', en: 'Reem' },
-  'case-005': { ar: 'نوف', en: 'Nouf' },
-  'case-006': { ar: 'خالد', en: 'Khalid' },
-  'case-007': { ar: 'عبدالله', en: 'Abdullah' },
-  'case-008': { ar: 'مشعل', en: 'Mishal' },
-  'case-009': { ar: 'زياد', en: 'Ziyad' },
-  'case-010': { ar: 'منى', en: 'Mona' },
-};
+
 
 const ROLE_METADATA: Record<string, { labelAr: string; labelEn: string; scopeAr: string; scopeEn: string }> = {
   P: {

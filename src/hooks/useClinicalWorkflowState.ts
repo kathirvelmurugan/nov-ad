@@ -32,23 +32,23 @@ export type { UserSession };
 export { STORAGE_KEY, ACTIVE_CASE_KEY, THEME_KEY, LANG_KEY, VIEW_MODE_KEY, USER_SESSION_KEY, FRESH_PRIMARY_CASE };
 
 // Clean-slate in-memory draft template for fresh unsubmitted intake
-const createFreshDraftIntake = (session?: UserSession | null, isAr = false): ClinicalCase => ({
+const createFreshDraftIntake = (session?: UserSession | null, _isAr = false): ClinicalCase => ({
   ...FRESH_PRIMARY_CASE,
   id: 'draft-intake',
   caseNumber: '',
-  patientName: session?.fullName || (isAr ? 'مريض ألو' : 'ALO Patient'),
-  patientNameAr: session?.fullName || (isAr ? 'مريض ألو' : 'ALO Patient'),
-  patientNameEn: session?.fullName || (!isAr ? 'ALO Patient' : 'ALO Patient'),
+  patientName: session?.fullName || '',
+  patientNameAr: session?.fullName || '',
+  patientNameEn: session?.fullName || '',
   patientPhone: session?.phone || '',
-  nationalIdMasked: '10********',
-  age: 45,
+  nationalIdMasked: '',
+  age: 0,
   gender: 'M',
-  city: 'Riyadh',
-  cityAr: 'الرياض',
-  cityEn: 'Riyadh',
-  specialty: 'جراحة القلب والصدر',
-  specialtyAr: 'جراحة القلب والصدر',
-  specialtyEn: 'Cardiothoracic Surgery',
+  city: '',
+  cityAr: '',
+  cityEn: '',
+  specialty: '',
+  specialtyAr: '',
+  specialtyEn: '',
   diagnosis: '',
   diagnosisAr: '',
   diagnosisEn: '',
@@ -257,7 +257,7 @@ export function useClinicalWorkflowState() {
     const syncCases = async () => {
       try {
         const remoteCases = await apiClient.fetchCases();
-        if (mounted && Array.isArray(remoteCases) && remoteCases.length > 0) {
+        if (mounted && Array.isArray(remoteCases)) {
           const sorted = [...remoteCases].sort((a, b) => {
             const timeA = new Date(a.createdAt || 0).getTime() || 0;
             const timeB = new Date(b.createdAt || 0).getTime() || 0;
@@ -626,10 +626,14 @@ export function useClinicalWorkflowState() {
     setIsPipelineBoardOpen(false);
   };
 
-  const handleResetDemo = () => {
+  const handleResetDemo = async () => {
     const confirmMsg = lang === 'ar' ? 'إعادة ضبط الحالات إلى حالة نظيفة؟' : 'Reset all clinical cases to clean state?';
     if (window.confirm(confirmMsg)) {
-      try { localStorage.removeItem(STORAGE_KEY); localStorage.removeItem(ACTIVE_CASE_KEY); } catch (e) {}
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(ACTIVE_CASE_KEY);
+        await apiClient.purgeAllCases();
+      } catch (e) {}
       setCases([]); setActiveCaseId(''); setPatientSubView('landing'); setSelectedServiceId('second-opinion');
     }
   };
