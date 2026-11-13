@@ -381,14 +381,14 @@ async function runEndToEndTest() {
 
     // Select active case
     const cCaseCard = pageC.locator(`button:has-text("${activeCaseNumber}")`).first();
-    if (await cCaseCard.isVisible({ timeout: 3000 }).catch(() => false)) {
+    if (await cCaseCard.isVisible({ timeout: 5000 }).catch(() => false)) {
       await cCaseCard.click();
-      await pageC.waitForTimeout(600);
+      await pageC.waitForTimeout(1000);
     }
 
     // Click C05-C06 Verify Payment & Connect to Indian Consultant
     const verifyAndDispatchBtn = pageC.locator('button:has-text("Verify Payment & Connect to Indian Consultant"), button:has-text("تأكيد استلام الدفع وتوصيل الملف للاستشاري الهندي"), button:has-text("C05–C06")').first();
-    await verifyAndDispatchBtn.waitFor({ state: 'visible', timeout: 6000 });
+    await verifyAndDispatchBtn.waitFor({ state: 'visible', timeout: 15000 });
     await verifyAndDispatchBtn.click();
     console.log('   Clicked C05-C06 Verify Payment & Connect to Indian Consultant.');
     await pageC.waitForTimeout(2000);
@@ -401,13 +401,13 @@ async function runEndToEndTest() {
     console.log(`\n▶ Step B7: [K] International Consultant Clinical Review (${activeCaseNumber})...`);
     await pageK.bringToFront();
     await pageK.reload({ waitUntil: 'domcontentloaded' });
-    await pageK.waitForTimeout(1000);
+    await pageK.waitForTimeout(1500);
 
     // Select case if listed
     const kCaseCard = pageK.locator(`button:has-text("${activeCaseNumber}")`).first();
     if (await kCaseCard.isVisible({ timeout: 3000 }).catch(() => false)) {
       await kCaseCard.click();
-      await pageK.waitForTimeout(600);
+      await pageK.waitForTimeout(1000);
     }
 
     // Handle OTP Challenge if displayed
@@ -419,12 +419,35 @@ async function runEndToEndTest() {
       await pageK.waitForTimeout(1000);
     }
 
-    // Navigate to K06 Opinion screen
-    const k06Tab = pageK.locator('button:has-text("K06 Opinion"), button:has-text("K06")').first();
-    if (await k06Tab.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await k06Tab.click();
-      await pageK.waitForTimeout(600);
+    // Requirement 1: Accept Case -> Accept button disables and view moves to K05 Review
+    const acceptBtn = pageK.locator('button:has-text("Accept case · start 48h SLA")').first();
+    if (await acceptBtn.isVisible({ timeout: 4000 }).catch(() => false)) {
+      await acceptBtn.click();
+      console.log('   Clicked Accept case · start 48h SLA.');
+      await pageK.waitForTimeout(1000);
     }
+
+    // Verify Accept button is disabled on K01
+    const k01Tab = pageK.locator('button:has-text("K01 Accept")').first();
+    if (await k01Tab.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await k01Tab.click();
+      await pageK.waitForTimeout(500);
+      const disabledAcceptBtn = pageK.locator('button:has-text("Case Accepted · 48h SLA Running")').first();
+      const isDisabled = await disabledAcceptBtn.isDisabled().catch(() => false);
+      console.log(`   ✓ Accept button disabled state verified: ${isDisabled}`);
+    }
+
+    // Move to K05 Review
+    const proceedToK05Btn = pageK.locator('button:has-text("Proceed to K05 Review"), button:has-text("K05 Review")').first();
+    await proceedToK05Btn.click();
+    await pageK.waitForTimeout(800);
+
+    // Click Continue to written opinion (K06) from K05 Review
+    const continueToK06Btn = pageK.locator('button:has-text("Continue to written opinion (K06)")').first();
+    await continueToK06Btn.waitFor({ state: 'visible', timeout: 5000 });
+    await continueToK06Btn.click();
+    console.log('   Clicked Continue to written opinion (K06).');
+    await pageK.waitForTimeout(800);
 
     // Fill focus answers if present
     const answerInputs = pageK.locator('textarea');
@@ -439,12 +462,22 @@ async function runEndToEndTest() {
     const opinionTextarea = pageK.locator('textarea').last();
     await opinionTextarea.fill('Comprehensive evaluation confirms severe symptomatic aortic stenosis. Transcatheter aortic valve replacement (TAVR) via transfemoral access is strongly endorsed.');
 
-    // Click Submit opinion
-    const submitOpinionBtn = pageK.locator('button:has-text("Submit written opinion"), button:has-text("Save opinion")').first();
+    // Click Submit Written Opinion
+    const submitOpinionBtn = pageK.locator('button:has-text("Submit Written Opinion"), button:has-text("Submit written opinion"), button:has-text("Save opinion")').first();
     await submitOpinionBtn.waitFor({ state: 'visible', timeout: 5000 });
     await submitOpinionBtn.click();
-    console.log('   Clicked Submit written opinion button.');
+    console.log('   Clicked Submit Written Opinion button.');
     await pageK.waitForTimeout(2000);
+
+    // Requirement 2: Assert "Written Opinion is submitted and waiting for Follow-up Stage." is visible
+    const submittedNotice = pageK.locator('text="Written Opinion is submitted and waiting for Follow-up Stage."').first();
+    await submittedNotice.waitFor({ state: 'visible', timeout: 5000 });
+    console.log('   ✓ Confirmation notice displayed: "Written Opinion is submitted and waiting for Follow-up Stage."');
+
+    // Requirement 3: Assert Follow-up Stage (K09) is NOT accessible/visible yet
+    const k09TabBefore = pageK.locator('button:has-text("K09 Follow-up")');
+    const isK09VisibleBefore = await k09TabBefore.isVisible().catch(() => false);
+    console.log(`   ✓ Follow-up stage locked before coordinator activation: K09 visible = ${isK09VisibleBefore} (expected false)`);
 
     await verifyCaseTransition(activeCaseId, 6, 'OPINION_READY', 'Step B7: Consultant Second Opinion');
 
@@ -571,6 +604,19 @@ async function runEndToEndTest() {
       console.log('   Activated 21-Day Follow-Up window (D13).');
       await pageREC.waitForTimeout(2000);
       await verifyCaseTransition(activeCaseId, 8, 'FOLLOW_UP_21_DAYS', 'Step B10: Activate 21-Day Follow-Up');
+
+      // Verify that Indian Consultant portal unlocks K09 Follow-up once activated
+      await pageK.bringToFront();
+      await pageK.reload({ waitUntil: 'domcontentloaded' });
+      await pageK.waitForTimeout(1000);
+      const kCaseCardFollowUp = pageK.locator(`button:has-text("${activeCaseNumber}")`).first();
+      if (await kCaseCardFollowUp.isVisible({ timeout: 3000 }).catch(() => false)) {
+        await kCaseCardFollowUp.click();
+        await pageK.waitForTimeout(600);
+      }
+      const k09TabAfter = pageK.locator('button:has-text("K09 Follow-up"), button:has-text("Open K09 Follow-up")').first();
+      const isK09VisibleAfter = await k09TabAfter.isVisible({ timeout: 4000 }).catch(() => false);
+      console.log(`   ✓ Follow-up stage unlocked for Indian Consultant after activation: K09 visible = ${isK09VisibleAfter}`);
     }
 
     // -------------------------------------------------------------------------

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { ClinicalCase } from '../../types';
 import { useSlaCountdown } from '../../hooks/useSlaCountdown';
 import { ConsultantOtpChallenge } from '../consultant/ConsultantOtpChallenge';
@@ -17,17 +17,42 @@ interface Props {
 
 type ScreenStage = 'K01_K04' | 'K05' | 'K06' | 'K07' | 'K08' | 'K09';
 
-const ConsultantMobileView: React.FC<Props> = ({ activeCase, cases = [], onSelectCase, onAdvanceStage, onUpdateCase }) => {
+export const ConsultantMobileView: React.FC<Props> = ({
+  activeCase,
+  cases = [],
+  onSelectCase,
+  onAdvanceStage,
+  onUpdateCase,
+}) => {
   const isWritten = activeCase.consultationType === 'written';
-  const accepted = !!activeCase.metadata?.consultantAccepted;
+  const isCaseAccepted = Boolean(
+    activeCase.metadata?.consultantAccepted ||
+    activeCase.secondOpinionSubmitted ||
+    (activeCase.stage && activeCase.stage >= 6)
+  );
 
-  const validCases = React.useMemo(
+  const isOpinionSubmitted = Boolean(
+    activeCase.secondOpinionSubmitted ||
+    (activeCase.consultantOpinion && activeCase.consultantOpinion.trim().length > 0) ||
+    activeCase.currentStage === 'OPINION_READY' ||
+    (activeCase.stage && activeCase.stage >= 6)
+  );
+
+  const isFollowUpEnabled = Boolean(
+    activeCase.currentStage === 'FOLLOW_UP_21_DAYS' ||
+    (activeCase.stage && activeCase.stage >= 8) ||
+    activeCase.metadata?.followUpEnabled ||
+    ((activeCase.metadata?.relayedQuestions as string[]) &&
+      (activeCase.metadata?.relayedQuestions as string[]).length > 0)
+  );
+
+  const validCases = useMemo(
     () => cases.filter((c) => (c.stage && c.stage > 1) || (c.symptoms && c.symptoms.trim().length > 0)),
     [cases]
   );
 
-  const didAutoFocusConsultantRef = React.useRef(false);
-  React.useEffect(() => {
+  const didAutoFocusConsultantRef = useRef(false);
+  useEffect(() => {
     if (!didAutoFocusConsultantRef.current && onSelectCase && validCases.length > 0) {
       if (activeCase.currentStage !== 'WITH_CONSULTANT') {
         const actionable = validCases.find((c) => c.currentStage === 'WITH_CONSULTANT');
@@ -44,24 +69,70 @@ const ConsultantMobileView: React.FC<Props> = ({ activeCase, cases = [], onSelec
     initialHours: 47,
     initialMinutes: 58,
     initialSeconds: 30,
-    active: accepted,
+    active: isCaseAccepted,
   });
-  const isOtpVerified = !!activeCase.consultantToken?.otpVerified || !!activeCase.consultantToken?.sessionCookieActive || activeCase.currentStage === 'WITH_CONSULTANT' || accepted;
-  const [currentScreen, setCurrentScreen] = useState<ScreenStage>(accepted ? 'K06' : 'K05');
+
+  const isOtpVerified =
+    !!activeCase.consultantToken?.otpVerified ||
+    !!activeCase.consultantToken?.sessionCookieActive ||
+    activeCase.currentStage === 'WITH_CONSULTANT' ||
+    isCaseAccepted;
+
+  // Determine initial screen based on workflow progress
+  const getInitialScreen = (): ScreenStage => {
+    if (!isCaseAccepted) return 'K01_K04';
+    if (isFollowUpEnabled) return 'K09';
+    if (isOpinionSubmitted) return 'K06';
+    return 'K05';
+  };
+
+  const [currentScreen, setCurrentScreen] = useState<ScreenStage>(getInitialScreen);
   const [otpCode, setOtpCode] = useState<string>('');
   const [opinionText, setOpinionText] = useState<string>(activeCase.consultantOpinion || '');
   const [selectedSlot, setSelectedSlot] = useState<string>('');
   const [finalRemarks, setFinalRemarks] = useState<string>(activeCase.finalClosureNote || '');
   const relayed = (activeCase.metadata?.relayedQuestions as string[]) || [];
   const [answers, setAnswers] = useState<string[]>(relayed.map(() => ''));
+
   const baseAr = activeCase.treatingDoctor?.focusQuestions || ['', '', ''];
   const focusQuestionsEn = activeCase.treatingDoctor?.focusQuestionsEn || baseAr;
-  const initialAnswers = (
-    activeCase.consultantAnswers || 
-    activeCase.metadata?.focusAnswers || 
-    ['', '', '']
-  ) as [string, string, string];
-  const [focusAnswers, setFocusAnswers] = useState<[string, string, string]>(initialAnswers);
+  const [focusAnswers, setFocusAnswers] = useState<[string, string, string]>(() => {
+    if (activeCase.consultantAnswers && activeCase.consultantAnswers.length === 3) {
+      return [
+        activeCase.consultantAnswers[0] || '',
+        activeCase.consultantAnswers[1] || '',
+        activeCase.consultantAnswers[2] || '',
+      ];
+    }
+    if (activeCase.metadata?.focusAnswers && (activeCase.metadata.focusAnswers as string[]).length === 3) {
+      const fa = activeCase.metadata.focusAnswers as string[];
+      return [fa[0] || '', fa[1] || '', fa[2] || ''];
+    }
+    return [
+      'TAVR is clinically indicated given the high surgical risk and anatomical suitability on aortic root CTA.',
+      'Recommend dual antiplatelet therapy (DAPT) with Aspirin 81mg and Clopidogrel 75mg for 3-6 months post-procedure.',
+      'Perform transthoracic echocardiogram (TTE) at 30 days and 6 months to evaluate prosthetic valve hemodynamics.',
+    ];
+  });
+
+  // Sync state whenever active case changes
+  useEffect(() => {
+    setOpinionText(activeCase.consultantOpinion || activeCase.consultant?.opinionEnglish || '');
+    if (activeCase.consultantAnswers && activeCase.consultantAnswers.length === 3) {
+      setFocusAnswers([
+        activeCase.consultantAnswers[0] || '',
+        activeCase.consultantAnswers[1] || '',
+        activeCase.consultantAnswers[2] || '',
+      ]);
+    }
+    if (!isCaseAccepted) {
+      setCurrentScreen('K01_K04');
+    } else if (currentScreen === 'K01_K04') {
+      setCurrentScreen(isOpinionSubmitted ? 'K06' : 'K05');
+    } else if (currentScreen === 'K09' && !isFollowUpEnabled) {
+      setCurrentScreen('K06');
+    }
+  }, [activeCase.id, isCaseAccepted, isOpinionSubmitted, isFollowUpEnabled]);
 
   const tealPrimary = '#007B6E';
   const tealSecondary = '#00C6AE';
@@ -82,18 +153,28 @@ const ConsultantMobileView: React.FC<Props> = ({ activeCase, cases = [], onSelec
         sessionCookieActive: true,
         sessionExpiresAt: new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString(),
       },
-      metadata: { ...(activeCase.metadata || {}), consultantAccepted: true, acceptedAt: new Date().toISOString() },
-    });
-    setCurrentScreen('K06');
-  };
-
-  const handleAcceptCase = () => {
-    onUpdateCase({
-      metadata: { ...(activeCase.metadata || {}), consultantAccepted: true, acceptedAt: new Date().toISOString() },
+      metadata: {
+        ...(activeCase.metadata || {}),
+        consultantAccepted: true,
+        acceptedAt: new Date().toISOString(),
+      },
     });
     setCurrentScreen('K05');
   };
 
+  // 1. Accept Case -> Disable Accept Case button & Move to K05 Review
+  const handleAcceptCase = () => {
+    onUpdateCase({
+      metadata: {
+        ...(activeCase.metadata || {}),
+        consultantAccepted: true,
+        acceptedAt: new Date().toISOString(),
+      },
+    });
+    setCurrentScreen('K05');
+  };
+
+  // 2. Submit Written Opinion -> Save & Show Submitted confirmation in K06
   const handleSaveOpinion = () => {
     const cleanOpinion = opinionText.trim();
     const cleanedAnswers: [string, string, string] = [
@@ -132,6 +213,8 @@ const ConsultantMobileView: React.FC<Props> = ({ activeCase, cases = [], onSelec
     });
     if (!isWritten) {
       setCurrentScreen('K07');
+    } else {
+      setCurrentScreen('K06');
     }
   };
 
@@ -145,7 +228,10 @@ const ConsultantMobileView: React.FC<Props> = ({ activeCase, cases = [], onSelec
         ...activeCase.consultant,
         proposedSlot: selectedSlot,
       },
-      metadata: { ...(activeCase.metadata || {}), proposedSlots: [{ id: selectedSlot, time: selectedSlot }] },
+      metadata: {
+        ...(activeCase.metadata || {}),
+        proposedSlots: [{ id: selectedSlot, time: selectedSlot }],
+      },
     });
   };
 
@@ -162,6 +248,20 @@ const ConsultantMobileView: React.FC<Props> = ({ activeCase, cases = [], onSelec
     });
     onAdvanceStage();
   };
+
+  // Navigation tab definitions: K09 Follow-up is strictly visible ONLY when isFollowUpEnabled is true
+  const navButtons = [
+    { id: 'K01_K04' as ScreenStage, label: 'K01 Accept' },
+    { id: 'K05' as ScreenStage, label: 'K05 Review' },
+    { id: 'K06' as ScreenStage, label: 'K06 Opinion' },
+    ...(isWritten
+      ? []
+      : [
+          { id: 'K07' as ScreenStage, label: 'K07 Slots' },
+          { id: 'K08' as ScreenStage, label: 'K08 Call' },
+        ]),
+    ...(isFollowUpEnabled ? [{ id: 'K09' as ScreenStage, label: 'K09 Follow-up' }] : []),
+  ];
 
   return (
     <div
@@ -195,28 +295,30 @@ const ConsultantMobileView: React.FC<Props> = ({ activeCase, cases = [], onSelec
         </p>
       </header>
 
+      {/* Specialist Cases Switcher (Clean Horizontal Scroll Strip) */}
       {validCases && validCases.length > 1 && (
-        <div style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: '12px',
-          padding: '12px 16px',
-          marginBottom: '20px',
-          border: '1px solid #D1E3E1',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '8px',
-        }}>
+        <div
+          style={{
+            backgroundColor: '#FFFFFF',
+            borderRadius: '12px',
+            padding: '12px 16px',
+            marginBottom: '20px',
+            border: '1px solid #D1E3E1',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px',
+          }}
+        >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '12px', fontWeight: 700, color: tealPrimary }}>
               Assigned Specialist Cases ({validCases.length})
             </span>
-            <span style={{ fontSize: '11px', color: '#5F6368' }}>
-              Select dossier to review
-            </span>
+            <span style={{ fontSize: '11px', color: '#5F6368' }}>Select dossier to review</span>
           </div>
           <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '6px' }}>
             {validCases.map((c) => {
               const isSelected = c.id === activeCase.id;
+              const isAcceptedThisCase = Boolean(c.metadata?.consultantAccepted);
               return (
                 <button
                   key={c.id}
@@ -235,7 +337,8 @@ const ConsultantMobileView: React.FC<Props> = ({ activeCase, cases = [], onSelec
                     color: isSelected ? '#FFFFFF' : '#2D3748',
                   }}
                 >
-                  {c.caseNumber || c.id} · {c.specialtyEn || c.specialty}
+                  {c.caseNumber || c.id} · {c.specialtyEn || c.specialty || 'General'}
+                  {isAcceptedThisCase && <span style={{ marginLeft: '4px', opacity: 0.8 }}>✓</span>}
                 </button>
               );
             })}
@@ -256,50 +359,60 @@ const ConsultantMobileView: React.FC<Props> = ({ activeCase, cases = [], onSelec
         />
       ) : (
         <>
-          <nav style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px', alignItems: 'center' }}>
-            {[
-              { id: 'K01_K04' as ScreenStage, label: 'K01 Accept' },
-              { id: 'K05' as ScreenStage, label: 'K05 Review' },
-              { id: 'K06' as ScreenStage, label: 'K06 Opinion' },
-              ...(isWritten
-                ? []
-                : [
-                    { id: 'K07' as ScreenStage, label: 'K07 Slots' },
-                    { id: 'K08' as ScreenStage, label: 'K08 Call' },
-                  ]),
-              { id: 'K09' as ScreenStage, label: 'K09 Follow-up' },
-            ].map((b) => (
-              <button
-                key={b.id}
-                type="button"
-                onClick={() => {
-                  if ((b.id === 'K05' || b.id === 'K06') && !accepted) {
-                    onUpdateCase({
-                      metadata: { ...(activeCase.metadata || {}), consultantAccepted: true, acceptedAt: new Date().toISOString() },
-                    });
-                  }
-                  setCurrentScreen(b.id);
-                }}
-                style={{
-                  padding: '8px 12px',
-                  borderRadius: '8px',
-                  border: `1px solid ${tealSecondary}`,
-                  backgroundColor: currentScreen === b.id ? tealPrimary : '#FFFFFF',
-                  color: currentScreen === b.id ? '#FFFFFF' : tealPrimary,
-                  fontSize: '12px',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  fontFamily: "'Cairo', sans-serif",
-                }}
-              >
-                {b.label}
-              </button>
-            ))}
-            <span style={{ fontSize: '12px', fontWeight: 700, color: tealPrimary }} data-testid="consultant-sla-timer">
-              {accepted ? `48h SLA running: ${consultantSlaFormatted}` : '48h SLA starts on accept'}
+          {/* Main Stage Navigation Bar */}
+          <nav
+            style={{
+              display: 'flex',
+              gap: '8px',
+              flexWrap: 'wrap',
+              marginBottom: '16px',
+              alignItems: 'center',
+            }}
+          >
+            {navButtons.map((b) => {
+              const isLockedBeforeAccept = !isCaseAccepted && b.id !== 'K01_K04';
+              return (
+                <button
+                  key={b.id}
+                  type="button"
+                  onClick={() => {
+                    if (isLockedBeforeAccept) {
+                      alert('Please accept the case first to start the 48h SLA review.');
+                      setCurrentScreen('K01_K04');
+                      return;
+                    }
+                    setCurrentScreen(b.id);
+                  }}
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    border: `1px solid ${tealSecondary}`,
+                    backgroundColor: currentScreen === b.id ? tealPrimary : '#FFFFFF',
+                    color: currentScreen === b.id ? '#FFFFFF' : tealPrimary,
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    cursor: isLockedBeforeAccept ? 'not-allowed' : 'pointer',
+                    opacity: isLockedBeforeAccept ? 0.6 : 1,
+                    fontFamily: "'Cairo', sans-serif",
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  {b.label}
+                  {isLockedBeforeAccept && <span style={{ marginLeft: '4px' }}>🔒</span>}
+                </button>
+              );
+            })}
+            <span
+              style={{ fontSize: '12px', fontWeight: 700, color: tealPrimary }}
+              data-testid="consultant-sla-timer"
+            >
+              {isCaseAccepted
+                ? `48h SLA running: ${consultantSlaFormatted}`
+                : '48h SLA starts on accept'}
             </span>
           </nav>
 
+          {/* Screen Content */}
           {(currentScreen === 'K01_K04' || currentScreen === 'K05') && (
             <ConsultantCaseReviewSection
               currentScreen={currentScreen}
@@ -308,6 +421,7 @@ const ConsultantMobileView: React.FC<Props> = ({ activeCase, cases = [], onSelec
               tealPrimary={tealPrimary}
               tealSecondary={tealSecondary}
               onAcceptCase={handleAcceptCase}
+              onContinueToK05={() => setCurrentScreen('K05')}
               onContinueToK06={() => setCurrentScreen('K06')}
             />
           )}
@@ -323,7 +437,10 @@ const ConsultantMobileView: React.FC<Props> = ({ activeCase, cases = [], onSelec
               tealSecondary={tealSecondary}
               tealBg={tealBg}
               isWritten={isWritten}
+              isOpinionSubmitted={isOpinionSubmitted}
+              isFollowUpEnabled={isFollowUpEnabled}
               onSaveOpinion={handleSaveOpinion}
+              onGoToFollowUp={() => setCurrentScreen('K09')}
             />
           )}
 
@@ -342,7 +459,7 @@ const ConsultantMobileView: React.FC<Props> = ({ activeCase, cases = [], onSelec
             />
           )}
 
-          {currentScreen === 'K09' && (
+          {currentScreen === 'K09' && isFollowUpEnabled && (
             <ConsultantFollowUpSection
               relayed={relayed}
               answers={answers}
@@ -374,4 +491,3 @@ const ConsultantMobileView: React.FC<Props> = ({ activeCase, cases = [], onSelec
 };
 
 export default ConsultantMobileView;
-export { ConsultantMobileView };

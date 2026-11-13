@@ -10,7 +10,10 @@ interface Props {
   tealSecondary: string;
   tealBg: string;
   isWritten: boolean;
+  isOpinionSubmitted: boolean;
+  isFollowUpEnabled: boolean;
   onSaveOpinion: () => void;
+  onGoToFollowUp?: () => void;
 }
 
 export const ConsultantWrittenOpinionSection: React.FC<Props> = ({
@@ -23,7 +26,10 @@ export const ConsultantWrittenOpinionSection: React.FC<Props> = ({
   tealSecondary,
   tealBg,
   isWritten,
+  isOpinionSubmitted,
+  isFollowUpEnabled,
   onSaveOpinion,
+  onGoToFollowUp,
 }) => {
   const isOpinionValid = (opinionText || '').trim().length >= 50;
   const areAnswersValid = (focusAnswers || []).every(
@@ -31,15 +37,265 @@ export const ConsultantWrittenOpinionSection: React.FC<Props> = ({
   );
   const canSubmit = isOpinionValid && areAnswersValid;
 
-  return (
-    <section aria-label="Written opinion" style={{ backgroundColor: '#FFFFFF', borderRadius: '12px', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-      <h2 style={{ fontSize: '18px', color: tealPrimary, marginTop: 0, marginBottom: '16px' }}>
-        K06 · Written opinion
-      </h2>
+  // ── Submitted State View ──────────────────────────────────────────────────
+  if (isOpinionSubmitted) {
+    return (
+      <section
+        aria-label="Written opinion submitted"
+        style={{
+          backgroundColor: '#FFFFFF',
+          borderRadius: '12px',
+          padding: '24px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+        }}
+      >
+        {/* Prominent Confirmation Banner */}
+        <div
+          role="status"
+          style={{
+            backgroundColor: '#F0FDF4',
+            border: '2px solid #22C55E',
+            borderRadius: '12px',
+            padding: '20px',
+            marginBottom: '24px',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '14px',
+          }}
+        >
+          <div
+            style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '50%',
+              backgroundColor: '#22C55E',
+              color: '#FFFFFF',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '18px',
+              fontWeight: 900,
+              flexShrink: 0,
+              marginTop: '2px',
+            }}
+          >
+            ✓
+          </div>
+          <div style={{ flex: 1 }}>
+            <h3
+              style={{
+                margin: '0 0 6px',
+                fontSize: '16px',
+                fontWeight: 800,
+                color: '#15803D',
+              }}
+            >
+              Written Opinion is submitted and waiting for Follow-up Stage.
+            </h3>
+            <p
+              style={{
+                margin: 0,
+                fontSize: '13px',
+                color: '#166534',
+                lineHeight: 1.5,
+              }}
+            >
+              Your second opinion report and answers to the Saudi treating doctor focus questions have been safely submitted. The follow-up communication window will unlock once initiated by the ALO Care Coordinator.
+            </p>
+          </div>
+        </div>
 
-      {/* Answers to Saudi Doctor's 3 Focus Questions */}
-      <div style={{ backgroundColor: tealBg, borderRadius: '8px', padding: '16px', marginBottom: '20px', border: `1px solid ${tealSecondary}` }}>
-        <h3 style={{ fontSize: '14px', fontWeight: 700, color: tealPrimary, marginTop: 0, marginBottom: '12px' }}>
+        {/* Follow-up Unlock Callout if already activated by Coordinator */}
+        {isFollowUpEnabled ? (
+          <div
+            style={{
+              backgroundColor: tealBg,
+              border: `1px solid ${tealSecondary}`,
+              borderRadius: '10px',
+              padding: '16px 20px',
+              marginBottom: '24px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '12px',
+            }}
+          >
+            <div>
+              <span
+                style={{
+                  fontSize: '14px',
+                  fontWeight: 800,
+                  color: tealPrimary,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                <span
+                  style={{
+                    width: '8px',
+                    height: '8px',
+                    borderRadius: '50%',
+                    backgroundColor: '#22C55E',
+                  }}
+                />
+                Follow-up Stage is active!
+              </span>
+              <p style={{ margin: '3px 0 0', fontSize: '12px', color: '#4B5563' }}>
+                The ALO Coordinator has enabled the follow-up channel. Patient questions are ready for your review.
+              </p>
+            </div>
+            {onGoToFollowUp && (
+              <button
+                type="button"
+                onClick={onGoToFollowUp}
+                style={{
+                  padding: '10px 18px',
+                  backgroundColor: tealPrimary,
+                  color: '#FFFFFF',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '13px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  fontFamily: "'Cairo', sans-serif",
+                }}
+              >
+                Open K09 Follow-up →
+              </button>
+            )}
+          </div>
+        ) : (
+          <div
+            style={{
+              backgroundColor: '#F8FAFC',
+              border: '1px dashed #CBD5E1',
+              borderRadius: '10px',
+              padding: '14px 18px',
+              marginBottom: '24px',
+              fontSize: '12px',
+              color: '#64748B',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+            }}
+          >
+            <span>🔒</span>
+            <span>
+              Follow-up Stage remains locked and will become accessible once initiated by the ALO Coordinator (C09).
+            </span>
+          </div>
+        )}
+
+        {/* Read-Only Summary of Submitted Opinion */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div>
+            <h4
+              style={{
+                fontSize: '14px',
+                fontWeight: 700,
+                color: tealPrimary,
+                margin: '0 0 12px',
+              }}
+            >
+              Submitted Focus Question Answers:
+            </h4>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {focusQuestionsEn.map((q, i) => (
+                <div
+                  key={i}
+                  style={{
+                    padding: '12px 14px',
+                    borderRadius: '8px',
+                    backgroundColor: '#F8FAFC',
+                    border: '1px solid #E2E8F0',
+                  }}
+                >
+                  <div style={{ fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
+                    Q{i + 1}: {q}
+                  </div>
+                  <div style={{ fontSize: '13px', color: '#0F172A', lineHeight: 1.5 }}>
+                    {focusAnswers[i] || '—'}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <h4
+              style={{
+                fontSize: '14px',
+                fontWeight: 700,
+                color: tealPrimary,
+                margin: '0 0 8px',
+              }}
+            >
+              Submitted Clinical Opinion Synthesis:
+            </h4>
+            <div
+              style={{
+                padding: '16px',
+                borderRadius: '8px',
+                backgroundColor: '#F8FAFC',
+                border: '1px solid #E2E8F0',
+                fontSize: '14px',
+                lineHeight: 1.7,
+                color: '#1E293B',
+                whiteSpace: 'pre-line',
+              }}
+            >
+              {opinionText}
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // ── Authoring Form View ───────────────────────────────────────────────────
+  return (
+    <section
+      aria-label="Submit written opinion"
+      style={{
+        backgroundColor: '#FFFFFF',
+        borderRadius: '12px',
+        padding: '24px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+      }}
+    >
+      <h2
+        style={{
+          fontSize: '18px',
+          color: tealPrimary,
+          marginTop: 0,
+          marginBottom: '16px',
+          fontWeight: 700,
+        }}
+      >
+        K06 · Formulate Clinical Opinion & Recommendations
+      </h2>
+      <p
+        style={{
+          fontSize: '14px',
+          color: '#333',
+          lineHeight: 1.6,
+          marginBottom: '20px',
+        }}
+      >
+        Provide comprehensive clinical findings, surgical assessments, and direct answers to the focus questions posed by the Saudi treating doctor.
+      </p>
+
+      <div style={{ marginBottom: '24px' }}>
+        <h3
+          style={{
+            fontSize: '14px',
+            fontWeight: 700,
+            color: tealPrimary,
+            marginBottom: '12px',
+          }}
+        >
           Direct Answers to Saudi Treating Doctor Focus Questions:
         </h3>
         {focusQuestionsEn.map((q, i) => {
@@ -72,7 +328,7 @@ export const ConsultantWrittenOpinionSection: React.FC<Props> = ({
                   fontSize: '12px',
                   outline: 'none',
                   boxSizing: 'border-box',
-                  fontFamily: "'Cairo', sans-serif"
+                  fontFamily: "'Cairo', sans-serif",
                 }}
               />
               {!isAnsValid && (
@@ -109,7 +365,7 @@ export const ConsultantWrittenOpinionSection: React.FC<Props> = ({
           resize: 'vertical',
           marginBottom: '8px',
           outline: 'none',
-          boxSizing: 'border-box'
+          boxSizing: 'border-box',
         }}
       />
       {!isOpinionValid && (
@@ -133,10 +389,11 @@ export const ConsultantWrittenOpinionSection: React.FC<Props> = ({
           fontWeight: 700,
           cursor: !canSubmit ? 'not-allowed' : 'pointer',
           fontFamily: "'Cairo', sans-serif",
+          boxShadow: canSubmit ? '0 4px 12px rgba(0, 123, 110, 0.2)' : 'none',
           transition: 'background-color 0.2s ease',
         }}
       >
-        {isWritten ? 'Submit written opinion (no call)' : 'Save opinion · continue to slots (K07)'}
+        {isWritten ? 'Submit Written Opinion' : 'Save opinion · continue to slots (K07)'}
       </button>
       {!canSubmit && (
         <p style={{ textAlign: 'center', margin: '8px 0 0 0', fontSize: '11px', color: '#D32F2F', fontWeight: 500 }}>
