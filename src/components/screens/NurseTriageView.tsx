@@ -44,6 +44,15 @@ export const NurseTriageView: React.FC<Props> = ({
 }) => {
   const [urgencyLevel, setUrgencyLevel] = useState<'routine' | 'urgent' | 'stat'>('urgent');
   const [forwardedBanner, setForwardedBanner] = useState<{ caseId: string; caseNumber: string; patientName: string } | null>(null);
+
+  // Auto-dismiss forwarded banner after 8s
+  useEffect(() => {
+    if (!forwardedBanner) return;
+    const timer = setTimeout(() => {
+      setForwardedBanner(null);
+    }, 8000);
+    return () => clearTimeout(timer);
+  }, [forwardedBanner]);
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
   const isAr = lang === 'ar';
   const nurseName = userSession?.fullName || activePersona?.name || (isAr ? 'ممرضة ألو' : 'ALO Nurse');
@@ -247,50 +256,6 @@ export const NurseTriageView: React.FC<Props> = ({
               <span>{isAr ? 'إغلاق التفاصيل والعودة للقائمة' : 'Close Details'}</span>
             </button>
           </div>
-
-          {/* N07 Forwarded Confirmation Banner */}
-          {forwardedBanner && (
-            <div
-              role="status"
-              dir={isAr ? 'rtl' : 'ltr'}
-              className="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-teal-950/30 border border-emerald-300 dark:border-emerald-800 rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2 duration-300"
-            >
-              <div className="flex items-start sm:items-center gap-3 flex-1">
-                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center border border-emerald-200 dark:border-emerald-800">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                </div>
-                <div className="flex-1 space-y-1">
-                  <p className="text-sm font-extrabold text-emerald-900 dark:text-emerald-100 leading-relaxed">
-                    {isAr
-                      ? `تم نقل الحالة [${forwardedBanner.caseNumber}] إلى المرحلة التالية ← الطبيب السعودي المعالج (D02)`
-                      : `Case [${forwardedBanner.caseNumber}] moved to next stage → Saudi Treating Doctor (D02)`}
-                  </p>
-                  <p className="text-xs font-medium text-emerald-700 dark:text-emerald-300">
-                    {isAr ? 'المريض:' : 'Patient:'}{' '}
-                    <span className="font-bold">{forwardedBanner.patientName}</span>
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 flex-shrink-0 w-full sm:w-auto justify-end">
-                <button
-                  type="button"
-                  onClick={() => handleSelectCase(forwardedBanner.caseId)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-900 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-200 text-xs font-bold rounded-lg transition-colors shadow-sm active:scale-95 cursor-pointer whitespace-nowrap"
-                >
-                  <Eye className="w-3.5 h-3.5" />
-                  <span>{isAr ? 'عرض في التتبع' : 'View in Tracker'}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setForwardedBanner(null)}
-                  aria-label={isAr ? 'إغلاق الإشعار' : 'Dismiss notification'}
-                  className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-transparent hover:bg-emerald-100 dark:hover:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 transition-colors cursor-pointer"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          )}
 
           {/* Read-Only Tracking Mode Banner */}
           {!isCurrentStageTriage && stageMeta && (
@@ -687,6 +652,57 @@ export const NurseTriageView: React.FC<Props> = ({
         </div>
       </div>
       </>
+      )}
+
+      {/* N07 Forwarded Confirmation Banner - Fixed Bottom Side */}
+      {forwardedBanner && (
+        <aside
+          role="status"
+          aria-live="polite"
+          dir={isAr ? 'rtl' : 'ltr'}
+          className="fixed bottom-6 inset-x-4 max-w-4xl mx-auto z-50 p-4 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md bg-gradient-to-r from-emerald-50/95 to-teal-50/90 dark:from-emerald-950/90 dark:to-teal-950/80 border-2 border-emerald-400 dark:border-emerald-600 rounded-2xl flex flex-wrap items-center justify-between gap-4 shadow-2xl animate-in fade-in slide-in-from-bottom-5 duration-300 pointer-events-auto"
+        >
+          <div className="flex items-start sm:items-center gap-3 flex-1 min-w-0">
+            <div className="shrink-0 w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/60 flex items-center justify-center border border-emerald-300 dark:border-emerald-700 shadow-sm">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <div className="flex flex-col gap-0.5 min-w-0">
+              <span className="text-xs font-extrabold text-emerald-800 dark:text-emerald-200 uppercase tracking-wide">
+                {isAr ? 'تم النقل بنجاح' : 'Successfully Forwarded'}
+              </span>
+              <p className="text-sm font-bold text-slate-800 dark:text-slate-100 leading-snug break-words">
+                {isAr
+                  ? `تم نقل الحالة [${forwardedBanner.caseNumber}] إلى المرحلة التالية ← الطبيب السعودي المعالج (D02)`
+                  : `Case [${forwardedBanner.caseNumber}] moved to next stage → Saudi Treating Doctor (D02)`}
+              </p>
+              {forwardedBanner.patientName && (
+                <span className="text-xs font-medium text-slate-500 dark:text-slate-400 truncate">
+                  {isAr ? 'المريض:' : 'Patient:'} {forwardedBanner.patientName}
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => {
+                handleSelectCase(forwardedBanner.caseId);
+                setForwardedBanner(null);
+              }}
+              className="text-xs font-extrabold px-4 py-2 rounded-lg bg-white dark:bg-slate-800 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors shadow-sm cursor-pointer whitespace-nowrap active:scale-95"
+            >
+              {isAr ? 'عرض في التتبع' : 'View in Tracker'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setForwardedBanner(null)}
+              aria-label={isAr ? 'إغلاق الإشعار' : 'Dismiss notification'}
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </aside>
       )}
     </div>
   );
