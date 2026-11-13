@@ -33,11 +33,11 @@ const FollowUpChatView: React.FC<Props> = ({ activeCase, onAdvanceStage, onUpdat
   );
 
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
-    // Re-hydrate the persisted relay loop: patient question -> consultant answer
+    // Re-hydrate the persisted direct follow-up: patient question -> coordinator reply
     const persistedQ = (activeCase.metadata?.patientQuestions as string[]) || [];
     const persistedA =
+      (activeCase.metadata?.coordinatorReplies as string[]) ||
       (activeCase.metadata?.followUpAnswers as string[]) ||
-      (activeCase.metadata?.consultantAnswers as string[]) ||
       [];
     const seeded: ChatMessage[] = [];
     persistedQ.forEach((q, i) => {
@@ -45,7 +45,7 @@ const FollowUpChatView: React.FC<Props> = ({ activeCase, onAdvanceStage, onUpdat
       if (persistedA[i]) {
         seeded.push({
           id: `seed_a_${i}`,
-          text: `Indian consultant answer: ${persistedA[i]}`,
+          text: persistedA[i],
           sender: 'coordinator',
           timestamp: new Date(),
         });
@@ -69,8 +69,8 @@ const FollowUpChatView: React.FC<Props> = ({ activeCase, onAdvanceStage, onUpdat
       : `Hello, I would like to clarify the recommendations in today's second opinion report regarding (${activeCase.diagnosis}), and when we should initiate the recommended protocol?`;
 
     const initialCoordinatorReply = isRTL
-      ? `أهلاً بك أخي الكريم، تم استلام استفسارك وإدراجه في ملف المتابعة السريرية المباشرة. نافذة المتابعة متاحة لك لمدة 21 يوماً مجاناً مع إشراف الفريق الاستشاري للإجابة على كافة تساؤلاتك.`
-      : `Welcome. Your clinical follow-up question has been logged and shared with the medical board. Your 21-day complimentary follow-up window is active with continuous coordinator support.`;
+      ? `أهلاً بك أخي الكريم، تم استلام استفسارك وإدراجه في ملف المتابعة السريرية المباشرة. نافذة المتابعة متاحة لك لمدة 21 يوماً مجاناً مع منسق رعاية ألو المباشر للإجابة على كافة تساؤلاتك ومتابعة حالتك.`
+      : `Welcome. Your clinical follow-up inquiry has been logged. Your 21-day complimentary follow-up window is active with direct ALO Care Coordinator support.`;
 
     const msgs: ChatMessage[] = [
       {
@@ -89,6 +89,7 @@ const FollowUpChatView: React.FC<Props> = ({ activeCase, onAdvanceStage, onUpdat
 
     const persistedQ = (activeCase.metadata?.patientQuestions as string[]) || [];
     const persistedA =
+      (activeCase.metadata?.coordinatorReplies as string[]) ||
       (activeCase.metadata?.followUpAnswers as string[]) ||
       (activeCase.metadata?.consultantAnswers as string[]) ||
       [];
@@ -104,10 +105,10 @@ const FollowUpChatView: React.FC<Props> = ({ activeCase, onAdvanceStage, onUpdat
       }
       if (persistedA[i]) {
         msgs.push({
-          id: `consultant_a_${i}`,
+          id: `coordinator_a_${i}`,
           text: isRTL
-            ? `إفادة وإجابة الاستشاري الطبي: ${persistedA[i]}`
-            : `Doctor / Consultant Answer: ${persistedA[i]}`,
+            ? `رد وتوجيه منسق رعاية ألو: ${persistedA[i]}`
+            : `ALO Care Coordinator Reply: ${persistedA[i]}`,
           sender: 'coordinator',
           timestamp: new Date(Date.now() - 900000 + i * 60000),
         });
@@ -119,8 +120,8 @@ const FollowUpChatView: React.FC<Props> = ({ activeCase, onAdvanceStage, onUpdat
     activeCase.id,
     isRTL,
     JSON.stringify(activeCase.metadata?.patientQuestions),
+    JSON.stringify(activeCase.metadata?.coordinatorReplies),
     JSON.stringify(activeCase.metadata?.followUpAnswers),
-    JSON.stringify(activeCase.metadata?.consultantAnswers),
   ]);
 
   useEffect(() => {
@@ -169,7 +170,7 @@ const FollowUpChatView: React.FC<Props> = ({ activeCase, onAdvanceStage, onUpdat
     setMessages((prev) => [...prev, newMsg]);
     setChatInput('');
 
-    // Persist the patient's question so the coordinator relays THIS exact text (C09)
+    // Persist the patient's question so the coordinator sees it directly in C09
     const existingQ = (activeCase.metadata?.patientQuestions as string[]) || [];
     onUpdateCase({
       metadata: {
@@ -182,8 +183,8 @@ const FollowUpChatView: React.FC<Props> = ({ activeCase, onAdvanceStage, onUpdat
       const coordinatorReply: ChatMessage = {
         id: `msg_${Date.now() + 1}`,
         text: isRTL
-          ? 'تم استلام استفسارك. سيتم نقله مباشرة إلى الاستشاري الهندي عبر منسق رعاية ألو.'
-          : 'Your inquiry has been received. It will be relayed directly to the Indian consultant via ALO care coordinator.',
+          ? 'تم استلام استفسارك بنجاح لدى منسق رعاية ألو، وسنوافيك بالرد والمتابعة السريرية هنا مباشرة.'
+          : 'Your inquiry has been received by your ALO Care Coordinator. We will review and provide direct guidance here shortly.',
         sender: 'coordinator',
         timestamp: new Date(),
       };

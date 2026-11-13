@@ -114,8 +114,8 @@ export const FollowUpChatThread: React.FC<Props> = ({
           >
             <p style={{ margin: 0, fontSize: '14px', color: '#94A3B8', lineHeight: 1.8 }}>
               {isRTL
-                ? 'ابدأ بكتابة استفسارك أدناه. سيقوم منسق رعاية ألو بنقله مباشرة إلى الاستشاري الهندي.'
-                : 'Start typing your inquiry below. ALO care coordinator will relay it directly to the Indian consultant.'}
+                ? 'ابدأ بكتابة استفسارك أدناه. سيتولى منسق رعاية ألو الرد عليك ومتابعة حالتك مباشرة طوال الـ 21 يوماً.'
+                : 'Start typing your inquiry below. Your ALO Care Coordinator will assist you and respond directly throughout your 21-day follow-up.'}
             </p>
           </div>
         )}
@@ -141,6 +141,11 @@ export const FollowUpChatThread: React.FC<Props> = ({
                 fontWeight: 500,
               }}
             >
+              {msg.sender === 'coordinator' && (
+                <div style={{ fontSize: '11px', fontWeight: 700, color: TEAL_PRIMARY, marginBottom: '4px' }}>
+                  🩺 {isRTL ? 'منسق رعاية ألو' : 'ALO Care Coordinator'}
+                </div>
+              )}
               <p style={{ margin: 0 }}>{msg.text}</p>
               <span
                 style={{
@@ -167,20 +172,19 @@ export const FollowUpChatThread: React.FC<Props> = ({
           alignItems: 'center',
           gap: '10px',
           padding: '12px 16px',
-          backgroundColor: '#FFFBEB',
+          backgroundColor: '#F0FDF4',
           borderRadius: '10px',
-          border: '1px solid #FDE68A',
+          border: '1px solid #BBF7D0',
         }}
       >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#15803D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="12" cy="12" r="10" />
-          <line x1="12" y1="8" x2="12" y2="12" />
-          <line x1="12" y1="16" x2="12.01" y2="16" />
+          <path d="M9 12l2 2 4-4" />
         </svg>
-        <span style={{ fontSize: '13px', fontWeight: 600, color: '#92400E', lineHeight: 1.5 }}>
+        <span style={{ fontSize: '13px', fontWeight: 600, color: '#166534', lineHeight: 1.5 }}>
           {isRTL
-            ? 'يتم إرسال استفساراتك إلى منسق رعاية ألو لنقلها مباشرة إلى الاستشاري الهندي'
-            : 'Your inquiries are sent to ALO care coordinator to be relayed directly to the Indian consultant'}
+            ? 'متابعة مباشرة ومستمرة طوال 21 يوماً بينك وبين منسق رعاية ألو المعتمد'
+            : 'Direct, continuous 21-day follow-up with your certified ALO Care Coordinator'}
         </span>
       </div>
 

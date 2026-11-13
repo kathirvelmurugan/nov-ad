@@ -96,7 +96,7 @@ export const ConsultantWrittenOpinionSection: React.FC<Props> = ({
             >
               {isCaseClosed
                 ? 'Case Successfully Closed & Archived'
-                : 'Written Opinion is submitted and waiting for Follow-up Stage.'}
+                : 'Written Opinion Submitted & Clinical Review Completed'}
             </h3>
             <p
               style={{
@@ -108,7 +108,7 @@ export const ConsultantWrittenOpinionSection: React.FC<Props> = ({
             >
               {isCaseClosed
                 ? 'The ALO Care Coordinator has finalized all follow-up inquiries and released the Final Comprehensive Dossier (PDF 2). The case is officially closed and archived.'
-                : 'Your second opinion report and answers to the Saudi treating doctor focus questions have been safely submitted. The follow-up communication window will unlock once initiated by the ALO Care Coordinator.'}
+                : 'Your second opinion report and answers to the Saudi treating doctor focus questions have been safely submitted. Ongoing 21-day patient follow-up and care coordination are directly managed by the ALO Care Coordination team.'}
             </p>
           </div>
         </div>
@@ -174,85 +174,25 @@ export const ConsultantWrittenOpinionSection: React.FC<Props> = ({
               </button>
             )}
           </div>
-        ) : isFollowUpEnabled ? (
-          <div
-            style={{
-              backgroundColor: tealBg,
-              border: `1px solid ${tealSecondary}`,
-              borderRadius: '10px',
-              padding: '16px 20px',
-              marginBottom: '24px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              flexWrap: 'wrap',
-              gap: '12px',
-            }}
-          >
-            <div>
-              <span
-                style={{
-                  fontSize: '14px',
-                  fontWeight: 800,
-                  color: tealPrimary,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                }}
-              >
-                <span
-                  style={{
-                    width: '8px',
-                    height: '8px',
-                    borderRadius: '50%',
-                    backgroundColor: '#22C55E',
-                  }}
-                />
-                Follow-up Stage is active!
-              </span>
-              <p style={{ margin: '3px 0 0', fontSize: '12px', color: '#4B5563' }}>
-                The ALO Coordinator has enabled the follow-up channel. Patient questions are ready for your review.
-              </p>
-            </div>
-            {onGoToFollowUp && (
-              <button
-                type="button"
-                onClick={onGoToFollowUp}
-                style={{
-                  padding: '10px 18px',
-                  backgroundColor: tealPrimary,
-                  color: '#FFFFFF',
-                  border: 'none',
-                  borderRadius: '8px',
-                  fontSize: '13px',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  fontFamily: "'Cairo', sans-serif",
-                }}
-              >
-                Open K09 Follow-up →
-              </button>
-            )}
-          </div>
         ) : (
           <div
             style={{
               backgroundColor: '#F8FAFC',
-              border: '1px dashed #CBD5E1',
+              border: '1px solid #E2E8F0',
               borderRadius: '10px',
               padding: '14px 18px',
               marginBottom: '24px',
-              fontSize: '12px',
-              color: '#64748B',
               display: 'flex',
               alignItems: 'center',
-              gap: '8px',
+              gap: '10px',
+              fontSize: '13px',
+              color: '#334155',
             }}
           >
-            <span>🔒</span>
-            <span>
-              Follow-up Stage remains locked and will become accessible once initiated by the ALO Coordinator (C09).
-            </span>
+            <span style={{ fontSize: '16px' }}>✓</span>
+            <div>
+              <strong>Specialist Duty Concluded:</strong> Your clinical second opinion is delivered. Patient follow-up is directly handled between the patient and the ALO Care Coordinator.
+            </div>
           </div>
         )}
 

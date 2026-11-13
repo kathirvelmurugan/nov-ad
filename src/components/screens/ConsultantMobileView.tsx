@@ -5,7 +5,6 @@ import { ConsultantOtpChallenge } from '../consultant/ConsultantOtpChallenge';
 import { ConsultantCaseReviewSection } from '../consultant/ConsultantCaseReviewSection';
 import { ConsultantWrittenOpinionSection } from '../consultant/ConsultantWrittenOpinionSection';
 import { ConsultantSlotAndCallSection } from '../consultant/ConsultantSlotAndCallSection';
-import { ConsultantFollowUpSection } from '../consultant/ConsultantFollowUpSection';
 import { ConsultantCaseClosedSection } from '../consultant/ConsultantCaseClosedSection';
 import { BilingualReportModal } from '../cockpit/BilingualReportModal';
 
@@ -92,7 +91,6 @@ export const ConsultantMobileView: React.FC<Props> = ({
   const getInitialScreen = (): ScreenStage => {
     if (isCaseClosed) return 'K10';
     if (!isCaseAccepted) return 'K01_K04';
-    if (isFollowUpEnabled) return 'K09';
     if (isOpinionSubmitted) return 'K06';
     return 'K05';
   };
@@ -156,12 +154,12 @@ export const ConsultantMobileView: React.FC<Props> = ({
       setCurrentScreen('K01_K04');
     } else if (currentScreen === 'K01_K04') {
       setCurrentScreen(isOpinionSubmitted ? 'K06' : 'K05');
-    } else if (currentScreen === 'K09' && !isFollowUpEnabled) {
-      setCurrentScreen('K06');
+    } else if (currentScreen === 'K09') {
+      setCurrentScreen(isOpinionSubmitted ? 'K06' : 'K05');
     } else if (currentScreen === 'K10' && !isCaseClosed) {
-      setCurrentScreen(isFollowUpEnabled ? 'K09' : isOpinionSubmitted ? 'K06' : 'K05');
+      setCurrentScreen(isOpinionSubmitted ? 'K06' : 'K05');
     }
-  }, [activeCase.id, isCaseAccepted, isOpinionSubmitted, isFollowUpEnabled, isCaseClosed]);
+  }, [activeCase.id, isCaseAccepted, isOpinionSubmitted, isCaseClosed]);
 
   const tealPrimary = '#007B6E';
   const tealSecondary = '#00C6AE';
@@ -265,8 +263,8 @@ export const ConsultantMobileView: React.FC<Props> = ({
   };
 
   const handleJoinTeleconsultation = () => {
-    setCurrentScreen('K09');
     onAdvanceStage();
+    setCurrentScreen('K06');
   };
 
   const handleSubmitFinalRemarks = () => {
@@ -285,7 +283,7 @@ export const ConsultantMobileView: React.FC<Props> = ({
     setIsDoctorSubmitted(true);
   };
 
-  // Navigation tab definitions: K09 Follow-up is visible when isFollowUpEnabled, K10 Closed is visible when case is closed
+  // Navigation tab definitions: K01 Accept, K05 Review, K06 Opinion (K07/K08 if video), K10 Closed when case is closed
   const navButtons = [
     { id: 'K01_K04' as ScreenStage, label: 'K01 Accept' },
     { id: 'K05' as ScreenStage, label: 'K05 Review' },
@@ -296,7 +294,6 @@ export const ConsultantMobileView: React.FC<Props> = ({
           { id: 'K07' as ScreenStage, label: 'K07 Slots' },
           { id: 'K08' as ScreenStage, label: 'K08 Call' },
         ]),
-    ...(isFollowUpEnabled ? [{ id: 'K09' as ScreenStage, label: 'K09 Follow-up' }] : []),
     ...(isCaseClosed ? [{ id: 'K10' as ScreenStage, label: 'K10 Closed' }] : []),
   ];
 
@@ -522,7 +519,6 @@ export const ConsultantMobileView: React.FC<Props> = ({
               isFollowUpEnabled={isFollowUpEnabled}
               isCaseClosed={isCaseClosed}
               onSaveOpinion={handleSaveOpinion}
-              onGoToFollowUp={() => setCurrentScreen('K09')}
               onGoToClosure={() => setCurrentScreen('K10')}
             />
           )}
@@ -539,24 +535,6 @@ export const ConsultantMobileView: React.FC<Props> = ({
               whatsappGreen={whatsappGreen}
               onSaveSlots={handleSaveSlots}
               onJoinTeleconsultation={handleJoinTeleconsultation}
-            />
-          )}
-
-          {currentScreen === 'K09' && isFollowUpEnabled && (
-            <ConsultantFollowUpSection
-              relayed={relayed}
-              answers={answers}
-              setAnswers={setAnswers}
-              finalRemarks={finalRemarks}
-              setFinalRemarks={setFinalRemarks}
-              tealPrimary={tealPrimary}
-              tealSecondary={tealSecondary}
-              tealBg={tealBg}
-              onSubmitFinalRemarks={handleSubmitFinalRemarks}
-              isCoordinatorEnded={Boolean(activeCase.metadata?.coordinatorEndedFollowUp)}
-              isDoctorSubmitted={isDoctorSubmitted || Boolean(activeCase.metadata?.doctorAnsweredFollowUp)}
-              isCaseClosed={isCaseClosed}
-              onViewClosure={() => setCurrentScreen('K10')}
             />
           )}
 

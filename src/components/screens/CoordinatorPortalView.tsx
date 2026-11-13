@@ -159,6 +159,7 @@ const CoordinatorPortalView: React.FC<Props> = ({
   ];
 
   const followUpAnswers =
+    (activeCase?.metadata?.coordinatorReplies as string[]) ||
     (activeCase?.metadata?.followUpAnswers as string[]) ||
     (activeCase?.metadata?.consultantAnswers as string[]) ||
     [];
@@ -178,26 +179,38 @@ const CoordinatorPortalView: React.FC<Props> = ({
     );
   }
 
-  const handleRelayQuestion = async () => {
-    const text = relayMessage.trim() || incomingQuestions[incomingQuestions.length - 1] || '';
+  const handleSendCoordinatorReply = async (questionIdx?: number, customText?: string) => {
+    const text = (customText !== undefined ? customText : (relayMessage.trim() || incomingQuestions[incomingQuestions.length - 1] || '')).trim();
     if (!text) return;
     setIsProcessing(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 800));
-      const existingRelays = (activeCase?.metadata?.relayedQuestions as string[]) || [];
+      await new Promise((resolve) => setTimeout(resolve, 600));
+      const existingReplies = [
+        ...(((activeCase?.metadata?.coordinatorReplies as string[]) ||
+          (activeCase?.metadata?.followUpAnswers as string[]) ||
+          [])),
+      ];
+      if (typeof questionIdx === 'number' && questionIdx >= 0) {
+        existingReplies[questionIdx] = text;
+      } else {
+        existingReplies.push(text);
+      }
       onUpdateCase({
         metadata: {
           ...(activeCase?.metadata || {}),
-          relayedQuestions: [...existingRelays, text],
-        }
+          coordinatorReplies: existingReplies,
+          followUpAnswers: existingReplies,
+        },
       });
-      setRelayMessage('');
+      if (customText === undefined) {
+        setRelayMessage('');
+      }
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const handleEndFollowUpForDoctor = () => {
+  const handleEndFollowUp = () => {
     onUpdateCase({
       metadata: {
         ...(activeCase?.metadata || {}),
@@ -563,8 +576,10 @@ const CoordinatorPortalView: React.FC<Props> = ({
             relayMessage={relayMessage}
             setRelayMessage={setRelayMessage}
             isProcessing={isProcessing}
-            onRelayQuestion={handleRelayQuestion}
-            onEndFollowUpForDoctor={handleEndFollowUpForDoctor}
+            onSendReplyToPatient={handleSendCoordinatorReply}
+            onEndFollowUp={handleEndFollowUp}
+            onRelayQuestion={() => handleSendCoordinatorReply()}
+            onEndFollowUpForDoctor={handleEndFollowUp}
           />
         )}
 

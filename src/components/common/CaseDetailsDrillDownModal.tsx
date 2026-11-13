@@ -67,6 +67,7 @@ export const CaseDetailsDrillDownModal: React.FC<CaseDetailsDrillDownModalProps>
 
   const patientQuestions = (caseItem.metadata?.patientQuestions as string[]) || [];
   const followUpAnswers =
+    (caseItem.metadata?.coordinatorReplies as string[]) ||
     (caseItem.metadata?.followUpAnswers as string[]) ||
     (caseItem.metadata?.consultantAnswers as string[]) ||
     [];
@@ -427,7 +428,7 @@ export const CaseDetailsDrillDownModal: React.FC<CaseDetailsDrillDownModalProps>
                         <span>{q}</span>
                       </div>
                       <div className="text-emerald-700 dark:text-emerald-400 font-medium pl-4 rtl:pr-4">
-                        ↳ <strong>{isRTL ? 'إجابة الاستشاري:' : 'Doctor Answer:'}</strong> {followUpAnswers[idx] || (isRTL ? 'تمت الإفادة والمتابعة السريرية.' : 'Clinical guidance provided.')}
+                        ↳ <strong>{isRTL ? 'رد وتوجيه منسق رعاية ألو:' : 'ALO Care Coordinator Reply:'}</strong> {followUpAnswers[idx] || (isRTL ? 'تمت الإفادة والمتابعة السريرية المباشرة.' : 'Direct clinical guidance provided.')}
                       </div>
                     </div>
                   ))

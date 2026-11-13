@@ -68,8 +68,9 @@ export const ReportComprehensiveDossier: React.FC<Props> = ({
       : 'What is the anticipated recovery duration before returning to daily light activities and desk work?',
   ];
 
-  const followUpAnswers = (activeCase.metadata?.followUpAnswers as string[]) ||
-    (activeCase.metadata?.consultantAnswers as string[]) ||
+  const followUpAnswers =
+    (activeCase.metadata?.coordinatorReplies as string[]) ||
+    (activeCase.metadata?.followUpAnswers as string[]) ||
     [];
 
   const totalSar = activeCase.pricing?.totalSar || (activeCase.consultationType === 'video' ? 150 : 75);
@@ -370,7 +371,7 @@ export const ReportComprehensiveDossier: React.FC<Props> = ({
           }}
         >
           <div style={{ fontSize: '14px', fontWeight: 800, color: '#0F172A' }}>
-            💬 {isAr ? 'القسم الثاني: سجل متابعة الـ 21 يوماً وتقييم رضا المريض' : 'Section 2: 21-Day Follow-up Log & Patient Evaluation'}
+            💬 {isAr ? 'القسم الثاني: سجل متابعة الـ 21 يوماً المباشرة لمنسق رعاية ألو' : 'Section 2: 21-Day ALO Care Coordination & Follow-up Log'}
           </div>
           <span style={{ fontSize: '11px', fontWeight: 700, color: '#1E40AF', backgroundColor: '#DBEAFE', padding: '3px 10px', borderRadius: '12px' }}>
             ✓ {isAr ? 'اكتملت فترة المتابعة' : 'Follow-up Period Resolved'}
@@ -380,7 +381,7 @@ export const ReportComprehensiveDossier: React.FC<Props> = ({
         <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div>
             <h4 style={{ margin: '0 0 10px', fontSize: '12px', fontWeight: 700, color: '#475569' }}>
-              {isAr ? 'مداولات واستفسارات المريض التي تم ترحيلها والإجابة عليها:' : 'Patient Clarification Inquiries & Care Team Relays:'}
+              {isAr ? 'استفسارات المريض وردود وإرشادات منسق رعاية ألو المباشرة:' : 'Patient Clarification Inquiries & ALO Care Coordinator Responses:'}
             </h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {patientQuestions.map((q, i) => {
@@ -391,10 +392,10 @@ export const ReportComprehensiveDossier: React.FC<Props> = ({
                       ❓ {isAr ? `استفسار المريض #${i + 1}:` : `Patient Inquiry #${i + 1}:`} {q}
                     </div>
                     <div style={{ color: '#047857', fontSize: '11.5px', marginTop: '6px', paddingLeft: isAr ? 0 : '12px', paddingRight: isAr ? '12px' : 0 }}>
-                      ↳ <strong>{isAr ? 'إفادة وإجابة الاستشاري الطبي:' : 'Doctor / Consultant Answer:'}</strong>{' '}
+                      ↳ <strong>{isAr ? 'رد وتوجيه منسق رعاية ألو المباشر:' : 'ALO Care Coordinator Direct Guidance:'}</strong>{' '}
                       {answer || (isAr
-                        ? 'تمت الإجابة والاطمئنان على استقرار الحالة بعد الجراحة والبدء التدريجي للأنشطة الخفيفة مع التزام بروتوكول مضادات التخثر المحدد.'
-                        : 'Clinical guidance provided regarding steady postsurgical recovery, gradual resumption of light daily activity, and strict compliance with the prescribed anticoagulation protocol.')}
+                        ? 'تمت الإجابة وتقديم التوجيه السريري المباشر من منسق الرعاية والاطمئنان على استقرار الحالة بعد الجراحة والبدء التدريجي للأنشطة الخفيفة.'
+                        : 'Direct clinical guidance provided by the ALO Care Coordinator, confirming steady recovery and gradual resumption of light daily activity.')}
                     </div>
                   </div>
                 );

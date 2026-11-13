@@ -47,9 +47,12 @@ export const CoordinatorCaseClosureTab: React.FC<Props> = ({
     setTimeout(() => {
       const checksum = generateMockSHA256();
       const followUpQ = (activeCase.metadata?.patientQuestions as string[]) || [];
-      const followUpA = (activeCase.metadata?.followUpAnswers as string[]) || (activeCase.metadata?.consultantAnswers as string[]) || [];
+      const followUpA =
+        (activeCase.metadata?.coordinatorReplies as string[]) ||
+        (activeCase.metadata?.followUpAnswers as string[]) ||
+        [];
 
-      const qnaBlock = followUpQ.map((q, i) => `Q${i + 1}: ${q}\nA${i + 1}: ${followUpA[i] || 'Clinical advice provided.'}`).join('\n\n');
+      const qnaBlock = followUpQ.map((q, i) => `Q${i + 1}: ${q}\nA${i + 1}: ${followUpA[i] || 'ALO Care Coordinator guidance provided.'}`).join('\n\n');
 
       const content = [
         `========================================================================`,
@@ -68,7 +71,7 @@ export const CoordinatorCaseClosureTab: React.FC<Props> = ({
         `Treating Physician: ${activeCase.treatingDoctor?.name || 'د. عبدالله الشمري'}`,
         `International Specialist: ${activeCase.consultant?.name || 'Dr. Pradeep Kumar, MBBS, MS, MCh (CTVS)'}`,
         `------------------------------------------------------------------------`,
-        `PART 2: 21-DAY FOLLOW-UP & SPECIALIST ANSWERS`,
+        `PART 2: 21-DAY ALO CARE COORDINATION & FOLLOW-UP LOG`,
         `Rating: ${(activeCase.metadata?.rating as number) || 5}/5 Stars`,
         qnaBlock || 'All follow-up questions answered and documented.',
         activeCase.finalClosureNote ? `Specialist Final Remarks: ${activeCase.finalClosureNote}` : '',
