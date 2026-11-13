@@ -6,6 +6,8 @@ import { ConsultantCaseReviewSection } from '../consultant/ConsultantCaseReviewS
 import { ConsultantWrittenOpinionSection } from '../consultant/ConsultantWrittenOpinionSection';
 import { ConsultantSlotAndCallSection } from '../consultant/ConsultantSlotAndCallSection';
 import { ConsultantFollowUpSection } from '../consultant/ConsultantFollowUpSection';
+import { ConsultantCaseClosedSection } from '../consultant/ConsultantCaseClosedSection';
+import { BilingualReportModal } from '../cockpit/BilingualReportModal';
 
 interface Props {
   activeCase: ClinicalCase;
@@ -15,7 +17,7 @@ interface Props {
   onUpdateCase: (updated: Partial<ClinicalCase>) => void;
 }
 
-type ScreenStage = 'K01_K04' | 'K05' | 'K06' | 'K07' | 'K08' | 'K09';
+type ScreenStage = 'K01_K04' | 'K05' | 'K06' | 'K07' | 'K08' | 'K09' | 'K10';
 
 export const ConsultantMobileView: React.FC<Props> = ({
   activeCase,
@@ -44,6 +46,14 @@ export const ConsultantMobileView: React.FC<Props> = ({
     activeCase.metadata?.followUpEnabled ||
     ((activeCase.metadata?.relayedQuestions as string[]) &&
       (activeCase.metadata?.relayedQuestions as string[]).length > 0)
+  );
+
+  const isCaseClosed = Boolean(
+    activeCase.status === 'closed' ||
+    activeCase.currentStage === 'CLOSED' ||
+    activeCase.metadata?.archived ||
+    activeCase.stage === 9 ||
+    activeCase.metadata?.pdf2Released
   );
 
   const validCases = useMemo(
@@ -80,6 +90,7 @@ export const ConsultantMobileView: React.FC<Props> = ({
 
   // Determine initial screen based on workflow progress
   const getInitialScreen = (): ScreenStage => {
+    if (isCaseClosed) return 'K10';
     if (!isCaseAccepted) return 'K01_K04';
     if (isFollowUpEnabled) return 'K09';
     if (isOpinionSubmitted) return 'K06';
@@ -87,6 +98,8 @@ export const ConsultantMobileView: React.FC<Props> = ({
   };
 
   const [currentScreen, setCurrentScreen] = useState<ScreenStage>(getInitialScreen);
+  const [isPDFModalOpen, setIsPDFModalOpen] = useState<boolean>(false);
+  const [reportModalType, setReportModalType] = useState<'pdf1' | 'pdf2'>('pdf2');
   const [otpCode, setOtpCode] = useState<string>('');
   const [opinionText, setOpinionText] = useState<string>(activeCase.consultantOpinion || '');
   const [selectedSlot, setSelectedSlot] = useState<string>('');
@@ -137,14 +150,18 @@ export const ConsultantMobileView: React.FC<Props> = ({
         activeCase.consultantAnswers[2] || '',
       ]);
     }
-    if (!isCaseAccepted) {
+    if (isCaseClosed) {
+      setCurrentScreen('K10');
+    } else if (!isCaseAccepted) {
       setCurrentScreen('K01_K04');
     } else if (currentScreen === 'K01_K04') {
       setCurrentScreen(isOpinionSubmitted ? 'K06' : 'K05');
     } else if (currentScreen === 'K09' && !isFollowUpEnabled) {
       setCurrentScreen('K06');
+    } else if (currentScreen === 'K10' && !isCaseClosed) {
+      setCurrentScreen(isFollowUpEnabled ? 'K09' : isOpinionSubmitted ? 'K06' : 'K05');
     }
-  }, [activeCase.id, isCaseAccepted, isOpinionSubmitted, isFollowUpEnabled]);
+  }, [activeCase.id, isCaseAccepted, isOpinionSubmitted, isFollowUpEnabled, isCaseClosed]);
 
   const tealPrimary = '#007B6E';
   const tealSecondary = '#00C6AE';
@@ -268,7 +285,7 @@ export const ConsultantMobileView: React.FC<Props> = ({
     setIsDoctorSubmitted(true);
   };
 
-  // Navigation tab definitions: K09 Follow-up is strictly visible ONLY when isFollowUpEnabled is true
+  // Navigation tab definitions: K09 Follow-up is visible when isFollowUpEnabled, K10 Closed is visible when case is closed
   const navButtons = [
     { id: 'K01_K04' as ScreenStage, label: 'K01 Accept' },
     { id: 'K05' as ScreenStage, label: 'K05 Review' },
@@ -280,6 +297,7 @@ export const ConsultantMobileView: React.FC<Props> = ({
           { id: 'K08' as ScreenStage, label: 'K08 Call' },
         ]),
     ...(isFollowUpEnabled ? [{ id: 'K09' as ScreenStage, label: 'K09 Follow-up' }] : []),
+    ...(isCaseClosed ? [{ id: 'K10' as ScreenStage, label: 'K10 Closed' }] : []),
   ];
 
   return (
@@ -312,6 +330,26 @@ export const ConsultantMobileView: React.FC<Props> = ({
         <p style={{ margin: '4px 0 0 0', fontSize: '12px', opacity: 0.9 }}>
           Case Ref: {activeCase.caseNumber || activeCase.id || 'N/A'} · Tokenized Access
         </p>
+        {isCaseClosed && (
+          <div style={{ marginTop: '10px' }}>
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                backgroundColor: '#D1FAE5',
+                color: '#065F46',
+                padding: '4px 14px',
+                borderRadius: '20px',
+                fontSize: '12px',
+                fontWeight: 700,
+              }}
+            >
+              <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#059669' }} />
+              Case Closed & Permanently Archived by ALO Coordinator
+            </span>
+          </div>
+        )}
       </header>
 
       {/* Specialist Cases Switcher (Clean Horizontal Scroll Strip) */}
@@ -338,6 +376,13 @@ export const ConsultantMobileView: React.FC<Props> = ({
             {validCases.map((c) => {
               const isSelected = c.id === activeCase.id;
               const isAcceptedThisCase = Boolean(c.metadata?.consultantAccepted);
+              const isClosedThisCase = Boolean(
+                c.status === 'closed' ||
+                c.currentStage === 'CLOSED' ||
+                c.metadata?.archived ||
+                c.stage === 9 ||
+                c.metadata?.pdf2Released
+              );
               return (
                 <button
                   key={c.id}
@@ -357,7 +402,22 @@ export const ConsultantMobileView: React.FC<Props> = ({
                   }}
                 >
                   {c.caseNumber || c.id} · {c.specialtyEn || c.specialty || 'General'}
-                  {isAcceptedThisCase && <span style={{ marginLeft: '4px', opacity: 0.8 }}>✓</span>}
+                  {isAcceptedThisCase && !isClosedThisCase && <span style={{ marginLeft: '4px', opacity: 0.8 }}>✓</span>}
+                  {isClosedThisCase && (
+                    <span
+                      style={{
+                        marginLeft: '6px',
+                        padding: '1px 6px',
+                        borderRadius: '4px',
+                        fontSize: '10px',
+                        backgroundColor: isSelected ? 'rgba(255,255,255,0.25)' : '#DCFCE7',
+                        color: isSelected ? '#FFFFFF' : '#15803D',
+                        fontWeight: 800,
+                      }}
+                    >
+                      Closed
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -422,10 +482,12 @@ export const ConsultantMobileView: React.FC<Props> = ({
               );
             })}
             <span
-              style={{ fontSize: '12px', fontWeight: 700, color: tealPrimary }}
+              style={{ fontSize: '12px', fontWeight: 700, color: isCaseClosed ? '#059669' : tealPrimary }}
               data-testid="consultant-sla-timer"
             >
-              {isCaseAccepted
+              {isCaseClosed
+                ? '✓ Case Closed & Archived'
+                : isCaseAccepted
                 ? `48h SLA running: ${consultantSlaFormatted}`
                 : '48h SLA starts on accept'}
             </span>
@@ -458,8 +520,10 @@ export const ConsultantMobileView: React.FC<Props> = ({
               isWritten={isWritten}
               isOpinionSubmitted={isOpinionSubmitted}
               isFollowUpEnabled={isFollowUpEnabled}
+              isCaseClosed={isCaseClosed}
               onSaveOpinion={handleSaveOpinion}
               onGoToFollowUp={() => setCurrentScreen('K09')}
+              onGoToClosure={() => setCurrentScreen('K10')}
             />
           )}
 
@@ -491,6 +555,22 @@ export const ConsultantMobileView: React.FC<Props> = ({
               onSubmitFinalRemarks={handleSubmitFinalRemarks}
               isCoordinatorEnded={Boolean(activeCase.metadata?.coordinatorEndedFollowUp)}
               isDoctorSubmitted={isDoctorSubmitted || Boolean(activeCase.metadata?.doctorAnsweredFollowUp)}
+              isCaseClosed={isCaseClosed}
+              onViewClosure={() => setCurrentScreen('K10')}
+            />
+          )}
+
+          {currentScreen === 'K10' && isCaseClosed && (
+            <ConsultantCaseClosedSection
+              activeCase={activeCase}
+              tealPrimary={tealPrimary}
+              tealSecondary={tealSecondary}
+              tealBg={tealBg}
+              onOpenPDFModal={(type) => {
+                setReportModalType(type);
+                setIsPDFModalOpen(true);
+              }}
+              onGoToReview={() => setCurrentScreen('K05')}
             />
           )}
         </>
@@ -507,6 +587,14 @@ export const ConsultantMobileView: React.FC<Props> = ({
       >
         ALO DOCTOR v2.4 Saudi Edition • Secure Clinical Environment
       </footer>
+
+      <BilingualReportModal
+        isOpen={isPDFModalOpen}
+        onClose={() => setIsPDFModalOpen(false)}
+        activeCase={activeCase}
+        lang="en"
+        reportType={reportModalType}
+      />
     </div>
   );
 };

@@ -12,8 +12,10 @@ interface Props {
   isWritten: boolean;
   isOpinionSubmitted: boolean;
   isFollowUpEnabled: boolean;
+  isCaseClosed?: boolean;
   onSaveOpinion: () => void;
   onGoToFollowUp?: () => void;
+  onGoToClosure?: () => void;
 }
 
 export const ConsultantWrittenOpinionSection: React.FC<Props> = ({
@@ -28,8 +30,10 @@ export const ConsultantWrittenOpinionSection: React.FC<Props> = ({
   isWritten,
   isOpinionSubmitted,
   isFollowUpEnabled,
+  isCaseClosed = false,
   onSaveOpinion,
   onGoToFollowUp,
+  onGoToClosure,
 }) => {
   const isOpinionValid = (opinionText || '').trim().length >= 50;
   const areAnswersValid = (focusAnswers || []).every(
@@ -90,7 +94,9 @@ export const ConsultantWrittenOpinionSection: React.FC<Props> = ({
                 color: '#15803D',
               }}
             >
-              Written Opinion is submitted and waiting for Follow-up Stage.
+              {isCaseClosed
+                ? 'Case Successfully Closed & Archived'
+                : 'Written Opinion is submitted and waiting for Follow-up Stage.'}
             </h3>
             <p
               style={{
@@ -100,13 +106,75 @@ export const ConsultantWrittenOpinionSection: React.FC<Props> = ({
                 lineHeight: 1.5,
               }}
             >
-              Your second opinion report and answers to the Saudi treating doctor focus questions have been safely submitted. The follow-up communication window will unlock once initiated by the ALO Care Coordinator.
+              {isCaseClosed
+                ? 'The ALO Care Coordinator has finalized all follow-up inquiries and released the Final Comprehensive Dossier (PDF 2). The case is officially closed and archived.'
+                : 'Your second opinion report and answers to the Saudi treating doctor focus questions have been safely submitted. The follow-up communication window will unlock once initiated by the ALO Care Coordinator.'}
             </p>
           </div>
         </div>
 
-        {/* Follow-up Unlock Callout if already activated by Coordinator */}
-        {isFollowUpEnabled ? (
+        {/* Closed Case Callout with button to K10 */}
+        {isCaseClosed ? (
+          <div
+            style={{
+              backgroundColor: '#ECFDF5',
+              border: `1.5px solid #10B981`,
+              borderRadius: '10px',
+              padding: '16px 20px',
+              marginBottom: '24px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '12px',
+            }}
+          >
+            <div>
+              <span
+                style={{
+                  fontSize: '14px',
+                  fontWeight: 800,
+                  color: '#065F46',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                <span
+                  style={{
+                    width: '8px',
+                    height: '8px',
+                    borderRadius: '50%',
+                    backgroundColor: '#059669',
+                  }}
+                />
+                Case Closed & Final Comprehensive Dossier (PDF 2) Released
+              </span>
+              <p style={{ margin: '3px 0 0', fontSize: '12px', color: '#047857' }}>
+                All follow-up inquiries have been completed. You can preview, print, or download the final dossier.
+              </p>
+            </div>
+            {onGoToClosure && (
+              <button
+                type="button"
+                onClick={onGoToClosure}
+                style={{
+                  padding: '10px 18px',
+                  backgroundColor: tealPrimary,
+                  color: '#FFFFFF',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '13px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  fontFamily: "'Cairo', sans-serif",
+                }}
+              >
+                View Case Closure (PDF 2) →
+              </button>
+            )}
+          </div>
+        ) : isFollowUpEnabled ? (
           <div
             style={{
               backgroundColor: tealBg,
