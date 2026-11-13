@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { ClinicalCase } from '../../../types';
 import { BilingualReportModal } from '../../cockpit/BilingualReportModal';
-import { Check, Eye, Globe2, HelpCircle, MessageSquareWarning, ShieldCheck, CalendarClock, Send } from 'lucide-react';
+import { Check, Eye, Globe2, HelpCircle, MessageSquareWarning, ShieldCheck, CalendarClock, Send, CheckCircle2 } from 'lucide-react';
 
 interface Props {
   activeCase: ClinicalCase;
   onAdvanceStage: () => void;
   onUpdateCase: (updated: Partial<ClinicalCase>) => void;
+  onEndorseSuccess?: () => void;
   lang: 'ar' | 'en';
 }
 
@@ -14,6 +15,7 @@ export const DoctorOpinionEndorsementPanel: React.FC<Props> = ({
   activeCase,
   onAdvanceStage,
   onUpdateCase,
+  onEndorseSuccess,
   lang,
 }) => {
   const isAr = lang === 'ar';
@@ -49,21 +51,24 @@ export const DoctorOpinionEndorsementPanel: React.FC<Props> = ({
       doctorReleasedToPatient: false,
       saudiEndorsement: {
         status: 'endorsed',
-        doctorName: activeCase.treatingDoctor?.name || 'د. عبدالله الشمري',
+        doctorName: activeCase.treatingDoctor?.name || (isAr ? 'د. عبدالله الشمري' : 'Dr. Abdullah Al-Shammari'),
+        scfHSLicense: 'SCFHS-2024-KSA-8821',
         scfhsLicense: 'SCFHS-2024-KSA-8821',
         endorsementDate: new Date().toISOString(),
         localClinicalNotes: localDirectives.trim() || undefined,
         requiresLocalLab: !!activeCase.internalOrders?.lab?.ordered,
         prescriptionIssued: !!activeCase.internalOrders?.pharmacy?.ordered,
         releasedToPatient: false,
-      },
+      } as any,
       metadata: {
         ...(activeCase.metadata || {}),
         saudiDoctorApprovedOpinion: true,
         saudiApprovedAt: new Date().toISOString(),
         pdf1Released: false,
+        coordinatorForwardedToDoctor: true,
       },
     });
+    onEndorseSuccess?.();
   };
 
   const handleRequestRevision = () => {
@@ -217,12 +222,25 @@ export const DoctorOpinionEndorsementPanel: React.FC<Props> = ({
           </span>
         </div>
 
+        {/* In-Card Endorsement Feedback Banner */}
+        {isEndorsed && (
+          <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-700 flex items-center gap-3 text-emerald-800 dark:text-emerald-200 shadow-2xs">
+            <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <div className="text-xs font-bold leading-relaxed">
+              {isAr
+                ? 'تم اعتماد رأي الاستشاري بنجاح وإرساله لمنسق رعاية ألو (C08) لإصدار التقرير الطبي المعتمد للمريض.'
+                : 'Consultant Opinion approved successfully and forwarded to ALO Coordinator (C08) for report release.'}
+            </div>
+          </div>
+        )}
+
         <div>
           <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5">
             {isAr ? 'ملاحظات أو توجيهات محلية إضافية للمنسق والمريض (اختياري):' : 'Local Clinical Directives / Notes for Coordinator & Patient (Optional):'}
           </label>
           <textarea
             rows={3}
+            disabled={isEndorsed}
             value={localDirectives}
             onChange={(e) => setLocalDirectives(e.target.value)}
             placeholder={
@@ -230,7 +248,9 @@ export const DoctorOpinionEndorsementPanel: React.FC<Props> = ({
                 ? 'أدخل أي تعليمات محلية تخص المتابعة، التحاليل، أو صرف الأدوية قبل إرسال التقرير للمنسق...'
                 : 'Enter local follow-up instructions, medication notes, or hospital scheduling directives before sending to Coordinator...'
             }
-            className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl p-3 text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-alo-teal outline-none shadow-sm font-medium"
+            className={`w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl p-3 text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-alo-teal outline-none shadow-sm font-medium ${
+              isEndorsed ? 'opacity-70 cursor-not-allowed bg-slate-50 dark:bg-slate-800' : ''
+            }`}
           />
         </div>
 
@@ -279,16 +299,25 @@ export const DoctorOpinionEndorsementPanel: React.FC<Props> = ({
 
           <button
             type="button"
+            disabled={isEndorsed}
             onClick={handleApproveToCoordinator}
-            className="ms-auto w-full sm:w-auto bg-gradient-to-r from-emerald-600 to-alo-teal hover:from-emerald-700 hover:to-teal-800 text-white font-extrabold py-3 px-8 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-sm active:scale-95 cursor-pointer"
+            className={`ms-auto w-full sm:w-auto font-extrabold py-3 px-8 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-sm ${
+              isEndorsed
+                ? 'bg-emerald-700 text-white cursor-not-allowed opacity-90 shadow-sm'
+                : 'bg-gradient-to-r from-emerald-600 to-alo-teal hover:from-emerald-700 hover:to-teal-800 text-white active:scale-95 cursor-pointer'
+            }`}
           >
-            {isEndorsed ? <Send className="w-4 h-4" /> : <Check className="w-4 h-4" />}
+            <CheckCircle2 className="w-4 h-4" />
             <span>
-              {isAr
-                ? 'D12 · اعتماد رأي الاستشاري وإرساله لمنسق ألو (C08) لإصدار التقرير للمريض'
-                : 'D12 · Approve Consultant Opinion & Send to ALO Coordinator (C08)'}
+              {isEndorsed
+                ? (isAr
+                    ? '✓ تم اعتماد الرأي وإرساله لمنسق ألو (C08)'
+                    : '✓ Endorsed & Sent to ALO Coordinator (C08)')
+                : (isAr
+                    ? 'D12 · اعتماد رأي الاستشاري وإرساله لمنسق ألو (C08) لإصدار التقرير للمريض'
+                    : 'D12 · Approve Consultant Opinion & Send to ALO Coordinator (C08)')}
             </span>
-            <span>{isAr ? '←' : '→'}</span>
+            {!isEndorsed && <span>{isAr ? '←' : '→'}</span>}
           </button>
         </div>
       </div>

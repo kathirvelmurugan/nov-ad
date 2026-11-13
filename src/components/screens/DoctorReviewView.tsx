@@ -63,7 +63,9 @@ export const DoctorReviewView: React.FC<Props> = ({
     setLocalQuestions([(src && src[0]) || '', (src && src[1]) || '', (src && src[2]) || '']);
   }, [lang, activeCase?.id]);
 
-  const isActionableForDoctor = (c: ClinicalCase) => c.currentStage === 'DOCTOR_REVIEW' || (c.currentStage === 'OPINION_READY' && !c.saudiEndorsement?.releasedToPatient);
+  const isActionableForDoctor = (c: ClinicalCase) =>
+    c.currentStage === 'DOCTOR_REVIEW' ||
+    (c.currentStage === 'OPINION_READY' && c.saudiEndorsement?.status !== 'endorsed');
 
   const handleQuestionChange = (index: 0 | 1 | 2, value: string) => {
     if (!isReferralEditable) return;
@@ -105,6 +107,13 @@ export const DoctorReviewView: React.FC<Props> = ({
     return cases.filter(isActionableForDoctor);
   }, [cases]);
 
+  // Clear selection if actionable queue reaches 0
+  React.useEffect(() => {
+    if (pendingDoctorCases.length === 0 && selectedCaseId) {
+      setSelectedCaseId(null);
+    }
+  }, [pendingDoctorCases.length, selectedCaseId]);
+
   const isCurrentStageDoctor = !!currentCase && isActionableForDoctor(currentCase);
   const isReferralEditable = currentCase?.currentStage === 'DOCTOR_REVIEW';
 
@@ -113,7 +122,13 @@ export const DoctorReviewView: React.FC<Props> = ({
     onSelectCase?.(caseId);
   };
 
-  const [forwardedBanner, setForwardedBanner] = React.useState<{ caseId: string; caseNumber: string; patientName: string } | null>(null);
+  const [forwardedBanner, setForwardedBanner] = React.useState<{
+    caseId: string;
+    caseNumber: string;
+    patientName: string;
+    targetStageAr?: string;
+    targetStageEn?: string;
+  } | null>(null);
 
   // Auto-dismiss forwarded banner after 8s
   React.useEffect(() => {
@@ -160,7 +175,21 @@ export const DoctorReviewView: React.FC<Props> = ({
         />
       </div>
 
-      {!currentCase ? (
+      {pendingDoctorCases.length === 0 ? (
+        <div className="card-clinical p-8 text-center space-y-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xs">
+          <div className="w-12 h-12 mx-auto rounded-full bg-emerald-50 dark:bg-emerald-950/50 flex items-center justify-center text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+            <CheckCircle2 className="w-6 h-6" />
+          </div>
+          <h3 className="text-base font-black text-slate-800 dark:text-slate-100">
+            {isAr ? 'لا توجد حالات معلقة في قائمة الإجراءات' : 'No Actionable Cases Pending Doctor Review'}
+          </h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
+            {isAr
+              ? 'صندوق إحالات الطبيب المعالج مكتمل ومحدّث بالكامل. لا توجد حالات تتطلب إجراء حالياً.'
+              : 'Physician referral queue is up to date. There are no cases pending doctor review at this time.'}
+          </p>
+        </div>
+      ) : !currentCase ? (
         <div className="card-clinical p-8 text-center space-y-3 bg-white dark:bg-slate-900 border border-dashed border-slate-300 dark:border-slate-700 rounded-2xl shadow-xs">
           <div className="w-12 h-12 mx-auto rounded-full bg-teal-50 dark:bg-teal-950/50 flex items-center justify-center text-[#007B6E] dark:text-[#00C6AE] border border-teal-200 dark:border-teal-800">
             <MousePointerClick className="w-6 h-6" />
@@ -311,6 +340,21 @@ export const DoctorReviewView: React.FC<Props> = ({
           activeCase={activeCase}
           onAdvanceStage={onAdvanceStage}
           onUpdateCase={onUpdateCase}
+          onEndorseSuccess={() => {
+            const forwardedCaseId = activeCase.id;
+            const forwardedCaseNumber = activeCase.caseNumber || activeCase.id;
+            const forwardedPatient = (isAr ? activeCase.patientNameAr : activeCase.patientNameEn) || activeCase.patientName || '';
+
+            setForwardedBanner({
+              caseId: forwardedCaseId,
+              caseNumber: forwardedCaseNumber,
+              patientName: forwardedPatient,
+              targetStageAr: 'منسق رعاية ألو (C08)',
+              targetStageEn: 'ALO Coordinator (C08)',
+            });
+            setSelectedCaseId(null);
+            onSelectCase?.('');
+          }}
           lang={lang}
         />
       ) : (
@@ -553,6 +597,8 @@ export const DoctorReviewView: React.FC<Props> = ({
                 caseId: forwardedCaseId,
                 caseNumber: forwardedCaseNumber,
                 patientName: forwardedPatient,
+                targetStageAr: 'منسق رعاية ألو (C01)',
+                targetStageEn: 'ALO Coordinator (C01)',
               });
 
               const nextPending = pendingDoctorCases.find((c) => c.id !== activeCase.id);
@@ -563,6 +609,7 @@ export const DoctorReviewView: React.FC<Props> = ({
                 metadata: { ...(activeCase.metadata || {}), paymentLinkIssued: false, paymentVerified: false },
               });
               setSelectedCaseId(null);
+              onSelectCase?.('');
             }}
             className="w-full sm:w-auto bg-gradient-to-r from-alo-teal to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white font-extrabold py-3 px-8 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-sm active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -584,7 +631,7 @@ export const DoctorReviewView: React.FC<Props> = ({
       </>
       )}
 
-      {/* D10 Forwarded Confirmation Banner - Fixed Bottom Side */}
+      {/* Forwarded Confirmation Banner - Fixed Bottom Side */}
       {forwardedBanner && (
         <aside
           role="status"
@@ -602,8 +649,8 @@ export const DoctorReviewView: React.FC<Props> = ({
               </span>
               <p className="text-sm font-bold text-slate-800 dark:text-slate-100 leading-snug break-words">
                 {isAr
-                  ? `تم نقل الحالة [${forwardedBanner.caseNumber}] إلى المرحلة التالية ← منسق رعاية ألو (C01)`
-                  : `Case [${forwardedBanner.caseNumber}] moved to next stage → ALO Coordinator (C01)`}
+                  ? `تم نقل الحالة [${forwardedBanner.caseNumber}] إلى المرحلة التالية ← ${forwardedBanner.targetStageAr || 'منسق رعاية ألو (C01)'}`
+                  : `Case [${forwardedBanner.caseNumber}] moved to next stage → ${forwardedBanner.targetStageEn || 'ALO Coordinator (C01)'}`}
               </p>
               {forwardedBanner.patientName && (
                 <span className="text-xs font-medium text-slate-500 dark:text-slate-400 truncate">

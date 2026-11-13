@@ -89,17 +89,9 @@ const PortalCaseTrackerPanel: React.FC<PortalCaseTrackerPanelProps> = ({
     [validCases, actionablePredicate]
   );
 
-  const [tab, setTab] = useState<'actionable' | 'all'>(
-    actionableCases.length > 0 ? 'actionable' : 'all'
-  );
+  const [tab, setTab] = useState<'actionable' | 'all'>('actionable');
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-
-  useEffect(() => {
-    if (actionableCases.length === 0 && validCases.length > 0) {
-      setTab('all');
-    }
-  }, [actionableCases.length, validCases.length]);
 
   if (validCases.length === 0) {
     return null;
@@ -261,7 +253,11 @@ const PortalCaseTrackerPanel: React.FC<PortalCaseTrackerPanelProps> = ({
               <div className="flex flex-col items-center justify-center py-8 text-slate-400 dark:text-slate-600">
                 <CheckCircle2 className="w-8 h-8 mb-2 opacity-40" />
                 <p className="text-xs font-medium">
-                  {isAr ? 'لا توجد حالات تطابق البحث' : 'No cases matching search'}
+                  {searchQuery.trim()
+                    ? (isAr ? 'لا توجد حالات تطابق البحث' : 'No cases matching search')
+                    : (tab === 'actionable'
+                        ? (isAr ? 'لا توجد حالات معلقة في قائمة الإجراءات' : 'No actionable cases in queue')
+                        : (isAr ? 'لا توجد حالات مسجلة' : 'No cases registered'))}
                 </p>
               </div>
             ) : (
