@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Shield, Building2, UserCheck, Database, FileText, Globe, LogOut } from 'lucide-react';
+import { Shield, Building2, UserCheck, Database, FileText, Globe, LogOut, FolderKanban } from 'lucide-react';
 import { Persona, ClinicalCase } from '../../types';
 import { UserSession } from '../../hooks/workflowConstants';
 import { PERSONAS, PERSONA_BY_CODE } from '../../data/personas';
 import { RoleCode } from '../../data/rbacMatrix';
 import { useAdminGovernanceState } from '../../hooks/useAdminGovernanceState';
+import { SuperAdminCasesTab } from './superadmin/SuperAdminCasesTab';
 import { SuperAdminRolesPowersTab } from './superadmin/SuperAdminRolesPowersTab';
 import { SuperAdminTenantsTab } from './superadmin/SuperAdminTenantsTab';
 import { SuperAdminCentralStaffTab } from './superadmin/SuperAdminCentralStaffTab';
@@ -20,7 +21,7 @@ interface SuperAdminPortalViewProps {
   cases?: ClinicalCase[];
 }
 
-type TabKey = 'roles' | 'tenants' | 'staff' | 'catalogs' | 'audit';
+type TabKey = 'cases' | 'roles' | 'tenants' | 'staff' | 'catalogs' | 'audit';
 
 export const SuperAdminPortalView: React.FC<SuperAdminPortalViewProps> = ({
   lang,
@@ -31,7 +32,7 @@ export const SuperAdminPortalView: React.FC<SuperAdminPortalViewProps> = ({
   cases = [],
 }) => {
   const isRTL = lang === 'ar';
-  const [activeTab, setActiveTab] = useState<TabKey>('roles');
+  const [activeTab, setActiveTab] = useState<TabKey>('cases');
 
   const {
     tenants,
@@ -51,6 +52,7 @@ export const SuperAdminPortalView: React.FC<SuperAdminPortalViewProps> = ({
   } = useAdminGovernanceState();
 
   const navTabs: { id: TabKey; labelAr: string; labelEn: string; icon: React.ReactNode }[] = [
+    { id: 'cases', labelAr: 'سجل الحالات والعمليات', labelEn: 'All Cases & Operations', icon: <FolderKanban className="w-4 h-4" /> },
     { id: 'roles', labelAr: 'مصفوفة الصلاحيات والحوكمة', labelEn: 'Roles & Governance Matrix', icon: <Shield className="w-4 h-4" /> },
     { id: 'tenants', labelAr: 'المستشفيات الشريكة', labelEn: 'Hospital Tenants', icon: <Building2 className="w-4 h-4" /> },
     { id: 'staff', labelAr: 'الكوادر المركزية', labelEn: 'Central Staff', icon: <UserCheck className="w-4 h-4" /> },
@@ -128,6 +130,13 @@ export const SuperAdminPortalView: React.FC<SuperAdminPortalViewProps> = ({
 
       {/* Active Tab Panel */}
       <main className="max-w-7xl mx-auto">
+        {activeTab === 'cases' && (
+          <SuperAdminCasesTab
+            isRTL={isRTL}
+            cases={cases}
+            tenants={tenants}
+          />
+        )}
         {activeTab === 'roles' && (
           <SuperAdminRolesPowersTab isRTL={isRTL} />
         )}
