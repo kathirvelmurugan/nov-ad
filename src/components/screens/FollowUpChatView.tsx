@@ -22,23 +22,38 @@ interface Props {
 const FollowUpChatView: React.FC<Props> = ({ activeCase, onAdvanceStage, onUpdateCase, onBackToTimeline }) => {
   const [lang, setLang] = useState<'ar' | 'en'>('ar');
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [reportModalType, setReportModalType] = useState<'pdf1' | 'pdf2'>('pdf1');
   const [personaId, setPersonaId] = useState<number>(1);
   const [daysRemaining, setDaysRemaining] = useState<number>(20);
   const [chatInput, setChatInput] = useState<string>('');
+
+  const patientEndedFollowUp = Boolean(
+    activeCase.metadata?.patientEndedFollowUp ||
+    activeCase.metadata?.patientRequestedClosure
+  );
+
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
     // Re-hydrate the persisted relay loop: patient question -> consultant answer
     const persistedQ = (activeCase.metadata?.patientQuestions as string[]) || [];
-    const persistedA = (activeCase.metadata?.consultantAnswers as string[]) || [];
+    const persistedA =
+      (activeCase.metadata?.followUpAnswers as string[]) ||
+      (activeCase.metadata?.consultantAnswers as string[]) ||
+      [];
     const seeded: ChatMessage[] = [];
     persistedQ.forEach((q, i) => {
       seeded.push({ id: `seed_q_${i}`, text: q, sender: 'patient', timestamp: new Date() });
       if (persistedA[i]) {
-        seeded.push({ id: `seed_a_${i}`, text: `Indian consultant answer: ${persistedA[i]}`, sender: 'coordinator', timestamp: new Date() });
+        seeded.push({
+          id: `seed_a_${i}`,
+          text: `Indian consultant answer: ${persistedA[i]}`,
+          sender: 'coordinator',
+          timestamp: new Date(),
+        });
       }
     });
     return seeded;
   });
-  const [rating, setRating] = useState<number>(0);
+  const [rating, setRating] = useState<number>((activeCase.metadata?.rating as number) || 0);
   const [hoverRating, setHoverRating] = useState<number>(0);
   const [selectedTags, setSelectedTags] = useState<Set<number>>(new Set());
   const [isDownloading, setIsDownloading] = useState<boolean>(false);
@@ -57,21 +72,56 @@ const FollowUpChatView: React.FC<Props> = ({ activeCase, onAdvanceStage, onUpdat
       ? `أهلاً بك أخي الكريم، تم استلام استفسارك وإدراجه في ملف المتابعة السريرية المباشرة. نافذة المتابعة متاحة لك لمدة 21 يوماً مجاناً مع إشراف الفريق الاستشاري للإجابة على كافة تساؤلاتك.`
       : `Welcome. Your clinical follow-up question has been logged and shared with the medical board. Your 21-day complimentary follow-up window is active with continuous coordinator support.`;
 
-    setMessages([
+    const msgs: ChatMessage[] = [
       {
         id: 'msg-seed-1',
         text: initialPatientQuestion,
         sender: 'patient',
-        timestamp: new Date(Date.now() - 3600000 * 2)
+        timestamp: new Date(Date.now() - 3600000 * 2),
       },
       {
         id: 'msg-seed-2',
         text: initialCoordinatorReply,
         sender: 'coordinator',
-        timestamp: new Date(Date.now() - 3600000)
+        timestamp: new Date(Date.now() - 3600000),
+      },
+    ];
+
+    const persistedQ = (activeCase.metadata?.patientQuestions as string[]) || [];
+    const persistedA =
+      (activeCase.metadata?.followUpAnswers as string[]) ||
+      (activeCase.metadata?.consultantAnswers as string[]) ||
+      [];
+
+    persistedQ.forEach((q, i) => {
+      if (q !== initialPatientQuestion) {
+        msgs.push({
+          id: `patient_q_${i}`,
+          text: q,
+          sender: 'patient',
+          timestamp: new Date(Date.now() - 1800000 + i * 60000),
+        });
       }
-    ]);
-  }, [activeCase.id, isRTL]);
+      if (persistedA[i]) {
+        msgs.push({
+          id: `consultant_a_${i}`,
+          text: isRTL
+            ? `إفادة وإجابة الاستشاري الطبي: ${persistedA[i]}`
+            : `Doctor / Consultant Answer: ${persistedA[i]}`,
+          sender: 'coordinator',
+          timestamp: new Date(Date.now() - 900000 + i * 60000),
+        });
+      }
+    });
+
+    setMessages(msgs);
+  }, [
+    activeCase.id,
+    isRTL,
+    JSON.stringify(activeCase.metadata?.patientQuestions),
+    JSON.stringify(activeCase.metadata?.followUpAnswers),
+    JSON.stringify(activeCase.metadata?.consultantAnswers),
+  ]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -161,21 +211,20 @@ const FollowUpChatView: React.FC<Props> = ({ activeCase, onAdvanceStage, onUpdat
   const handleCompleteFollowUp = () => {
     const selectedTagsList = Array.from(selectedTags).map((idx) => tags[idx]);
     onUpdateCase({
-      status: 'closed',
-      currentStage: 'CLOSED',
-      stage: 9,
       metadata: {
         ...(activeCase.metadata || {}),
         rating: rating || (activeCase.metadata?.rating as number) || 5,
-        ratingTags: selectedTagsList.length > 0 ? selectedTagsList : (isRTL ? ['دقة التشخيص', 'سرعة الاستجابة'] : ['Diagnostic Accuracy', 'Fast Response']),
-        followUpCompleted: true,
-        followUpCompletedAt: new Date().toISOString(),
-        pdf2Released: true,
-        pdf2Timestamp: new Date().toISOString(),
-        archived: true,
+        ratingTags:
+          selectedTagsList.length > 0
+            ? selectedTagsList
+            : isRTL
+            ? ['دقة التشخيص', 'سرعة الاستجابة']
+            : ['Diagnostic Accuracy', 'Fast Response'],
+        patientEndedFollowUp: true,
+        patientEndedFollowUpAt: new Date().toISOString(),
+        patientRequestedClosure: true,
       },
     });
-    onAdvanceStage();
   };
 
   return (
@@ -303,7 +352,14 @@ const FollowUpChatView: React.FC<Props> = ({ activeCase, onAdvanceStage, onUpdat
           isDownloading={isDownloading}
           downloadComplete={downloadComplete}
           onDownloadPDF={handleDownloadPDF}
-          onPreviewPDF={() => setIsReportModalOpen(true)}
+          onPreviewPDF={() => {
+            setReportModalType('pdf1');
+            setIsReportModalOpen(true);
+          }}
+          onPreviewPDF2={() => {
+            setReportModalType('pdf2');
+            setIsReportModalOpen(true);
+          }}
         />
 
         <FollowUpChatThread
@@ -326,6 +382,7 @@ const FollowUpChatView: React.FC<Props> = ({ activeCase, onAdvanceStage, onUpdat
           setHoverRating={setHoverRating}
           onToggleTag={toggleTag}
           onCompleteFollowUp={handleCompleteFollowUp}
+          patientEndedFollowUp={patientEndedFollowUp}
         />
       </main>
 
@@ -334,7 +391,7 @@ const FollowUpChatView: React.FC<Props> = ({ activeCase, onAdvanceStage, onUpdat
         onClose={() => setIsReportModalOpen(false)}
         activeCase={activeCase}
         lang={lang}
-        reportType="pdf1"
+        reportType={reportModalType}
       />
 
       <style>{`

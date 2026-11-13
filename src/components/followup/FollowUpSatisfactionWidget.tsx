@@ -11,6 +11,7 @@ interface Props {
   setHoverRating: (star: number) => void;
   onToggleTag: (index: number) => void;
   onCompleteFollowUp: () => void;
+  patientEndedFollowUp?: boolean;
 }
 
 export const FollowUpSatisfactionWidget: React.FC<Props> = ({
@@ -23,29 +24,33 @@ export const FollowUpSatisfactionWidget: React.FC<Props> = ({
   setHoverRating,
   onToggleTag,
   onCompleteFollowUp,
+  patientEndedFollowUp = false,
 }) => {
   const [error, setError] = React.useState<string | null>(null);
 
   const handleRatingClick = (star: number) => {
+    if (patientEndedFollowUp) return;
     setError(null);
     onRatingChange(star);
   };
 
   const handleComplete = () => {
+    if (patientEndedFollowUp) return;
     if (rating === 0) {
       setError(
         isRTL
-          ? 'يرجى تقييم تجربة الاستشارة الطبية (من نجمة إلى 5 نجوم) قبل إتمام وإنهاء الملف.'
-          : 'Please rate your second opinion experience (1 to 5 stars) before closing the consultation.'
+          ? 'يرجى تقييم تجربة الاستشارة الطبية (من نجمة إلى 5 نجوم) قبل تأكيد إنهاء المتابعة.'
+          : 'Please rate your second opinion experience (1 to 5 stars) before concluding the follow-up.'
       );
       return;
     }
     setError(null);
     onCompleteFollowUp();
   };
+
   return (
     <section
-      aria-label={isRTL ? 'تقييم الاستشارة' : 'Consultation Rating'}
+      aria-label={isRTL ? 'إنهاء المتابعة وتقييم الاستشارة' : 'End Follow-Up & Experience Rating'}
       style={{
         backgroundColor: '#FFFFFF',
         borderRadius: '16px',
@@ -58,9 +63,44 @@ export const FollowUpSatisfactionWidget: React.FC<Props> = ({
         gap: '20px',
       }}
     >
-      <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1A2E35', textAlign: 'center' }}>
-        {isRTL ? 'تقييم رضاك عن الاستشارة' : 'Consultation Satisfaction Rating'}
-      </h3>
+      <div style={{ textAlign: 'center' }}>
+        <h3 style={{ margin: '0 0 6px', fontSize: '18px', fontWeight: 700, color: '#1A2E35' }}>
+          {isRTL ? 'إتمام وإنهاء فترة المتابعة' : 'Conclude 21-Day Follow-Up'}
+        </h3>
+        <p style={{ margin: 0, fontSize: '13px', color: '#64748B', maxWidth: '520px', lineHeight: 1.6 }}>
+          {isRTL
+            ? 'المتابعة مستمرة ومفتوحة طوال 21 يوماً. عندما تنتهي من كافة استفساراتك، يمكنك النقر على "أرغب في إنهاء المتابعة" ليقوم المنسق بإصدار الملف النهائي وإغلاق الحالة.'
+            : 'Follow-up remains continuously active for up to 21 days. When you have asked all your questions, click "I want to end this follow-up" so the coordinator can release the final dossier and close the case.'}
+        </p>
+      </div>
+
+      {patientEndedFollowUp && (
+        <div
+          role="status"
+          style={{
+            backgroundColor: '#ECFDF5',
+            border: '1.5px solid #10B981',
+            borderRadius: '12px',
+            padding: '16px 20px',
+            color: '#065F46',
+            width: '100%',
+            maxWidth: '560px',
+            boxSizing: 'border-box',
+            textAlign: 'center',
+            fontSize: '14px',
+            lineHeight: 1.6,
+          }}
+        >
+          <div style={{ fontWeight: 800, fontSize: '15px', marginBottom: '4px' }}>
+            ✓ {isRTL ? 'تم تأكيد رغبتكم في إنهاء المتابعة بنجاح' : 'Follow-Up Concluded by Patient'}
+          </div>
+          <div>
+            {isRTL
+              ? 'يقوم منسق رعاية ألو حالياً بمراجعة واعتماد التقرير الشامل النهائي (PDF 2) المتضمن كافة الإجابات وسيقوم بإغلاق الحالة رسمياً.'
+              : 'ALO Care Coordinator is reviewing all answers and generating the Final Comprehensive Dossier (PDF 2) before closing the case.'}
+          </div>
+        </div>
+      )}
 
       {/* 5-Star Rating Widget */}
       <div
@@ -82,15 +122,16 @@ export const FollowUpSatisfactionWidget: React.FC<Props> = ({
               aria-checked={rating === star}
               aria-label={`${star} ${isRTL ? 'نجوم' : 'stars'}`}
               onClick={() => handleRatingClick(star)}
-              onMouseEnter={() => setHoverRating(star)}
-              onMouseLeave={() => setHoverRating(0)}
-              onFocus={() => setHoverRating(star)}
-              onBlur={() => setHoverRating(0)}
+              onMouseEnter={() => !patientEndedFollowUp && setHoverRating(star)}
+              onMouseLeave={() => !patientEndedFollowUp && setHoverRating(0)}
+              onFocus={() => !patientEndedFollowUp && setHoverRating(star)}
+              onBlur={() => !patientEndedFollowUp && setHoverRating(0)}
+              disabled={patientEndedFollowUp}
               style={{
                 background: 'none',
                 border: 'none',
                 padding: '4px',
-                cursor: 'pointer',
+                cursor: patientEndedFollowUp ? 'default' : 'pointer',
                 transition: 'transform 0.15s ease',
                 transform: isActive ? 'scale(1.15)' : 'scale(1)',
               }}
@@ -154,8 +195,9 @@ export const FollowUpSatisfactionWidget: React.FC<Props> = ({
             <button
               key={index}
               type="button"
-              onClick={() => onToggleTag(index)}
+              onClick={() => !patientEndedFollowUp && onToggleTag(index)}
               aria-pressed={isSelected}
+              disabled={patientEndedFollowUp}
               style={{
                 padding: '8px 18px',
                 borderRadius: '24px',
@@ -165,7 +207,7 @@ export const FollowUpSatisfactionWidget: React.FC<Props> = ({
                 fontFamily: "'Cairo', sans-serif",
                 fontSize: '13px',
                 fontWeight: 600,
-                cursor: 'pointer',
+                cursor: patientEndedFollowUp ? 'default' : 'pointer',
                 transition: 'all 0.2s ease',
               }}
             >
@@ -199,50 +241,60 @@ export const FollowUpSatisfactionWidget: React.FC<Props> = ({
         </div>
       )}
 
-      {/* Complete Follow-Up Action Button */}
+      {/* Continuous Follow-Up Action: "I want to end this follow-up" */}
       <button
         type="button"
         onClick={handleComplete}
-        aria-label={isRTL ? 'إتمام المتابعة والانتقال للخطوة التالية' : 'Complete follow-up and advance stage'}
+        disabled={patientEndedFollowUp || rating === 0}
+        aria-label={isRTL ? 'أرغب في إنهاء المتابعة' : 'I want to end this follow-up'}
         style={{
           marginTop: '8px',
           padding: '14px 40px',
           borderRadius: '12px',
           border: 'none',
-          backgroundColor: rating === 0 ? '#CBD5E1' : TEAL_PRIMARY,
+          backgroundColor: patientEndedFollowUp ? '#10B981' : rating === 0 ? '#CBD5E1' : TEAL_PRIMARY,
           color: '#FFFFFF',
           fontFamily: "'Cairo', sans-serif",
           fontSize: '16px',
           fontWeight: 700,
-          cursor: rating === 0 ? 'not-allowed' : 'pointer',
+          cursor: patientEndedFollowUp || rating === 0 ? 'not-allowed' : 'pointer',
           transition: 'all 0.3s ease',
-          boxShadow: rating > 0 ? `0 4px 16px rgba(0, 123, 110, 0.3)` : 'none',
+          boxShadow: !patientEndedFollowUp && rating > 0 ? `0 4px 16px rgba(0, 123, 110, 0.3)` : 'none',
           display: 'inline-flex',
           alignItems: 'center',
           gap: '10px',
         }}
         onMouseEnter={(e) => {
-          if (rating > 0) e.currentTarget.style.backgroundColor = '#005F55';
+          if (!patientEndedFollowUp && rating > 0) e.currentTarget.style.backgroundColor = '#005F55';
         }}
         onMouseLeave={(e) => {
-          if (rating > 0) e.currentTarget.style.backgroundColor = TEAL_PRIMARY;
+          if (!patientEndedFollowUp && rating > 0) e.currentTarget.style.backgroundColor = TEAL_PRIMARY;
         }}
       >
-        {isRTL ? 'إتمام المتابعة' : 'Complete Follow-Up'}
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          style={{ transform: isRTL ? 'rotate(180deg)' : 'none' }}
-        >
-          <line x1="5" y1="12" x2="19" y2="12" />
-          <polyline points="12 5 19 12 12 19" />
-        </svg>
+        {patientEndedFollowUp ? (
+          <>
+            <span>✓</span>
+            <span>{isRTL ? 'تم طلب إنهاء المتابعة' : 'Follow-up Ended'}</span>
+          </>
+        ) : (
+          <>
+            <span>{isRTL ? 'أرغب في إنهاء المتابعة' : 'I want to end this follow-up'}</span>
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{ transform: isRTL ? 'rotate(180deg)' : 'none' }}
+            >
+              <line x1="5" y1="12" x2="19" y2="12" />
+              <polyline points="12 5 12 12 12 19" />
+            </svg>
+          </>
+        )}
       </button>
     </section>
   );

@@ -68,6 +68,10 @@ export const ReportComprehensiveDossier: React.FC<Props> = ({
       : 'What is the anticipated recovery duration before returning to daily light activities and desk work?',
   ];
 
+  const followUpAnswers = (activeCase.metadata?.followUpAnswers as string[]) ||
+    (activeCase.metadata?.consultantAnswers as string[]) ||
+    [];
+
   const totalSar = activeCase.pricing?.totalSar || (activeCase.consultationType === 'video' ? 150 : 75);
   const baseSar = activeCase.pricing?.baseSar || (totalSar === 150 ? 130.43 : 65.22);
   const vatSar = activeCase.pricing?.vatSar || (totalSar === 150 ? 19.57 : 9.78);
@@ -379,20 +383,33 @@ export const ReportComprehensiveDossier: React.FC<Props> = ({
               {isAr ? 'مداولات واستفسارات المريض التي تم ترحيلها والإجابة عليها:' : 'Patient Clarification Inquiries & Care Team Relays:'}
             </h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {patientQuestions.map((q, i) => (
-                <div key={i} style={{ backgroundColor: '#F1F5F9', padding: '12px 14px', borderRadius: '8px', fontSize: '12px' }}>
-                  <div style={{ fontWeight: 700, color: '#0F172A', marginBottom: '4px' }}>
-                    ❓ {isAr ? `استفسار المريض #${i + 1}:` : `Patient Inquiry #${i + 1}:`} {q}
+              {patientQuestions.map((q, i) => {
+                const answer = followUpAnswers[i] || '';
+                return (
+                  <div key={i} style={{ backgroundColor: '#F1F5F9', padding: '12px 14px', borderRadius: '8px', fontSize: '12px' }}>
+                    <div style={{ fontWeight: 700, color: '#0F172A', marginBottom: '4px' }}>
+                      ❓ {isAr ? `استفسار المريض #${i + 1}:` : `Patient Inquiry #${i + 1}:`} {q}
+                    </div>
+                    <div style={{ color: '#047857', fontSize: '11.5px', marginTop: '6px', paddingLeft: isAr ? 0 : '12px', paddingRight: isAr ? '12px' : 0 }}>
+                      ↳ <strong>{isAr ? 'إفادة وإجابة الاستشاري الطبي:' : 'Doctor / Consultant Answer:'}</strong>{' '}
+                      {answer || (isAr
+                        ? 'تمت الإجابة والاطمئنان على استقرار الحالة بعد الجراحة والبدء التدريجي للأنشطة الخفيفة مع التزام بروتوكول مضادات التخثر المحدد.'
+                        : 'Clinical guidance provided regarding steady postsurgical recovery, gradual resumption of light daily activity, and strict compliance with the prescribed anticoagulation protocol.')}
+                    </div>
                   </div>
-                  <div style={{ color: '#047857', fontSize: '11.5px', marginTop: '6px', paddingLeft: isAr ? 0 : '12px', paddingRight: isAr ? '12px' : 0 }}>
-                    ↳ <strong>{isAr ? 'إفادة منسق رعاية ألو والاستشاري:' : 'ALO Care Team & Consultant Clarification:'}</strong>{' '}
-                    {isAr
-                      ? 'تمت الإجابة والاطمئنان على استقرار الحالة بعد الجراحة والبدء التدريجي للأنشطة الخفيفة مع التزام بروتوكول مضادات التخثر المحدد.'
-                      : 'Clinical guidance provided regarding steady postsurgical recovery, gradual resumption of light daily activity, and strict compliance with the prescribed anticoagulation protocol.'}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
+            {activeCase.finalClosureNote && (
+              <div style={{ marginTop: '12px', backgroundColor: '#F0FDF4', border: '1px solid #BBF7D0', padding: '12px 14px', borderRadius: '8px', fontSize: '12px' }}>
+                <div style={{ fontWeight: 700, color: '#166534', marginBottom: '4px' }}>
+                  📋 {isAr ? 'ملاحظات وتوصيات الإغلاق السريري للاستشاري:' : 'Specialist Final Clinical Remarks:'}
+                </div>
+                <div style={{ color: '#15803D', lineHeight: 1.6 }}>
+                  {activeCase.finalClosureNote}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Patient Satisfaction Rating & Tags */}

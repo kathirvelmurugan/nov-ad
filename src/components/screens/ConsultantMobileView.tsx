@@ -91,8 +91,20 @@ export const ConsultantMobileView: React.FC<Props> = ({
   const [opinionText, setOpinionText] = useState<string>(activeCase.consultantOpinion || '');
   const [selectedSlot, setSelectedSlot] = useState<string>('');
   const [finalRemarks, setFinalRemarks] = useState<string>(activeCase.finalClosureNote || '');
-  const relayed = (activeCase.metadata?.relayedQuestions as string[]) || [];
-  const [answers, setAnswers] = useState<string[]>(relayed.map(() => ''));
+  const relayed =
+    (activeCase.metadata?.relayedQuestions as string[]) ||
+    (activeCase.metadata?.patientQuestions as string[]) ||
+    [];
+  const existingAnswers =
+    (activeCase.metadata?.followUpAnswers as string[]) ||
+    (activeCase.metadata?.consultantAnswers as string[]) ||
+    [];
+  const [answers, setAnswers] = useState<string[]>(() =>
+    relayed.map((_, i) => existingAnswers[i] || '')
+  );
+  const [isDoctorSubmitted, setIsDoctorSubmitted] = useState<boolean>(
+    Boolean(activeCase.metadata?.doctorAnsweredFollowUp)
+  );
 
   const baseAr = activeCase.treatingDoctor?.focusQuestions || ['', '', ''];
   const focusQuestionsEn = activeCase.treatingDoctor?.focusQuestionsEn || baseAr;
@@ -243,10 +255,17 @@ export const ConsultantMobileView: React.FC<Props> = ({
   const handleSubmitFinalRemarks = () => {
     onUpdateCase({
       finalClosureNote: finalRemarks,
-      status: 'closed',
-      metadata: { ...(activeCase.metadata || {}), consultantAnswers: answers },
+      // Doctor simply answers questions and sends them back to the ALO Coordinator.
+      // Doctor does NOT close the case.
+      metadata: {
+        ...(activeCase.metadata || {}),
+        consultantAnswers: answers,
+        followUpAnswers: answers,
+        doctorAnsweredFollowUp: true,
+        doctorFollowUpSubmittedAt: new Date().toISOString(),
+      },
     });
-    onAdvanceStage();
+    setIsDoctorSubmitted(true);
   };
 
   // Navigation tab definitions: K09 Follow-up is strictly visible ONLY when isFollowUpEnabled is true
@@ -470,6 +489,8 @@ export const ConsultantMobileView: React.FC<Props> = ({
               tealSecondary={tealSecondary}
               tealBg={tealBg}
               onSubmitFinalRemarks={handleSubmitFinalRemarks}
+              isCoordinatorEnded={Boolean(activeCase.metadata?.coordinatorEndedFollowUp)}
+              isDoctorSubmitted={isDoctorSubmitted || Boolean(activeCase.metadata?.doctorAnsweredFollowUp)}
             />
           )}
         </>

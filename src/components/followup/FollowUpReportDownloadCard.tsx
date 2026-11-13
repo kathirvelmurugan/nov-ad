@@ -9,6 +9,7 @@ interface Props {
   downloadComplete: boolean;
   onDownloadPDF: () => void;
   onPreviewPDF?: () => void;
+  onPreviewPDF2?: () => void;
 }
 
 export const FollowUpReportDownloadCard: React.FC<Props> = ({
@@ -18,6 +19,7 @@ export const FollowUpReportDownloadCard: React.FC<Props> = ({
   downloadComplete,
   onDownloadPDF,
   onPreviewPDF,
+  onPreviewPDF2,
 }) => {
   return (
     <section
@@ -160,6 +162,31 @@ export const FollowUpReportDownloadCard: React.FC<Props> = ({
           >
             <span>👁️</span>
             <span>{isRTL ? 'معاينة التقرير (PDF 1)' : 'Preview Report (PDF 1)'}</span>
+          </button>
+        )}
+
+        {onPreviewPDF2 && activeCase.metadata?.pdf2Released && (
+          <button
+            type="button"
+            onClick={onPreviewPDF2}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '12px 20px',
+              borderRadius: '12px',
+              border: `2px solid ${WHATSAPP_GREEN}`,
+              backgroundColor: '#ECFDF5',
+              color: '#065F46',
+              fontFamily: "'Cairo', sans-serif",
+              fontSize: '14px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            <span>📋</span>
+            <span>{isRTL ? 'معاينة الملف الشامل النهائي (PDF 2)' : 'Preview Final Dossier (PDF 2)'}</span>
           </button>
         )}
 

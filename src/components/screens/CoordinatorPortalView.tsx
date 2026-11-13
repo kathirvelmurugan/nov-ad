@@ -158,6 +158,11 @@ const CoordinatorPortalView: React.FC<Props> = ({
     isAr ? 'متى يجب أن أبدأ العلاج الطبيعي؟' : 'When should I start physical therapy?',
   ];
 
+  const followUpAnswers =
+    (activeCase?.metadata?.followUpAnswers as string[]) ||
+    (activeCase?.metadata?.consultantAnswers as string[]) ||
+    [];
+
   if (cases.length === 0) {
     return (
       <div data-testid="coordinator-empty" className="max-w-2xl mx-auto my-12 text-center p-10 card-clinical space-y-4">
@@ -192,10 +197,37 @@ const CoordinatorPortalView: React.FC<Props> = ({
     }
   };
 
-  const handleIssuePDF2AndClose = async () => {
+  const handleEndFollowUpForDoctor = () => {
+    onUpdateCase({
+      metadata: {
+        ...(activeCase?.metadata || {}),
+        coordinatorEndedFollowUp: true,
+        coordinatorEndedFollowUpAt: new Date().toISOString(),
+      },
+    });
+    setActiveTab('C10');
+  };
+
+  const handleReleasePDF2 = async () => {
     setIsProcessing(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      onUpdateCase({
+        metadata: {
+          ...(activeCase?.metadata || {}),
+          pdf2Released: true,
+          pdf2Timestamp: new Date().toISOString(),
+        },
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleCloseCaseCompletely = async () => {
+    setIsProcessing(true);
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       onUpdateCase({
         status: 'closed',
         currentStage: 'CLOSED',
@@ -203,17 +235,18 @@ const CoordinatorPortalView: React.FC<Props> = ({
         metadata: {
           ...(activeCase?.metadata || {}),
           pdf2Released: true,
-          pdf2Timestamp: new Date().toISOString(),
           archived: true,
-          stage: 'CLOSED'
-        }
+          closedAt: new Date().toISOString(),
+          stage: 'CLOSED',
+        },
       });
-      setActiveTab('C10');
       onAdvanceStage();
     } finally {
       setIsProcessing(false);
     }
   };
+
+  const handleIssuePDF2AndClose = handleCloseCaseCompletely;
 
   const getTierData = (type: 'written' | 'video') =>
     type === 'written'
@@ -274,7 +307,6 @@ const CoordinatorPortalView: React.FC<Props> = ({
   const pdf1Released = activeCase?.metadata?.pdf1Released as boolean | undefined;
   const isArchived = Boolean(
     activeCase?.metadata?.archived ||
-    activeCase?.metadata?.pdf2Released ||
     activeCase?.currentStage === 'CLOSED' ||
     activeCase?.status === 'closed'
   );
@@ -525,11 +557,14 @@ const CoordinatorPortalView: React.FC<Props> = ({
           <CoordinatorFollowUpTab
             key="content-c09"
             lang={lang}
+            activeCase={activeCase}
             incomingQuestions={incomingQuestions}
+            followUpAnswers={followUpAnswers}
             relayMessage={relayMessage}
             setRelayMessage={setRelayMessage}
             isProcessing={isProcessing}
             onRelayQuestion={handleRelayQuestion}
+            onEndFollowUpForDoctor={handleEndFollowUpForDoctor}
           />
         )}
 
@@ -537,10 +572,12 @@ const CoordinatorPortalView: React.FC<Props> = ({
           <CoordinatorCaseClosureTab
             key="content-c10"
             lang={lang}
-            activeCase={activeCase}
+            activeCase={activeCase || currentCase!}
             isArchived={isArchived}
             isProcessing={isProcessing}
-            onIssuePDF2AndClose={handleIssuePDF2AndClose}
+            onReleasePDF2={handleReleasePDF2}
+            onCloseCaseCompletely={handleCloseCaseCompletely}
+            onIssuePDF2AndClose={handleCloseCaseCompletely}
             onOpenPDFModal={(type) => {
               setCoordinatorReportType(type);
               setIsPDF2ModalOpen(true);
