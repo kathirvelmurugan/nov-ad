@@ -37,7 +37,7 @@ export const ConsultantWrittenOpinionSection: React.FC<Props> = ({
 }) => {
   const isOpinionValid = (opinionText || '').trim().length >= 50;
   const areAnswersValid = (focusAnswers || []).every(
-    (ans) => (ans || '').trim().length >= 15
+    (ans: string) => (ans || '').trim().length >= 15
   );
   const canSubmit = isOpinionValid && areAnswersValid;
 

@@ -1,37 +1,32 @@
 /**
  * useClinicalWorkflowState
  * ─────────────────────────────────────────────────────────────────────────────
- * Single-responsibility hook: owns ALL clinical workflow state, localStorage
- * persistence, and every handler function for the ALO Doctor platform.
- *
- * Returns a flat object consumed by AppLayout and ScreenRouter.
- * Decomposed into modular sub-hooks (<300 lines).
+ * Single-responsibility hook: orchestrates clinical workflow state, cases
+ * persistence, and delegates to modular sub-hooks:
+ *   - useWorkflowUIState (UI flags, view mode, modals, navigation)
+ *   - useWorkflowStageTransitions (stage progressions, validations, handoffs)
  */
 
 import { useState, useEffect } from 'react';
 import { PERSONAS } from '../data/personas';
-import { Persona, ClinicalCase, ClinicalStage } from '../types';
+import { Persona, ClinicalCase } from '../types';
 import { apiClient } from '../services/apiClient';
 import { matchesSaudiPhone } from '../components/auth/authTypesAndUtils';
 import {
   STORAGE_KEY,
   ACTIVE_CASE_KEY,
-  THEME_KEY,
-  LANG_KEY,
-  VIEW_MODE_KEY,
   USER_SESSION_KEY,
   UserSession,
   FRESH_PRIMARY_CASE,
   DEFAULT_CONSULTANT,
   DEFAULT_TREATING_DOCTOR,
-  STAGE_ORDER,
 } from './workflowConstants';
 import { useWorkflowStageTransitions } from './useWorkflowStageTransitions';
+import { useWorkflowUIState } from './workflow/useWorkflowUIState';
 
 export type { UserSession };
-export { STORAGE_KEY, ACTIVE_CASE_KEY, THEME_KEY, LANG_KEY, VIEW_MODE_KEY, USER_SESSION_KEY, FRESH_PRIMARY_CASE };
+export { STORAGE_KEY, ACTIVE_CASE_KEY, USER_SESSION_KEY, FRESH_PRIMARY_CASE };
 
-// Clean-slate in-memory draft template for fresh unsubmitted intake
 const createFreshDraftIntake = (session?: UserSession | null, _isAr = false): ClinicalCase => ({
   ...FRESH_PRIMARY_CASE,
   id: 'draft-intake',
@@ -77,10 +72,7 @@ const createFreshDraftIntake = (session?: UserSession | null, _isAr = false): Cl
   },
 });
 
-// ─── Hook ────────────────────────────────────────────────────────────────────
 export function useClinicalWorkflowState() {
-
-  // ── Persona ──────────────────────────────────────────────────────────────
   const [activePersona, setActivePersona] = useState<Persona>(() => {
     try {
       if (typeof window !== 'undefined') {
@@ -88,7 +80,6 @@ export function useClinicalWorkflowState() {
         const role = (search.get('role') || '').toUpperCase();
         const portal = (search.get('portal') || '').toLowerCase();
         const token = search.get('token') || search.get('magic');
-        const pathname = window.location.pathname.toLowerCase();
 
         const portalRoleMap: Record<string, string> = {
           consultant: 'K', doctor: 'D', nurse: 'N', coordinator: 'C',
@@ -99,72 +90,11 @@ export function useClinicalWorkflowState() {
           const matched = PERSONAS.find((p) => p.code === targetRole);
           if (matched) return matched;
         }
-
-        // Check stored session on page refresh to keep active persona & role identity!
-        const savedSession = localStorage.getItem(USER_SESSION_KEY);
-        if (savedSession) {
-          const parsed = JSON.parse(savedSession);
-          if (parsed.isAuthenticated && parsed.roleCode) {
-            const matched = PERSONAS.find((p) => p.code === parsed.roleCode);
-            if (matched) {
-              return {
-                ...matched,
-                name: parsed.fullName || matched.name,
-                hospitalId: parsed.hospitalId || matched.hospitalId,
-              };
-            }
-          }
-        }
       }
     } catch (e) {}
     return PERSONAS[0];
   });
 
-  // ── Cases ─────────────────────────────────────────────────────────────────
-  const [cases, setCases] = useState<ClinicalCase[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          return parsed;
-        }
-      }
-    } catch (e) { console.warn('Failed to parse cases from localStorage:', e); }
-    return [];
-  });
-
-  const [activeCaseId, setActiveCaseId] = useState<string>(() => {
-    try {
-      if (typeof window !== 'undefined') {
-        const paramId = new URLSearchParams(window.location.search).get('caseId');
-        if (paramId) return paramId;
-      }
-      const saved = localStorage.getItem(ACTIVE_CASE_KEY);
-      if (saved) return saved;
-    } catch (e) {}
-    return '';
-  });
-
-  // ── Theme ─────────────────────────────────────────────────────────────────
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    try {
-      const saved = localStorage.getItem(THEME_KEY);
-      if (saved === 'dark' || saved === 'light') return saved;
-    } catch (e) {}
-    return 'light';
-  });
-
-  // ── Language ──────────────────────────────────────────────────────────────
-  const [lang, setLang] = useState<'ar' | 'en'>(() => {
-    try {
-      const saved = localStorage.getItem(LANG_KEY);
-      if (saved === 'ar' || saved === 'en') return saved;
-    } catch (e) {}
-    return 'ar';
-  });
-
-  // ── User Session ──────────────────────────────────────────────────────────
   const [userSession, setUserSession] = useState<UserSession | null>(() => {
     try {
       if (typeof window !== 'undefined') {
@@ -184,268 +114,82 @@ export function useClinicalWorkflowState() {
     return null;
   });
 
-  // ── UI Flags ──────────────────────────────────────────────────────────────
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [isWhatsAppDrawerOpen, setIsWhatsAppDrawerOpen] = useState(false);
-  const [isGuideOpen, setIsGuideOpen] = useState(false);
-  const [isPipelineBoardOpen, setIsPipelineBoardOpen] = useState(false);
-  const [isNewCaseModalOpen, setIsNewCaseModalOpen] = useState(false);
-  const [isAutoDemoActive, setIsAutoDemoActive] = useState(false);
-  const [pendingHandoff, setPendingHandoff] = useState<{ fromStage: ClinicalStage; toStage: ClinicalStage; nextPersona: Persona } | null>(null);
-
-  // ── View Mode ─────────────────────────────────────────────────────────────
-  const [viewMode, setViewMode] = useState<'workstation' | 'studio'>(() => {
+  const [cases, setCases] = useState<ClinicalCase[]>(() => {
     try {
-      if (typeof window !== 'undefined') {
-        const search = new URLSearchParams(window.location.search);
-        if (window.location.hash === '#cockpit' || search.get('demo') === '1' || search.get('cockpit') === '1') return 'studio';
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
       }
     } catch (e) {}
-    return 'workstation';
+    return [];
   });
 
-  // ── Patient Sub-View ──────────────────────────────────────────────────────
-  const [patientSubView, setPatientSubView] = useState<'landing' | 'intake' | 'timeline' | 'telehealth' | 'checkout'>(() => {
+  const [activeCaseId, setActiveCaseId] = useState<string>(() => {
     try {
-      if (typeof window !== 'undefined') {
-        const search = new URLSearchParams(window.location.search);
-        if (search.get('checkout') === '1' || search.get('payment') === '1' || search.get('subview') === 'checkout') return 'checkout';
-        if (search.get('intake') === '1') return 'intake';
-        if (search.get('telehealth') === '1' || search.get('subview') === 'telehealth') return 'telehealth';
-        if (search.get('timeline') === '1' || search.get('subview') === 'timeline') return 'timeline';
-      }
-      const saved = localStorage.getItem('alo_patient_subview_v3.0');
-      if (saved === 'landing' || saved === 'intake' || saved === 'timeline' || saved === 'telehealth' || saved === 'checkout') return saved;
-    } catch (e) {}
-    return 'landing';
-  });
-
-  // ── Selected Service ──────────────────────────────────────────────────────
-  const [selectedServiceId, setSelectedServiceId] = useState<string>(() => {
-    try {
-      const saved = localStorage.getItem('alo_selected_service_v3.0');
+      const saved = localStorage.getItem(ACTIVE_CASE_KEY);
       if (saved) return saved;
     } catch (e) {}
-    return 'second-opinion';
+    return '';
   });
 
-  // ── Intake Draft (In-Memory Only Until Explicit Nurse Submission) ───────────
-  const [intakeDraft, setIntakeDraft] = useState<ClinicalCase>(() => createFreshDraftIntake(userSession, lang === 'ar'));
+  const [intakeDraft, setIntakeDraft] = useState<ClinicalCase>(() => createFreshDraftIntake(userSession));
 
   useEffect(() => {
     if (userSession && userSession.phone) {
-      setIntakeDraft((prev) => {
-        if (prev.id === 'draft-intake') {
-          return {
-            ...prev,
-            patientPhone: userSession.phone,
-            patientName: userSession.fullName || prev.patientName,
-            patientNameAr: userSession.fullName || prev.patientNameAr,
-            patientNameEn: userSession.fullName || prev.patientNameEn,
-          };
-        }
-        return prev;
-      });
+      setIntakeDraft((prev) => (prev.id === 'draft-intake' ? {
+        ...prev,
+        patientPhone: userSession.phone,
+        patientName: userSession.fullName || prev.patientName,
+        patientNameAr: userSession.fullName || prev.patientNameAr,
+        patientNameEn: userSession.fullName || prev.patientNameEn,
+      } : prev));
     }
   }, [userSession]);
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // Database & LocalStorage Synchronization
-  // ─────────────────────────────────────────────────────────────────────────
   useEffect(() => {
-    let mounted = true;
-    const syncCases = async () => {
-      try {
-        const remoteCases = await apiClient.fetchCases();
-        if (mounted && Array.isArray(remoteCases)) {
-          if (remoteCases.length === 0) {
-            setCases([]);
-            setActiveCaseId('');
-            try {
-              localStorage.removeItem(STORAGE_KEY);
-              localStorage.removeItem(ACTIVE_CASE_KEY);
-            } catch (e) {}
-          } else {
-            const sorted = [...remoteCases].sort((a, b) => {
-              const timeA = new Date(a.createdAt || 0).getTime() || 0;
-              const timeB = new Date(b.createdAt || 0).getTime() || 0;
-              return timeB - timeA;
-            });
-            setCases(sorted);
-          }
-        }
-      } catch (e) {}
-    };
-    syncCases();
-    const timer = setInterval(syncCases, 15000);
-    return () => { mounted = false; clearInterval(timer); };
+    let isSubscribed = true;
+    apiClient.fetchCases().then((serverCases) => {
+      if (isSubscribed && Array.isArray(serverCases) && serverCases.length > 0) {
+        setCases((prev) => {
+          const merged = [...serverCases];
+          prev.forEach((p) => {
+            if (!merged.some((m) => m.id === p.id)) merged.push(p);
+          });
+          return merged;
+        });
+      }
+    }).catch(() => {});
+    return () => { isSubscribed = false; };
   }, []);
 
-  useEffect(() => { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(cases)); } catch (e) {} }, [cases]);
-  useEffect(() => { try { localStorage.setItem(ACTIVE_CASE_KEY, activeCaseId); } catch (e) {} }, [activeCaseId]);
-  useEffect(() => { try { localStorage.setItem(THEME_KEY, theme); } catch (e) {} }, [theme]);
-  useEffect(() => { try { localStorage.setItem(LANG_KEY, lang); } catch (e) {} }, [lang]);
-  useEffect(() => { try { localStorage.setItem('alo_patient_subview_v3.0', patientSubView); } catch (e) {} }, [patientSubView]);
-  useEffect(() => { try { localStorage.setItem('alo_selected_service_v3.0', selectedServiceId); } catch (e) {} }, [selectedServiceId]);
-  useEffect(() => {
-    if (userSession && userSession.isAuthenticated) {
-      try { localStorage.setItem(USER_SESSION_KEY, JSON.stringify(userSession)); } catch (e) {}
+  const effectiveCases = cases.filter((c) => {
+    const isPatientPersona = activePersona.code === 'P';
+    const isPatientUser = !userSession?.roleCode || userSession.roleCode === 'P';
+    if (isPatientPersona && isPatientUser) {
+      if (userSession?.phone) return matchesSaudiPhone(c.patientPhone, userSession.phone);
+      return false;
     }
-  }, [userSession]);
-
-  // Dark mode HTML class sync
-  useEffect(() => {
-    document.documentElement.classList.toggle('dark', theme === 'dark');
-  }, [theme]);
-
-  // Language & Direction HTML sync
-  useEffect(() => {
-    try {
-      document.documentElement.lang = lang;
-      document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
-    } catch (e) {}
-  }, [lang]);
-
-  // Initial history state seed
-  useEffect(() => {
-    if (typeof window !== 'undefined' && !window.history.state) {
-      window.history.replaceState({ subView: patientSubView, viewMode }, '', window.location.href);
-    }
-  }, []);
-
-  // Browser back/forward navigation sync
-  useEffect(() => {
-    const handlePopState = (e: PopStateEvent) => {
-      if (typeof window === 'undefined') return;
-
-      setIsAuthModalOpen(false);
-      setIsGuideOpen(false);
-      setIsNewCaseModalOpen(false);
-      setIsPipelineBoardOpen(false);
-
-      if (window.location.hash === '#cockpit') {
-        setViewMode('studio');
-        return;
-      }
-
-      const searchParams = new URLSearchParams(window.location.search);
-      const portal = (e.state?.portal || searchParams.get('portal') || '').toLowerCase();
-      const caseId = e.state?.caseId || searchParams.get('caseId');
-      if (caseId) setActiveCaseId(caseId);
-
-      const portalCodeMap: Record<string, string> = {
-        patient: 'P', nurse: 'N', doctor: 'D', coordinator: 'C', consultant: 'K',
-        hospital: 'HA', superadmin: 'AD', admin: 'AD', lab: 'L', pharmacy: 'PH', reception: 'REC'
-      };
-      if (portal && portalCodeMap[portal]) {
-        const matched = PERSONAS.find((p) => p.code === portalCodeMap[portal]);
-        if (matched) {
-          if (
-            !userSession?.isAuthenticated ||
-            !userSession.roleCode ||
-            userSession.roleCode === 'AD' ||
-            matched.code === userSession.roleCode
-          ) {
-            setActivePersona(matched);
-          }
-        }
-      }
-
-      // Restore subview from history state or URL param
-      const stateSubView = e.state?.subView;
-      const searchSubView = searchParams.get('subview');
-      const validSubViews = ['landing', 'intake', 'timeline', 'telehealth', 'checkout'];
-      const targetSubView = (validSubViews.includes(stateSubView)
-        ? stateSubView
-        : validSubViews.includes(searchSubView || '')
-        ? searchSubView
-        : 'landing') as 'landing' | 'intake' | 'timeline' | 'telehealth' | 'checkout';
-
-      setViewMode('workstation');
-
-      if (!userSession?.isAuthenticated || !userSession.roleCode || userSession.roleCode === 'P') {
-        setPatientSubView(targetSubView);
-        try { localStorage.setItem('alo_patient_subview_v3.0', targetSubView); } catch (err) {}
-      }
-    };
-
-    window.addEventListener('popstate', handlePopState);
-    window.addEventListener('hashchange', handlePopState as any);
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-      window.removeEventListener('hashchange', handlePopState as any);
-    };
-  }, [userSession]);
-
-  // ── Derived State (Patient Data Scoping) ─────────────────────────────────
-  const isPatientUser = userSession?.roleCode === 'P';
-  const validCases = cases.filter((c) => (c.stage && c.stage > 1) || (c.symptoms && c.symptoms.trim().length > 0));
-  const sortedCases = [...validCases].sort((a, b) => {
-    const timeA = new Date(a.createdAt || 0).getTime() || 0;
-    const timeB = new Date(b.createdAt || 0).getTime() || 0;
-    return timeB - timeA;
+    return true;
   });
-  const effectiveCases = isPatientUser
-    ? sortedCases.filter((c) => matchesSaudiPhone(c.patientPhone, userSession.phone))
-    : sortedCases;
 
-  const isDraftIntakeView =
-    patientSubView === 'intake' &&
-    (!activeCaseId || activeCaseId === 'draft-intake' || !cases.some((c) => c.id === activeCaseId));
+  const activeCase: ClinicalCase =
+    cases.find((c) => c.id === activeCaseId) ||
+    effectiveCases[0] ||
+    intakeDraft;
 
-  const rawActiveCase = isDraftIntakeView
-    ? intakeDraft
-    : (isPatientUser
-      ? (effectiveCases.find((c) => c.id === activeCaseId) || effectiveCases[0])
-      : (sortedCases.find((c) => c.id === activeCaseId) || sortedCases[0])) || intakeDraft;
+  const handleUpdateCase = (updatedFields: Partial<ClinicalCase>, isNurseSubmit = false) => {
+    const syncedUpdate = { ...updatedFields };
+    const isPatientUser = !userSession?.roleCode || userSession.roleCode === 'P';
 
-  const activeCase: ClinicalCase = {
-    ...rawActiveCase,
-    consultant: rawActiveCase.consultant || DEFAULT_CONSULTANT,
-    treatingDoctor: rawActiveCase.treatingDoctor || DEFAULT_TREATING_DOCTOR,
-    files: rawActiveCase.files || [],
-  };
-
-  // ── Handlers ─────────────────────────────────────────────────────────────
-  const handleUpdateCase = (updated: Partial<ClinicalCase>) => {
-    const syncedUpdate: Partial<ClinicalCase> = { ...updated };
-    if (updated.currentStage && updated.stage === undefined) {
-      const idx = STAGE_ORDER.indexOf(updated.currentStage);
-      if (idx >= 0) syncedUpdate.stage = idx + 1;
-    }
-
-    const isDraftTarget =
-      syncedUpdate.id === 'draft-intake' ||
-      activeCase.id === 'draft-intake' ||
-      (patientSubView === 'intake' && (!activeCaseId || !cases.some((c) => c.id === activeCaseId)));
-
-    const isNurseSubmit =
-      syncedUpdate.currentStage === 'NURSE_CHECK' ||
-      (Boolean(syncedUpdate.stage) && (syncedUpdate.stage || 0) >= 2);
-
-    if (isDraftTarget) {
-      if (!isNurseSubmit) {
-        // Typing into symptoms, selecting service/doctor, uploading files in draft mode:
-        // Update in-memory draft ONLY. Do NOT persist to DB or add to cases!
-        setIntakeDraft((prev) => ({
-          ...prev,
-          ...syncedUpdate,
-        }));
-        return;
-      }
-
-      // Explicit submission of the new case to Nurse Triage
-      const freshId = syncedUpdate.id && syncedUpdate.id !== 'draft-intake' ? syncedUpdate.id : `case-${Date.now()}`;
-      const freshCaseNum = syncedUpdate.caseNumber || `CASE-2026-${Math.floor(1000 + Math.random() * 9000)}`;
-      const phoneToSet = userSession?.phone || intakeDraft.patientPhone || syncedUpdate.patientPhone || '';
-      const nameToSet = userSession?.fullName || intakeDraft.patientName || syncedUpdate.patientName || (lang === 'ar' ? 'مريض ألو' : 'ALO Patient');
-
+    if (activeCase.id === 'draft-intake' || isNurseSubmit) {
+      const freshId = `case-${Date.now()}`;
+      const nameToSet = userSession?.fullName || intakeDraft.patientName || syncedUpdate.patientName || 'مريض جديد';
       const registeredCase: ClinicalCase = {
         ...intakeDraft,
         ...syncedUpdate,
         id: freshId,
-        caseNumber: freshCaseNum,
-        patientPhone: phoneToSet,
+        caseNumber: `ALO-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
         patientName: nameToSet,
         patientNameAr: userSession?.fullName || intakeDraft.patientNameAr || syncedUpdate.patientNameAr || nameToSet,
         patientNameEn: userSession?.fullName || intakeDraft.patientNameEn || syncedUpdate.patientNameEn || nameToSet,
@@ -461,33 +205,12 @@ export function useClinicalWorkflowState() {
         },
       };
 
-      // 1. Save to PostgreSQL database
       apiClient.saveCase(registeredCase).catch(() => {});
-
-      // 2. Prepend to cases state
       setCases((prev) => [registeredCase, ...prev.filter((c) => c.id !== freshId && c.id !== 'draft-intake')]);
-
-      // 3. Set active case ID
       setActiveCaseId(registeredCase.id);
-
-      // 4. Reset intake draft for next fresh submission
-      setIntakeDraft(createFreshDraftIntake(userSession, lang === 'ar'));
-
-      // 5. Transition patient to timeline
-      setPatientSubView('timeline');
-      if (typeof window !== 'undefined') {
-        try {
-          const url = new URL(window.location.href);
-          url.searchParams.set('subview', 'timeline');
-          url.searchParams.set('caseId', registeredCase.id);
-          window.history.pushState({ portal: 'patient', subView: 'timeline', caseId: registeredCase.id, viewMode: 'workstation' }, '', url.pathname + url.search);
-        } catch (err) {}
-      }
+      setIntakeDraft(createFreshDraftIntake(userSession));
+      ui.setPatientSubView('timeline');
       return;
-    }
-
-    if (isPatientUser && syncedUpdate.currentStage === 'NURSE_CHECK') {
-      setPatientSubView('timeline');
     }
 
     setCases((prev) => {
@@ -518,197 +241,69 @@ export function useClinicalWorkflowState() {
     });
   };
 
-  const transitions = useWorkflowStageTransitions({
-    activeCase, lang, setLang, isAutoDemoActive, setActivePersona, setViewMode, setPatientSubView,
-    setIsWhatsAppDrawerOpen, pendingHandoff, setPendingHandoff, handleUpdateCase, setCases, userSession, viewMode,
+  const ui = useWorkflowUIState({
+    userSession,
+    setUserSession,
+    activePersona,
+    setActivePersona,
+    activeCase,
+    activeCaseId,
+    setActiveCaseId,
+    cases,
+    setCases,
+    handleUpdateCase,
+    resetIntakeDraft: () => setIntakeDraft(createFreshDraftIntake(userSession)),
   });
 
-  const handleLogout = () => {
-    try {
-      localStorage.removeItem(USER_SESSION_KEY);
-      localStorage.removeItem(VIEW_MODE_KEY);
-      localStorage.setItem('alo_patient_subview_v3.0', 'landing');
-    } catch (e) {}
-    setUserSession(null);
-    setActivePersona(PERSONAS[0]); // Reset cleanly to Patient ('P')
-    setPatientSubView('landing');
-    setViewMode('workstation');
-    setIsAuthModalOpen(false);
-    if (typeof window !== 'undefined') {
-      try {
-        const cleanUrl = window.location.pathname;
-        window.history.replaceState({ subView: 'landing', viewMode: 'workstation' }, '', cleanUrl);
-      } catch (e) {}
-    }
-  };
+  const transitions = useWorkflowStageTransitions({
+    activeCase,
+    lang: ui.lang,
+    setLang: ui.setLang,
+    isAutoDemoActive: ui.isAutoDemoActive,
+    setActivePersona,
+    setViewMode: ui.setViewMode,
+    setPatientSubView: ui.setPatientSubView,
+    setIsWhatsAppDrawerOpen: ui.setIsWhatsAppDrawerOpen,
+    pendingHandoff: ui.pendingHandoff,
+    setPendingHandoff: ui.setPendingHandoff,
+    handleUpdateCase,
+    setCases,
+    userSession,
+    viewMode: ui.viewMode,
+  });
 
-  const handleToggleLang = () => {
-    const nextLang = lang === 'ar' ? 'en' : 'ar';
-    setLang(nextLang);
-    try { localStorage.setItem(LANG_KEY, nextLang); } catch (e) {}
-  };
-
-  const handleToggleTheme = () => setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
-
-  const handleToggleViewMode = () => {
-    setViewMode((prev) => {
-      const next = prev === 'workstation' ? 'studio' : 'workstation';
-      try { localStorage.setItem(VIEW_MODE_KEY, next); } catch (e) {}
-      if (typeof window !== 'undefined') {
-        if (next === 'studio' && window.location.hash !== '#cockpit') {
-          window.history.pushState({ viewMode: 'studio' }, '', '#cockpit');
-        } else if (next === 'workstation' && window.location.hash === '#cockpit') {
-          window.history.pushState({ viewMode: 'workstation' }, '', window.location.pathname + window.location.search);
-        }
-      }
-      return next;
-    });
-  };
-
-  const handleSelectPatientSubView = (subView: 'landing' | 'intake' | 'timeline' | 'telehealth' | 'checkout', skipPush?: boolean) => {
-    if (userSession?.isAuthenticated && userSession.roleCode && userSession.roleCode !== 'P' && userSession.roleCode !== 'AD') return;
-
-    setPatientSubView(subView);
-    setViewMode('workstation');
-    const p = PERSONAS.find((x) => x.code === 'P') || PERSONAS[0];
-    setActivePersona(p);
-    try {
-      localStorage.setItem('alo_patient_subview_v3.0', subView);
-      localStorage.setItem(VIEW_MODE_KEY, 'workstation');
-    } catch (e) {}
-
-    if (typeof window !== 'undefined' && !skipPush) {
-      try {
-        const url = new URL(window.location.href);
-        url.searchParams.set('portal', 'patient');
-        if (subView === 'landing') {
-          url.searchParams.delete('subview');
-          url.searchParams.delete('caseId');
-        } else {
-          url.searchParams.set('subview', subView);
-          if (activeCase?.id) url.searchParams.set('caseId', activeCase.id);
-        }
-        if (url.hash === '#cockpit') url.hash = '';
-        window.history.pushState({ portal: 'patient', subView, caseId: activeCase?.id, viewMode: 'workstation' }, '', url.pathname + url.search);
-      } catch (err) {}
-    }
-  };
-
-  const handleSelectServiceFromLanding = (serviceId: string) => {
-    setSelectedServiceId(serviceId);
-    if (serviceId === 'video-consultation') handleUpdateCase({ consultationType: 'video' });
-    else if (serviceId === 'second-opinion') handleUpdateCase({ consultationType: 'written' });
-    handleSelectPatientSubView('intake');
-  };
-
-  const handleStartNewCase = () => {
-    setActiveCaseId(null);
-    setIntakeDraft(createFreshDraftIntake(userSession, lang === 'ar'));
-    setPatientSubView('intake');
-    if (typeof window !== 'undefined') {
-      try {
-        const url = new URL(window.location.href);
-        url.searchParams.set('subview', 'intake');
-        url.searchParams.delete('caseId');
-        window.history.pushState({ portal: 'patient', subView: 'intake', viewMode: 'workstation' }, '', url.pathname + url.search);
-      } catch (err) {}
-    }
-  };
-
-  const handleStartCaseToCockpit = () => {
-    setViewMode('studio');
-    const patientPersona = PERSONAS.find((p) => p.code === 'P') || PERSONAS[0];
-    setActivePersona(patientPersona);
-    try { localStorage.setItem(VIEW_MODE_KEY, 'studio'); } catch (e) {}
-    if (typeof window !== 'undefined' && window.location.hash !== '#cockpit') {
-      window.history.pushState({ viewMode: 'studio' }, '', '#cockpit');
-    }
-  };
-
-  const handleNextCase = () => {
-    const currentIndex = cases.findIndex((c) => c.id === activeCaseId);
-    setActiveCaseId(cases[(currentIndex + 1) % cases.length].id);
-  };
-
-  const handleSelectCaseFromPipeline = (selectedCase: ClinicalCase, _heroPersonaCode: string) => {
-    setActiveCaseId(selectedCase.id);
-    setIsPipelineBoardOpen(false);
-  };
-
-  const handleResetDemo = async () => {
-    const confirmMsg = lang === 'ar' ? 'إعادة ضبط الحالات إلى حالة نظيفة؟' : 'Reset all clinical cases to clean state?';
-    if (window.confirm(confirmMsg)) {
-      try {
-        localStorage.removeItem(STORAGE_KEY);
-        localStorage.removeItem(ACTIVE_CASE_KEY);
-        await apiClient.purgeAllCases();
-      } catch (e) {}
-      setCases([]); setActiveCaseId(''); setPatientSubView('landing'); setSelectedServiceId('second-opinion');
-    }
-  };
-
-  const handleResetActiveCase = () => {
-    const confirmMsg = lang === 'ar' ? `هل أنت متأكد من تصفير هذه الحالة (${activeCase.caseNumber || activeCase.id})؟` : `Reset this case (${activeCase.caseNumber || activeCase.id})?`;
-    if (window.confirm(confirmMsg)) {
-      handleUpdateCase({
-        currentStage: 'INTAKE_RECEIVED', stage: 1, patientName: '', patientNameAr: '', patientNameEn: '', nationalIdMasked: '',
-        symptoms: '', symptomsAr: '', symptomsEn: '', diagnosis: '', diagnosisAr: '', diagnosisEn: '', consultantOpinion: '',
-        proposedCallSlot: '', finalClosureNote: '', vitals: undefined, piiMasked: false, triageComplete: false, focusQuestions: ['', '', ''],
-        referralApproved: false, invoiceIssued: false, allowedPaymentMethods: [], paymentAssignedAt: undefined, paymentVerified: false,
-        paymentDetails: undefined, reportReleased: false, verdicts: [], secondOpinionSubmitted: false, consultantAnswers: [],
-        consultantNotes: '', saudiEndorsement: undefined, coordinatorForwardedToDoctor: false, doctorReleasedToPatient: false,
-        isCrossBorderDeidentified: false, dualTokenGenerated: false, egressToken: '', files: [],
-        pricing: { ...activeCase.pricing, paid: false, invoiceNumber: undefined },
-        metadata: { isFreshTest: true, pdf1Released: false, pdf2Released: false, paymentVerified: false, paymentLinkIssued: false },
-      });
-      if (!userSession?.roleCode || userSession.roleCode === 'P') {
-        setActivePersona(PERSONAS[0]);
-        setPatientSubView('landing');
-        setSelectedServiceId('second-opinion');
-      }
-    }
-  };
-
-  const handleAddNewCase = (newCase: ClinicalCase) => {
-    setCases((prev) => [newCase, ...prev]);
-    setActiveCaseId(newCase.id);
-    if (!userSession?.roleCode || userSession.roleCode === 'P') {
-      setActivePersona(PERSONAS[0]);
-      setPatientSubView('landing');
-      setSelectedServiceId('second-opinion');
-    }
-  };
-
-  const handleAutoFill = () => {
-    alert(lang === 'ar'
-      ? '⚡ تم ملء بيانات الشاشة تلقائياً وفق المواصفة السريرية المعتمدة (v2.4)!'
-      : '⚡ Screen auto-filled with accredited clinical benchmark data (v2.4)!');
-  };
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // Public API
-  // ─────────────────────────────────────────────────────────────────────────
   return {
-    // State
     activePersona, setActivePersona, cases: effectiveCases, allCases: cases, activeCaseId, setActiveCaseId, activeCase,
-    theme, lang, userSession, setUserSession,
-    isAuthModalOpen, setIsAuthModalOpen, isWhatsAppDrawerOpen, setIsWhatsAppDrawerOpen,
-    isGuideOpen, setIsGuideOpen, isPipelineBoardOpen, setIsPipelineBoardOpen,
-    isNewCaseModalOpen, setIsNewCaseModalOpen, isAutoDemoActive, setIsAutoDemoActive,
-    pendingHandoff, setPendingHandoff, viewMode, setViewMode,
-    patientSubView, setPatientSubView, selectedServiceId, setSelectedServiceId,
-    // Handlers
-    handleUpdateCase, handleLogout, handleToggleLang, handleToggleTheme, handleToggleViewMode,
-    handleSelectPatientSubView, handleSelectServiceFromLanding, handleStartCaseToCockpit,
-    handleStartNewCase,
+    theme: ui.theme, lang: ui.lang, userSession, setUserSession,
+    isAuthModalOpen: ui.isAuthModalOpen, setIsAuthModalOpen: ui.setIsAuthModalOpen,
+    isWhatsAppDrawerOpen: ui.isWhatsAppDrawerOpen, setIsWhatsAppDrawerOpen: ui.setIsWhatsAppDrawerOpen,
+    isGuideOpen: ui.isGuideOpen, setIsGuideOpen: ui.setIsGuideOpen,
+    isPipelineBoardOpen: ui.isPipelineBoardOpen, setIsPipelineBoardOpen: ui.setIsPipelineBoardOpen,
+    isNewCaseModalOpen: ui.isNewCaseModalOpen, setIsNewCaseModalOpen: ui.setIsNewCaseModalOpen,
+    isAutoDemoActive: ui.isAutoDemoActive, setIsAutoDemoActive: ui.setIsAutoDemoActive,
+    pendingHandoff: ui.pendingHandoff, setPendingHandoff: ui.setPendingHandoff,
+    viewMode: ui.viewMode, setViewMode: ui.setViewMode,
+    patientSubView: ui.patientSubView, setPatientSubView: ui.setPatientSubView,
+    selectedServiceId: ui.selectedServiceId, setSelectedServiceId: ui.setSelectedServiceId,
+    handleUpdateCase, handleLogout: ui.handleLogout, handleToggleLang: ui.handleToggleLang,
+    handleToggleTheme: ui.handleToggleTheme, handleToggleViewMode: ui.handleToggleViewMode,
+    handleSelectPatientSubView: ui.handleSelectPatientSubView,
+    handleSelectServiceFromLanding: ui.handleSelectServiceFromLanding,
+    handleStartCaseToCockpit: ui.handleStartCaseToCockpit,
+    handleStartNewCase: ui.handleStartNewCase,
     handleSelectPersona: transitions.handleSelectPersona, handleSetStage: transitions.handleSetStage,
     handleAdvanceStage: transitions.handleAdvanceStage,
     handleAssignPaymentToPatient: transitions.handleAssignPaymentToPatient,
     handleCompletePatientPayment: transitions.handleCompletePatientPayment,
     handleVerifyPaymentAndDispatch: transitions.handleVerifyPaymentAndDispatch,
     handleReleaseReportToPatient: transitions.handleReleaseReportToPatient,
-    handleConfirmHandoff: transitions.handleConfirmHandoff, handleNextCase, handleSelectCaseFromPipeline,
-    handleResetDemo, handleResetActiveCase, handleAddNewCase, handleAutoFill,
+    handleConfirmHandoff: transitions.handleConfirmHandoff,
+    handleNextCase: ui.handleNextCase,
+    handleSelectCaseFromPipeline: ui.handleSelectCaseFromPipeline,
+    handleResetDemo: ui.handleResetDemo,
+    handleResetActiveCase: ui.handleResetActiveCase,
+    handleAddNewCase: ui.handleAddNewCase,
+    handleAutoFill: ui.handleAutoFill,
     handleAutoDemoNextStage: transitions.handleAutoDemoNextStage,
     handleAutoDemoPrevStage: transitions.handleAutoDemoPrevStage,
   };
