@@ -46,6 +46,14 @@ const DoctorHeaderBar: React.FC<DoctorHeaderBarProps> = ({
           {isAr ? 'هوية' : 'ID'}: {maskedId}
         </span>
 
+        {activeCase?.caregiver?.isProxy && (
+          <span className="inline-flex items-center gap-1 rounded-full bg-[#007B6E] px-3 py-1 text-xs font-medium text-white shadow-sm">
+            {isAr
+              ? `مرافق: ${activeCase.caregiver.name || 'مفوض'} (${activeCase.caregiver.relationship || 'أسرة'})`
+              : `Proxy: ${activeCase.caregiver.name || 'Caregiver'} (${activeCase.caregiver.relationship || 'Family'})`}
+          </span>
+        )}
+
         {activeCase?.egressToken && (
           <span className="inline-flex items-center rounded-full bg-[#007B6E] px-3 py-1 text-xs font-medium text-white shadow-sm">
             {isAr ? 'رمز التصدير' : 'Egress'}: {activeCase.egressToken}

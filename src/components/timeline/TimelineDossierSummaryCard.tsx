@@ -74,6 +74,38 @@ export const TimelineDossierSummaryCard: React.FC<TimelineDossierSummaryCardProp
             </div>
           </div>
 
+          {/* Beneficiary & Caregiver Status Banner */}
+          {activeCase.caregiver?.isProxy ? (
+            <div className="p-2.5 bg-teal-50/70 dark:bg-teal-950/30 rounded-xl border border-teal-200/80 dark:border-teal-900/40 text-xs flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-teal-900 dark:text-teal-200">
+                  {isAr ? 'المستفيد من الاستشارة:' : 'Consultation Beneficiary:'}
+                </span>
+                <span className="font-bold text-slate-800 dark:text-slate-100">
+                  {(isAr ? activeCase.patientNameAr : activeCase.patientNameEn) || activeCase.patientName}
+                </span>
+              </div>
+              <div className="text-[11px] text-teal-800 dark:text-teal-300 font-medium">
+                {isAr
+                  ? `بواسطة المرافق المفوض: ${activeCase.caregiver.name || 'مفوض'} (${activeCase.caregiver.relationship || 'أسرة'}) • هاتف التواصل: ${activeCase.caregiver.phone || activeCase.patientPhone}`
+                  : `Authorized Caregiver: ${activeCase.caregiver.name || 'Proxy'} (${activeCase.caregiver.relationship || 'Family'}) • Contact Phone: ${activeCase.caregiver.phone || activeCase.patientPhone}`}
+              </div>
+            </div>
+          ) : (
+            <div className="p-2 bg-slate-100/60 dark:bg-slate-800/40 rounded-xl border border-slate-200/50 dark:border-slate-800 text-[11px] flex items-center justify-between text-slate-600 dark:text-slate-300">
+              <span>
+                {isAr ? 'المستفيد:' : 'Beneficiary:'}{' '}
+                <strong className="text-slate-800 dark:text-slate-100">
+                  {(isAr ? activeCase.patientNameAr : activeCase.patientNameEn) || activeCase.patientName}
+                </strong>{' '}
+                ({isAr ? 'صاحب الحساب مباشرة' : 'Direct Account Holder'})
+              </span>
+              <span>
+                {isAr ? 'هاتف التواصل:' : 'Phone:'} {activeCase.patientPhone || '--'}
+              </span>
+            </div>
+          )}
+
           {/* Dynamic Intake Badges (Flags, Meds, Allergies) */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
             {/* Red Flags */}

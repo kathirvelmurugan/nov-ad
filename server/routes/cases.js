@@ -67,7 +67,16 @@ router.post('/', async (req, res) => {
     await pool.query(
       `INSERT INTO clinical_cases (id, case_number, current_stage, stage, patient_name, patient_name_ar, patient_name_en, national_id_masked, consultation_type, case_data, updated_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
-       ON CONFLICT (id) DO UPDATE SET current_stage = EXCLUDED.current_stage, stage = EXCLUDED.stage, case_data = EXCLUDED.case_data, updated_at = NOW()`,
+       ON CONFLICT (id) DO UPDATE SET 
+         current_stage = EXCLUDED.current_stage, 
+         stage = EXCLUDED.stage, 
+         patient_name = EXCLUDED.patient_name,
+         patient_name_ar = EXCLUDED.patient_name_ar,
+         patient_name_en = EXCLUDED.patient_name_en,
+         national_id_masked = EXCLUDED.national_id_masked,
+         consultation_type = EXCLUDED.consultation_type,
+         case_data = EXCLUDED.case_data, 
+         updated_at = NOW()`,
       [
         c.id,
         c.caseNumber || '',

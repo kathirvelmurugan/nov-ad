@@ -68,6 +68,22 @@ const CoordinatorCaseHeader: React.FC<CoordinatorCaseHeaderProps> = ({
           <span style={{ fontSize: '15px', fontWeight: 600, color: '#1A1A1A' }}>
             {(isAr ? (currentCase?.patientNameAr || currentCase?.patientName) : (currentCase?.patientNameEn || currentCase?.patientName)) || currentCase?.patientLegalName || '—'}
           </span>
+          {currentCase?.caregiver?.isProxy && (
+            <span
+              style={{
+                fontSize: '11px',
+                fontWeight: 600,
+                color: '#FFFFFF',
+                backgroundColor: '#007B6E',
+                padding: '2px 8px',
+                borderRadius: '6px',
+              }}
+            >
+              {isAr
+                ? `مرافق مفوض: ${currentCase.caregiver.name || 'مفوض'} (${currentCase.caregiver.relationship || 'أسرة'})`
+                : `Proxy: ${currentCase.caregiver.name || 'Caregiver'} (${currentCase.caregiver.relationship || 'Family'})`}
+            </span>
+          )}
           {currentCase?.specialty && (
             <span
               style={{

@@ -18,13 +18,21 @@ const NurseCaseHeader: React.FC<NurseCaseHeaderProps> = ({
   const fontClass = isAr ? 'font-cairo' : 'font-sans';
 
   const handleWhatsAppW03 = () => {
-    if (!activeCase?.patientPhone) return;
+    const contactPhone =
+      activeCase?.caregiver?.isProxy && activeCase?.caregiver?.phone
+        ? activeCase.caregiver.phone
+        : activeCase?.patientPhone;
+    if (!contactPhone) return;
     const msg = isAr
       ? `مرحباً، نرجو إرسال الفحوصات الناقصة للحالة رقم ${activeCase.caseNumber}`
       : `Hello, please send the missing scans for case #${activeCase.caseNumber}`;
-    const url = `https://wa.me/${activeCase.patientPhone}?text=${encodeURIComponent(msg)}`;
+    const url = `https://wa.me/${contactPhone}?text=${encodeURIComponent(msg)}`;
     window.open(url, '_blank', 'noopener,noreferrer');
   };
+
+  const isCaregiverProxy = !!activeCase?.caregiver?.isProxy;
+  const caregiverName = activeCase?.caregiver?.name;
+  const caregiverRel = activeCase?.caregiver?.relationship;
 
   return (
     <header
@@ -42,9 +50,18 @@ const NurseCaseHeader: React.FC<NurseCaseHeaderProps> = ({
             {isAr ? 'رقم الحالة:' : 'Case #:'}{' '}
             <strong>{activeCase?.caseNumber ?? '--'}</strong>
           </span>
-          <span>
-            {isAr ? 'المريض:' : 'Patient:'}{' '}
-            <strong>{(isAr ? activeCase?.patientNameAr : (activeCase?.patientNameEn || activeCase?.patientName)) || activeCase?.patientName || '--'}</strong>
+          <span className="inline-flex items-center gap-1.5 flex-wrap">
+            <span>
+              {isAr ? 'المريض:' : 'Patient:'}{' '}
+              <strong>{(isAr ? activeCase?.patientNameAr : (activeCase?.patientNameEn || activeCase?.patientName)) || activeCase?.patientName || '--'}</strong>
+            </span>
+            {isCaregiverProxy && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-[#007B6E] text-white">
+                {isAr
+                  ? `مرافق مفوض: ${caregiverName || 'مفوض'} (${caregiverRel || 'أسرة'})`
+                  : `Proxy: ${caregiverName || 'Caregiver'} (${caregiverRel || 'Family'})`}
+              </span>
+            )}
           </span>
           <span>
             {isAr ? 'الممرض/ة:' : 'Nurse:'} <strong>{nurseName}</strong>
