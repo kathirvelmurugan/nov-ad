@@ -235,6 +235,7 @@ export interface ClinicalCase {
   allergies?: string[];
   noKnownAllergies?: boolean;
   noCurrentMedications?: boolean;
+  beneficiaryMode?: 'me' | 'family';
   caregiver?: CaregiverProxy;
   consultationType: 'written' | 'video' | 'voice';
   currentStage: ClinicalStage;

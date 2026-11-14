@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { IntakeDoctorSelectionCard } from '../intake/IntakeDoctorSelectionCard';
 import { IntakeSymptomsAndDiagnosisSection } from '../intake/IntakeSymptomsAndDiagnosisSection';
+import { IntakePatientBeneficiarySection } from '../intake/IntakePatientBeneficiarySection';
 import { IntakeUploadZone } from '../intake/IntakeUploadZone';
 import { FieldError } from '../common/FieldError';
 import { FormErrorSummary } from '../common/FormErrorSummary';
@@ -59,7 +60,6 @@ export const PatientIntakeView: React.FC<Props> = ({
   userSession,
 }) => {
   const [, setSelectedFileForPreview] = useState<string | null>(null);
-  const [isCaregiverMode, setIsCaregiverMode] = useState<boolean>(activeCase.caregiver?.isProxy ?? true);
   const [privacyAgreed, setPrivacyAgreed] = useState<boolean>(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string | undefined>>({});
   const [activeServiceId, setActiveServiceId] = useState<string>(selectedService);
@@ -162,113 +162,13 @@ export const PatientIntakeView: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* P01 & P02: Patient Identity Banner */}
-      <div className="bg-gradient-to-r from-teal-900 via-slate-900 to-teal-950 p-6 rounded-2xl border border-teal-800/60 shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-4 text-white">
-        <div>
-          <div className="flex items-center gap-2 font-bold mb-1.5 text-xs text-teal-300">
-            <span className="bg-teal-500/20 text-teal-200 px-2 py-0.5 rounded text-[10px] font-mono border border-teal-500/30">
-              P01 · {isAr ? 'الهوية الوطنية المعتمدة' : 'National ID Verified'}
-            </span>
-            <Shield className="w-3.5 h-3.5 text-teal-400" />
-            <span>{isAr ? 'طلب استشارة رأي طبي ثانٍ معتمد · ألو دكتور' : 'Accredited Second Opinion · ALO DOCTOR'}</span>
-          </div>
-          <h2 className="text-2xl font-black tracking-tight">
-            {isAr ? (activeCase.patientNameAr || activeCase.patientName) : (activeCase.patientNameEn || activeCase.patientName)}
-          </h2>
-          <p className="text-slate-300 text-xs mt-1">
-            {isAr ? 'الهوية الوطنية / الإقامة:' : 'National ID:'} <span className="font-mono text-teal-300 font-bold">{activeCase.nationalIdMasked}</span> · {isAr ? 'العمر:' : 'Age:'} {activeCase.age} · {isAr ? 'الجنس: ذكر' : 'Gender: Male'} · {isAr ? (activeCase.cityAr || activeCase.city) : (activeCase.cityEn || activeCase.city)}
-          </p>
-        </div>
-
-        <div className="bg-white/10 dark:bg-black/30 backdrop-blur-md border border-white/10 px-5 py-3 rounded-xl text-center shrink-0">
-          <span className="text-[11px] text-teal-200 block font-mono">P02 · {isAr ? 'رقم التتبع' : 'Case Number'}</span>
-          <span className="text-lg font-mono font-black text-teal-300">{activeCase.caseNumber}</span>
-        </div>
-      </div>
-
-      {/* P03 & P04: Caregiver / Legal Proxy Section */}
-      <div className="card-clinical p-5 space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="bg-alo-mint text-alo-teal px-2 py-0.5 rounded text-[10px] font-mono font-bold border border-teal-200">
-              P03 · {isAr ? 'الوكيل الشرعي' : 'Caregiver Proxy'}
-            </span>
-            <UserCheck className="w-4 h-4 text-alo-teal" />
-            <h3 className="text-sm font-extrabold text-alo-navy dark:text-slate-100">
-              {isAr ? 'تقديم الطلب عبر مرافق / وكيل شرعي مرخص' : 'Application via Authorized Caregiver / Legal Proxy'}
-            </h3>
-          </div>
-          <button
-            type="button"
-            onClick={() => setIsCaregiverMode(!isCaregiverMode)}
-            className={`text-xs px-3 py-1 rounded-full font-bold transition-all border ${
-              isCaregiverMode
-                ? 'bg-alo-mint border-teal-300 text-alo-teal font-extrabold'
-                : 'bg-slate-100 border-slate-200 text-slate-500'
-            }`}
-          >
-            {isCaregiverMode ? (isAr ? 'مفعل (مرافق مخول)' : 'Active (Proxy Mode)') : (isAr ? 'المريض نفسه' : 'Self Patient')}
-          </button>
-        </div>
-
-        {isCaregiverMode && (
-          <div className="bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-            <div>
-              <span className="text-slate-500 dark:text-slate-400 block mb-1">
-                {isAr ? 'اسم المرافق / الوكيل:' : 'Caregiver Full Name:'}
-              </span>
-              <input
-                type="text"
-                value={activeCase.caregiver?.name || ''}
-                placeholder={isAr ? 'الاسم الكامل للوكيل' : 'Full Name'}
-                onChange={(e) => onUpdateCase({
-                  caregiver: { ...activeCase.caregiver!, name: e.target.value }
-                })}
-                className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-800 dark:text-slate-100 outline-none focus:border-alo-teal font-bold shadow-sm"
-              />
-            </div>
-            <div>
-              <span className="text-slate-500 dark:text-slate-400 block mb-1">
-                {isAr ? 'صلة القرابة:' : 'Relationship:'}
-              </span>
-              <input
-                type="text"
-                value={activeCase.caregiver?.relationship || ''}
-                placeholder={isAr ? 'صلة القرابة' : 'e.g. Son, Daughter, Spouse'}
-                onChange={(e) => onUpdateCase({
-                  caregiver: { ...activeCase.caregiver!, relationship: e.target.value }
-                })}
-                className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-800 dark:text-slate-100 outline-none focus:border-alo-teal shadow-sm"
-              />
-            </div>
-            <div>
-              <span className="text-slate-500 dark:text-slate-400 block mb-1">
-                {isAr ? 'رقم الهوية الوطنية للوكيل:' : 'Caregiver National ID:'}
-              </span>
-              <input
-                type="text"
-                value={activeCase.caregiver?.nationalId || ''}
-                placeholder="10XXXXXXXX"
-                onChange={(e) => onUpdateCase({
-                  caregiver: { ...activeCase.caregiver!, nationalId: e.target.value }
-                })}
-                className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 font-mono text-alo-teal dark:text-teal-300 outline-none focus:border-alo-teal font-bold shadow-sm"
-              />
-            </div>
-            <div className="md:col-span-3 flex items-center gap-2 pt-1 border-t border-slate-200 dark:border-slate-800">
-              <span className="text-[10px] text-alo-teal bg-alo-mint px-2 py-0.5 rounded font-mono font-bold">
-                P04 · {isAr ? 'تفويض شرعي' : 'Consent Proxy'}
-              </span>
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-              <span className="text-[11px] text-slate-600 dark:text-slate-300">
-                {isAr 
-                  ? 'أقر بصفتي وكيلاً شرعياً بامتلاك الصلاحية النظامية لرفع الملف الطبي ومتابعة الاستشارة حسب اشتراطات وزارة الصحة السعودية.'
-                  : 'I declare under legal healthcare proxy authority that I am authorized to upload records and request consultation per Saudi MOH regulations.'}
-              </span>
-            </div>
-          </div>
-        )}
-      </div>
+      {/* P01, P02, P04 & P13: Master Beneficiary Selector (Me vs. Family) & Identity Banner */}
+      <IntakePatientBeneficiarySection
+        activeCase={activeCase}
+        isAr={isAr}
+        userSession={userSession}
+        onUpdateCase={onUpdateCase}
+      />
 
       {/* P04-B: Saudi Treating Doctor Selection */}
       <IntakeDoctorSelectionCard
@@ -357,6 +257,10 @@ export const PatientIntakeView: React.FC<Props> = ({
                 allergies: activeCase.allergies || [],
                 noKnownAllergies: !!activeCase.noKnownAllergies,
                 noCurrentMedications: !!activeCase.noCurrentMedications,
+                nationalIdMasked: activeCase.nationalIdMasked || '10********',
+                age: activeCase.age || 58,
+                gender: activeCase.gender || 'M',
+                beneficiaryMode: activeCase.beneficiaryMode || 'me',
                 caregiver: activeCase.caregiver,
                 treatingDoctor: activeCase.treatingDoctor,
                 files: activeCase.files || [],
