@@ -3,6 +3,7 @@ import { ClinicalCase, UserSession } from '../../types';
 import { BilingualReportModal } from '../cockpit/BilingualReportModal';
 import {
   ShieldCheck,
+  CheckCircle2,
   Clock,
   ChevronRight,
   ChevronLeft,
@@ -243,58 +244,106 @@ export const PatientStatusTimelineView: React.FC<Props> = ({
         </div>
       )}
       
-      {/* Patient Own Cases Switcher (Clean Horizontal Scroll Pill Bar) */}
+      {/* Patient Own Cases Switcher (Active vs Closed Archival Separation) */}
       {cases && cases.length > 1 && (
-        <div className="card-clinical p-3.5 bg-gradient-to-r from-teal-50/60 to-slate-50 dark:from-slate-900/80 dark:to-teal-950/30 border border-teal-200 dark:border-teal-800 rounded-2xl shadow-xs">
-          <div className="flex items-center justify-between mb-2">
+        <div className="card-clinical p-4 bg-gradient-to-r from-teal-50/70 via-white to-slate-50 dark:from-slate-900/90 dark:via-slate-900 dark:to-teal-950/40 border border-teal-200/80 dark:border-teal-800 rounded-2xl shadow-sm space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-teal-100 dark:border-slate-800 pb-2.5">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-black text-alo-navy dark:text-slate-200">
-                {isAr ? `ملفاتي الطبية المسجلة (${cases.filter((c) => (c.stage && c.stage > 1) || (c.symptoms && c.symptoms.trim().length > 0)).length})` : `My Registered Cases (${cases.filter((c) => (c.stage && c.stage > 1) || (c.symptoms && c.symptoms.trim().length > 0)).length})`}
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-xs font-black text-alo-navy dark:text-slate-100">
+                {isAr ? `ملفاتي الطبية المسجلة (${cases.filter((c) => (c.stage && c.stage > 1) || (c.symptoms && c.symptoms.trim().length > 0)).length})` : `My Clinical Consultations (${cases.filter((c) => (c.stage && c.stage > 1) || (c.symptoms && c.symptoms.trim().length > 0)).length})`}
               </span>
-              <span className="text-[11px] text-slate-500 hidden sm:inline">
-                {isAr ? '· انقر للتبديل بين ملفاتك الطبية' : '· Click to switch between your cases'}
+              <span className="text-[11px] text-slate-500 hidden md:inline">
+                {isAr ? '· انقر للتبديل بين استشاراتك النشطة وسجل التقارير' : '· Click to switch between active and historical files'}
               </span>
             </div>
             {onStartNewCase && (
               <button
                 type="button"
                 onClick={onStartNewCase}
-                className="inline-flex items-center gap-1 text-[11px] font-black text-emerald-700 dark:text-emerald-300 hover:text-emerald-800 bg-emerald-100/70 hover:bg-emerald-200/80 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 px-2.5 py-1 rounded-lg border border-emerald-300/80 dark:border-emerald-700 transition-all cursor-pointer"
+                className="inline-flex items-center gap-1.5 text-xs font-black text-emerald-800 dark:text-emerald-200 hover:text-white bg-emerald-100 hover:bg-emerald-600 dark:bg-emerald-950/70 dark:hover:bg-emerald-700 px-3 py-1.5 rounded-xl border border-emerald-300 dark:border-emerald-700 transition-all cursor-pointer shadow-2xs"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>{isAr ? 'إضافة استشارة جديدة' : '+ Add New Case'}</span>
+                <span>{isAr ? 'طلب استشارة جديدة' : '+ New Consultation'}</span>
               </button>
             )}
           </div>
-          <div className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-thin">
-            {cases
-              .filter((c) => (c.stage && c.stage > 1) || (c.symptoms && c.symptoms.trim().length > 0))
-              .map((c) => {
-                const isSelected = c.id === activeCase.id;
-                const stageNum = c.stage || (c.currentStage ? STAGES.findIndex((s) => s.stage === c.currentStage) + 1 : 1);
-                return (
-                  <button
-                    key={c.id}
-                    type="button"
-                    onClick={() => onSelectCase?.(c.id)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border flex items-center gap-2 shrink-0 cursor-pointer ${
-                      isSelected
-                        ? 'bg-alo-teal text-white border-teal-600 shadow-md ring-2 ring-teal-500/30'
-                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:border-alo-teal shadow-2xs'
-                    }`}
-                  >
-                    <span className="font-mono font-black">{c.caseNumber || c.id}</span>
-                    <span className="opacity-50">·</span>
-                    <span className="max-w-[120px] truncate">{isAr ? c.specialtyAr || c.specialty || 'استشارة عامة' : c.specialtyEn || c.specialty || 'Consultation'}</span>
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono ${
-                      isSelected ? 'bg-teal-800 text-teal-100' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-                    }`}>
-                      {isAr ? `مرحلة ${stageNum}` : `Stage ${stageNum}`}
-                    </span>
-                  </button>
-                );
-              })}
-          </div>
+
+          {/* Group 1: Active Cases */}
+          {cases.filter((c) => c.currentStage !== 'CLOSED' && ((c.stage && c.stage > 1) || (c.symptoms && c.symptoms.trim().length > 0))).length > 0 && (
+            <div className="space-y-1.5">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/50 px-2 py-0.5 rounded-md border border-amber-200 dark:border-amber-800/60 inline-block">
+                {isAr ? 'الاستشارات الجارية (قيد المتابعة)' : 'Active Consultations In Progress'}
+              </span>
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin">
+                {cases
+                  .filter((c) => c.currentStage !== 'CLOSED' && ((c.stage && c.stage > 1) || (c.symptoms && c.symptoms.trim().length > 0)))
+                  .map((c) => {
+                    const isSelected = c.id === activeCase.id;
+                    const stageNum = c.stage || (c.currentStage ? STAGES.findIndex((s) => s.stage === c.currentStage) + 1 : 1);
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => onSelectCase?.(c.id)}
+                        className={`px-3 py-2 rounded-xl text-xs font-bold transition-all border flex items-center gap-2.5 shrink-0 cursor-pointer ${
+                          isSelected
+                            ? 'bg-[#007B6E] text-white border-teal-700 shadow-md ring-2 ring-teal-500/30'
+                            : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:border-[#007B6E] shadow-2xs'
+                        }`}
+                      >
+                        <span className="font-mono font-black">{c.caseNumber || c.id}</span>
+                        <span className="opacity-40">·</span>
+                        <span className="max-w-[140px] truncate">{isAr ? c.specialtyAr || c.specialty || 'استشارة عامة' : c.specialtyEn || c.specialty || 'Consultation'}</span>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-md font-mono font-bold ${
+                          isSelected ? 'bg-teal-900 text-teal-100' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300'
+                        }`}>
+                          {isAr ? `مرحلة ${stageNum}` : `Stage ${stageNum}`}
+                        </span>
+                      </button>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
+
+          {/* Group 2: Closed & Archived Consultations */}
+          {cases.filter((c) => c.currentStage === 'CLOSED' && ((c.stage && c.stage > 1) || (c.symptoms && c.symptoms.trim().length > 0))).length > 0 && (
+            <div className="space-y-1.5 pt-1">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800/60 inline-block">
+                {isAr ? 'الاستشارات المكتملة والأرشيف المعتمد' : 'Completed Consultations & Certified Archives'}
+              </span>
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin">
+                {cases
+                  .filter((c) => c.currentStage === 'CLOSED' && ((c.stage && c.stage > 1) || (c.symptoms && c.symptoms.trim().length > 0)))
+                  .map((c) => {
+                    const isSelected = c.id === activeCase.id;
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => onSelectCase?.(c.id)}
+                        className={`px-3 py-2 rounded-xl text-xs font-bold transition-all border flex items-center gap-2.5 shrink-0 cursor-pointer ${
+                          isSelected
+                            ? 'bg-slate-900 text-emerald-300 border-slate-950 shadow-md ring-2 ring-emerald-500/30'
+                            : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:border-slate-500 shadow-2xs'
+                        }`}
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                        <span className="font-mono font-black">{c.caseNumber || c.id}</span>
+                        <span className="opacity-40">·</span>
+                        <span className="max-w-[140px] truncate">{isAr ? c.specialtyAr || c.specialty || 'استشارة مكتملة' : c.specialtyEn || c.specialty || 'Completed'}</span>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-md font-mono font-bold ${
+                          isSelected ? 'bg-emerald-950 text-emerald-200 border border-emerald-700' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
+                        }`}>
+                          {isAr ? 'مكتمل ومغلق' : 'Closed & Certified'}
+                        </span>
+                      </button>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

@@ -43,7 +43,14 @@ export const NurseTriageView: React.FC<Props> = ({
     return () => clearTimeout(timer);
   }, [forwardedBanner]);
 
-  const currentCase = selectedCaseId ? (cases.find((c) => c.id === selectedCaseId) || null) : null;
+  const pendingTriageCases = useMemo(() => {
+    return cases.filter((c) => c.currentStage === 'NURSE_CHECK' || c.currentStage === 'INTAKE_RECEIVED');
+  }, [cases]);
+
+  // Intelligent Caseload Auto-Selection: Auto-default to the first pending triage case
+  const defaultActionableCase = pendingTriageCases[0] || (activeCase?.id ? activeCase : cases[0]);
+  const effectiveCaseId = selectedCaseId !== null ? selectedCaseId : defaultActionableCase?.id || null;
+  const currentCase = effectiveCaseId ? (cases.find((c) => c.id === effectiveCaseId) || null) : null;
   const referenceHospital = currentCase?.treatingDoctor?.hospital || activeCase?.treatingDoctor?.hospital || (isAr ? 'المستشفى الشريك المعتمد' : 'Partner Accredited Hospital');
 
   const [triageNotes, setTriageNotes] = useState<string>(() => generateDefaultNotes(currentCase || activeCase, isAr));
@@ -68,10 +75,6 @@ export const NurseTriageView: React.FC<Props> = ({
   }, []);
 
   const availableDoctors = useMemo(() => buildAvailableDoctors(liveStaff, liveHospitals, isAr), [isAr, liveStaff, liveHospitals]);
-
-  const pendingTriageCases = useMemo(() => {
-    return cases.filter((c) => c.currentStage === 'NURSE_CHECK' || c.currentStage === 'INTAKE_RECEIVED');
-  }, [cases]);
 
   const activeCaseObj = currentCase || activeCase;
   const isCurrentStageTriage = currentCase ? (currentCase.currentStage === 'NURSE_CHECK' || currentCase.currentStage === 'INTAKE_RECEIVED') : false;

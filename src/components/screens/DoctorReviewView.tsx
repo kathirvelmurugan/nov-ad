@@ -32,7 +32,21 @@ export const DoctorReviewView: React.FC<Props> = ({
   activePersona,
 }) => {
   const [selectedCaseId, setSelectedCaseId] = React.useState<string | null>(null);
-  const currentCase = selectedCaseId ? (cases.find((c) => c.id === selectedCaseId) || null) : null;
+
+  const isActionableForDoctor = (c: ClinicalCase) =>
+    c.currentStage === 'DOCTOR_REVIEW' ||
+    (c.currentStage === 'OPINION_READY' &&
+      (Boolean(c.metadata?.coordinatorDispatched) || Boolean(c.reportReleased)) &&
+      c.saudiEndorsement?.status !== 'endorsed');
+
+  const pendingDoctorCases = React.useMemo(() => {
+    return cases.filter(isActionableForDoctor);
+  }, [cases]);
+
+  // Intelligent Caseload Auto-Selection: Auto-default to the first actionable doctor case
+  const defaultDoctorCase = pendingDoctorCases[0] || (propsActiveCase?.id ? propsActiveCase : cases[0]);
+  const effectiveCaseId = selectedCaseId !== null ? selectedCaseId : defaultDoctorCase?.id || null;
+  const currentCase = effectiveCaseId ? (cases.find((c) => c.id === effectiveCaseId) || null) : null;
   const activeCase = (currentCase || propsActiveCase) as ClinicalCase;
 
   const isAr = lang === 'ar';
@@ -65,12 +79,6 @@ export const DoctorReviewView: React.FC<Props> = ({
       : (activeCase?.treatingDoctor?.focusQuestionsEn || activeCase?.treatingDoctor?.focusQuestions);
     setLocalQuestions([(src && src[0]) || '', (src && src[1]) || '', (src && src[2]) || '']);
   }, [lang, activeCase?.id]);
-
-  const isActionableForDoctor = (c: ClinicalCase) =>
-    c.currentStage === 'DOCTOR_REVIEW' ||
-    (c.currentStage === 'OPINION_READY' &&
-      (Boolean(c.metadata?.coordinatorDispatched) || Boolean(c.reportReleased)) &&
-      c.saudiEndorsement?.status !== 'endorsed');
 
   const isReferralEditable = currentCase?.currentStage === 'DOCTOR_REVIEW';
 
@@ -110,7 +118,6 @@ export const DoctorReviewView: React.FC<Props> = ({
     setViewTab(hasConsultantOpinion ? 'opinion' : 'referral');
   }, [hasConsultantOpinion, activeCase?.id]);
 
-  const pendingDoctorCases = React.useMemo(() => cases.filter(isActionableForDoctor), [cases]);
   const isCurrentStageDoctor = !!currentCase && isActionableForDoctor(currentCase);
 
   const handleSelectCase = (caseId: string) => {

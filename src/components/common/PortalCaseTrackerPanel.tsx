@@ -89,7 +89,22 @@ const PortalCaseTrackerPanel: React.FC<PortalCaseTrackerPanelProps> = ({
     [validCases, actionablePredicate]
   );
 
-  const [tab, setTab] = useState<'actionable' | 'all'>('actionable');
+  const inProgressCases = useMemo(
+    () => validCases.filter((c) => c.currentStage !== 'CLOSED' && !actionablePredicate(c)),
+    [validCases, actionablePredicate]
+  );
+
+  const closedCases = useMemo(
+    () => validCases.filter((c) => c.currentStage === 'CLOSED'),
+    [validCases]
+  );
+
+  const [tab, setTab] = useState<'actionable' | 'in_progress' | 'closed' | 'all'>(() => {
+    if (actionableCases.length > 0) return 'actionable';
+    if (inProgressCases.length > 0) return 'in_progress';
+    if (closedCases.length > 0) return 'closed';
+    return 'all';
+  });
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -97,7 +112,14 @@ const PortalCaseTrackerPanel: React.FC<PortalCaseTrackerPanelProps> = ({
     return null;
   }
 
-  const displayedCases = tab === 'actionable' ? actionableCases : validCases;
+  const displayedCases =
+    tab === 'actionable'
+      ? actionableCases
+      : tab === 'in_progress'
+      ? inProgressCases
+      : tab === 'closed'
+      ? closedCases
+      : validCases;
   const filteredCases = displayedCases.filter((c) => {
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
@@ -181,12 +203,12 @@ const PortalCaseTrackerPanel: React.FC<PortalCaseTrackerPanelProps> = ({
 
       {!isCollapsed && (
         <>
-          {/* Tabs */}
-          <div className="flex border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+          {/* 3-Tier Enterprise Caseload Tabs */}
+          <div className="flex border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 overflow-x-auto scrollbar-none">
             <button
               type="button"
               onClick={() => setTab('actionable')}
-              className={`flex-1 px-3 py-2 text-xs font-semibold transition-all duration-200 flex items-center justify-center gap-1.5 ${
+              className={`flex-1 min-w-[120px] px-3 py-2 text-xs font-bold transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
                 tab === 'actionable'
                   ? 'text-[#007B6E] dark:text-[#00C6AE] border-b-2 border-[#007B6E] dark:border-[#00C6AE] bg-white dark:bg-slate-900'
                   : 'text-slate-500 dark:text-slate-400 hover:text-[#007B6E] dark:hover:text-[#00C6AE] hover:bg-white dark:hover:bg-slate-900'
@@ -194,13 +216,13 @@ const PortalCaseTrackerPanel: React.FC<PortalCaseTrackerPanelProps> = ({
               aria-selected={tab === 'actionable'}
               role="tab"
             >
-              <Clock className="w-3.5 h-3.5" />
-              {isAr ? 'قائمة الإجراءات' : 'Actionable Queue'}
+              <Clock className="w-3.5 h-3.5 shrink-0" />
+              <span>{isAr ? 'قيد الإجراء المطلوب' : 'My Actionable'}</span>
               <span
                 className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold ${
                   tab === 'actionable'
                     ? 'bg-[#007B6E] text-white dark:bg-[#00C6AE] dark:text-slate-900'
-                    : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
+                    : 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300'
                 }`}
               >
                 {actionableCases.length}
@@ -208,8 +230,54 @@ const PortalCaseTrackerPanel: React.FC<PortalCaseTrackerPanelProps> = ({
             </button>
             <button
               type="button"
+              onClick={() => setTab('in_progress')}
+              className={`flex-1 min-w-[120px] px-3 py-2 text-xs font-bold transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
+                tab === 'in_progress'
+                  ? 'text-[#007B6E] dark:text-[#00C6AE] border-b-2 border-[#007B6E] dark:border-[#00C6AE] bg-white dark:bg-slate-900'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-[#007B6E] dark:hover:text-[#00C6AE] hover:bg-white dark:hover:bg-slate-900'
+              }`}
+              aria-selected={tab === 'in_progress'}
+              role="tab"
+            >
+              <Activity className="w-3.5 h-3.5 shrink-0" />
+              <span>{isAr ? 'جارٍ مع الآخرين' : 'In Progress'}</span>
+              <span
+                className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold ${
+                  tab === 'in_progress'
+                    ? 'bg-[#007B6E] text-white dark:bg-[#00C6AE] dark:text-slate-900'
+                    : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
+                }`}
+              >
+                {inProgressCases.length}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setTab('closed')}
+              className={`flex-1 min-w-[120px] px-3 py-2 text-xs font-bold transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
+                tab === 'closed'
+                  ? 'text-[#007B6E] dark:text-[#00C6AE] border-b-2 border-[#007B6E] dark:border-[#00C6AE] bg-white dark:bg-slate-900'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-[#007B6E] dark:hover:text-[#00C6AE] hover:bg-white dark:hover:bg-slate-900'
+              }`}
+              aria-selected={tab === 'closed'}
+              role="tab"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-emerald-600" />
+              <span>{isAr ? 'الأرشيف والمكتمل' : 'Closed Archive'}</span>
+              <span
+                className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold ${
+                  tab === 'closed'
+                    ? 'bg-slate-800 text-emerald-300 dark:bg-slate-800 dark:text-emerald-300'
+                    : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
+                }`}
+              >
+                {closedCases.length}
+              </span>
+            </button>
+            <button
+              type="button"
               onClick={() => setTab('all')}
-              className={`flex-1 px-3 py-2 text-xs font-semibold transition-all duration-200 flex items-center justify-center gap-1.5 ${
+              className={`flex-1 min-w-[90px] px-3 py-2 text-xs font-bold transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
                 tab === 'all'
                   ? 'text-[#007B6E] dark:text-[#00C6AE] border-b-2 border-[#007B6E] dark:border-[#00C6AE] bg-white dark:bg-slate-900'
                   : 'text-slate-500 dark:text-slate-400 hover:text-[#007B6E] dark:hover:text-[#00C6AE] hover:bg-white dark:hover:bg-slate-900'
@@ -217,8 +285,8 @@ const PortalCaseTrackerPanel: React.FC<PortalCaseTrackerPanelProps> = ({
               aria-selected={tab === 'all'}
               role="tab"
             >
-              <Eye className="w-3.5 h-3.5" />
-              {isAr ? 'تتبع جميع الحالات' : 'Track All Cases'}
+              <Eye className="w-3.5 h-3.5 shrink-0" />
+              <span>{isAr ? 'الكل' : 'All'}</span>
               <span
                 className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold ${
                   tab === 'all'
@@ -226,7 +294,7 @@ const PortalCaseTrackerPanel: React.FC<PortalCaseTrackerPanelProps> = ({
                     : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
                 }`}
               >
-                {cases.length}
+                {validCases.length}
               </span>
             </button>
           </div>

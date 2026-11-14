@@ -166,9 +166,10 @@ export function useClinicalWorkflowState() {
   useEffect(() => { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(cases)); } catch (e) {} }, [cases]);
   useEffect(() => { try { localStorage.setItem(ACTIVE_CASE_KEY, activeCaseId); } catch (e) {} }, [activeCaseId]);
 
+  const isPatientPersona = activePersona.code === 'P';
+  const isPatientUser = !userSession?.roleCode || userSession.roleCode === 'P';
+
   const effectiveCases = cases.filter((c) => {
-    const isPatientPersona = activePersona.code === 'P';
-    const isPatientUser = !userSession?.roleCode || userSession.roleCode === 'P';
     if (isPatientPersona && isPatientUser) {
       if (userSession?.phone) return matchesSaudiPhone(c.patientPhone, userSession.phone);
       return false;
@@ -177,8 +178,9 @@ export function useClinicalWorkflowState() {
   });
 
   const activeCase: ClinicalCase =
-    cases.find((c) => c.id === activeCaseId) ||
-    effectiveCases[0] ||
+    (isPatientPersona && isPatientUser
+      ? effectiveCases.find((c) => c.id === activeCaseId) || effectiveCases[0]
+      : cases.find((c) => c.id === activeCaseId) || cases[0]) ||
     intakeDraft;
 
   const handleUpdateCase = (updatedFields: Partial<ClinicalCase>, isNurseSubmit = false) => {

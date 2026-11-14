@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ClinicalCase, PaymentMethodId } from '../../types';
 import { MousePointerClick } from 'lucide-react';
 import { TEAL_PRIMARY, TEAL_ACCENT, TEAL_BG } from '../coordinator/coordinatorStyles';
@@ -40,7 +40,15 @@ export const CoordinatorPortalView: React.FC<Props> = ({
   lang,
 }) => {
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
-  const currentCase = selectedCaseId ? (cases.find((c) => c.id === selectedCaseId) || null) : null;
+
+  const pendingCoordinatorCases = useMemo(() => {
+    return cases.filter(isActionableForCoordinator);
+  }, [cases]);
+
+  // Intelligent Caseload Auto-Selection: Auto-default to the first actionable coordinator case
+  const defaultCoordCase = pendingCoordinatorCases[0] || (propsActiveCase?.id ? propsActiveCase : cases[0]);
+  const effectiveCaseId = selectedCaseId !== null ? selectedCaseId : defaultCoordCase?.id || null;
+  const currentCase = effectiveCaseId ? (cases.find((c) => c.id === effectiveCaseId) || null) : null;
   const activeCase = (currentCase || propsActiveCase) as ClinicalCase;
 
   const isPaid = !!activeCase?.pricing?.paid || activeCase?.paymentDetails?.status === 'completed';
