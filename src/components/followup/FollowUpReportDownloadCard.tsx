@@ -1,6 +1,7 @@
 import React from 'react';
 import { ClinicalCase } from '../../types';
 import { TEAL_PRIMARY, TEAL_SECONDARY, TEAL_BG, WHATSAPP_GREEN } from './followUpConstants';
+import { downloadPDF2 } from '../../utils/pdfExportHelpers';
 
 interface Props {
   activeCase: ClinicalCase;
@@ -162,6 +163,31 @@ export const FollowUpReportDownloadCard: React.FC<Props> = ({
           >
             <span>👁️</span>
             <span>{isRTL ? 'معاينة التقرير (PDF 1)' : 'Preview Report (PDF 1)'}</span>
+          </button>
+        )}
+
+        {activeCase.metadata?.pdf2Released && (
+          <button
+            type="button"
+            onClick={() => downloadPDF2(activeCase, isRTL)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '12px 20px',
+              borderRadius: '12px',
+              border: 'none',
+              backgroundColor: '#065F46',
+              color: '#FFFFFF',
+              fontFamily: "'Cairo', sans-serif",
+              fontSize: '14px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            <span>📥</span>
+            <span>{isRTL ? 'تحميل ملف PDF 2 النهائي' : 'Download Final PDF 2'}</span>
           </button>
         )}
 

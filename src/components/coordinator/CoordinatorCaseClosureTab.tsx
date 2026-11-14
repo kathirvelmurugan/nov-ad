@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ClinicalCase } from '../../types';
 import { TEAL_PRIMARY, TEAL_ACCENT, TEAL_BG, WHATSAPP_GREEN, getBadgeStyle, getPrimaryButtonStyle } from './coordinatorStyles';
-import { generateMockSHA256 } from '../followup/followUpConstants';
+import { downloadPDF2 } from '../../utils/pdfExportHelpers';
 
 interface Props {
   lang: 'ar' | 'en';
@@ -45,56 +45,11 @@ export const CoordinatorCaseClosureTab: React.FC<Props> = ({
   const handleDownloadPDF2 = () => {
     setIsDownloading(true);
     setTimeout(() => {
-      const checksum = generateMockSHA256();
-      const followUpQ = (activeCase.metadata?.patientQuestions as string[]) || [];
-      const followUpA =
-        (activeCase.metadata?.coordinatorReplies as string[]) ||
-        (activeCase.metadata?.followUpAnswers as string[]) ||
-        [];
-
-      const qnaBlock = followUpQ.map((q, i) => `Q${i + 1}: ${q}\nA${i + 1}: ${followUpA[i] || 'ALO Care Coordinator guidance provided.'}`).join('\n\n');
-
-      const content = [
-        `========================================================================`,
-        `ALO DOCTOR - FINAL COMPREHENSIVE CLINICAL DOSSIER & ARCHIVAL RECORD (PDF 2)`,
-        `========================================================================`,
-        `Case ID: ${activeCase.id}`,
-        `Case Number: ${activeCase.caseNumber || 'ALO-2026-LIVE'}`,
-        `ZATCA Invoice Ref: ${activeCase.pricing?.invoiceNumber || 'INV-2026-001'}`,
-        `Patient Name: ${activeCase.patientName || activeCase.patientNameAr || 'Patient'}`,
-        `National ID: 10********`,
-        `Status: PERMANENTLY CLOSED & ARCHIVED`,
-        `SDAIA Cryptographic Checksum (SHA-256): ${checksum}`,
-        `Compliance: Saudi Health Council, MOH Regulations, SDAIA NDMO (PDPL)`,
-        `------------------------------------------------------------------------`,
-        `PART 1: CERTIFIED SECOND OPINION (PDF 1 CORE)`,
-        `Treating Physician: ${activeCase.treatingDoctor?.name || 'د. عبدالله الشمري'}`,
-        `International Specialist: ${activeCase.consultant?.name || 'Dr. Pradeep Kumar, MBBS, MS, MCh (CTVS)'}`,
-        `------------------------------------------------------------------------`,
-        `PART 2: 21-DAY ALO CARE COORDINATION & FOLLOW-UP LOG`,
-        `Rating: ${(activeCase.metadata?.rating as number) || 5}/5 Stars`,
-        qnaBlock || 'All follow-up questions answered and documented.',
-        activeCase.finalClosureNote ? `Specialist Final Remarks: ${activeCase.finalClosureNote}` : '',
-        `------------------------------------------------------------------------`,
-        `PART 3: ZATCA PHASE-2 TAX INVOICE RECEIPT`,
-        `Amount Paid: ${(activeCase.pricing?.totalSar || 75).toFixed(2)} SAR (Includes 15% VAT)`,
-        `Payment Status: VERIFIED & CAPTURED`,
-        `========================================================================`,
-      ].join('\n');
-
-      const blob = new Blob([content], { type: 'application/pdf' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `ALO_Comprehensive_Dossier_PDF2_${activeCase.id}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      downloadPDF2(activeCase, isAr);
       setIsDownloading(false);
       setDownloadSuccess(true);
       setTimeout(() => setDownloadSuccess(false), 3000);
-    }, 1000);
+    }, 600);
   };
 
   return (

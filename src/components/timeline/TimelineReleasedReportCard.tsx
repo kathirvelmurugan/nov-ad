@@ -1,6 +1,7 @@
 import React from 'react';
-import { FileCheck2, FileText, CheckCircle2 } from 'lucide-react';
+import { FileCheck2, FileText, CheckCircle2, Download } from 'lucide-react';
 import { ClinicalCase, ClinicalStage } from '../../types';
+import { downloadPDF1, downloadPDF2 } from '../../utils/pdfExportHelpers';
 
 interface TimelineReleasedReportCardProps {
   activeCase: ClinicalCase;
@@ -95,22 +96,50 @@ export const TimelineReleasedReportCard: React.FC<TimelineReleasedReportCardProp
 
             <button
               type="button"
+              onClick={() => downloadPDF2(activeCase, isAr)}
+              className="px-3.5 py-2.5 rounded-xl bg-teal-800 hover:bg-teal-900 text-white text-xs font-black shadow-sm cursor-pointer flex items-center gap-1.5 active:scale-95 transition-all"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>{isAr ? 'تحميل PDF 2' : 'Download PDF 2'}</span>
+            </button>
+
+            <button
+              type="button"
               onClick={() => onOpenReportModal('pdf1')}
-              className="px-4 py-2.5 rounded-xl bg-white dark:bg-slate-900 text-teal-800 dark:text-teal-200 border border-teal-300 dark:border-teal-700 hover:bg-teal-50 text-xs font-bold cursor-pointer flex items-center gap-1.5"
+              className="px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 text-teal-800 dark:text-teal-200 border border-teal-300 dark:border-teal-700 hover:bg-teal-50 text-xs font-bold cursor-pointer flex items-center gap-1.5"
             >
               <FileText className="w-3.5 h-3.5 text-teal-600" />
-              <span>{isAr ? 'معاينة التقرير الأول (PDF 1)' : 'View Opinion Report (PDF 1)'}</span>
+              <span>{isAr ? 'معاينة التقرير الأول (PDF 1)' : 'View Opinion (PDF 1)'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => downloadPDF1(activeCase, isAr)}
+              className="px-3 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold cursor-pointer flex items-center gap-1.5"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>{isAr ? 'تحميل PDF 1' : 'Download PDF 1'}</span>
             </button>
           </>
         ) : (
-          <button
-            type="button"
-            onClick={() => onOpenReportModal('pdf1')}
-            className="px-4 py-2 rounded-xl bg-alo-teal hover:bg-teal-800 text-white text-xs font-extrabold shadow-sm cursor-pointer flex items-center gap-1.5"
-          >
-            <span>📄</span>
-            <span>{isAr ? 'فتح وطباعة التقرير الطبي الكامل (PDF 1)' : 'Open & Print Full Certified Report (PDF 1)'}</span>
-          </button>
+          <>
+            <button
+              type="button"
+              onClick={() => onOpenReportModal('pdf1')}
+              className="px-4 py-2 rounded-xl bg-alo-teal hover:bg-teal-800 text-white text-xs font-extrabold shadow-sm cursor-pointer flex items-center gap-1.5"
+            >
+              <span>📄</span>
+              <span>{isAr ? 'فتح وطباعة التقرير الطبي الكامل (PDF 1)' : 'Open & Print Full Certified Report (PDF 1)'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => downloadPDF1(activeCase, isAr)}
+              className="px-3.5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-black shadow-sm cursor-pointer flex items-center gap-1.5 active:scale-95 transition-all"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>{isAr ? 'تحميل PDF 1' : 'Download PDF 1'}</span>
+            </button>
+          </>
         )}
 
         {activeCase.consultationType === 'video' && onOpenTelehealth && !isCaseClosed && (
