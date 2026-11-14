@@ -163,6 +163,9 @@ export function useClinicalWorkflowState() {
     return () => { isSubscribed = false; };
   }, []);
 
+  useEffect(() => { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(cases)); } catch (e) {} }, [cases]);
+  useEffect(() => { try { localStorage.setItem(ACTIVE_CASE_KEY, activeCaseId); } catch (e) {} }, [activeCaseId]);
+
   const effectiveCases = cases.filter((c) => {
     const isPatientPersona = activePersona.code === 'P';
     const isPatientUser = !userSession?.roleCode || userSession.roleCode === 'P';
@@ -183,16 +186,18 @@ export function useClinicalWorkflowState() {
     const isPatientUser = !userSession?.roleCode || userSession.roleCode === 'P';
 
     if (activeCase.id === 'draft-intake' || isNurseSubmit) {
-      const freshId = `case-${Date.now()}`;
-      const nameToSet = userSession?.fullName || intakeDraft.patientName || syncedUpdate.patientName || 'مريض جديد';
+      const freshId = syncedUpdate.id || `case-${Date.now()}`;
+      const nameToSet = syncedUpdate.patientName || intakeDraft.patientName || userSession?.fullName || 'Sami Al-Harbi';
+      const nameArToSet = syncedUpdate.patientNameAr || intakeDraft.patientNameAr || userSession?.fullName || 'سامي الحربي';
+      const nameEnToSet = syncedUpdate.patientNameEn || intakeDraft.patientNameEn || userSession?.fullName || 'Sami Al-Harbi';
       const registeredCase: ClinicalCase = {
         ...intakeDraft,
         ...syncedUpdate,
         id: freshId,
-        caseNumber: `ALO-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
+        caseNumber: syncedUpdate.caseNumber || `ALO-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
         patientName: nameToSet,
-        patientNameAr: userSession?.fullName || intakeDraft.patientNameAr || syncedUpdate.patientNameAr || nameToSet,
-        patientNameEn: userSession?.fullName || intakeDraft.patientNameEn || syncedUpdate.patientNameEn || nameToSet,
+        patientNameAr: nameArToSet,
+        patientNameEn: nameEnToSet,
         currentStage: 'NURSE_CHECK',
         stage: 2,
         status: 'open',
