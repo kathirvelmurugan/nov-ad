@@ -351,6 +351,9 @@ export const PatientStatusTimelineView: React.FC<Props> = ({
         </div>
       </div>
 
+      {/* 1.5 Prominent Patient Dossier Summary (Immediate Visibility of Submitted Details) */}
+      <TimelineDossierSummaryCard activeCase={activeCase} isAr={isAr} />
+
       {/* 2. Visual Stepper: Patient Journey Progress Pipeline */}
       <TimelineProgressBar currentIndex={currentIndex} isAr={isAr} />
 
@@ -485,9 +488,6 @@ export const PatientStatusTimelineView: React.FC<Props> = ({
           )}
         </div>
       </div>
-
-      {/* 4. Patient Dossier Summary Card (What the patient submitted) */}
-      <TimelineDossierSummaryCard activeCase={activeCase} isAr={isAr} />
 
       <BilingualReportModal
         isOpen={isReportModalOpen}

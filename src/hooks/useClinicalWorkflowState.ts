@@ -185,7 +185,16 @@ export function useClinicalWorkflowState() {
     const syncedUpdate = { ...updatedFields };
     const isPatientUser = !userSession?.roleCode || userSession.roleCode === 'P';
 
-    if (activeCase.id === 'draft-intake' || isNurseSubmit) {
+    // If updating draft intake fields prior to explicit submission, mutate intakeDraft in-place without stage jumping
+    if (activeCase.id === 'draft-intake' && !isNurseSubmit && syncedUpdate.currentStage !== 'NURSE_CHECK') {
+      setIntakeDraft((prev) => ({
+        ...prev,
+        ...syncedUpdate,
+      }));
+      return;
+    }
+
+    if (activeCase.id === 'draft-intake' || isNurseSubmit || syncedUpdate.currentStage === 'NURSE_CHECK') {
       const freshId = syncedUpdate.id || `case-${Date.now()}`;
       const nameToSet = syncedUpdate.patientName || intakeDraft.patientName || userSession?.fullName || 'Sami Al-Harbi';
       const nameArToSet = syncedUpdate.patientNameAr || intakeDraft.patientNameAr || userSession?.fullName || 'سامي الحربي';

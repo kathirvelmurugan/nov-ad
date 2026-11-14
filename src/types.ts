@@ -230,6 +230,11 @@ export interface ClinicalCase {
   symptoms: string;
   symptomsAr?: string;
   symptomsEn?: string;
+  redFlags?: string[];
+  currentMedications?: string[];
+  allergies?: string[];
+  noKnownAllergies?: boolean;
+  noCurrentMedications?: boolean;
   caregiver?: CaregiverProxy;
   consultationType: 'written' | 'video' | 'voice';
   currentStage: ClinicalStage;

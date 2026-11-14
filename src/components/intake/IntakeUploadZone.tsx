@@ -107,17 +107,22 @@ export const IntakeUploadZone: React.FC<Props> = ({
         </label>
       </div>
 
-      {/* P08: Echo Lab Snapshot Metrics */}
-      <div className="mt-3 bg-alo-mint/60 dark:bg-alo-mintDark/30 border border-teal-200 dark:border-teal-800 p-3.5 rounded-xl text-xs flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5 text-alo-teal dark:text-alo-aqua font-extrabold">
-          <Activity className="w-4 h-4 text-alo-teal" />
-          <span>P08 · {isAr ? 'قياسات الإيكو السريرية المعتمدة:' : 'Echo Lab Approved Metrics:'}</span>
+      {/* P08: Diagnostic Scan Status & Verification Note */}
+      <div className="mt-3 bg-alo-mint/50 dark:bg-alo-mintDark/20 border border-teal-200 dark:border-teal-800 p-3 rounded-xl text-xs flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5 text-alo-teal dark:text-alo-aqua font-bold">
+          <Activity className="w-4 h-4 text-alo-teal shrink-0" />
+          <span>P08 · {isAr ? 'حالة التقارير والأشعة المرفقة:' : 'Diagnostic Scans & Lab Status:'}</span>
         </div>
-        <div className="flex items-center gap-3 font-mono text-[11px] text-slate-800 dark:text-slate-200">
-          <span>{isAr ? 'مساحة الصمام:' : 'Valve Area:'} <strong className="medical-term text-alo-teal font-extrabold">0.65 cm²</strong></span>
-          <span>{isAr ? 'تدرج الضغط:' : 'Mean Gradient:'} <strong className="medical-term text-alo-teal font-extrabold">48 mmHg</strong></span>
-          <span>{isAr ? 'سرعة التدفق:' : 'Peak Velocity:'} <strong className="medical-term text-alo-teal font-extrabold">4.4 m/s</strong></span>
-          <span>{isAr ? 'كفاءة الضخ:' : 'LVEF:'} <strong className="medical-term text-emerald-700 dark:text-emerald-400 font-extrabold">55%</strong></span>
+        <div className="text-[11px] text-slate-600 dark:text-slate-300 font-medium">
+          {activeCase.files && activeCase.files.length > 0 ? (
+            <span className="text-emerald-700 dark:text-emerald-300 font-bold">
+              ✓ {isAr ? `تم إرفاق (${activeCase.files.length}) ملفات سريرية وجاهزة للمراجعة` : `(${activeCase.files.length}) Clinical records attached`}
+            </span>
+          ) : (
+            <span className="text-slate-500">
+              {isAr ? 'اختياري: يمكنك المتابعة وسيطلب التمريض أي فحوصات إضافية عند الحاجة' : 'Optional: You can submit without attachments; triage nurse will request if needed'}
+            </span>
+          )}
         </div>
       </div>
     </div>

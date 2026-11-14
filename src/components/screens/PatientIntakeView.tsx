@@ -121,21 +121,21 @@ export const PatientIntakeView: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* 6-Service Selection Bar */}
-      <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-2.5">
+      {/* 6-Service Selection Bar (Compact Horizontal Scroll on Mobile) */}
+      <div className="bg-white dark:bg-slate-900 p-3 sm:p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-emerald-600" />
+            <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
             <h3 className="text-xs font-extrabold text-slate-800 dark:text-slate-100">
-              {isAr ? 'مسار الخدمة الصحية للطلب السريري:' : 'Selected Healthcare Service Track:'}
+              {isAr ? 'مسار الخدمة الصحية:' : 'Selected Healthcare Service Track:'}
             </h3>
           </div>
-          <span className="text-[10px] text-slate-400 font-medium">
+          <span className="text-[10px] text-slate-400 font-medium hidden sm:inline">
             {isAr ? 'انقر على أي خدمة لتحديث مسار الطلب' : 'Click to switch service track'}
           </span>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none sm:grid sm:grid-cols-6">
           {INTAKE_SERVICES.map((serv) => {
             const Icon = serv.icon;
             const isCurrent = activeServiceId === serv.id;
@@ -145,14 +145,14 @@ export const PatientIntakeView: React.FC<Props> = ({
                 key={serv.id}
                 type="button"
                 onClick={() => handleSwitchService(serv.id)}
-                className={`p-2.5 rounded-xl border text-left transition-all flex flex-col items-center justify-center gap-1.5 text-center cursor-pointer ${
+                className={`px-3 py-2 sm:p-2.5 rounded-xl border transition-all flex items-center sm:flex-col sm:justify-center gap-2 text-center cursor-pointer shrink-0 sm:shrink ${
                   isCurrent
                     ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-500 text-emerald-900 dark:text-emerald-100 font-black shadow-xs ring-2 ring-emerald-500/20'
                     : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-emerald-300 font-semibold text-xs'
                 }`}
               >
-                <Icon className={`w-4 h-4 ${isCurrent ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-500'}`} />
-                <span className="text-[11px] leading-tight block">
+                <Icon className={`w-4 h-4 shrink-0 ${isCurrent ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-500'}`} />
+                <span className="text-[11px] leading-tight whitespace-nowrap sm:whitespace-normal">
                   {isAr ? serv.titleAr : serv.titleEn}
                 </span>
               </button>
