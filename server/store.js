@@ -187,6 +187,15 @@ export const resetStore = () => {
   memoryAudit = [];
 };
 
+export const resetInMemoryStore = resetStore;
+
+export const updateInMemoryStore = (payload = {}) => {
+  if (Array.isArray(payload.tenants)) memoryTenants = payload.tenants;
+  if (Array.isArray(payload.users)) memoryUsers = payload.users;
+  if (Array.isArray(payload.cases)) memoryCases = payload.cases;
+  if (Array.isArray(payload.audit)) memoryAudit = payload.audit;
+};
+
 export const getStoreSnapshot = () => ({
   tenantsCount: memoryTenants.length,
   usersCount: memoryUsers.length,

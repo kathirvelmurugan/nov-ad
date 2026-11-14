@@ -19,6 +19,8 @@ export const pool = new Pool({
   connectionTimeoutMillis: 3000,
 });
 
+export default pool;
+
 export async function initDatabase() {
   try {
     const client = await pool.connect();
