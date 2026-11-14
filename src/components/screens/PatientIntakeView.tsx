@@ -10,6 +10,7 @@ import {
   Sparkles,
   FileText,
   Video,
+  Phone,
   FlaskConical,
   Pill,
   Building2,
@@ -36,12 +37,12 @@ interface Props {
 }
 
 const INTAKE_SERVICES = [
-  { id: 'second-opinion', titleAr: 'الرأي الطبي الثاني', titleEn: 'Second Opinion', icon: FileText, consultationType: 'written' as const },
+  { id: 'second-opinion', titleAr: 'الرأي الطبي الثاني (مكتوب)', titleEn: 'Second Opinion (Written)', icon: FileText, consultationType: 'written' as const },
   { id: 'video-consultation', titleAr: 'الاستشارة المرئية', titleEn: 'Video Consultation', icon: Video, consultationType: 'video' as const },
+  { id: 'voice-consultation', titleAr: 'الاستشارة الصوتية', titleEn: 'Voice Consultation', icon: Phone, consultationType: 'voice' as const },
   { id: 'lab-tests', titleAr: 'الفحوصات المخبرية', titleEn: 'Lab Tests', icon: FlaskConical },
   { id: 'pharmacy', titleAr: 'الصيدلية والدواء', titleEn: 'Pharmacy', icon: Pill },
   { id: 'hospital-services', titleAr: 'خدمات المستشفيات', titleEn: 'Hospital Services', icon: Building2 },
-  { id: 'other-services', titleAr: 'رعاية صحية إضافية', titleEn: 'Other Healthcare', icon: Activity },
 ];
 
 export const PatientIntakeView: React.FC<Props> = ({

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Heart, AlertTriangle, Check, Pill, FileText, Video, Plus, X, ShieldAlert } from 'lucide-react';
+import { Heart, AlertTriangle, Check, Pill, FileText, Video, Phone, Plus, X, ShieldAlert, Lock, CheckCircle2 } from 'lucide-react';
 import { ClinicalCase } from '../../types';
 
 interface Props {
@@ -362,57 +362,154 @@ export const IntakeSymptomsAndDiagnosisSection: React.FC<Props> = ({
         )}
       </div>
 
-      {/* P11 & P12: Consultation Format & Legal MOH Consent */}
-      <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-3">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-            P11 · {isAr ? 'صيغة الاستشارة المرغوبة:' : 'Consultation Format:'}
-          </span>
-          <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={() => onUpdateCase({ consultationType: 'written' })}
-              className={`text-xs px-3 py-1 rounded-lg font-extrabold flex items-center gap-1.5 shadow-sm border transition-colors cursor-pointer ${
-                activeCase.consultationType === 'written'
-                  ? 'bg-alo-mint border-teal-300 text-alo-teal'
-                  : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400'
-              }`}
-            >
-              <FileText className="w-3.5 h-3.5" />
-              <span>{isAr ? 'رأي مكتوب فقط' : 'Written opinion only'}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => onUpdateCase({ consultationType: 'video' })}
-              className={`text-xs px-3 py-1 rounded-lg font-extrabold flex items-center gap-1.5 shadow-sm border transition-colors cursor-pointer ${
-                activeCase.consultationType === 'video'
-                  ? 'bg-alo-mint border-teal-300 text-alo-teal'
-                  : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400'
-              }`}
-            >
-              <Video className="w-3.5 h-3.5" />
-              <span>{isAr ? 'مرئي + رأي مكتوب' : 'Video + written opinion'}</span>
-            </button>
-          </div>
-        </div>
+      {/* P12: Consultation Format & Service Tier Selection */}
+      {(() => {
+        const isSubmitted = Boolean(
+          (activeCase.stage && activeCase.stage > 1) ||
+          (activeCase.currentStage && activeCase.currentStage !== 'INTAKE_RECEIVED')
+        );
 
-        <label className="flex items-start gap-2.5 cursor-pointer bg-slate-50 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
-          <input
-            type="checkbox"
-            checked={privacyAgreed}
-            onChange={(e) => setPrivacyAgreed(e.target.checked)}
-            className="mt-0.5 rounded border-slate-300 text-alo-teal focus:ring-alo-teal"
-          />
-          <span className="text-[11px] text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
-            <strong className="text-alo-teal font-extrabold">
-              P12 · {isAr ? 'إقرار الخصوصية والمشاركة الطبية:' : 'MOH Health Data Privacy Consent:'}
-            </strong>{' '}
-            {isAr
-              ? 'أوافق على مشاركة ملفاتي الطبية مع منسقي التمريض في منصة ألو دكتور والاستشاري الدولي المعتمد لغرض إعداد الرأي الطبي الثاني، وفقاً لنظام حماية البيانات الصحية في المملكة العربية السعودية.'
-              : 'I consent to sharing diagnostic records with ALO DOCTOR triage nurses and the accredited international consultant for the second opinion evaluation in compliance with Saudi Health Information Privacy Law.'}
-          </span>
-        </label>
-      </div>
+        const formats = [
+          {
+            id: 'written' as const,
+            titleAr: 'رأي طبي مكتوب فقط',
+            titleEn: 'Written Opinion Only',
+            priceSar: 400,
+            icon: FileText,
+            descAr: 'تقرير طبي تخصصي مفصل ومترجم',
+            descEn: 'Comprehensive translated medical dossier',
+          },
+          {
+            id: 'video' as const,
+            titleAr: 'مرئي + رأي مكتوب',
+            titleEn: 'Video Call + Written',
+            priceSar: 750,
+            icon: Video,
+            descAr: 'مكالمة فيديو مرئية وترجمة تمريض ألو',
+            descEn: 'Live telehealth video with nurse interpreter',
+          },
+          {
+            id: 'voice' as const,
+            titleAr: 'صوتي + رأي مكتوب',
+            titleEn: 'Voice Call + Written',
+            priceSar: 550,
+            icon: Phone,
+            descAr: 'مكالمة هاتفية تخصصية مع الاستشاري',
+            descEn: 'Direct phone tele-consultation + report',
+          },
+        ];
+
+        return (
+          <div className="pt-3 border-t border-slate-200 dark:border-slate-800 space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs font-black text-slate-800 dark:text-slate-100">
+                    P12 · {isAr ? 'صيغة الاستشارة وتفضيل المسار السريري' : 'Consultation Format & Service Tier:'}
+                  </span>
+                  {isSubmitted && (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 dark:bg-amber-950/40 dark:text-amber-300 px-2 py-0.5 rounded-full border border-amber-300">
+                      <Lock className="w-3 h-3" />
+                      {isAr ? 'مغلق بعد الإرسال' : 'Locked Post-Submit'}
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  {isAr
+                    ? 'تفضيلك المبدئي · يعتمده الطبيب السعودي المعالج (D06) قبل الدفع'
+                    : 'Your initial preference · Confirmed by your Saudi treating doctor (D06)'}
+                </p>
+              </div>
+
+              {!isSubmitted && (
+                <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-lg border border-emerald-200 shrink-0">
+                  {isAr ? '✓ يمكنك التبديل بحرية أثناء كتابة الطلب' : '✓ Switch anytime before submitting'}
+                </span>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              {formats.map((f) => {
+                const Icon = f.icon;
+                const isSelected = (activeCase.consultationType || 'written') === f.id;
+
+                return (
+                  <button
+                    key={f.id}
+                    type="button"
+                    disabled={isSubmitted}
+                    onClick={() => {
+                      if (!isSubmitted) {
+                        onUpdateCase({ consultationType: f.id });
+                      }
+                    }}
+                    className={`relative p-3 rounded-xl border text-start transition-all ${
+                      isSelected
+                        ? 'bg-emerald-50 dark:bg-emerald-950/50 border-emerald-500 ring-2 ring-emerald-500/20 shadow-xs'
+                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+                    } ${isSubmitted ? 'opacity-75 cursor-not-allowed' : 'cursor-pointer active:scale-98'}`}
+                  >
+                    <div className="flex items-start justify-between gap-2 mb-1.5">
+                      <div className="flex items-center gap-2">
+                        <div
+                          className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+                            isSelected
+                              ? 'bg-emerald-600 text-white'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+                          }`}
+                        >
+                          <Icon className="w-3.5 h-3.5" />
+                        </div>
+                        <span className="text-xs font-black text-slate-900 dark:text-slate-100">
+                          {isAr ? f.titleAr : f.titleEn}
+                        </span>
+                      </div>
+                      {isSelected && <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />}
+                    </div>
+
+                    <div className="flex items-baseline justify-between mt-2 pt-2 border-t border-slate-100 dark:border-slate-800/80">
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                        {isAr ? f.descAr : f.descEn}
+                      </span>
+                      <span className="text-xs font-extrabold text-emerald-800 dark:text-emerald-300 font-mono shrink-0">
+                        {f.priceSar} {isAr ? 'ر.س' : 'SAR'}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {isSubmitted && (
+              <div className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-400">
+                <Lock className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                <span>
+                  {isAr
+                    ? 'تم إرسال المسار المفضل مع ملفك الطبي. سيقوم الطبيب السعودي المعالج (D06) بمراجعته واعتماده قبل إصدار رابط الدفع.'
+                    : 'Consultation modality submitted with your medical file. Saudi treating doctor (D06) will confirm before the coordinator issues the payment link.'}
+                </span>
+              </div>
+            )}
+
+            <label className="flex items-start gap-2.5 cursor-pointer bg-slate-50 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-200 dark:border-slate-800 mt-2">
+              <input
+                type="checkbox"
+                checked={privacyAgreed}
+                onChange={(e) => setPrivacyAgreed(e.target.checked)}
+                className="mt-0.5 rounded border-slate-300 text-alo-teal focus:ring-alo-teal"
+              />
+              <span className="text-[11px] text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
+                <strong className="text-alo-teal font-extrabold">
+                  {isAr ? 'إقرار الخصوصية والمشاركة الطبية:' : 'MOH Health Data Privacy Consent:'}
+                </strong>{' '}
+                {isAr
+                  ? 'أوافق على مشاركة ملفاتي الطبية مع منسقي التمريض في منصة ألو دكتور والاستشاري الدولي المعتمد لغرض إعداد الرأي الطبي الثاني، وفقاً لنظام حماية البيانات الصحية في المملكة العربية السعودية.'
+                  : 'I consent to sharing diagnostic records with ALO DOCTOR triage nurses and the accredited international consultant for the second opinion evaluation in compliance with Saudi Health Information Privacy Law.'}
+              </span>
+            </label>
+          </div>
+        );
+      })()}
     </>
   );
 };
