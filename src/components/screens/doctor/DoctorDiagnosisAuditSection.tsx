@@ -45,6 +45,54 @@ const DoctorDiagnosisAuditSection: React.FC<DoctorDiagnosisAuditSectionProps> = 
         </p>
       </div>
 
+      {/* Dynamic Medications & Allergies if recorded */}
+      {((activeCase.currentMedications && activeCase.currentMedications.length > 0) || (activeCase.allergies && activeCase.allergies.length > 0) || (activeCase.redFlags && activeCase.redFlags.length > 0)) && (
+        <div style={{ background: '#f8fafc', borderRadius: '12px', padding: '1.25rem', border: '1px solid #cbd5e1', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          {activeCase.redFlags && activeCase.redFlags.length > 0 && (
+            <div>
+              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#b45309', display: 'block', marginBottom: '0.25rem' }}>
+                {isAr ? 'علامات ومؤشرات الخطورة المحددة:' : 'Reported Red-Flag Signs:'}
+              </span>
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                {activeCase.redFlags.map((f: string, i: number) => (
+                  <span key={i} style={{ fontSize: '0.75rem', fontWeight: 600, background: '#fef3c7', color: '#92400e', padding: '0.2rem 0.6rem', borderRadius: '6px', border: '1px solid #fde68a' }}>
+                    {f}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          {activeCase.currentMedications && activeCase.currentMedications.length > 0 && (
+            <div>
+              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0f766e', display: 'block', marginBottom: '0.25rem' }}>
+                {isAr ? 'الأدوية الحالية للمريض:' : 'Active Patient Prescriptions:'}
+              </span>
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                {activeCase.currentMedications.map((m: string, i: number) => (
+                  <span key={i} style={{ fontSize: '0.75rem', fontWeight: 600, background: '#f0fdfa', color: '#115e59', padding: '0.2rem 0.6rem', borderRadius: '6px', border: '1px solid #ccfbf1' }}>
+                    {m}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          {activeCase.allergies && activeCase.allergies.length > 0 && (
+            <div>
+              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#be123c', display: 'block', marginBottom: '0.25rem' }}>
+                {isAr ? 'الحساسية الدوائية المسجلة:' : 'Known Drug Allergies:'}
+              </span>
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                {activeCase.allergies.map((a: string, i: number) => (
+                  <span key={i} style={{ fontSize: '0.75rem', fontWeight: 600, background: '#fff1f2', color: '#9f1239', padding: '0.2rem 0.6rem', borderRadius: '6px', border: '1px solid #fecdd3' }}>
+                    {a}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       <div style={{ background: '#ffffff', borderRadius: '12px', padding: '1.25rem', border: '1px solid #007B6E' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
           <FileCheck2 size={22} color="#007B6E" strokeWidth={2.5} />

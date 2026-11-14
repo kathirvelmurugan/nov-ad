@@ -40,6 +40,40 @@ const DrillDownClinicalTab: React.FC<DrillDownClinicalTabProps> = ({ caseItem, d
         <p className="text-gray-700 text-sm leading-relaxed">{symptoms}</p>
       </div>
 
+      {/* Medications and Allergies if present */}
+      {((caseItem?.currentMedications && caseItem.currentMedications.length > 0) || (caseItem?.allergies && caseItem.allergies.length > 0)) && (
+        <div className="bg-white rounded-lg shadow-sm p-4 border border-[#00C6AE]/20 space-y-3">
+          {caseItem?.currentMedications && caseItem.currentMedications.length > 0 && (
+            <div>
+              <h4 className="text-xs font-bold text-[#007B6E] mb-1.5">
+                {isRTL ? 'الأدوية الموصوفة للمريض' : 'Active Prescriptions'}
+              </h4>
+              <div className="flex flex-wrap gap-1.5">
+                {caseItem.currentMedications.map((m: string, i: number) => (
+                  <span key={i} className="text-xs bg-[#E6FAF7] text-[#007B6E] font-medium px-2 py-0.5 rounded border border-[#00C6AE]/30">
+                    {m}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          {caseItem?.allergies && caseItem.allergies.length > 0 && (
+            <div>
+              <h4 className="text-xs font-bold text-rose-700 mb-1.5">
+                {isRTL ? 'الحساسية الدوائية' : 'Drug Allergies'}
+              </h4>
+              <div className="flex flex-wrap gap-1.5">
+                {caseItem.allergies.map((a: string, i: number) => (
+                  <span key={i} className="text-xs bg-rose-50 text-rose-800 font-medium px-2 py-0.5 rounded border border-rose-200">
+                    {a}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="bg-white rounded-lg shadow-sm p-4">
         <div className="flex items-center gap-2 mb-3">
           <HelpCircle className="w-4 h-4 text-[#007B6E]" />
