@@ -8,6 +8,7 @@ interface Props {
   privacyAgreed: boolean;
   setPrivacyAgreed: (val: boolean) => void;
   onUpdateCase: (updated: Partial<ClinicalCase>) => void;
+  isReadOnly?: boolean;
 }
 
 const COMMON_RED_FLAGS = [
@@ -24,6 +25,7 @@ export const IntakeSymptomsAndDiagnosisSection: React.FC<Props> = ({
   privacyAgreed,
   setPrivacyAgreed,
   onUpdateCase,
+  isReadOnly = false,
 }) => {
   const [customFlagInput, setCustomFlagInput] = useState('');
   const [medInput, setMedInput] = useState('');
@@ -364,10 +366,7 @@ export const IntakeSymptomsAndDiagnosisSection: React.FC<Props> = ({
 
       {/* P12: Consultation Format & Service Tier Selection */}
       {(() => {
-        const isSubmitted = Boolean(
-          (activeCase.stage && activeCase.stage > 1) ||
-          (activeCase.currentStage && activeCase.currentStage !== 'INTAKE_RECEIVED')
-        );
+        const isSubmitted = Boolean(isReadOnly);
 
         const formats = [
           {
