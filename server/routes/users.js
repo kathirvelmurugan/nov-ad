@@ -28,6 +28,7 @@ router.get('/', async (_req, res) => {
       phone: row.phone,
       roleCode: row.role_code,
       pin: row.pin || null,
+      hasCustomPin: Boolean(row.has_custom_pin || row.pin),
       createdAt: row.created_at,
     }));
     return res.json(mapped);
@@ -47,10 +48,18 @@ router.post('/pin', async (req, res) => {
   const normalizedPhone = normalizePhone(phone);
 
   try {
-    await pool.query(
-      'UPDATE platform_users SET pin = $1 WHERE phone = $2',
+    const updateRes = await pool.query(
+      'UPDATE platform_users SET pin = $1, has_custom_pin = TRUE WHERE phone = $2 RETURNING id',
       [String(pin), normalizedPhone]
     );
+    if (updateRes.rowCount === 0) {
+      await pool.query(
+        `INSERT INTO platform_users (full_name, phone, role_code, pin, has_custom_pin)
+         VALUES ($1, $2, 'P', $3, TRUE)
+         ON CONFLICT (phone) DO UPDATE SET pin = EXCLUDED.pin, has_custom_pin = TRUE`,
+        ['Patient', normalizedPhone, String(pin)]
+      );
+    }
   } catch (err) {
     console.error('[users] pin update postgres error:', err.message);
   }
@@ -59,7 +68,17 @@ router.post('/pin', async (req, res) => {
     (u) => u.phone === normalizedPhone || u.phone === phone
   );
   if (memIdx !== -1) {
-    memoryUsers[memIdx] = { ...memoryUsers[memIdx], pin: String(pin), phone: normalizedPhone };
+    memoryUsers[memIdx] = { ...memoryUsers[memIdx], pin: String(pin), hasCustomPin: true, phone: normalizedPhone };
+  } else {
+    memoryUsers.push({
+      id: `patient-${Date.now()}`,
+      fullName: 'Patient',
+      phone: normalizedPhone,
+      roleCode: 'P',
+      pin: String(pin),
+      hasCustomPin: true,
+      createdAt: new Date().toISOString()
+    });
   }
 
   return res.json({ success: true, phone: normalizedPhone });

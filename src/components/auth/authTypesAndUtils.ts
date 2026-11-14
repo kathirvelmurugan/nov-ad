@@ -32,9 +32,10 @@ export const matchesSaudiPhone = (phoneA?: string, phoneB?: string): boolean => 
 };
 
 export const getUserPin = (rawPhone: string): string | null => {
+  if (!rawPhone) return null;
   const clean = rawPhone.replace(/\D/g, '');
   if (clean === '966500000001' || clean === '0500000001' || clean === '500000001') {
-    return '1234';
+    return DEFAULT_DEV_PIN;
   }
   try {
     const saved = localStorage.getItem(USER_PINS_KEY);
@@ -49,10 +50,14 @@ export const getUserPin = (rawPhone: string): string | null => {
       const staffList = JSON.parse(staffSaved);
       if (Array.isArray(staffList)) {
         const found = staffList.find((s: any) => matchesSaudiPhone(s.phone, rawPhone));
-        if (found && found.hasCustomPin && found.pin) return found.pin;
+        if (found && (found.hasCustomPin || found.pin)) return found.pin || DEFAULT_DEV_PIN;
       }
     }
   } catch {}
+  const presetStaff = DEFAULT_STAFF_DIRECTORY.find((s) => matchesSaudiPhone(s.phone, rawPhone));
+  if (presetStaff && presetStaff.pin) return presetStaff.pin;
+  const presetPersona = PERSONA_PRESETS.find((p) => matchesSaudiPhone(p.phone, rawPhone));
+  if (presetPersona) return DEFAULT_DEV_PIN;
   return null;
 };
 
@@ -83,9 +88,17 @@ export const setUserPin = (rawPhone: string, pin: string): void => {
 };
 
 export const hasUserPin = (rawPhone: string): boolean => {
+  if (!rawPhone) return false;
   const clean = rawPhone.replace(/\D/g, '');
   if (clean === '966500000001' || clean === '0500000001' || clean === '500000001') {
     return true; // Super Admin has default PIN 1234
+  }
+  // Check if accredited staff or persona preset
+  if (DEFAULT_STAFF_DIRECTORY.some((s) => matchesSaudiPhone(s.phone, rawPhone))) {
+    return true;
+  }
+  if (PERSONA_PRESETS.some((p) => matchesSaudiPhone(p.phone, rawPhone))) {
+    return true;
   }
   try {
     const saved = localStorage.getItem(USER_PINS_KEY);
@@ -98,7 +111,7 @@ export const hasUserPin = (rawPhone: string): boolean => {
       const staffList = JSON.parse(staffSaved);
       if (Array.isArray(staffList)) {
         const found = staffList.find((s: any) => matchesSaudiPhone(s.phone, rawPhone));
-        if (found && found.hasCustomPin) return true;
+        if (found && (found.hasCustomPin || found.pin)) return true;
       }
     }
   } catch {}
@@ -293,7 +306,7 @@ export const resolveAccountByPhone = (
       hospitalId: matchedStaff.hospitalId,
       fullName: isRTL && matchedStaff.fullNameAr ? matchedStaff.fullNameAr : matchedStaff.fullName,
       isStaff: true,
-      hasCustomPin: !!matchedStaff.hasCustomPin,
+      hasCustomPin: true,
       staffRecord: matchedStaff,
     };
   }
