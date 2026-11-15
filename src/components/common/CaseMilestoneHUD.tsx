@@ -131,6 +131,7 @@ export const CaseMilestoneHUD: React.FC<CaseMilestoneHUDProps> = ({
 
   return (
     <div
+      id="case-milestone-hud"
       dir={dir}
       className={`font-cairo w-full mb-6 ${className}`}
       style={{ fontFamily: "'Cairo', sans-serif" }}
