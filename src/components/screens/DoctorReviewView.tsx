@@ -10,6 +10,7 @@ import DoctorDiagnosisAuditSection from './doctor/DoctorDiagnosisAuditSection';
 import DoctorHeaderBar from './doctor/DoctorHeaderBar';
 import { PortalCaseTrackerPanel, getStageBadgeMeta } from '../common/PortalCaseTrackerPanel';
 import { CaseMilestoneHUD } from '../common/CaseMilestoneHUD';
+import { OpinionTelehealthView } from './OpinionTelehealthView';
 
 interface Props {
   activeCase?: ClinicalCase;
@@ -33,6 +34,7 @@ export const DoctorReviewView: React.FC<Props> = ({
   activePersona,
 }) => {
   const [selectedCaseId, setSelectedCaseId] = React.useState<string | null>(null);
+  const [isTelehealthOpen, setIsTelehealthOpen] = React.useState(false);
 
   const isActionableForDoctor = (c: ClinicalCase) =>
     c.currentStage === 'DOCTOR_REVIEW' ||
@@ -173,6 +175,22 @@ export const DoctorReviewView: React.FC<Props> = ({
     );
   }
 
+  if (isTelehealthOpen && activeCase) {
+    return (
+      <OpinionTelehealthView
+        activeCase={activeCase}
+        onAdvanceStage={() => {
+          onAdvanceStage();
+          setIsTelehealthOpen(false);
+        }}
+        onUpdateCase={onUpdateCase}
+        onBackToTimeline={() => setIsTelehealthOpen(false)}
+        participantRole="treating_doctor"
+        participantName={doctorName}
+      />
+    );
+  }
+
   const stageMeta = currentCase && !isCurrentStageDoctor ? getStageBadgeMeta(currentCase.currentStage, isAr) : null;
 
   return (
@@ -238,22 +256,36 @@ export const DoctorReviewView: React.FC<Props> = ({
             isAr={isAr}
           />
 
-          {hasConsultantOpinion && (
-            <div className="flex items-center gap-2 bg-white dark:bg-slate-900 p-2 rounded-2xl border border-slate-200">
-              <button
-                type="button"
-                onClick={() => setViewTab('opinion')}
-                className={`px-4 py-2 rounded-xl text-xs font-extrabold cursor-pointer ${viewTab === 'opinion' ? 'bg-alo-teal text-white' : 'text-slate-600'}`}
-              >
-                {isAr ? 'D11–D12 · رأي الاستشاري الدولي والاعتماد' : 'D11–D12 · Indian Consultant Opinion & Approval'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewTab('referral')}
-                className={`px-4 py-2 rounded-xl text-xs font-extrabold cursor-pointer ${viewTab === 'referral' ? 'bg-alo-teal text-white' : 'text-slate-600'}`}
-              >
-                {isAr ? 'D01–D10 · بيانات الإحالة الأصلية' : 'D01–D10 · Original Referral Details'}
-              </button>
+          {(hasConsultantOpinion || activeCase?.consultationType === 'video') && (
+            <div className="flex items-center gap-2 bg-white dark:bg-slate-900 p-2 rounded-2xl border border-slate-200 flex-wrap">
+              {hasConsultantOpinion && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setViewTab('opinion')}
+                    className={`px-4 py-2 rounded-xl text-xs font-extrabold cursor-pointer ${viewTab === 'opinion' ? 'bg-alo-teal text-white' : 'text-slate-600'}`}
+                  >
+                    {isAr ? 'D11–D12 · رأي الاستشاري الدولي والاعتماد' : 'D11–D12 · Indian Consultant Opinion & Approval'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setViewTab('referral')}
+                    className={`px-4 py-2 rounded-xl text-xs font-extrabold cursor-pointer ${viewTab === 'referral' ? 'bg-alo-teal text-white' : 'text-slate-600'}`}
+                  >
+                    {isAr ? 'D01–D10 · بيانات الإحالة الأصلية' : 'D01–D10 · Original Referral Details'}
+                  </button>
+                </>
+              )}
+              {activeCase?.consultationType === 'video' && (
+                <button
+                  type="button"
+                  onClick={() => setIsTelehealthOpen(true)}
+                  className="px-4 py-2 rounded-xl text-xs font-extrabold cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 shadow-sm ml-auto rtl:ml-0 rtl:mr-auto"
+                >
+                  <span>📹</span>
+                  <span>{isAr ? 'الانضمام للجلسة المرئية (LiveKit WebRTC)' : 'Join Live Video Consultation'}</span>
+                </button>
+              )}
             </div>
           )}
 

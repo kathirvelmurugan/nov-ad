@@ -10,6 +10,7 @@ import { ConsultantSlotAndCallSection } from '../consultant/ConsultantSlotAndCal
 import { ConsultantCaseClosedSection } from '../consultant/ConsultantCaseClosedSection';
 import { BilingualReportModal } from '../cockpit/BilingualReportModal';
 import { CaseMilestoneHUD } from '../common/CaseMilestoneHUD';
+import { OpinionTelehealthView } from './OpinionTelehealthView';
 import {
   checkCaseAccepted,
   checkOpinionSubmitted,
@@ -73,6 +74,7 @@ export const ConsultantMobileView: React.FC<Props> = ({
   const [currentScreen, setCurrentScreen] = useState<ScreenStage>(() =>
     getInitialConsultantScreen(isCaseClosed, isCaseAccepted, isOpinionSubmitted)
   );
+  const [isTelehealthActive, setIsTelehealthActive] = useState(false);
   const [isPDFModalOpen, setIsPDFModalOpen] = useState(false);
   const [reportModalType, setReportModalType] = useState<'pdf1' | 'pdf2'>('pdf2');
   const [otpCode, setOtpCode] = useState('');
@@ -173,9 +175,25 @@ export const ConsultantMobileView: React.FC<Props> = ({
   };
 
   const handleJoinTeleconsultation = () => {
-    onAdvanceStage();
-    setCurrentScreen('K06');
+    setIsTelehealthActive(true);
   };
+
+  if (isTelehealthActive) {
+    return (
+      <OpinionTelehealthView
+        activeCase={activeCase}
+        onAdvanceStage={() => {
+          onAdvanceStage();
+          setIsTelehealthActive(false);
+          setCurrentScreen('K06');
+        }}
+        onUpdateCase={onUpdateCase}
+        onBackToTimeline={() => setIsTelehealthActive(false)}
+        participantRole="consultant"
+        participantName="Dr. Pradeep Kumar, MBBS, MS, MCh (CTVS)"
+      />
+    );
+  }
 
   return (
     <div

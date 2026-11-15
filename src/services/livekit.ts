@@ -1,31 +1,34 @@
-import { AccessToken } from 'livekit-server-sdk';
+import { apiClient } from './apiClient';
 
 export const LIVEKIT_CONFIG = {
   url: 'wss://alo-6mx1e8u4.livekit.cloud',
-  apiKey: 'APIiLjE4bWZqDAE',
-  apiSecret: 'Oj7blmfqaXWndhxlg25RYBs9jjtGV2mPxLvRzV6gS0W',
 };
 
+/**
+ * Requests a secure LiveKit JWT from the backend API.
+ * The master apiSecret remains strictly secured on the server.
+ */
 export async function createLiveKitToken({
   roomName,
   participantName,
   participantRole,
+  identity,
 }: {
   roomName: string;
   participantName: string;
   participantRole: string;
+  identity?: string;
 }): Promise<string> {
-  const at = new AccessToken(LIVEKIT_CONFIG.apiKey, LIVEKIT_CONFIG.apiSecret, {
-    identity: `${participantRole}-${participantName.replace(/\s+/g, '_')}`,
-    name: participantName,
-    ttl: '2h',
+  const result = await apiClient.createLiveKitToken({
+    roomName,
+    participantName,
+    participantRole,
+    identity,
   });
-  at.addGrant({
-    roomJoin: true,
-    room: roomName,
-    canPublish: true,
-    canSubscribe: true,
-    canPublishData: true,
-  });
-  return await at.toJwt();
+
+  if (!result || !result.token) {
+    throw new Error('Backend failed to issue a signed LiveKit access token');
+  }
+
+  return result.token;
 }

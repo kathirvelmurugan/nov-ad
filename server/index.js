@@ -11,6 +11,7 @@ import casesRouter from './routes/cases.js';
 import adminRouter from './routes/admin.js';
 import auditRouter from './routes/audit.js';
 import storageRouter from './routes/storage.js';
+import livekitRouter from './routes/livekit.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -31,6 +32,7 @@ apiRouter.use('/cases', casesRouter);
 apiRouter.use('/admin', adminRouter);
 apiRouter.use('/admin/cases', casesRouter);
 apiRouter.use('/audit', auditRouter);
+apiRouter.use('/livekit', livekitRouter);
 apiRouter.use('/', storageRouter);
 
 // Mount API router for both direct /api and prefixed /:prefix/api (e.g. /feature-sarat/api)

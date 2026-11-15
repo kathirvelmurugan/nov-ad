@@ -31,7 +31,7 @@ export const FirstTimeActivationStep: React.FC<FirstTimeActivationStepProps> = (
   const handleVerifyTemp = (e: React.FormEvent) => {
     e.preventDefault();
     if (tempPassword.trim() !== DEFAULT_TEST_PASSWORD) {
-      setError(t('كلمة المرور المؤقتة غير صحيحة (الرمز التجريبي: 123456)', 'Invalid temporary password (Demo password: 123456)'));
+      setError(t('كلمة المرور المؤقتة غير صحيحة، يرجى المحاولة مرة أخرى', 'Invalid temporary password. Please try again.'));
       return;
     }
     setError('');
@@ -111,13 +111,13 @@ export const FirstTimeActivationStep: React.FC<FirstTimeActivationStepProps> = (
                   setTempPassword(e.target.value);
                   setError('');
                 }}
-                placeholder={t('أدخل كلمة المرور (تجريبياً: 123456)', 'Enter temporary password (Demo: 123456)')}
+                placeholder={t('أدخل كلمة المرور المؤقتة', 'Enter temporary password')}
                 className="w-full px-3.5 py-2.5 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-alo-teal outline-none font-mono"
               />
               <KeyRound className="w-4 h-4 text-slate-400 absolute right-3 rtl:right-auto rtl:left-3 top-3" />
             </div>
-            <p className="text-[11px] text-slate-500 mt-1 font-mono">
-              {t('الرمز التجريبي الحالي المعتمد: 123456', 'Current demo test password: 123456')}
+            <p className="text-[11px] text-slate-500 mt-1">
+              {t('تم إرسال كلمة المرور المؤقتة إلى هاتفك المسجل', 'Temporary password has been sent to your registered number')}
             </p>
           </div>
 

@@ -304,4 +304,29 @@ export const apiClient = {
     }
     return null;
   },
+
+  // ── LiveKit WebRTC Token API ──────────────────────────────────────────────
+  async createLiveKitToken(params: {
+    roomName: string;
+    participantName: string;
+    participantRole: string;
+    identity?: string;
+  }): Promise<{ token: string; serverUrl: string; roomName: string; identity: string } | null> {
+    try {
+      const res = await safeFetch('/api/livekit/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.token) {
+          return json;
+        }
+      }
+    } catch (e) {
+      console.warn('[API] Failed to get LiveKit token from backend:', e);
+    }
+    return null;
+  },
 };

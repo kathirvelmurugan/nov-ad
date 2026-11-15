@@ -189,7 +189,7 @@ export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }:
     const expectedPin = getUserPin(raw) || DEFAULT_DEV_PIN;
 
     if (entered !== expectedPin && entered !== DEFAULT_DEV_PIN) {
-      setError(t('رمز المرور PIN غير صحيح (الرمز الافتراضي: 1234)', 'Invalid PIN (Default demo PIN: 1234)'));
+      setError(t('رمز المرور غير صحيح. يرجى التحقق من الرمز والمحاولة مرة أخرى.', 'Incorrect PIN. Please verify your code and try again.'));
       return;
     }
 
@@ -206,7 +206,7 @@ export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }:
       return;
     }
     if (entered !== DEV_OTP) {
-      setError(t('رمز التحقق غير صحيح (استخدم 123456)', 'Invalid verification code (use 123456)'));
+      setError(t('رمز التحقق غير صحيح. يرجى إعادة المحاولة.', 'Invalid verification code. Please try again.'));
       return;
     }
 
@@ -283,7 +283,7 @@ export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }:
   const handleSuperAdminSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (superAdminPasscode.trim() !== '123456' && superAdminPasscode.trim() !== '1234') {
-      setError(t('رمز المرور غير صحيح (الرمز التجريبي 123456)', 'Invalid Super Admin Passcode (Demo: 123456)'));
+      setError(t('رمز المرور غير صحيح. يرجى التحقق والمحاولة مرة أخرى.', 'Invalid Super Admin Passcode. Please try again.'));
       return;
     }
     setPhone('+966500000001');

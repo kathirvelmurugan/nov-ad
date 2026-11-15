@@ -18,9 +18,17 @@ interface Props {
   onAdvanceStage: () => void;
   onUpdateCase: (updated: Partial<ClinicalCase>) => void;
   onBackToTimeline?: () => void;
+  participantRole?: string;
+  participantName?: string;
 }
 
-const OpinionTelehealthView: React.FC<Props> = ({ activeCase, onAdvanceStage, onBackToTimeline }) => {
+const OpinionTelehealthView: React.FC<Props> = ({
+  activeCase,
+  onAdvanceStage,
+  onBackToTimeline,
+  participantRole,
+  participantName,
+}) => {
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [isDicomActive, setIsDicomActive] = useState(false);
@@ -42,6 +50,9 @@ const OpinionTelehealthView: React.FC<Props> = ({ activeCase, onAdvanceStage, on
   const isRtl = typeof document !== 'undefined' ? document.dir === 'rtl' : true;
   const patientDisplayName = isRtl ? patientNameAr : patientNameEn;
 
+  const effectiveRole = participantRole || 'patient';
+  const effectiveName = participantName || patientDisplayName;
+
   const bg = isDarkMode ? colors.darkBg : colors.lightBg;
   const textColor = isDarkMode ? colors.darkText : colors.lightText;
   const subtitleBg = isDarkMode ? 'rgba(15, 23, 42, 0.9)' : 'rgba(255, 255, 255, 0.95)';
@@ -51,8 +62,8 @@ const OpinionTelehealthView: React.FC<Props> = ({ activeCase, onAdvanceStage, on
     try {
       const token = await createLiveKitToken({
         roomName: activeCase.caseNumber || 'ALO-2026-LIVE',
-        participantName: patientDisplayName,
-        participantRole: 'patient',
+        participantName: effectiveName,
+        participantRole: effectiveRole,
       });
       setLiveKitToken(token);
       setIsLiveKitConnected(true);
@@ -140,13 +151,23 @@ const OpinionTelehealthView: React.FC<Props> = ({ activeCase, onAdvanceStage, on
         flexWrap: 'wrap',
         gap: '0.75rem'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
           <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: colors.whatsapp }} />
           <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>
             {isRtl ? 'غرفة LiveKit السحابية المشفرة' : 'Encrypted LiveKit Cloud Room'}
           </span>
           <span style={{ fontSize: '0.75rem', fontFamily: 'monospace', opacity: 0.7 }}>
             ({activeCase.caseNumber || 'ALO-2026-LIVE'})
+          </span>
+          <span style={{
+            fontSize: '0.72rem',
+            padding: '2px 8px',
+            borderRadius: '9999px',
+            backgroundColor: '#007B6E',
+            color: '#FFFFFF',
+            fontWeight: 700
+          }}>
+            👤 {effectiveName} ({effectiveRole})
           </span>
         </div>
 

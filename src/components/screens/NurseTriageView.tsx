@@ -4,6 +4,7 @@ import { PLATFORM_USERS_KEY, TENANTS_KEY } from '../../hooks/workflowConstants';
 import { Stethoscope, CheckCircle2, Eye, X, MousePointerClick } from 'lucide-react';
 import { PortalCaseTrackerPanel, getStageBadgeMeta } from '../common/PortalCaseTrackerPanel';
 import { CaseMilestoneHUD } from '../common/CaseMilestoneHUD';
+import { OpinionTelehealthView } from './OpinionTelehealthView';
 import { apiClient } from '../../services/apiClient';
 import NurseCaseHeader from './nurse/NurseCaseHeader';
 import NurseAuditDeidSection from './nurse/NurseAuditDeidSection';
@@ -35,6 +36,7 @@ export const NurseTriageView: React.FC<Props> = ({
   const [urgencyLevel, setUrgencyLevel] = useState<'routine' | 'urgent' | 'stat'>('urgent');
   const [forwardedBanner, setForwardedBanner] = useState<{ caseId: string; caseNumber: string; patientName: string } | null>(null);
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
+  const [isTelehealthOpen, setIsTelehealthOpen] = useState(false);
   const isAr = lang === 'ar';
   const nurseName = userSession?.fullName || activePersona?.name || (isAr ? 'ممرضة ألو' : 'ALO Nurse');
 
@@ -110,6 +112,23 @@ export const NurseTriageView: React.FC<Props> = ({
     );
   }
 
+  if (isTelehealthOpen && (currentCase || activeCase)) {
+    const caseToUse = (currentCase || activeCase) as ClinicalCase;
+    return (
+      <OpinionTelehealthView
+        activeCase={caseToUse}
+        onAdvanceStage={() => {
+          onAdvanceStage();
+          setIsTelehealthOpen(false);
+        }}
+        onUpdateCase={onUpdateCase}
+        onBackToTimeline={() => setIsTelehealthOpen(false)}
+        participantRole="nurse_interpreter"
+        participantName={nurseName}
+      />
+    );
+  }
+
   const stageMeta = currentCase && !isCurrentStageTriage ? getStageBadgeMeta(currentCase.currentStage, isAr) : null;
 
   return (
@@ -143,10 +162,22 @@ export const NurseTriageView: React.FC<Props> = ({
               <span className="text-slate-400">·</span>
               <span className="font-bold text-slate-700">{isAr ? (currentCase.patientNameAr || currentCase.patientName) : (currentCase.patientNameEn || currentCase.patientName)}</span>
             </div>
-            <button type="button" onClick={() => setSelectedCaseId(null)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold cursor-pointer">
-              <X className="w-3.5 h-3.5" />
-              <span>{isAr ? 'إغلاق التفاصيل' : 'Close Details'}</span>
-            </button>
+            <div className="flex items-center gap-2">
+              {currentCase.consultationType === 'video' && (
+                <button
+                  type="button"
+                  onClick={() => setIsTelehealthOpen(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold cursor-pointer shadow-sm"
+                >
+                  <span>📹</span>
+                  <span>{isAr ? 'الانضمام كمترجمة طبية (LiveKit)' : 'Join as Nurse Interpreter (LiveKit)'}</span>
+                </button>
+              )}
+              <button type="button" onClick={() => setSelectedCaseId(null)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold cursor-pointer">
+                <X className="w-3.5 h-3.5" />
+                <span>{isAr ? 'إغلاق التفاصيل' : 'Close Details'}</span>
+              </button>
+            </div>
           </div>
 
           {!isCurrentStageTriage && stageMeta && (
