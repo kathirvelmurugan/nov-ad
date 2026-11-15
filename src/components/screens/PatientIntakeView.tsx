@@ -124,6 +124,7 @@ export const PatientIntakeView: React.FC<Props> = ({
         )}
         {onStartNewCase && (
           <button
+            id="patient-start-new-case-btn"
             onClick={() => {
               setSubmittedCase(null);
               onStartNewCase();
