@@ -7,7 +7,7 @@
  * Keep this file ≤ 200 lines. Add new screens here; never back in App.tsx.
  */
 
-import React from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { PERSONAS } from '../data/personas';
 import { Persona, ClinicalCase, PaymentMethodId } from '../types';
 import { UserSession } from '../hooks/workflowConstants';
@@ -116,6 +116,20 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
     return cases;
   }, [cases, userSession, activePersona.code]);
 
+  // Sync targetCase from magic link if present
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const searchParams = new URLSearchParams(window.location.search);
+    const magicToken = searchParams.get('token') || searchParams.get('magic_token');
+    const queryCaseId = searchParams.get('caseId') || searchParams.get('case_id');
+    if (magicToken && queryCaseId && onSelectCase && cases.length > 0) {
+      const matchedCase = cases.find((c) => c.id === queryCaseId || c.caseNumber === queryCaseId);
+      if (matchedCase && matchedCase.id !== activeCase.id) {
+        onSelectCase(matchedCase.id);
+      }
+    }
+  }, [cases, activeCase.id, onSelectCase]);
+
   // Strict Root Role Isolation: Authenticated users are hard-locked to their role
   const effectiveRole = (userSession && userSession.isAuthenticated && userSession.roleCode && userSession.roleCode !== 'AD')
     ? userSession.roleCode
@@ -182,10 +196,12 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
 
   // ── International Consultant ─────────────────────────────────────────────
   if (effectiveRole === 'K' || effectiveRole === 'CN') {
-    const hasMagicLinkToken = typeof window !== 'undefined' && Boolean(
-      new URLSearchParams(window.location.search).get('token') ||
-      new URLSearchParams(window.location.search).get('magic_token')
-    );
+    const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+    const magicToken = searchParams?.get('token') || searchParams?.get('magic_token');
+    const queryCaseId = searchParams?.get('caseId') || searchParams?.get('case_id');
+    const hasMagicLinkToken = Boolean(magicToken);
+    const targetCase = queryCaseId ? cases.find((c) => c.id === queryCaseId || c.caseNumber === queryCaseId) : null;
+
     const isCaseUnlocked = (c: ClinicalCase) => {
       if (hasMagicLinkToken) return true;
       const isPaid = !!c.pricing?.paid || c.paymentDetails?.status === 'completed';
@@ -195,7 +211,7 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
     };
 
     const eligibleCases = cases.filter(isCaseUnlocked);
-    const consultantCase = isCaseUnlocked(activeCase) ? activeCase : (eligibleCases[0] || activeCase);
+    const consultantCase = targetCase || (isCaseUnlocked(activeCase) ? activeCase : (eligibleCases[0] || activeCase));
     const isUnlocked = isCaseUnlocked(consultantCase);
 
     if (!isUnlocked && eligibleCases.length === 0) {

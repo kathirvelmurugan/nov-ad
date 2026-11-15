@@ -34,8 +34,13 @@ export const ConsultantMobileView: React.FC<Props> = ({
   onAdvanceStage,
   onUpdateCase,
 }) => {
+  const hasMagicToken = typeof window !== 'undefined' && Boolean(
+    new URLSearchParams(window.location.search).get('token') ||
+    new URLSearchParams(window.location.search).get('magic_token')
+  );
+
   const isWritten = activeCase.consultationType === 'written';
-  const isCaseAccepted = checkCaseAccepted(activeCase);
+  const isCaseAccepted = hasMagicToken || checkCaseAccepted(activeCase);
   const isOpinionSubmitted = checkOpinionSubmitted(activeCase);
   const isCaseClosed = checkCaseClosed(activeCase);
 
@@ -46,6 +51,7 @@ export const ConsultantMobileView: React.FC<Props> = ({
 
   const didAutoFocusRef = useRef(false);
   useEffect(() => {
+    if (hasMagicToken) return; // Retain case targeted by magic link
     if (!didAutoFocusRef.current && onSelectCase && validCases.length > 0) {
       if (activeCase.currentStage !== 'WITH_CONSULTANT') {
         const actionable = validCases.find((c) => c.currentStage === 'WITH_CONSULTANT');
@@ -55,7 +61,7 @@ export const ConsultantMobileView: React.FC<Props> = ({
         }
       }
     }
-  }, [validCases, activeCase.currentStage, onSelectCase]);
+  }, [validCases, activeCase.currentStage, onSelectCase, hasMagicToken]);
 
   const { formatted: consultantSlaFormatted } = useSlaCountdown({
     storageKey: `alo_sla_consultant_${activeCase.id}`,
@@ -66,14 +72,18 @@ export const ConsultantMobileView: React.FC<Props> = ({
   });
 
   const isOtpVerified =
+    hasMagicToken ||
     !!activeCase.consultantToken?.otpVerified ||
     !!activeCase.consultantToken?.sessionCookieActive ||
     activeCase.currentStage === 'WITH_CONSULTANT' ||
     isCaseAccepted;
 
-  const [currentScreen, setCurrentScreen] = useState<ScreenStage>(() =>
-    getInitialConsultantScreen(isCaseClosed, isCaseAccepted, isOpinionSubmitted)
-  );
+  const [currentScreen, setCurrentScreen] = useState<ScreenStage>(() => {
+    if (hasMagicToken && !isCaseClosed && !isOpinionSubmitted) {
+      return 'K06';
+    }
+    return getInitialConsultantScreen(isCaseClosed, isCaseAccepted, isOpinionSubmitted);
+  });
   const [isTelehealthActive, setIsTelehealthActive] = useState(false);
   const [isPDFModalOpen, setIsPDFModalOpen] = useState(false);
   const [reportModalType, setReportModalType] = useState<'pdf1' | 'pdf2'>('pdf2');
@@ -102,9 +112,13 @@ export const ConsultantMobileView: React.FC<Props> = ({
       setFocusAnswers([activeCase.consultantAnswers[0] || '', activeCase.consultantAnswers[1] || '', activeCase.consultantAnswers[2] || '']);
     }
     if (isCaseClosed) setCurrentScreen('K10');
+    else if (hasMagicToken) {
+      if (isOpinionSubmitted) setCurrentScreen('K06');
+      else setCurrentScreen('K06');
+    }
     else if (!isCaseAccepted) setCurrentScreen('K01_K04');
     else if (currentScreen === 'K01_K04' || currentScreen === 'K09') setCurrentScreen(isOpinionSubmitted ? 'K06' : 'K05');
-  }, [activeCase.id, isCaseAccepted, isOpinionSubmitted, isCaseClosed]);
+  }, [activeCase.id, isCaseAccepted, isOpinionSubmitted, isCaseClosed, hasMagicToken]);
 
   const tealPrimary = '#007B6E';
   const tealSecondary = '#00C6AE';
