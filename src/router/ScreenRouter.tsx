@@ -182,7 +182,9 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
 
   // ── International Consultant ─────────────────────────────────────────────
   if (effectiveRole === 'K' || effectiveRole === 'CN') {
+    const hasMagicLinkToken = typeof window !== 'undefined' && Boolean(new URLSearchParams(window.location.search).get('token'));
     const isCaseUnlocked = (c: ClinicalCase) => {
+      if (hasMagicLinkToken) return true;
       const isPaid = !!c.pricing?.paid || c.paymentDetails?.status === 'completed';
       const isVerified = !!c.paymentVerified || !!c.metadata?.paymentVerified;
       const isInConsultantStage = ['WITH_CONSULTANT', 'OPINION_READY', 'PARTNER_SERVICES', 'FOLLOW_UP_21_DAYS', 'CLOSED'].includes(c.currentStage);
