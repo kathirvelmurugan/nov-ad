@@ -95,12 +95,24 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
     if (role === 'P' && phone) {
       return cases.filter((c) => c.patientPhone === phone || c.nationalIdMasked === phone);
     }
-    if (['D', 'N', 'STAFF'].includes(role) && hospital) {
-      return cases.filter((c) => c.treatingDoctor?.hospital?.toLowerCase().includes(hospital.toLowerCase()));
+    if (role === 'D') {
+      return cases.filter((c) => {
+        const docName = (userSession?.fullName || '').toLowerCase();
+        const cDocName = (c.treatingDoctor?.name || '').toLowerCase();
+        if (docName && cDocName && (cDocName.includes(docName) || docName.includes(cDocName))) return true;
+        if (!hospital) return true;
+        const hospStr = (c.treatingDoctor?.hospital || '').toLowerCase();
+        if (hospStr.includes(hospital.toLowerCase())) return true;
+        return c.currentStage === 'DOCTOR_REVIEW' || c.currentStage === 'OPINION_READY';
+      });
     }
-    if (role === 'C' && userSession?.fullName) {
-      return cases.filter((c) => c.consultant?.name?.toLowerCase().includes(userSession.fullName?.toLowerCase() || ''));
+    if (role === 'HA' && hospital) {
+      return cases.filter((c) => (c.treatingDoctor?.hospital || '').toLowerCase().includes(hospital.toLowerCase()));
     }
+    if (role === 'K' && userSession?.fullName) {
+      return cases.filter((c) => (c.consultant?.name || '').toLowerCase().includes(userSession.fullName.toLowerCase()));
+    }
+    // ALO Coordinator (C) and ALO Nurse (N) maintain platform-wide oversight
     return cases;
   }, [cases, userSession, activePersona.code]);
 
