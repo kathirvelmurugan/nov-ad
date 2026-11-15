@@ -160,7 +160,7 @@ export const PinEntryStep: React.FC<PinEntryStepProps> = ({
         <p style={{ fontSize: '13px', color: PALETTE.textMuted, margin: 0 }}>
           {isSetupMode
             ? t('احفظ هذا الرمز لتسجيل الدخول السريع مستقبلاً', 'Save this PIN for fast recurring access')
-            : t('الرمز التجريبي لجميع الحسابات: 1234', 'Default passcode for all accounts: 1234')}
+            : t('أدخل رمز الدخول السري المكون من 4 أرقام للمتابعة', 'Enter your 4-digit security PIN to proceed')}
         </p>
       </div>
 

@@ -112,7 +112,7 @@ export const HospitalStaffLoginForm: React.FC<HospitalStaffLoginFormProps> = ({
 
     if (loginMethod === 'admin_otp') {
       if (adminOtp.trim() !== '123456') {
-        setError(t('رمز التحقق غير صحيح (استخدم 123456)', 'Invalid OTP code (use 123456)'));
+        setError(t('رمز التحقق غير صحيح، يرجى إعادة المحاولة', 'Invalid OTP code. Please try again.'));
         return;
       }
       onStaffLoginSuccess({
@@ -289,7 +289,7 @@ export const HospitalStaffLoginForm: React.FC<HospitalStaffLoginFormProps> = ({
               type="text"
               value={adminOtp}
               onChange={(e) => setAdminOtp(e.target.value)}
-              placeholder="123456"
+              placeholder="••••••"
               style={getInputStyle(isRTL)}
             />
           </div>

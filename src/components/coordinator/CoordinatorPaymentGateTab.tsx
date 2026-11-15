@@ -443,67 +443,72 @@ export const CoordinatorPaymentGateTab: React.FC<Props> = ({
                   {isAr ? 'دخول مباشر دون كلمة مرور' : 'Passwordless Instant Login'}
                 </span>
               </div>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-                <input
-                  type="text"
-                  readOnly
-                  value={typeof window !== 'undefined' ? `${window.location.origin}/?magic_token=ML-${activeCase.id}&caseId=${activeCase.id}&consultant=${encodeURIComponent(consultantName)}` : ''}
-                  style={{
-                    flex: 1,
-                    minWidth: '240px',
-                    padding: '8px 12px',
-                    fontSize: '12px',
-                    fontFamily: 'monospace',
-                    borderRadius: '8px',
-                    border: '1px solid #86EFAC',
-                    backgroundColor: '#FFFFFF',
-                    color: '#1E293B',
-                  }}
-                  id="consultant-magic-link-input"
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (typeof window !== 'undefined') {
-                      const link = `${window.location.origin}/?magic_token=ML-${activeCase.id}&caseId=${activeCase.id}&consultant=${encodeURIComponent(consultantName)}`;
-                      navigator.clipboard?.writeText(link);
-                      alert(isAr ? 'تم نسخ رابط الاستشاري بنجاح! 📋' : 'Consultant Magic Link copied to clipboard! 📋');
-                    }
-                  }}
-                  style={{
-                    padding: '8px 14px',
-                    borderRadius: '8px',
-                    backgroundColor: '#15803D',
-                    color: '#FFFFFF',
-                    fontWeight: 800,
-                    fontSize: '12px',
-                    border: 'none',
-                    cursor: 'pointer',
-                  }}
-                >
-                  {isAr ? '📋 نسخ الرابط' : '📋 Copy Link'}
-                </button>
-                <a
-                  href={`https://wa.me/?text=${encodeURIComponent((isAr ? 'ملف استشارة طبية عاجل من ALO للمريض: ' : 'Urgent ALO Medical Second Opinion Dossier: ') + (activeCase.caseNumber || activeCase.id) + '\n\n' + (typeof window !== 'undefined' ? `${window.location.origin}/?magic_token=ML-${activeCase.id}&caseId=${activeCase.id}&consultant=${encodeURIComponent(consultantName)}` : ''))}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    padding: '8px 14px',
-                    borderRadius: '8px',
-                    backgroundColor: '#25D366',
-                    color: '#FFFFFF',
-                    fontWeight: 800,
-                    fontSize: '12px',
-                    textDecoration: 'none',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                  }}
-                >
-                  <span>📲</span>
-                  <span>{isAr ? 'واتساب' : 'WhatsApp'}</span>
-                </a>
-              </div>
+              {(() => {
+                const magicLinkUrl = typeof window !== 'undefined'
+                  ? `${window.location.origin}/?token=ML-${activeCase.id}&caseId=${activeCase.id}&role=K&consultant=${encodeURIComponent(consultantName)}`
+                  : '';
+                return (
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <input
+                      type="text"
+                      readOnly
+                      value={magicLinkUrl}
+                      style={{
+                        flex: 1,
+                        minWidth: '240px',
+                        padding: '8px 12px',
+                        fontSize: '12px',
+                        fontFamily: 'monospace',
+                        borderRadius: '8px',
+                        border: '1px solid #86EFAC',
+                        backgroundColor: '#FFFFFF',
+                        color: '#1E293B',
+                      }}
+                      id="consultant-magic-link-input"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (magicLinkUrl) {
+                          navigator.clipboard?.writeText(magicLinkUrl);
+                          alert(isAr ? 'تم نسخ رابط الاستشاري بنجاح! 📋' : 'Consultant Magic Link copied to clipboard! 📋');
+                        }
+                      }}
+                      style={{
+                        padding: '8px 14px',
+                        borderRadius: '8px',
+                        backgroundColor: '#15803D',
+                        color: '#FFFFFF',
+                        fontWeight: 800,
+                        fontSize: '12px',
+                        border: 'none',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {isAr ? '📋 نسخ الرابط' : '📋 Copy Link'}
+                    </button>
+                    <a
+                      href={`https://wa.me/?text=${encodeURIComponent((isAr ? 'ملف استشارة طبية عاجل من ALO للمريض: ' : 'Urgent ALO Medical Second Opinion Dossier: ') + (activeCase.caseNumber || activeCase.id) + '\n\n' + magicLinkUrl)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        padding: '8px 14px',
+                        borderRadius: '8px',
+                        backgroundColor: '#25D366',
+                        color: '#FFFFFF',
+                        fontWeight: 800,
+                        fontSize: '12px',
+                        textDecoration: 'none',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                      }}
+                    >
+                      <span>💬 {isAr ? 'إرسال عبر واتساب' : 'Share WhatsApp'}</span>
+                    </a>
+                  </div>
+                );
+              })()}
             </div>
 
             <p style={{ margin: 0, fontSize: '13px', color: '#047857', fontWeight: 600, lineHeight: 1.6 }}>

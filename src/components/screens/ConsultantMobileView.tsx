@@ -112,8 +112,8 @@ export const ConsultantMobileView: React.FC<Props> = ({
   const whatsappGreen = '#25D366';
 
   const callSlots = [
-    { id: 'slot_a', label: 'Slot A: Tomorrow 16:00 AST' },
-    { id: 'slot_b', label: 'Slot B: Thursday 11:30 AST' },
+    { id: 'slot_a', label: 'Slot A: Tomorrow 16:00 AST · 18:30 IST (India)' },
+    { id: 'slot_b', label: 'Slot B: Thursday 11:30 AST · 14:00 IST (India)' },
   ];
 
   const handleVerifyOtp = () => {

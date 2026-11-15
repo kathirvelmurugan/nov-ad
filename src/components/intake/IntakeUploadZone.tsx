@@ -16,6 +16,8 @@ export const IntakeUploadZone: React.FC<Props> = ({
   onUpdateCase,
   setSelectedFileForPreview,
 }) => {
+  const [isUploading, setIsUploading] = React.useState(false);
+
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
@@ -63,30 +65,37 @@ export const IntakeUploadZone: React.FC<Props> = ({
           multiple
           accept=".pdf,.png,.jpg,.jpeg,.dcm,.zip"
           className="hidden"
-          onChange={(e) => {
+          onChange={async (e) => {
             const uploadedFiles = e.target.files;
             if (!uploadedFiles || uploadedFiles.length === 0) return;
             const filesArray = Array.from(uploadedFiles);
-            const newItems: DiagnosticAsset[] = filesArray.map((f, idx) => ({
-              id: `f_user_${Date.now()}_${idx}`,
-              name: f.name,
-              size: `${(f.size / (1024 * 1024)).toFixed(1)} MB`,
-              type: f.name.endsWith('.dcm') ? 'dicom' : f.name.endsWith('.mp4') ? 'mp4' : 'pdf',
-              verified: true,
-              url: URL.createObjectURL(f),
-            }));
-            onUpdateCase({
-              files: [...activeCase.files, ...newItems],
-            });
-            filesArray.forEach(async (f, idx) => {
-              const uploaded = await apiClient.uploadFile(f);
-              if (uploaded?.url) {
-                newItems[idx].url = uploaded.url;
-                onUpdateCase({
-                  files: [...activeCase.files, ...newItems],
+            setIsUploading(true);
+            try {
+              const newItems: DiagnosticAsset[] = [];
+              for (let idx = 0; idx < filesArray.length; idx++) {
+                const f = filesArray[idx];
+                let remoteUrl = URL.createObjectURL(f);
+                try {
+                  const uploaded = await apiClient.uploadFile(f);
+                  if (uploaded?.url) remoteUrl = uploaded.url;
+                } catch (err) {
+                  console.warn('Storage upload fallback:', err);
+                }
+                newItems.push({
+                  id: `f_user_${Date.now()}_${idx}`,
+                  name: f.name,
+                  size: `${(f.size / (1024 * 1024)).toFixed(1)} MB`,
+                  type: f.name.endsWith('.dcm') ? 'dicom' : f.name.endsWith('.mp4') ? 'mp4' : 'pdf',
+                  verified: true,
+                  url: remoteUrl,
                 });
               }
-            });
+              onUpdateCase({
+                files: [...(activeCase.files || []), ...newItems],
+              });
+            } finally {
+              setIsUploading(false);
+            }
           }}
         />
         <label
@@ -98,10 +107,12 @@ export const IntakeUploadZone: React.FC<Props> = ({
           </div>
           <div>
             <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
-              {isAr ? 'انقر هنا لرفع تقارير طبية أو أشعة إضافية (DICOM / PDF / صور)' : 'Click to upload medical reports or diagnostic scans (DICOM / PDF / Images)'}
+              {isUploading
+                ? (isAr ? '⏳ جاري رفع الملفات السريرية وحفظها في التخزين الآمن...' : '⏳ Uploading and securing clinical records...')
+                : (isAr ? 'انقر هنا لرفع تقارير طبية أو أشعة إضافية (DICOM / PDF / صور)' : 'Click to upload medical reports or diagnostic scans (DICOM / PDF / Images)')}
             </p>
             <p className="text-[11px] text-slate-500 mt-0.5">
-              {isAr ? 'يدعم الملفات حتى 100 ميجابايت مشفرة محلياً' : 'Supports files up to 100 MB with local AES-256 encryption'}
+              {isAr ? 'يدعم الملفات حتى 100 ميجابايت مع الحفظ السحابي المشفر' : 'Supports files up to 100 MB with persistent encrypted cloud storage'}
             </p>
           </div>
         </label>

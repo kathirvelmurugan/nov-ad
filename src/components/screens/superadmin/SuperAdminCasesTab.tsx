@@ -14,6 +14,7 @@ import {
   ShieldCheck,
   Trash2,
   AlertTriangle,
+  UserCog,
 } from 'lucide-react';
 import { ClinicalCase, TenantHospital } from '../../../types';
 import { getStageBadgeMeta } from '../../common/PortalCaseTrackerPanel';
@@ -180,6 +181,53 @@ export const SuperAdminCasesTab: React.FC<SuperAdminCasesTabProps> = ({
     caseItem: null,
   });
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Reassignment state
+  const [reassignModal, setReassignModal] = useState<{
+    open: boolean;
+    caseItem: ClinicalCase | null;
+    selectedDoctor: string;
+    selectedConsultant: string;
+  }>({
+    open: false,
+    caseItem: null,
+    selectedDoctor: '',
+    selectedConsultant: '',
+  });
+
+  const handleSaveReassignment = async () => {
+    if (!reassignModal.caseItem) return;
+    const targetCase = reassignModal.caseItem;
+    const updatedCase: ClinicalCase = {
+      ...targetCase,
+      treatingDoctor: {
+        hospital: targetCase.treatingDoctor?.hospital || 'مستشفى الشريك المعتمد',
+        city: targetCase.treatingDoctor?.city || 'الرياض',
+        focusQuestions: targetCase.treatingDoctor?.focusQuestions || ['سؤال سريري 1', 'سؤال سريري 2', 'سؤال سريري 3'],
+        ...(targetCase.treatingDoctor || {}),
+        name: reassignModal.selectedDoctor || targetCase.treatingDoctor?.name || 'د. سارة العتيبي',
+      },
+      consultant: {
+        center: targetCase.consultant?.center || 'Apollo Hospitals',
+        city: targetCase.consultant?.city || 'Bengaluru, India',
+        ...(targetCase.consultant || {}),
+        name: reassignModal.selectedConsultant || targetCase.consultant?.name || 'Dr. Pradeep Kumar',
+      },
+    };
+
+    setLocalCases((prev) => prev.map((c) => (c.id === targetCase.id ? updatedCase : c)));
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const arr = JSON.parse(stored) as ClinicalCase[];
+        const updated = arr.map((x) => (x.id === targetCase.id ? updatedCase : x));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      }
+    } catch {}
+
+    await apiClient.saveCase(updatedCase).catch(() => {});
+    setReassignModal({ open: false, caseItem: null, selectedDoctor: '', selectedConsultant: '' });
+  };
 
   // ── Delete handlers ──────────────────────────────────────────────────────
   const openDeleteSingle = (e: React.MouseEvent, c: ClinicalCase) => {
@@ -523,6 +571,23 @@ export const SuperAdminCasesTab: React.FC<SuperAdminCasesTabProps> = ({
                         </button>
                         <button
                           type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setReassignModal({
+                              open: true,
+                              caseItem: c,
+                              selectedDoctor: c.treatingDoctor?.name || 'د. سارة العتيبي (استشاري أمراض القلب)',
+                              selectedConsultant: c.consultant?.name || 'Dr. Pradeep Kumar, MBBS, MS, MCh (CTVS)',
+                            });
+                          }}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-teal-50 hover:bg-[#007B6E] hover:text-white text-[#007B6E] border border-teal-200 text-xs font-bold transition-all shadow-2xs"
+                          title={isRTL ? 'إعادة تعيين الكادر' : 'Reassign Specialist'}
+                        >
+                          <UserCog className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline">{isRTL ? 'تعيين' : 'Reassign'}</span>
+                        </button>
+                        <button
+                          type="button"
                           onClick={(e) => openDeleteSingle(e, c)}
                           className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-600 border border-rose-200 text-xs font-bold transition-all shadow-2xs"
                           title={isRTL ? 'حذف الحالة' : 'Delete Case'}
@@ -558,6 +623,84 @@ export const SuperAdminCasesTab: React.FC<SuperAdminCasesTabProps> = ({
         onCancel={() => setDeleteModal({ open: false, mode: 'single', caseItem: null })}
         isDeleting={isDeleting}
       />
+
+      {/* Case Reassignment Modal */}
+      {reassignModal.open && reassignModal.caseItem && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-xs"
+            onClick={() => setReassignModal({ open: false, caseItem: null, selectedDoctor: '', selectedConsultant: '' })}
+          />
+          <div className="relative w-full max-w-lg bg-white rounded-3xl p-6 shadow-2xl space-y-5 border border-slate-200 z-10" dir={isRTL ? 'rtl' : 'ltr'}>
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <span className="p-2 rounded-xl bg-teal-50 text-[#007B6E]">
+                  <UserCog className="w-5 h-5" />
+                </span>
+                <h3 className="text-base font-extrabold text-slate-900">
+                  {isRTL ? 'إعادة تعيين الكادر الطبي للحالة' : 'Reassign Clinical Staff'}
+                </h3>
+              </div>
+              <span className="font-mono text-xs font-bold text-slate-500">
+                {reassignModal.caseItem.caseNumber}
+              </span>
+            </div>
+
+            <div className="space-y-4 text-xs font-semibold text-slate-700">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  {isRTL ? 'الطبيب السعودي المعالج (Saudi Treating Doctor):' : 'Saudi Treating Doctor:'}
+                </label>
+                <select
+                  value={reassignModal.selectedDoctor}
+                  onChange={(e) => setReassignModal((prev) => ({ ...prev, selectedDoctor: e.target.value }))}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-[#007B6E] outline-none text-xs font-medium"
+                >
+                  <option value="د. سارة العتيبي (استشاري أمراض القلب · الشميسي)">د. سارة العتيبي (استشاري أمراض القلب · الشميسي)</option>
+                  <option value="د. فهد الحربي (استشاري جراحة الأوعية الدموية · مدينة الملك فهد الطبية)">د. فهد الحربي (استشاري جراحة الأوعية الدموية · مدينة الملك فهد الطبية)</option>
+                  <option value="د. عبدالله الشمري (استشاري الجراحة العامة · مستشفى د. سليمان الحبيب)">د. عبدالله الشمري (استشاري الجراحة العامة · مستشفى د. سليمان الحبيب)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  {isRTL ? 'الاستشاري الهندي التخصصي (International Consultant):' : 'International Specialist (India):'}
+                </label>
+                <select
+                  value={reassignModal.selectedConsultant}
+                  onChange={(e) => setReassignModal((prev) => ({ ...prev, selectedConsultant: e.target.value }))}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-[#007B6E] outline-none text-xs font-medium"
+                >
+                  <option value="Dr. Pradeep Kumar, MBBS, MS, MCh (Apollo Hospitals, Bengaluru)">Dr. Pradeep Kumar, MBBS, MS, MCh (Apollo Hospitals, Bengaluru)</option>
+                  <option value="Dr. Arjun Mehta, MS, MCh (KIMS Heart Institute, Hyderabad)">Dr. Arjun Mehta, MS, MCh (KIMS Heart Institute, Hyderabad)</option>
+                  <option value="Dr. Rajesh Sharma, MD, DM (Fortis Escorts Heart Institute, New Delhi)">Dr. Rajesh Sharma, MD, DM (Fortis Escorts Heart Institute, New Delhi)</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setReassignModal({ open: false, caseItem: null, selectedDoctor: '', selectedConsultant: '' })}
+                className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold text-xs hover:bg-slate-50 cursor-pointer"
+              >
+                {isRTL ? 'إلغاء' : 'Cancel'}
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveReassignment}
+                className="px-5 py-2.5 rounded-xl bg-[#007B6E] hover:bg-[#005a50] text-white font-extrabold text-xs shadow-sm cursor-pointer"
+              >
+                {isRTL ? 'حفظ التعيين الجديد' : 'Save Reassignment'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

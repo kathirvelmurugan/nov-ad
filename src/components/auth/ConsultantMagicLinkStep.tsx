@@ -50,7 +50,7 @@ export const ConsultantMagicLinkStep: React.FC<Props> = ({
       return;
     }
     if (entered !== DEV_OTP && entered !== '123456') {
-      setError(t('رمز التحقق غير صحيح (استخدم 123456 للاختبار)', 'Invalid code (Use 123456 for testing)'));
+      setError(t('رمز التحقق غير صحيح، يرجى إعادة المحاولة', 'Invalid verification code. Please try again.'));
       return;
     }
     setIsLoading(true);

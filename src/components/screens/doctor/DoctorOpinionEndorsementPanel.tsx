@@ -45,13 +45,16 @@ export const DoctorOpinionEndorsementPanel: React.FC<Props> = ({
     activeCase.consultant?.opinionEnglish ||
     '';
 
+  const effectiveDoctorName = activeCase.treatingDoctor?.name || (isAr ? 'د. عبدالله الشمري' : 'Dr. Abdullah Al-Shammari');
+  const effectiveLicense = (activeCase.treatingDoctor as any)?.scfhsLicense || activeCase.saudiEndorsement?.scfhsLicense || 'SCFHS-2024-KSA-8821';
+
   const handleApproveToCoordinator = () => {
     onUpdateCase({
       saudiEndorsement: {
         status: 'endorsed',
-        doctorName: activeCase.treatingDoctor?.name || (isAr ? 'د. عبدالله الشمري' : 'Dr. Abdullah Al-Shammari'),
-        scfHSLicense: 'SCFHS-2024-KSA-8821',
-        scfhsLicense: 'SCFHS-2024-KSA-8821',
+        doctorName: effectiveDoctorName,
+        scfHSLicense: effectiveLicense,
+        scfhsLicense: effectiveLicense,
         endorsementDate: new Date().toISOString(),
         localClinicalNotes: localDirectives.trim() || undefined,
         requiresLocalLab: !!activeCase.internalOrders?.lab?.ordered,

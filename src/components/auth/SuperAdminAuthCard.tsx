@@ -71,7 +71,7 @@ export const SuperAdminAuthCard: React.FC<SuperAdminAuthCardProps> = ({
 
       <div style={{ marginBottom: '20px' }}>
         <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
-          {t('رمز التحقق / Passcode (123456)', 'Passcode / Security PIN (123456)')}
+          {t('رمز التحقق / Passcode', 'Passcode / Security PIN')}
         </label>
         <input
           type="password"

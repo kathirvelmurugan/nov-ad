@@ -33,9 +33,12 @@ export const ConsultantSlotAndCallSection: React.FC<Props> = ({
   if (currentScreen === 'K07') {
     return (
       <section aria-label="Offer call slots" style={{ backgroundColor: '#FFFFFF', borderRadius: '12px', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-        <h2 style={{ fontSize: '18px', color: tealPrimary, marginTop: 0, marginBottom: '16px' }}>
-          K07 · Offer call slots (IST)
+        <h2 style={{ fontSize: '18px', color: tealPrimary, marginTop: 0, marginBottom: '6px' }}>
+          K07 · Offer Call Slots (Dual Timezone: AST ↔ IST)
         </h2>
+        <p style={{ fontSize: '12px', color: '#64748B', marginTop: 0, marginBottom: '16px' }}>
+          🇸🇦 Saudi Arabia (AST / GMT+3) ↔ 🇮🇳 India (IST / GMT+5:30)
+        </p>
         <fieldset style={{ border: 'none', padding: 0, margin: '0 0 24px 0' }}>
           <legend style={{ fontSize: '14px', fontWeight: 600, marginBottom: '12px', color: '#333' }}>
             Propose Teleconsultation Call Slot

@@ -71,12 +71,13 @@ export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }:
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
-    const token = params.get('token');
+    const token = params.get('token') || params.get('magic_token');
     const role = params.get('role');
     const caseId = params.get('caseId');
 
-    // Indian Consultant Magic Link detection (role=K, role=C, or role=consultant)
-    if (token && (role === 'K' || role === 'C' || role === 'consultant')) {
+    // Indian Consultant Magic Link detection (role=K, role=C, role=consultant, or presence of magic_token)
+    const isConsultantLink = Boolean(token && (role === 'K' || role === 'C' || role === 'consultant' || params.has('magic_token') || params.has('consultant')));
+    if (isConsultantLink && token) {
       const active = getActiveConsultantSession(lang);
       if (active) {
         onAuthenticated(active);
@@ -85,7 +86,7 @@ export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }:
       setMagicLinkData({
         token,
         caseId: caseId || undefined,
-        consultantName: 'Dr. Pradeep Kumar, MBBS, MS, MCh (CTVS)',
+        consultantName: params.get('consultant') || 'Dr. Pradeep Kumar, MBBS, MS, MCh (CTVS)',
         center: 'Apollo Hospitals, Bengaluru (India 🇮🇳)',
       });
       setStep('consultant_otp');
