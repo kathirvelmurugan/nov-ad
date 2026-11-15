@@ -67,18 +67,39 @@ export const DoctorReviewView: React.FC<Props> = ({
     city: 'Hyderabad, India',
   };
 
+  const DEFAULT_CLINICAL_QUESTIONS_AR: [string, string, string] = [
+    'هل الإجراء الجراحي المقترح هو الخيار الأمثل للحالة السريرية؟',
+    'ما هي البدائل العلاجية والدوائية الموصى بها قبل التدخل؟',
+    'ما هي خطة المتابعة والتأهيل السريري المعتمدة بعد الاستشارة؟',
+  ];
+  const DEFAULT_CLINICAL_QUESTIONS_EN: [string, string, string] = [
+    'Is the proposed surgical intervention optimal for this case?',
+    'What are the recommended medical alternatives prior to surgery?',
+    'What post-consultation rehabilitation follow-up is indicated?',
+  ];
+
+  const defaultQs = isAr ? DEFAULT_CLINICAL_QUESTIONS_AR : DEFAULT_CLINICAL_QUESTIONS_EN;
+
   const [localQuestions, setLocalQuestions] = React.useState<[string, string, string]>(() => {
     const src = isAr 
       ? activeCase?.treatingDoctor?.focusQuestions 
       : (activeCase?.treatingDoctor?.focusQuestionsEn || activeCase?.treatingDoctor?.focusQuestions);
-    return [(src && src[0]) || '', (src && src[1]) || '', (src && src[2]) || ''];
+    return [
+      (src && src[0]) || defaultQs[0],
+      (src && src[1]) || defaultQs[1],
+      (src && src[2]) || defaultQs[2],
+    ];
   });
 
   React.useEffect(() => {
     const src = isAr 
       ? activeCase?.treatingDoctor?.focusQuestions 
       : (activeCase?.treatingDoctor?.focusQuestionsEn || activeCase?.treatingDoctor?.focusQuestions);
-    setLocalQuestions([(src && src[0]) || '', (src && src[1]) || '', (src && src[2]) || '']);
+    setLocalQuestions([
+      (src && src[0]) || defaultQs[0],
+      (src && src[1]) || defaultQs[1],
+      (src && src[2]) || defaultQs[2],
+    ]);
   }, [lang, activeCase?.id]);
 
   const isReferralEditable = currentCase?.currentStage === 'DOCTOR_REVIEW';
