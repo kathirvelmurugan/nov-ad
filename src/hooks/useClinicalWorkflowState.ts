@@ -175,8 +175,8 @@ export function useClinicalWorkflowState() {
 
   const activeCase: ClinicalCase =
     (isPatientPersona && isPatientUser
-      ? effectiveCases.find((c) => c.id === activeCaseId) || effectiveCases[0]
-      : cases.find((c) => c.id === activeCaseId) || cases[0]) ||
+      ? (activeCaseId && activeCaseId !== 'draft-intake' ? effectiveCases.find((c) => c.id === activeCaseId) || effectiveCases[0] : intakeDraft)
+      : (activeCaseId ? cases.find((c) => c.id === activeCaseId) : null) || cases[0]) ||
     intakeDraft;
 
   const handleUpdateCase = (updatedFields: Partial<ClinicalCase>, isNurseSubmit = false) => {
