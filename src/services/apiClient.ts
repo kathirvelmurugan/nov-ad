@@ -1,5 +1,6 @@
 import { TenantHospital, StaffAccountRecord, ClinicalCase, AuditLogEntry } from '../types';
 import { TENANTS_KEY, PLATFORM_USERS_KEY, STORAGE_KEY, ACTIVE_CASE_KEY } from '../hooks/workflowConstants';
+import { purgeAllCaseStorage } from '../utils/storagePurge';
 
 function getApiBase(): string {
   if (typeof window === 'undefined') return '';
@@ -10,21 +11,46 @@ function getApiBase(): string {
   return window.location.origin;
 }
 
+function getAuthHeaders(): Record<string, string> {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = localStorage.getItem('alo_user_session_v3.0');
+    if (!raw) return {};
+    const session = JSON.parse(raw);
+    return {
+      'x-user-role': session.roleCode || 'P',
+      'x-user-phone': session.phone || '',
+      'x-user-id': session.userId || session.id || '',
+      'x-tenant-id': session.hospitalId || session.tenantId || '',
+    };
+  } catch {
+    return {};
+  }
+}
+
 async function safeFetch(endpoint: string, options?: RequestInit): Promise<Response> {
+  const authHeaders = getAuthHeaders();
+  const mergedOptions: RequestInit = {
+    ...options,
+    headers: {
+      ...authHeaders,
+      ...(options?.headers || {}),
+    },
+  };
   const primaryUrl = `${getApiBase()}${endpoint}`;
   try {
-    const res = await fetch(primaryUrl, options);
+    const res = await fetch(primaryUrl, mergedOptions);
     if (res.ok) return res;
   } catch (err) {
     if (getApiBase() !== window.location.origin) {
-      return await fetch(`${window.location.origin}${endpoint}`, options);
+      return await fetch(`${window.location.origin}${endpoint}`, mergedOptions);
     }
     throw err;
   }
   if (getApiBase() !== window.location.origin) {
-    return await fetch(`${window.location.origin}${endpoint}`, options);
+    return await fetch(`${window.location.origin}${endpoint}`, mergedOptions);
   }
-  return await fetch(primaryUrl, options);
+  return await fetch(primaryUrl, mergedOptions);
 }
 
 export const apiClient = {
@@ -192,9 +218,24 @@ export const apiClient = {
     } catch (e) {
       console.warn('[API] Failed to purge cases from backend:', e);
     }
+    // Full 3-layer wipe: DB + server in-memory (above) + all localStorage case keys
+    purgeAllCaseStorage();
+  },
+
+  async deleteSingleCase(caseId: string): Promise<void> {
     try {
-      localStorage.removeItem(STORAGE_KEY);
-      localStorage.removeItem(ACTIVE_CASE_KEY);
+      await safeFetch(`/api/cases/${encodeURIComponent(caseId)}`, { method: 'DELETE' });
+    } catch (e) {
+      console.warn('[API] Failed to delete case from backend:', e);
+    }
+    // Remove from localStorage cases array
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const arr = JSON.parse(stored) as ClinicalCase[];
+        const updated = arr.filter((x) => x.id !== caseId);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      }
     } catch {}
   },
 

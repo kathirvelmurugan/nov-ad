@@ -9,6 +9,7 @@ import DoctorConsultantSelectSection from './doctor/DoctorConsultantSelectSectio
 import DoctorDiagnosisAuditSection from './doctor/DoctorDiagnosisAuditSection';
 import DoctorHeaderBar from './doctor/DoctorHeaderBar';
 import { PortalCaseTrackerPanel, getStageBadgeMeta } from '../common/PortalCaseTrackerPanel';
+import { CaseMilestoneHUD } from '../common/CaseMilestoneHUD';
 
 interface Props {
   activeCase?: ClinicalCase;
@@ -204,6 +205,9 @@ export const DoctorReviewView: React.FC<Props> = ({
               )}
             </div>
           )}
+
+          {/* Universal Milestone HUD & Audit Ledger */}
+          <CaseMilestoneHUD activeCase={currentCase} lang={lang} isRTL={isAr} />
 
           <DoctorHeaderBar
             activeCase={activeCase}

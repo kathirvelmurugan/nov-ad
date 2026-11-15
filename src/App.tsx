@@ -38,8 +38,6 @@ export const App: React.FC = () => {
       // UI flags
       isAuthModalOpen={state.isAuthModalOpen}
       setIsAuthModalOpen={state.setIsAuthModalOpen}
-      isWhatsAppDrawerOpen={state.isWhatsAppDrawerOpen}
-      setIsWhatsAppDrawerOpen={state.setIsWhatsAppDrawerOpen}
       isGuideOpen={state.isGuideOpen}
       setIsGuideOpen={state.setIsGuideOpen}
       isPipelineBoardOpen={state.isPipelineBoardOpen}
@@ -82,8 +80,7 @@ export const App: React.FC = () => {
           selectedServiceId={state.selectedServiceId}
           setSelectedServiceId={state.setSelectedServiceId}
           setActivePersona={state.setActivePersona}
-          setIsWhatsAppDrawerOpen={state.setIsWhatsAppDrawerOpen}
-          handleAdvanceStage={state.handleAdvanceStage}
+              handleAdvanceStage={state.handleAdvanceStage}
           handleAssignPaymentToPatient={state.handleAssignPaymentToPatient}
           handleCompletePatientPayment={state.handleCompletePatientPayment}
           handleVerifyPaymentAndDispatch={state.handleVerifyPaymentAndDispatch}

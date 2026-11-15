@@ -12,26 +12,224 @@ import {
   FolderKanban,
   User,
   ShieldCheck,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 import { ClinicalCase, TenantHospital } from '../../../types';
 import { getStageBadgeMeta } from '../../common/PortalCaseTrackerPanel';
 import { CaseDetailsDrillDownModal } from '../../common/CaseDetailsDrillDownModal';
+import { apiClient } from '../../../services/apiClient';
+import { STORAGE_KEY, ACTIVE_CASE_KEY } from '../../../hooks/workflowConstants';
 
 interface SuperAdminCasesTabProps {
   isRTL: boolean;
   cases: ClinicalCase[];
   tenants: TenantHospital[];
+  onCaseDeleted?: (caseId: string) => void;
+  onAllCasesDeleted?: () => void;
 }
+
+// ─── Confirmation Modal ───────────────────────────────────────────────────────
+interface DeleteConfirmModalProps {
+  isOpen: boolean;
+  isRTL: boolean;
+  mode: 'single' | 'purge-all';
+  caseItem?: ClinicalCase | null;
+  onConfirm: () => void;
+  onCancel: () => void;
+  isDeleting: boolean;
+}
+
+const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
+  isOpen,
+  isRTL,
+  mode,
+  caseItem,
+  onConfirm,
+  onCancel,
+  isDeleting,
+}) => {
+  if (!isOpen) return null;
+
+  const isPurgeAll = mode === 'purge-all';
+  const patientName = caseItem
+    ? (isRTL ? caseItem.patientNameAr || caseItem.patientName : caseItem.patientNameEn || caseItem.patientName)
+    : '';
+
+  return (
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="delete-confirm-title"
+    >
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+        onClick={onCancel}
+      />
+
+      {/* Modal Card */}
+      <div
+        className="relative bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md p-6 animate-in fade-in zoom-in-95 duration-200"
+        dir={isRTL ? 'rtl' : 'ltr'}
+      >
+        {/* Warning Icon */}
+        <div className="flex justify-center mb-4">
+          <div className={`w-14 h-14 rounded-full flex items-center justify-center ${isPurgeAll ? 'bg-red-100' : 'bg-amber-100'}`}>
+            <AlertTriangle className={`w-7 h-7 ${isPurgeAll ? 'text-red-600' : 'text-amber-600'}`} />
+          </div>
+        </div>
+
+        {/* Title */}
+        <h3 id="delete-confirm-title" className="text-center text-lg font-black text-slate-900 mb-2">
+          {isPurgeAll
+            ? (isRTL ? 'حذف جميع الحالات السريرية' : 'Delete All Clinical Cases')
+            : (isRTL ? 'تأكيد حذف الحالة' : 'Confirm Case Deletion')}
+        </h3>
+
+        {/* Body */}
+        <div className="text-center text-sm text-slate-600 space-y-2 mb-6">
+          {isPurgeAll ? (
+            <>
+              <p className="font-semibold text-red-700">
+                {isRTL
+                  ? 'سيتم حذف جميع الحالات من قاعدة البيانات والذاكرة والمتصفح.'
+                  : 'All cases will be permanently removed from the database, server memory, and browser storage.'}
+              </p>
+              <p className="text-xs text-slate-500">
+                {isRTL ? 'هذا الإجراء لا يمكن التراجع عنه.' : 'This action cannot be undone.'}
+              </p>
+            </>
+          ) : (
+            <>
+              <p>
+                {isRTL ? 'هل تريد حذف حالة المريض:' : 'Are you sure you want to delete the case for:'}
+              </p>
+              <p className="font-black text-slate-900 text-base">{patientName || (isRTL ? 'مريض غير معروف' : 'Unknown Patient')}</p>
+              <p className="font-mono text-xs text-slate-500">{caseItem?.caseNumber || caseItem?.id}</p>
+              <p className="text-xs text-slate-500 mt-1">
+                {isRTL ? 'سيتم حذف هذه الحالة بشكل نهائي من جميع الأنظمة.' : 'This case will be permanently deleted from all systems.'}
+              </p>
+            </>
+          )}
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={isDeleting}
+            className="flex-1 py-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-sm transition-all disabled:opacity-50"
+          >
+            {isRTL ? 'إلغاء' : 'Cancel'}
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={isDeleting}
+            className={`flex-1 py-2.5 rounded-xl font-bold text-sm text-white transition-all disabled:opacity-60 flex items-center justify-center gap-2 ${
+              isPurgeAll
+                ? 'bg-red-600 hover:bg-red-700 shadow-red-200 shadow-md'
+                : 'bg-rose-500 hover:bg-rose-600'
+            }`}
+          >
+            {isDeleting ? (
+              <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+            ) : (
+              <Trash2 className="w-4 h-4" />
+            )}
+            {isDeleting
+              ? (isRTL ? 'جارٍ الحذف...' : 'Deleting...')
+              : isPurgeAll
+                ? (isRTL ? 'حذف الكل نهائياً' : 'Delete All Permanently')
+                : (isRTL ? 'نعم، احذف الحالة' : 'Yes, Delete Case')}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export const SuperAdminCasesTab: React.FC<SuperAdminCasesTabProps> = ({
   isRTL,
-  cases = [],
+  cases: initialCases = [],
   tenants = [],
+  onCaseDeleted,
+  onAllCasesDeleted,
 }) => {
+  const [localCases, setLocalCases] = useState<ClinicalCase[]>(initialCases);
+  const cases = localCases;
+
+  // Sync when parent prop changes (e.g. initial load)
+  React.useEffect(() => { setLocalCases(initialCases); }, [initialCases]);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedHospital, setSelectedHospital] = useState<string>('ALL');
   const [selectedStage, setSelectedStage] = useState<string>('ALL');
   const [selectedCaseForDrillDown, setSelectedCaseForDrillDown] = useState<ClinicalCase | null>(null);
+
+  // Delete state
+  const [deleteModal, setDeleteModal] = useState<{ open: boolean; mode: 'single' | 'purge-all'; caseItem?: ClinicalCase | null }>({
+    open: false,
+    mode: 'single',
+    caseItem: null,
+  });
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // ── Delete handlers ──────────────────────────────────────────────────────
+  const openDeleteSingle = (e: React.MouseEvent, c: ClinicalCase) => {
+    e.stopPropagation();
+    setDeleteModal({ open: true, mode: 'single', caseItem: c });
+  };
+
+  const openPurgeAll = () => {
+    setDeleteModal({ open: true, mode: 'purge-all', caseItem: null });
+  };
+
+  const handleDeleteConfirm = async () => {
+    setIsDeleting(true);
+    try {
+      if (deleteModal.mode === 'purge-all') {
+        // Backend delete all
+        await apiClient.purgeAllCases();
+        // Clear localStorage
+        try {
+          localStorage.removeItem(STORAGE_KEY);
+          localStorage.removeItem(ACTIVE_CASE_KEY);
+          localStorage.removeItem('alo_patient_subview_v3.0');
+        } catch {}
+        setLocalCases([]);
+        onAllCasesDeleted?.();
+      } else if (deleteModal.mode === 'single' && deleteModal.caseItem) {
+        const caseId = deleteModal.caseItem.id;
+        // Backend delete single
+        try {
+          await fetch(`/api/cases/${encodeURIComponent(caseId)}`, { method: 'DELETE' });
+        } catch {}
+        // Remove from localStorage cases array
+        try {
+          const stored = localStorage.getItem(STORAGE_KEY);
+          if (stored) {
+            const arr = JSON.parse(stored) as ClinicalCase[];
+            const updated = arr.filter((x) => x.id !== caseId);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+          }
+        } catch {}
+        setLocalCases((prev) => prev.filter((x) => x.id !== caseId));
+        onCaseDeleted?.(caseId);
+      }
+    } catch (err) {
+      console.error('[SuperAdmin] Delete error:', err);
+    } finally {
+      setIsDeleting(false);
+      setDeleteModal({ open: false, mode: 'single', caseItem: null });
+    }
+  };
 
   // Filter cases based on search and filters
   const filteredCases = useMemo(() => {
@@ -194,6 +392,19 @@ export const SuperAdminCasesTab: React.FC<SuperAdminCasesTabProps> = ({
               {isRTL ? 'إعادة ضبط' : 'Reset'}
             </button>
           )}
+
+          {/* Purge All Cases Button */}
+          {cases.length > 0 && (
+            <button
+              type="button"
+              onClick={openPurgeAll}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-50 hover:bg-red-600 hover:text-white text-red-700 border border-red-200 text-xs font-bold transition-all shadow-xs ml-2"
+              title={isRTL ? 'حذف جميع الحالات' : 'Delete All Cases'}
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>{isRTL ? 'حذف الكل' : 'Purge All'}</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -298,17 +509,28 @@ export const SuperAdminCasesTab: React.FC<SuperAdminCasesTabProps> = ({
                     </td>
 
                     <td className="py-3.5 px-4 text-center">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedCaseForDrillDown(c);
-                        }}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-[#007B6E] hover:text-white text-slate-700 text-xs font-bold transition-all shadow-2xs"
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                        <span>{isRTL ? 'عرض التفاصيل' : 'Drill Down'}</span>
-                      </button>
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedCaseForDrillDown(c);
+                          }}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-[#007B6E] hover:text-white text-slate-700 text-xs font-bold transition-all shadow-2xs"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>{isRTL ? 'عرض التفاصيل' : 'Drill Down'}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => openDeleteSingle(e, c)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-600 border border-rose-200 text-xs font-bold transition-all shadow-2xs"
+                          title={isRTL ? 'حذف الحالة' : 'Delete Case'}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline">{isRTL ? 'حذف' : 'Delete'}</span>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -324,6 +546,17 @@ export const SuperAdminCasesTab: React.FC<SuperAdminCasesTabProps> = ({
         onClose={() => setSelectedCaseForDrillDown(null)}
         caseItem={selectedCaseForDrillDown}
         lang={isRTL ? 'ar' : 'en'}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmModal
+        isOpen={deleteModal.open}
+        isRTL={isRTL}
+        mode={deleteModal.mode}
+        caseItem={deleteModal.caseItem}
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setDeleteModal({ open: false, mode: 'single', caseItem: null })}
+        isDeleting={isDeleting}
       />
     </div>
   );

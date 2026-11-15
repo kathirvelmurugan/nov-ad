@@ -11,6 +11,7 @@ import CoordinatorCaseHeader from '../coordinator/CoordinatorCaseHeader';
 import CoordinatorNavTabs from '../coordinator/CoordinatorNavTabs';
 import { BilingualReportModal } from '../cockpit/BilingualReportModal';
 import { PortalCaseTrackerPanel, getStageBadgeMeta } from '../common/PortalCaseTrackerPanel';
+import { CaseMilestoneHUD } from '../common/CaseMilestoneHUD';
 import { isActionableForCoordinator, getTierData, getDefaultProposedSlots, getDefaultIncomingQuestions } from '../coordinator/coordinatorLogic';
 
 interface Props {
@@ -236,6 +237,9 @@ export const CoordinatorPortalView: React.FC<Props> = ({
         </div>
       ) : (
         <div style={{ maxWidth: '900px', margin: '0 auto', width: '100%' }}>
+          {/* Universal Milestone HUD & Audit Ledger */}
+          <CaseMilestoneHUD activeCase={currentCase} lang={lang} isRTL={isAr} />
+
           <CoordinatorCaseHeader
             currentCase={currentCase}
             stageMeta={stageMeta}

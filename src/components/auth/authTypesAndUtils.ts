@@ -328,7 +328,7 @@ export const resolveAccountByPhone = (
   return {
     roleCode: 'P' as RoleCode,
     hospitalId: undefined,
-    fullName: isRTL ? 'المريض' : 'Patient',
+    fullName: isRTL ? 'سامي الحربي' : 'Sami Al-Harbi',
     isStaff: false,
     hasCustomPin: false,
     staffRecord: undefined,

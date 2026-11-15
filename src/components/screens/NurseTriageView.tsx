@@ -3,6 +3,7 @@ import { ClinicalCase, Persona, UserSession, StaffAccountRecord, TenantHospital 
 import { PLATFORM_USERS_KEY, TENANTS_KEY } from '../../hooks/workflowConstants';
 import { Stethoscope, CheckCircle2, Eye, X, MousePointerClick } from 'lucide-react';
 import { PortalCaseTrackerPanel, getStageBadgeMeta } from '../common/PortalCaseTrackerPanel';
+import { CaseMilestoneHUD } from '../common/CaseMilestoneHUD';
 import { apiClient } from '../../services/apiClient';
 import NurseCaseHeader from './nurse/NurseCaseHeader';
 import NurseAuditDeidSection from './nurse/NurseAuditDeidSection';
@@ -162,6 +163,9 @@ export const NurseTriageView: React.FC<Props> = ({
               )}
             </div>
           )}
+
+          {/* Universal Milestone HUD & Audit Ledger */}
+          <CaseMilestoneHUD activeCase={currentCase} lang={lang} isRTL={isAr} />
 
           <NurseCaseHeader activeCase={activeCaseObj} nurseName={nurseName} referenceHospital={referenceHospital} isAr={isAr} />
           <NurseAuditDeidSection activeCase={activeCaseObj} nurseName={nurseName} isAr={isAr} />

@@ -38,7 +38,6 @@ interface ScreenRouterProps {
   selectedServiceId: string;
   setSelectedServiceId: (id: string) => void;
   setActivePersona: (p: Persona) => void;
-  setIsWhatsAppDrawerOpen: (open: boolean) => void;
   handleAdvanceStage: () => void;
   handleAssignPaymentToPatient: (
     methods: PaymentMethodId[],
@@ -70,7 +69,6 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
   selectedServiceId,
   setSelectedServiceId,
   setActivePersona,
-  setIsWhatsAppDrawerOpen,
   handleAdvanceStage,
   handleAssignPaymentToPatient,
   handleCompletePatientPayment,
@@ -87,6 +85,25 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
   userSession,
   onOpenLogin,
 }) => {
+  // Strict Tenant & Role Case Partitioning
+  const scopedCases = React.useMemo(() => {
+    if (!cases || cases.length === 0) return [];
+    const role = userSession?.roleCode || activePersona.code;
+    const phone = userSession?.phone;
+    const hospital = userSession?.hospitalId;
+
+    if (role === 'P' && phone) {
+      return cases.filter((c) => c.patientPhone === phone || c.nationalIdMasked === phone);
+    }
+    if (['D', 'N', 'STAFF'].includes(role) && hospital) {
+      return cases.filter((c) => c.treatingDoctor?.hospital?.toLowerCase().includes(hospital.toLowerCase()));
+    }
+    if (role === 'C' && userSession?.fullName) {
+      return cases.filter((c) => c.consultant?.name?.toLowerCase().includes(userSession.fullName?.toLowerCase() || ''));
+    }
+    return cases;
+  }, [cases, userSession, activePersona.code]);
+
   // Strict Root Role Isolation: Authenticated users are hard-locked to their role
   const effectiveRole = (userSession && userSession.isAuthenticated && userSession.roleCode && userSession.roleCode !== 'AD')
     ? userSession.roleCode
@@ -112,7 +129,7 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
         activePersona={personaToUse}
         userSession={userSession}
         onLogout={handleLogout}
-        cases={cases}
+        cases={scopedCases}
       />
     );
   }
@@ -128,18 +145,18 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
         onSelectPersona={handleSelectPersona}
         userSession={userSession}
         onLogout={handleLogout}
-        cases={cases}
+        cases={scopedCases}
       />
     );
   }
 
   // ── ALO Coordinator ──────────────────────────────────────────────────────
-  if (effectiveRole === 'C') {
+  if (effectiveRole === 'C' || effectiveRole === 'CO') {
     return (
       <CoordinatorPortalView
         key="portal-C"
         activeCase={activeCase}
-        cases={cases}
+        cases={scopedCases}
         onSelectCase={onSelectCase}
         onAdvanceStage={handleAdvanceStage}
         onAssignPaymentToPatient={handleAssignPaymentToPatient}
@@ -152,7 +169,7 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
   }
 
   // ── International Consultant ─────────────────────────────────────────────
-  if (effectiveRole === 'K') {
+  if (effectiveRole === 'K' || effectiveRole === 'CN') {
     const isCaseUnlocked = (c: ClinicalCase) => {
       const isPaid = !!c.pricing?.paid || c.paymentDetails?.status === 'completed';
       const isVerified = !!c.paymentVerified || !!c.metadata?.paymentVerified;
@@ -210,7 +227,7 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
       <NurseTriageView
         key="portal-N"
         activeCase={activeCase}
-        cases={cases}
+        cases={scopedCases}
         onSelectCase={onSelectCase}
         onAdvanceStage={handleAdvanceStage}
         onUpdateCase={handleUpdateCase}
@@ -227,7 +244,7 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
       <DoctorReviewView
         key="portal-D"
         activeCase={activeCase}
-        cases={cases}
+        cases={scopedCases}
         onSelectCase={onSelectCase}
         onAdvanceStage={handleAdvanceStage}
         onUpdateCase={handleUpdateCase}
@@ -244,7 +261,7 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
       <PartnerServicesView
         key={`portal-${effectiveRole}`}
         activeCase={activeCase}
-        cases={cases}
+        cases={scopedCases}
         onSelectCase={onSelectCase}
         onAdvanceStage={handleAdvanceStage}
         onUpdateCase={handleUpdateCase}
@@ -335,7 +352,7 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
         <PatientStatusTimelineView
           key="patient-timeline"
           activeCase={activeCase}
-          cases={cases}
+          cases={scopedCases}
           onSelectCase={onSelectCase}
           onAdvanceStage={handleAdvanceStage}
           onUpdateCase={handleUpdateCase}
@@ -384,7 +401,7 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
       <PatientStatusTimelineView
         key="patient-status"
         activeCase={activeCase}
-        cases={cases}
+        cases={scopedCases}
         onSelectCase={onSelectCase}
         onAdvanceStage={handleAdvanceStage}
         onUpdateCase={handleUpdateCase}
@@ -404,7 +421,7 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
     <PatientStatusTimelineView
       key="patient-fallback"
       activeCase={activeCase}
-      cases={cases}
+      cases={scopedCases}
       onSelectCase={onSelectCase}
       onAdvanceStage={handleAdvanceStage}
       onUpdateCase={handleUpdateCase}

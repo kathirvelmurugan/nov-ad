@@ -22,6 +22,7 @@ import { IntakePatientBeneficiarySection } from '../intake/IntakePatientBenefici
 import { IntakeUploadZone } from '../intake/IntakeUploadZone';
 import { FieldError } from '../common/FieldError';
 import { FormErrorSummary } from '../common/FormErrorSummary';
+import { CaseMilestoneHUD } from '../common/CaseMilestoneHUD';
 
 interface Props {
   activeCase: ClinicalCase;
@@ -63,12 +64,78 @@ export const PatientIntakeView: React.FC<Props> = ({
   const [privacyAgreed, setPrivacyAgreed] = useState<boolean>(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string | undefined>>({});
   const [activeServiceId, setActiveServiceId] = useState<string>(selectedService);
-
-  const isAr = lang === 'ar';
+  const [submittedCase, setSubmittedCase] = useState<{ id: string; caseNumber: string } | null>(null);
 
   useEffect(() => {
     setActiveServiceId(selectedService);
   }, [selectedService]);
+
+  const isAr = lang === 'ar';
+
+  // ── Post-Submission Guard ──────────────────────────────────────────────────
+  // If this case is already past INTAKE_RECEIVED (i.e. already submitted to Nurse),
+  // redirect the patient to their timeline instead of re-showing the blank form.
+  const isAlreadySubmitted =
+    (activeCase &&
+    activeCase.id !== 'draft-intake' &&
+    activeCase.currentStage &&
+    activeCase.currentStage !== 'INTAKE_RECEIVED') || !!submittedCase;
+
+  if (isAlreadySubmitted) {
+    const displayCaseNumber = submittedCase?.caseNumber || activeCase.caseNumber || activeCase.id;
+    const displayCase = submittedCase ? { ...activeCase, id: submittedCase.id, caseNumber: submittedCase.caseNumber, currentStage: 'NURSE_CHECK' as const } : activeCase;
+
+    return (
+      <div id="case-registered-success-card" className="max-w-2xl mx-auto mt-8 flex flex-col items-center gap-6 text-center px-4">
+        {/* Universal Milestone HUD */}
+        <div className="w-full">
+          <CaseMilestoneHUD activeCase={displayCase} lang={lang} isRTL={isAr} />
+        </div>
+
+        <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-950 flex items-center justify-center shadow-md">
+          <svg className="w-9 h-9 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <div>
+          <h2 className="text-xl font-black text-slate-900 dark:text-white mb-1">
+            {isAr ? 'تم استلام ملفك واعتماد التسجيل بنجاح' : 'Case Registered & Submitted to Triage'}
+          </h2>
+          <p className="text-sm text-slate-600 dark:text-slate-300 max-w-sm">
+            {isAr
+              ? 'تم ربط ملفك الطبي ونقله إلى ممرضة الفرز السريري (سارة القحطاني) لبدء التدقيق.'
+              : 'Your medical dossier has been registered and forwarded to clinical triage nurse (Sara Al-Qahtani).'}
+          </p>
+          <div className="mt-3 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-900/40 border border-emerald-300 dark:border-emerald-700">
+            <span className="text-xs font-bold text-emerald-800 dark:text-emerald-200">{isAr ? 'رقم الحالة المعتمد:' : 'Case ID:'}</span>
+            <span id="registered-case-id-display" className="text-sm font-mono font-black text-emerald-900 dark:text-emerald-100">
+              {displayCaseNumber}
+            </span>
+          </div>
+        </div>
+        {onBackToTimeline && (
+          <button
+            id="track-case-timeline-btn"
+            onClick={onBackToTimeline}
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#007B6E] hover:bg-[#00C6AE] text-white font-bold text-sm transition-all shadow-md active:scale-95 cursor-pointer"
+          >
+            {isAr ? 'متابعة مسار الحالة السريرية ←' : '→ Track Clinical Case Timeline'}
+          </button>
+        )}
+        {onStartNewCase && (
+          <button
+            onClick={() => {
+              setSubmittedCase(null);
+              onStartNewCase();
+            }}
+            className="text-xs text-slate-500 hover:text-teal-700 underline font-semibold cursor-pointer"
+          >
+            {isAr ? '+ تسجيل حالة جديدة' : '+ Start a new case'}
+          </button>
+        )}
+      </div>
+    );
+  }
 
   // Clean draft mode: only register case upon explicit submit
   // (Auto-spawn on mount removed so empty cases are never generated)
@@ -204,6 +271,8 @@ export const PatientIntakeView: React.FC<Props> = ({
           </div>
 
           <button
+            id="patient-intake-submit-btn"
+            data-testid="patient-intake-submit-btn"
             onClick={() => {
               const errors: Record<string, string | undefined> = {};
               const symp = (activeCase.symptoms || activeCase.symptomsAr || activeCase.symptomsEn || '').trim();
@@ -235,7 +304,7 @@ export const PatientIntakeView: React.FC<Props> = ({
               const freshId = `case-${Date.now()}`;
               const freshCaseNum = `CASE-2026-${Math.floor(1000 + Math.random() * 9000)}`;
               const patPhone = userSession?.phone || activeCase.patientPhone || '';
-              const patName = activeCase.patientName || userSession?.fullName || (isAr ? 'مريض ألو' : 'ALO Patient');
+              const patName = activeCase.patientName || (isAr ? activeCase.patientNameAr : activeCase.patientNameEn) || userSession?.fullName || (isAr ? 'سامي الحربي' : 'Sami Al-Harbi');
               onUpdateCase({
                 id: freshId,
                 caseNumber: freshCaseNum,
@@ -271,6 +340,8 @@ export const PatientIntakeView: React.FC<Props> = ({
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
               });
+              setSubmittedCase({ id: freshId, caseNumber: freshCaseNum });
+              window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
             className="w-full sm:w-auto bg-gradient-to-r from-alo-teal to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white font-extrabold py-3 px-8 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-sm active:scale-95 cursor-pointer"
           >

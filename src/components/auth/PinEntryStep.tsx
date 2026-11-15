@@ -177,6 +177,7 @@ export const PinEntryStep: React.FC<PinEntryStepProps> = ({
         {[0, 1, 2, 3].map((idx) => (
           <input
             key={idx}
+            id={`auth-pin-digit-${idx}`}
             ref={(el) => (pinRefs.current[idx] = el)}
             type="password"
             inputMode="numeric"
@@ -224,6 +225,7 @@ export const PinEntryStep: React.FC<PinEntryStepProps> = ({
 
       {/* Submit Button */}
       <button
+        id="auth-pin-submit-btn"
         type="submit"
         disabled={isLoading || pin.join('').length < 4}
         style={{

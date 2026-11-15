@@ -17,12 +17,7 @@ import { PERSONAS }                from '../data/personas';
 import { UserSession }             from '../hooks/useClinicalWorkflowState';
 import { TopProfileSwitcher }      from '../components/TopProfileSwitcher';
 import { StageProgressBar }        from '../components/StageProgressBar';
-import { WhatsAppDrawer }          from '../components/WhatsAppDrawer';
-import { WhatsAppToast }           from '../components/WhatsAppToast';
-import { GuideModal }              from '../components/GuideModal';
 import { StageHandoffModal }       from '../components/StageHandoffModal';
-import { AutoDemoController }      from '../components/AutoDemoController';
-import { PatientPipelineBoard }    from '../components/PatientPipelineBoard';
 import { FiveDeviceCockpitView }   from '../components/FiveDeviceCockpitView';
 import { NewCaseModal }            from '../components/NewCaseModal';
 import UnifiedAuthGate             from '../components/auth/UnifiedAuthGate';
@@ -45,8 +40,6 @@ interface AppLayoutProps {
   patientSubView: 'landing' | 'intake' | 'timeline' | 'telehealth' | 'checkout';
   theme: 'light' | 'dark';
   // UI flags
-  isWhatsAppDrawerOpen: boolean;
-  setIsWhatsAppDrawerOpen: (v: boolean) => void;
   isAuthModalOpen?: boolean;
   setIsAuthModalOpen?: (v: boolean) => void;
   isGuideOpen: boolean;
@@ -89,7 +82,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   activePersona, activeCase, cases, activeCaseId, setActiveCaseId,
   viewMode, patientSubView, theme,
   isAuthModalOpen, setIsAuthModalOpen,
-  isWhatsAppDrawerOpen, setIsWhatsAppDrawerOpen,
   isGuideOpen, setIsGuideOpen,
   isPipelineBoardOpen, setIsPipelineBoardOpen,
   isNewCaseModalOpen, setIsNewCaseModalOpen,
@@ -156,8 +148,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
       dir={isAr ? 'rtl' : 'ltr'}
       lang={lang}
     >
-      {/* 1. Top Utility Ribbon & Persona Switcher */}
-      {!isPureLandingPage && (
+      {/* 1. Top Utility Ribbon & Persona Switcher (Production Guard: Super Admin or explicit ?demo=true) */}
+      {!isPureLandingPage && (userSession?.roleCode === 'AD' || (typeof window !== 'undefined' && window.location.search.includes('demo=true'))) && (
         <TopProfileSwitcher
           activePersona={activePersona}
           onSelectPersona={handleSelectPersona}
@@ -208,7 +200,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
           onResetActiveCase={handleResetActiveCase}
           lang={lang}
           onSwitchToWorkstation={() => handleSelectPatientSubView('landing')}
-          onOpenWhatsAppDrawer={() => setIsWhatsAppDrawerOpen(true)}
         />
       ) : (
         <>
@@ -228,69 +219,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
           </main>
         </>
       )}
-
-      {/* 3. WhatsApp Toast (hidden on patient home) */}
-      {!isPureLandingPage && (
-        <WhatsAppToast
-          activeCase={activeCase}
-          onAdvanceStage={handleAdvanceStage}
-          onOpenDrawer={() => setIsWhatsAppDrawerOpen(true)}
-          lang={lang}
-        />
-      )}
-
-      {/* 4. WhatsApp Drawer */}
-      <WhatsAppDrawer
-        activeCase={activeCase}
-        externalOpen={isWhatsAppDrawerOpen}
-        onSetExternalOpen={setIsWhatsAppDrawerOpen}
-        hideFloatingToggle={isPureLandingPage}
-      />
-
-      {/* 5. Guide Modal */}
-      <GuideModal
-        isOpen={isGuideOpen}
-        onClose={() => setIsGuideOpen(false)}
-        lang={lang}
-        onSelectStage={handleSetStage}
-        onSelectPersonaCode={(code) => { const p = PERSONAS.find((x) => x.code === code); if (p) handleSelectPersona(p); }}
-      />
-
-      {/* 6. Stage Handoff Modal (disabled via false && guard — kept for future re-enable) */}
-      {false && pendingHandoff && (
-        <StageHandoffModal
-          isOpen={!!pendingHandoff}
-          fromStage={(pendingHandoff as any).fromStage}
-          toStage={(pendingHandoff as any).toStage}
-          nextPersona={(pendingHandoff as any).nextPersona}
-          lang={lang}
-          onContinue={handleConfirmHandoff}
-          onClose={() => setPendingHandoff(null)}
-        />
-      )}
-
-      {/* 7. Pipeline Board */}
-      <PatientPipelineBoard
-        isOpen={isPipelineBoardOpen}
-        onClose={() => setIsPipelineBoardOpen(false)}
-        cases={cases}
-        activeCaseId={activeCase.id}
-        onSelectCase={handleSelectCaseFromPipeline}
-        isAr={lang === 'ar'}
-      />
-
-      {/* 8. Auto-Demo Controller */}
-      <AutoDemoController
-        isActive={isAutoDemoActive}
-        currentStage={activeCase.currentStage}
-        activePersona={activePersona}
-        lang={lang}
-        onNextStage={handleAutoDemoNextStage}
-        onPrevStage={handleAutoDemoPrevStage}
-        onSelectStage={handleSetStage}
-        onStop={() => setIsAutoDemoActive(false)}
-        activeCaseNumber={activeCase.caseNumber}
-      />
 
       {/* 9. New Case Modal */}
       <NewCaseModal

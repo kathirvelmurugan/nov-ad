@@ -151,45 +151,14 @@ export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }:
     } else {
       setResolvedStaff(null);
     }
-    const isStaffPortal = activePortal === 'clinical' || activePortal === 'hospital';
 
-    if (isStaffPortal) {
-      // Compulsory pre-registration check for Operations & Hospital staff
-      if (!resolved.isStaff || resolved.roleCode === 'P') {
-        setError(
-          t(
-            'غير مصرح: هذا الرقم غير مسجل ككادر معتمد في النظام. يرجى مراجعة إدارة المنصة',
-            'Unauthorized: This mobile number is not registered as authorized staff. Please contact your platform administrator.'
-          )
-        );
-        return;
-      }
-      if (userHasPin) {
-        setPinDigits(['', '', '', '']);
-        setStep('pin');
-      } else {
-        // First-time staff activation with test password (123456)
-        setStep('activate');
-      }
-      return;
-    }
-
-    if (resolved.isStaff) {
-      if (userHasPin) {
-        setPinDigits(['', '', '', '']);
-        setStep('pin');
-      } else {
-        setStep('activate');
-      }
+    if (userHasPin) {
+      setPinDigits(['', '', '', '']);
+      setStep('pin');
     } else {
-      if (userHasPin) {
-        setPinDigits(['', '', '', '']);
-        setStep('pin');
-      } else {
-        setCountdown(60);
-        setStep('otp');
-        setTimeout(() => otpRefs.current[0]?.focus(), 100);
-      }
+      setCountdown(60);
+      setStep('otp');
+      setTimeout(() => otpRefs.current[0]?.focus(), 100);
     }
   };
 
@@ -250,7 +219,7 @@ export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }:
       setPinDigits(['', '', '', '']);
       setStep('pin_setup');
     } else {
-      completeAuth(false);
+      completeAuth(false, resolvedStaff?.roleCode, resolvedStaff?.hospitalId, resolvedStaff?.fullName);
     }
   };
 
@@ -371,57 +340,8 @@ export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }:
           {/* Clean Subcomponent Header */}
           <AuthHeader activePortal={activePortal} />
 
-          {/* Portal Selector Bar */}
-          <PortalSelectorBar
-            activePortal={activePortal}
-            onSelectPortal={(p) => {
-              setActivePortal(p);
-              setStep('phone');
-              setError('');
-              if (p === 'superadmin') setPhone('+966500000001');
-              else if (p === 'hospital') setPhone('+966504444444');
-              else if (p === 'clinical') setPhone('+966505555555');
-              else setPhone('');
-            }}
-            isRTL={isRTL}
-            t={t}
-          />
-
-          <div style={{ animation: 'fadeInUp 0.3s ease-out' }} key={`${activePortal}-${step}`}>
-            {/* Super Admin Dedicated Card Subcomponent */}
-            {activePortal === 'superadmin' ? (
-              <SuperAdminAuthCard
-                isRTL={isRTL}
-                passcode={superAdminPasscode}
-                setPasscode={setSuperAdminPasscode}
-                onSubmit={handleSuperAdminSubmit}
-                isLoading={isLoading}
-                error={error}
-                t={t}
-              />
-            ) : activePortal === 'hospital' && step === 'phone' ? (
-              <HospitalStaffLoginForm
-                isRTL={isRTL}
-                isLoading={isLoading}
-                onStaffLoginSuccess={handleHospitalStaffLoginSuccess}
-                t={t}
-              />
-            ) : step === 'phone' ? (
-              <PhoneEntryStep
-                phone={phone}
-                phoneRef={phoneRef}
-                onPhoneChange={handlePhoneChange}
-                onPhoneSubmit={handlePhoneSubmit}
-                isLoading={isLoading}
-                isRTL={isRTL}
-                error={error}
-                activePortal={activePortal}
-                isDemoMode={isDemoMode}
-                onPersonaQuickLogin={handlePersonaQuickLogin}
-                onGuestBypass={() => completeAuth(true, 'P', undefined, isRTL ? 'زائر' : 'Guest Patient')}
-                t={t}
-              />
-            ) : step === 'consultant_otp' && magicLinkData ? (
+          <div style={{ animation: 'fadeInUp 0.3s ease-out' }} key={step}>
+            {step === 'consultant_otp' && magicLinkData ? (
               <ConsultantMagicLinkStep
                 isRTL={isRTL}
                 consultantName={magicLinkData.consultantName}
@@ -469,7 +389,7 @@ export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }:
                 onBack={() => setStep('phone')}
                 t={t}
               />
-            ) : (
+            ) : step === 'pin' || step === 'pin_setup' ? (
               /* PIN Entry or PIN Setup Step */
               <PinEntryStep
                 isRTL={isRTL}
@@ -490,6 +410,21 @@ export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }:
                 onBackToPhone={() => setStep('phone')}
                 isLoading={isLoading}
                 error={error}
+                t={t}
+              />
+            ) : (
+              <PhoneEntryStep
+                phone={phone}
+                phoneRef={phoneRef}
+                onPhoneChange={handlePhoneChange}
+                onPhoneSubmit={handlePhoneSubmit}
+                isLoading={isLoading}
+                isRTL={isRTL}
+                error={error}
+                activePortal={activePortal}
+                isDemoMode={isDemoMode}
+                onPersonaQuickLogin={handlePersonaQuickLogin}
+                onGuestBypass={() => completeAuth(true, 'P', undefined, isRTL ? 'زائر' : 'Guest Patient')}
                 t={t}
               />
             )}

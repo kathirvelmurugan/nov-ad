@@ -55,8 +55,8 @@ const createFreshDraftIntake = (session?: UserSession | null, _isAr = false): Cl
   stage: 1,
   status: 'draft',
   doctorSelectionPreference: 'need_assistance',
-  treatingDoctor: DEFAULT_TREATING_DOCTOR,
-  consultant: DEFAULT_CONSULTANT,
+  treatingDoctor: undefined,
+  consultant: undefined,
   files: [],
   pricing: {
     tier: 1,
@@ -150,14 +150,10 @@ export function useClinicalWorkflowState() {
   useEffect(() => {
     let isSubscribed = true;
     apiClient.fetchCases().then((serverCases) => {
-      if (isSubscribed && Array.isArray(serverCases) && serverCases.length > 0) {
-        setCases((prev) => {
-          const merged = [...serverCases];
-          prev.forEach((p) => {
-            if (!merged.some((m) => m.id === p.id)) merged.push(p);
-          });
-          return merged;
-        });
+      if (isSubscribed && Array.isArray(serverCases)) {
+        // Hard Server-Truth: Server response replaces local state completely
+        setCases(serverCases);
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(serverCases)); } catch (e) {}
       }
     }).catch(() => {});
     return () => { isSubscribed = false; };
@@ -172,7 +168,7 @@ export function useClinicalWorkflowState() {
   const effectiveCases = cases.filter((c) => {
     if (isPatientPersona && isPatientUser) {
       if (userSession?.phone) return matchesSaudiPhone(c.patientPhone, userSession.phone);
-      return false;
+      return c.id === activeCaseId || c.stage > 1 || (!c.patientPhone && c.id !== 'draft-intake');
     }
     return true;
   });
@@ -225,7 +221,6 @@ export function useClinicalWorkflowState() {
       setCases((prev) => [registeredCase, ...prev.filter((c) => c.id !== freshId && c.id !== 'draft-intake')]);
       setActiveCaseId(registeredCase.id);
       setIntakeDraft(createFreshDraftIntake(userSession));
-      ui.setPatientSubView('timeline');
       return;
     }
 

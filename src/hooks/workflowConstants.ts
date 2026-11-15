@@ -97,8 +97,8 @@ export const FRESH_PRIMARY_CASE: ClinicalCase = {
   currentStage: 'INTAKE_RECEIVED',
   stage: 1,
   doctorSelectionPreference: 'need_assistance',
-  treatingDoctor: DEFAULT_TREATING_DOCTOR,
-  consultant: DEFAULT_CONSULTANT,
+  treatingDoctor: undefined,
+  consultant: undefined,
   pricing: {
     tier: 1,
     tierName: 'Written',

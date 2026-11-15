@@ -10,7 +10,6 @@ import { IndianConsultantDevice } from './IndianConsultantDevice';
 import { BilingualReportModal } from './BilingualReportModal';
 import { WHATSAPP_CUES, SLOTS, deriveStageNum, getCurrentCue } from './cockpitConstants';
 import { CockpitHeader } from './CockpitHeader';
-import { CockpitWhatsAppCueBanner } from './CockpitWhatsAppCueBanner';
 import { CockpitLockedSlotPlaceholder } from './CockpitLockedSlotPlaceholder';
 
 export interface FiveDeviceCockpitProps {
@@ -20,7 +19,6 @@ export interface FiveDeviceCockpitProps {
   onResetActiveCase?: () => void;
   lang?: 'ar' | 'en';
   onSwitchToWorkstation?: () => void;
-  onOpenWhatsAppDrawer?: () => void;
 }
 
 export const FiveDeviceCockpitView: React.FC<FiveDeviceCockpitProps> = ({
@@ -30,7 +28,6 @@ export const FiveDeviceCockpitView: React.FC<FiveDeviceCockpitProps> = ({
   onResetActiveCase,
   lang = 'en',
   onSwitchToWorkstation,
-  onOpenWhatsAppDrawer,
 }) => {
   const isAr = lang === 'ar';
   const [expandedDevice, setExpandedDevice] = useState<CockpitRole | null>(null);
@@ -81,15 +78,6 @@ export const FiveDeviceCockpitView: React.FC<FiveDeviceCockpitProps> = ({
         onSwitchToWorkstation={onSwitchToWorkstation}
         onCollapseExpandedDevice={() => setExpandedDevice(null)}
       />
-
-      {/* Live Handoff WhatsApp Simulation Pill */}
-      {WHATSAPP_CUES[stageNum] && (
-        <CockpitWhatsAppCueBanner
-          cue={currentCue}
-          isAr={isAr}
-          onOpenWhatsAppDrawer={onOpenWhatsAppDrawer}
-        />
-      )}
 
       {/* Responsive Viewport Surface with Panoramic 5-Screen Horizontal Fit */}
       <div

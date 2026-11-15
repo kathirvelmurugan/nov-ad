@@ -311,6 +311,30 @@ export const ROLE_PERMISSIONS: Record<RoleCode, RolePermissionSpec> = {
     allowedCapabilities: ['verify_insurance_policy', 'issue_preauth_approval'],
     restrictedActions: ['cannot_alter_medical_records'],
   },
+  CO: {
+    roleCode: 'CO',
+    roleNameAr: 'منسق الحالات الدولية',
+    roleNameEn: 'ALO Case Coordinator',
+    tenantTier: 'ALO_MASTER',
+    dataPrivacyBoundary: 'OPERATIONAL_ONLY',
+    descriptionAr: 'توجيه الحالات واستلام السداد ومطابقة الاستشاريين الدوليين',
+    descriptionEn: 'Case routing, fee verification, and international consultant dispatch',
+    allowedStages: ['AWAITING_PAYMENT', 'WITH_CONSULTANT', 'OPINION_READY', 'PARTNER_SERVICES'],
+    allowedCapabilities: ['VERIFY_FEES', 'DISPATCH_CONSULTANT', 'RELEASE_REPORT'],
+    restrictedActions: ['DIRECT_CLINICAL_DIAGNOSIS', 'PRESCRIBE_MEDICATION']
+  },
+  CN: {
+    roleCode: 'CN',
+    roleNameAr: 'الاستشاري الدولي',
+    roleNameEn: 'International Consultant Specialist',
+    tenantTier: 'EXTERNAL_SPECIALIST',
+    dataPrivacyBoundary: 'SDAIA_DEIDENTIFIED',
+    descriptionAr: 'إصدار الرأي الطبي الثاني التخصصي للملفات المجهولة الهوية',
+    descriptionEn: 'Secondary medical opinion generation on de-identified clinical dossiers',
+    allowedStages: ['WITH_CONSULTANT', 'OPINION_READY'],
+    allowedCapabilities: ['REVIEW_DOSSIER', 'SUBMIT_OPINION', 'PROPOSE_TELEHEALTH_SLOT'],
+    restrictedActions: ['VIEW_PATIENT_NATIONAL_ID', 'DIRECT_LOCAL_BILLING']
+  },
 };
 
 export type { RoleCode, TenantTier } from '../types';

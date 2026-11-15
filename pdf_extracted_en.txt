@@ -1,0 +1,1879 @@
+--- PAGE 1 ---
+Internal view · v2.4 · Saudi version · aligned to the developer file · October 2026
+Workﬂow chain, end to end
+Every role, every screen, every handoff: from sign-up to the ﬁnal report.
+Patient
+ Saudi doctor
+ Nurse
+ Coordinator
+ Consultant
+ Lab
+ Physio
+ Pharmacist
+ Home nursing
+ Partner admin
+ ALO admin
+ALO DOCTOR · Workﬂow chain · Internal view 01
+--- PAGE 2 ---
+01 · How to read
+Three kinds of screens, one case number
+Phone app
+Patient and consultant apps
+WhatsApp
+Automation and web links, 24/7 · never
+login
+Web portal
+ALO team, Saudi doctors, partners and
+admin
+Step codes by role
+P Patient D Saudi doctor N Nurse
+C Coordinator K Consultant L Lab
+T Physio H Pharmacist V Home nursing
+HA Partner admin AD ALO admin W WhatsApp templates
+X Exceptions
+Marks
+Next step
+Branch: separate path, doctor-started case, direct booking, written opinion only
+Two-way relay through the coordinator
+Comes from another role
+Goes to another role
+if it fails X01 Exception path · section 15
+One web sign-in for doctors, nurses, coordinators, partners, admin: AD01 · consultants use the
+doctor app
+Case status · shared by every role
+Intake received › Nurse check › Doctor review › Awaiting payment › With consultant ›
+Opinion ready › Partner services › Follow-up 21 days › Closed
+Exception statuses On hold Cancelled No-show
+App screen
+Action
+9:41
+ALO DOCTOR
+Message with a link
+17:02
+Open link
+Business account
+alodoctor.sa/portal
+Portal screen
+Action Other
+ALO DOCTOR · Workﬂow chain · Internal view 02
+from N05
+to K01
+--- PAGE 3 ---
+02 · Master map · 1/2
+Before payment: join → intake → review → consultant pick → payment
+handoff between roles ── ▶ next step, same role branch two-way relay
+●  Continues on page 2 after payment. Dashed: the doctor can open the case for his patient (D03). Direct booking without an opinion: P30–P38. Nurse line any time: P06 ↔ N07.
+Join Intake Review Consultant pick Payment
+Intake received Nurse check Doctor review Awaiting payment
+ALO DOCTOR · Workﬂow chain · Internal view 03
+Line of visibility · the patient sees above
+Support · partners and admin
+Patient
+App · WhatsApp · intake link
+Saudi treating doctor
+Doctor portal · app
+ALO nurse
+Case portal · inbox
+ALO coordinator
+Case portal
+Indian consultant
+Doctor app · English
+Saudi partners
+Hospitals · clinics · dental · skin ·
+physio · lab · pharmacy · home
+nursing
+Partner admin
+Partner portal
+ALO admin
+Admin panel
+AD01–02 · AD04–05
+Sign-in · accounts · roles
+HA01–03
+Partner onboarded
+D01
+Invited by hospital
+P01–06 · P39–44
+Sign up with ID / Iqama · or
+start on WhatsApp
+P07–17
+Specialty · service · Saudi
+doctor · intake
+N01–07 · C02 · P18
+Check ﬁle · hide identity ·
+nurse line
+D03
+Open a case for my patient
+· optional
+D02 · D04
+Review patient ﬁle
+D05–06
+Pick consultant · questions
+· call type
+C01 · C03–04
+Conﬁrm · price · payment
+link
+AD03
+Consultant network
+P19–21
+Pay · receipt
+C05–06
+Payment received ·
+consultant link
+K01–04
+Accept case · 48h starts
+--- PAGE 4 ---
+02 · Master map · 2/2
+After payment: opinion → call → report & services → follow-up
+handoff between roles ── ▶ next step, same role branch two-way relay ●  Continues from page 1 after payment: the consultant accepts the case (K02–K04). Dashed line: written opinion only, no call.
+Opinion Call Report & services Follow-up
+With consultant Opinion ready Partner services Follow-up 21 days Closed
+ALO DOCTOR · Workﬂow chain · Internal view 04
+Line of visibility · the patient sees above
+Support · partners and admin
+Patient
+App · WhatsApp · intake link
+Saudi treating doctor
+Doctor portal · app
+ALO nurse
+Case portal · inbox
+ALO coordinator
+Case portal
+Indian consultant
+Doctor app · English
+Saudi partners
+Hospitals · clinics · dental · skin ·
+physio · lab · pharmacy · home
+nursing
+Partner admin
+Partner portal
+ALO admin
+Admin panel
+K05–07
+Written opinion · call slots
+D07
+Doctor channel
+C07
+Conﬁrm call time
+D08
+Invite patient · call
+P22–24
+Join call by invitation
+N08
+Interpret on call
+K08
+Video / voice call
+C08
+Release report PDF 1
+P25–26 · P30–38
+Report · book partners
+D09–10
+Opinion received · orders
+HA04 · L01 · T01 · H01 · V01
+Orders · bookings ·
+insurance or cash
+L02–04 · T02–04 · H02–04 ·
+V02–04
+Results · Rx · sessions ·
+home visits
+D11
+Review results
+P27–29
+Follow-up · PDF 2 · rating
+C09–10
+Relay follow-up · close
+case
+K09
+Answer · ﬁnal comment
+HA05
+Monthly statement
+AD06
+Reports · alerts
+--- PAGE 5 ---
+03 · Notifications · 1/2
+Who hears what, and where
+Case status Patient Saudi doctor Nurse Coordinator Consultant Partners Partneradmin ALOadmin
+Intake received WhatsApp Portal
+Nurse check WhatsApp Portal Portal
+Doctor review
+WhatsApp
+App
+WhatsApp
+Portal
+Portal
+Awaiting
+payment
+WhatsApp
+App
+Portal Portal
+With consultant
+WhatsApp
+App
+App Portal Portal
+WhatsApp
+App
+Portal
+Opinion ready
+WhatsApp
+App
+WhatsApp
+Portal
+Portal
+Partner services
+WhatsApp
+App
+Portal Portal Portal Portal
+Follow-up 21
+days
+WhatsApp
+App
+Portal Portal App
+Closed WhatsApp Portal Portal Portal Portal
+On hold WhatsApp Portal Portal
+Cancelled WhatsApp Portal Portal WhatsApp Portal
+No-show WhatsApp Portal Portal Portal App Portal
+To patient To Saudi doctor To consultant · English
+• WhatsApp: automation and web links only, 24/7 · never login • Consultant reminder 24h before the 48h deadline • Calls inside the ALO app · reminder 10 min before • Consultant never sees the patient’s name, ID or phone · names hidden in ﬁles
+• Saudi doctor review: reminder at 12h, coordinator alert at 24h • Nurse and consultant messages to the patient pass through the coordinator • All WhatsApp templates: 47 in total · full list next page
+ALO DOCTOR
+Dr. Abdullah invites you to a
+video call with Dr. Arjun ·
+Tue 5:00 PM
+17:02
+Join call
+Business account
+ALO DOCTOR
+Case ALO-2026-0001 is
+ready for your review. Pick a
+consultant.
+17:02
+Open case
+Business account
+ALO DOCTOR
+New case ALO-2026-0001
+from Dr. Abdullah · 2
+questions · due 48h.
+17:02
+Open case
+Business account
+ALO DOCTOR · Workﬂow chain · Internal view 05
+--- PAGE 6 ---
+03 · Notifications · 2/2
+WhatsApp templates · full list for Meta
+Every message: one approved Meta template, one link button. No report text inside WhatsApp. Bot replies inside a chat the patient started need no template.
+Patient · W01–W30
+Code Patient message Button Opens Drawn as
+W01 Doctor opened a case Review & consent P15 —
+W02 Case received Track case P17 P16
+W03 File missing Upload ﬁle P14 P18
+W04 File complete Track case P17 —
+W05 Payment link Pay securely P19 C04
+W06 Payment received View receipt P21 P20
+W07 Consultant started Track case P17 —
+W08 Call invitation Join call P23 P22
+W09 Call reminder Join call P23 —
+W10 Opinion ready View opinion P25 —
+W11 Next steps Book now P26 —
+W12 Booking conﬁrmed Directions — P35
+W13 Result ready View report P37 —
+W14 Prescription ready Directions — P38
+W15 Session reminder View plan T04 —
+W16 Home nurse on the way Track case P36 V03
+W17 Nurse replied Open chat P06 —
+W18 Doctor answered Open chat P27 —
+W19 Final summary View report P28 —
+W20 Closed · rating rating stars — P29
+W21 Visit reminder · 1 day before Directions — —
+W22 Payment link reminder Pay securely P19 X02
+W23 Case cancelled · unpaid Track case P17 X04
+W24 Refund sent View receipt P21 X07
+W25 Doctor still reviewing Track case P17 X11
+W26 New call time Join call P23 X18
+W27 Opinion delayed · new consultant Track case P17 X15
+W28 Missed visit · rebook Book now P30 X22
+W29 Insurance did not approve · 2 choices — — X24
+W30 Account deleted — — P44
+Staff · W31–W47
+Code To Message Button Opens Drawn as
+W31 Saudi doctor Invite · activate Activate · sign in AD01 D01
+W32 Saudi doctor Case ready for your review Open case D04 —
+W33 Saudi doctor Review reminder · 12h Open case D04 X09
+W34 Saudi doctor Call time set · invite your patient Open case D08 —
+W35 Saudi doctor Opinion received Open case D09 —
+W36 Saudi doctor Result needs your review Open case D11 —
+W37 Saudi doctor Pharmacy asks for a substitute Open case X26 —
+W38 Consultant · EN Invite · activate Activate · sign in K03 K01
+W39 Consultant · EN New case Open case K04 K02
+W40 Consultant · EN Opinion due in 24h Open case K04 X12
+W41 Consultant · EN Call in 10 min Join call K08 —
+W42 Consultant · EN Follow-up question Open case K09 —
+W43 Consultant · EN Case cancelled — — X08
+W44 Partner Partner invite · activate Activate · sign in AD01 HA01
+W45 Partner New order · lab · physio · pharmacy · home Open order L01 · T01 · H01 · V01 —
+W46 Partner New booking Open bookings HA04 —
+W47 Partner Monthly statement ready View statement HA05 —
+Nurse and coordinator work in the portal; they get portal alerts, not WhatsApp.
+ALO DOCTOR · Workﬂow chain · Internal view 06
+--- PAGE 7 ---
+04 · Patient · 1/8
+Patient app · WhatsApp
+Join · app
+Intake received › Nurse check › Doctor review › Awaiting payment › With consultant › Opinion ready › Partner services › Follow-up 21 days › Closed
+P01
+Welcome · language
+A trusted opinion, a reassuring
+decision
+ﻋﺮﺑﻲ English
+Continue
+9:41
+P02
+Sign up · ID / Iqama
+Create account
+National ID / Iqama
+1••• ••• •••
+Mobile number
++966 5• ••• ••••
+Send code
+Code by SMS. Cases started on
+WhatsApp join your account.
+9:41
+P03
+Verify SMS code
+Enter the SMS code
+4 8 1
+Verify
+9:41
+P04
+Proﬁle · family · insurance
+About you
+Full name
+City
+Riyadh
+Insurance company
+Bupa ▾
+Add family member
+Save
+9:41
+P05
+Home
+Hello, Salem
+ALO-2026-0001 · With
+consultant
+ALO
+DOCTOR
+opinion
+Book in
+Saudi
+Talk to nurse WhatsApp
+us
+Emergency? Call 997
+9:41
+P06
+Nurse chat
+Nurse Noura
+Is my case urgent?
+Your doctor is reviewing it
+today.
+Write a message
+9 AM – 5 PM · auto-reply after hours
+9:41
+ALO DOCTOR · Workﬂow chain · Internal view 07
+to nurse N07
+--- PAGE 8 ---
+04 · Patient · 2/8
+Patient app · WhatsApp
+Start on WhatsApp · 3 options
+Intake received › Nurse check › Doctor review › Awaiting payment › With consultant › Opinion ready › Partner services › Follow-up 21 days › Closed
+ALO DOCTOR opinion
+Book in Saudi Talk to nurse
+P07
+WhatsApp · language · menu
+ALO DOCTOR
+Hello
+17:01 ✓✓
+Welcome to ALO DOCTOR.
+Choose your language.
+17:02
+ﻋﺮﺑﻲ
+English
+How can we help?
+17:02
+ALO DOCTOR opinion
+Book in Saudi
+Talk to nurse
+Business account
+P08
+Choose specialty & service
+ALO DOCTOR
+ALO DOCTOR opinion
+17:01 ✓✓
+Choose the specialty
+17:02
+Cardiology
+Neurology
+Oncology
+Cardiology
+17:01 ✓✓
+Preferred type: written,
+video or voice? Your doctor
+conﬁrms.
+17:02
+Business account
+P09
+Choose Saudi doctor → intake
+link
+ALO DOCTOR
+Choose your treating
+doctor (partner hospitals)
+17:02
+Dr. Abdullah · Riyadh Care
+Dr. Khalid · Al-Noor
+Complete your case here
+17:02
+Open intake page
+Business account
+ALO DOCTOR
+Book in Saudi
+Choose the service, place and time
+here.
+17:02
+Book now
+P10
+Book in Saudi · link
+Business account
+ALO DOCTOR
+Talk to our nurse
+She replies in the chat · 9 AM – 5 PM.
+17:02
+Open chat
+P11
+Talk to nurse · link
+Business account
+ALO DOCTOR · Workﬂow chain · Internal view 08
+to intake P13
+from menu P07
+opens P30
+from menu P07
+opens P06
+--- PAGE 9 ---
+04 · Patient · 3/8
+Patient app · WhatsApp
+Opinion request · pay · in the app or by link
+Intake received › Nurse check › Doctor review › Awaiting payment › With consultant › Opinion ready › Partner services › Follow-up 21 days › Closed
+continues
+P12
+Specialty · service · doctor
+Specialty
+Cardiology
+Written Video Voice
+Your preference · your doctor
+conﬁrms
+Dr. Abdullah ·
+Riyadh Care
+Dr. Khalid · Al-Noor
+Next
+9:41
+P13
+Intake page
+Your case
+Me Family
+Describe the problem
+Questions for the doctor
+Next
+9:41
+P14
+Files · service details
+Add photo or PDF
+report.pdf
+echo.mp4
+MRI.dcm
+Service needed
+Opinion + lab test
+Next
+9:41
+P15
+Consent · submit
+Doctor Dr. Abdullah
+Service Opinion · video
+(preferred)
+Files 3
+I agree to share this case with
+my doctor and ALO DOCTOR
+consultants
+Submit
+9:41
+P16
+Case number
+ALO DOCTOR
+Case ALO-2026-0001
+received ✓  Our nurse is
+checking your ﬁle.
+17:02
+Track case
+Business account
+P17
+Tracker
+cancel X05
+ALO-2026-0001
+Intake received
+Nurse check
+Doctor review
+Awaiting payment
+With consultant
+9:41
+P18
+Missing ﬁle
+ALO DOCTOR
+One ﬁle is missing. Our
+nurse needs one more ﬁle
+from you.
+17:02
+Upload ﬁle
+Business account
+P19
+Price · pay
+if it fails X01
+Opinion + video call
+Written opinion 500
+Video call 250
+Total 750 SAR
+mada Apple Pay Visa
+Pay now
+9:41
+P20
+Paid · receipt
+ALO DOCTOR
+Payment received ✓  750
+SAR. Your case now goes to
+Dr. Arjun.
+17:02
+View receipt
+Business account
+P21
+Receipt
+Receipt · ALO DOCTOR
+Case ALO-2026-0001
+Written opinion 500 SAR
+Video call 250 SAR
+Total paid 750 SAR
+Paid by mada
+Download PDF
+9:41
+ALO DOCTOR · Workﬂow chain · Internal view 09
+from WhatsApp P09 to nurse N01
+from coordinator C02
+from coordinator C04
+to coordinator C05
+--- PAGE 10 ---
+04 · Patient · 4/8
+Patient app · WhatsApp
+Call · report · follow-up
+Intake received › Nurse check › Doctor review › Awaiting payment › With consultant › Opinion ready › Partner services › Follow-up 21 days › Closed
+P22
+Call invitation
+ALO DOCTOR
+Dr. Abdullah invites you to a
+video call with Dr. Arjun ·
+Tue 5:00 PM (KSA)
+17:02
+Join call
+Business account
+P23
+In-app video call
+if the call drops X16
+9:41
+Dr. Arjun · Nurse Noura interprets
+P24
+In-app voice call
+9:41
+Dr. Arjun
+ALO voice call · 04:12
++ Nurse Noura interprets
+P25
+Opinion · PDF 1
+Your ALO DOCTOR
+opinion is ready
+ALO DOCTOR opinion PDF
+ﻋﺮﺑﻲ English
+Download PDF
+9:41
+P26
+Next steps
+Your doctor
+recommends
+Lab test · approved
+Prescription · ready
+Cardiac rehab · 8
+sessions
+Home nursing · 4 visits
+Book
+9:41
+P27
+Follow-up · 21 days
+18 of 21 days left
+Can I start the treatment
+now?
+Yes, after your lab result. —
+Dr. Arjun · via ALO
+Write a question
+9:41
+P28
+Final summary · PDF 2
+Case summary ready
+ALO DOCTOR opinion PDF
+Download PDF 2
+9:41
+P29
+Rating · closed
+ALO DOCTOR
+Your case is closed. How
+was your experience?
+17:02
+★★★★★
+Business account
+ALO DOCTOR · Workﬂow chain · Internal view 10
+from doctor D08 from coordinator C08 from doctor D10 to coordinator C09 from coordinator C10
+--- PAGE 11 ---
+04 · Patient · 5/8
+Patient app · WhatsApp
+Book in Saudi · partners
+Intake received › Nurse check › Doctor review › Awaiting payment › With consultant › Opinion ready › Partner services › Follow-up 21 days › Closed
+P30
+Book now
+Start from
+Specialty
+A doctor I know
+Nearby test
+I have a report
+9:41
+P31
+Category · city
+Clinics Hospitals
+Dental · cash Skin · cash
+Physio Labs
+Home nursing
+City
+Riyadh
+In
+person
+Video Home
+9:41
+P32
+Partners near you
+Riyadh Care ·
+Cardiology
+Accepts your
+insurance · today 4:30
+Al-Noor Clinic ·
+Cardiology
+Accepts your
+insurance · tomorrow
+9:00
+9:41
+P33
+Slot · payment
+Insurance Cash ·
+online
+Cash ·
+at
+partner
+Dental and skin: cash only. Online
+pay gets an ALO bill in the app.
+Conﬁrm booking
+9:41
+P34
+Insurance
+Insurer · from
+proﬁle
+Bupa ·
+valid
+Lab test Approved
+Cardiac rehab 6 of 8 covered
+X-ray Not covered · cash
+9:41
+P35
+Booking conﬁrmed
+ALO DOCTOR
+Booked ✓  Riyadh Care · Sun
+10:30. Reminder 1 day
+before.
+17:02
+Directions
+Business account
+P36
+Case timeline
+ALO DOCTOR opinion
+Visit · conﬁrmed
+Lab · result ready
+Pharmacy · pricing
+Cardiac rehab · 3 of 8
+Home nursing · 1 of 4
+9:41
+P37
+Lab result
+Lab result · Riyadh Care PDF
+Reviewed by Dr. Abdullah
+Doctor’s
+note
+See next step in
+your plan
+Download PDF
+9:41
+P38
+Prescription ready
+ALO DOCTOR
+Your prescription is ready ·
+patient share 45 SAR ·
+pickup code A1B2
+17:02
+Directions
+Business account
+ALO DOCTOR · Workﬂow chain · Internal view 11
+to partner HA04 from pharmacy H04
+--- PAGE 12 ---
+04 · Patient · 6/8
+Patient app · WhatsApp
+Account · sign in · web link · privacy · delete
+P39
+Sign in · returning
+National ID / Iqama
+1••• ••• •••
+4 8 1
+Code by SMS
+Sign in
+Use Face ID
+9:41
+P40
+Opened from WhatsApp · no
+app
+alodoctor.sa/case
+Open your case
+National ID / Iqama
+1••• ••• •••
+4 8 1
+Code by SMS · same screens on the
+web
+Continue
+Get the app
+9:41
+P41
+My account
+Account
+Proﬁle · family
+Insurance · Bupa
+Language · ﻋﺮﺑﻲ/ 
+English
+Notiﬁcations
+My reports · receipts
+Privacy & consents
+9:41
+P42
+Consents
+What you allowed
+Share case with my
+doctor
+Share with ALO
+consultants
+WhatsApp reminders
+Each case asks again before sharing
+9:41
+P43
+Delete account
+Delete my account
+1 open case will be
+closed ﬁrst
+Send me my reports before
+deleting
+4 8 1
+Delete account
+9:41
+P44
+Deletion conﬁrmed
+ALO DOCTOR
+Your ALO DOCTOR account
+is deleted. Your reports
+were sent to you.
+17:02
+Business account
+ALO DOCTOR · Workﬂow chain · Internal view 12
+to ALO admin AD02
+--- PAGE 13 ---
+04 · Patient · 7/8
+WhatsApp tracking: case to opinion
+One update, one button. Buttons open the app after sign-in; no report text inside WhatsApp. Each message is one Meta template.
+Intake & payment
+Consultant, call & opinion
+ALO DOCTOR
+Dr. Abdullah opened a case for
+you
+Review it and give your consent.
+17:02
+Review & consent
+W01
+Doctor opened a case
+Business account
+ALO DOCTOR
+Case ALO-2026-0001 received ✓
+Our nurse is checking your ﬁle.
+17:02
+Track case
+W02
+Case received
+in the ﬂow: P16
+Business account
+ALO DOCTOR
+One ﬁle is missing
+Our nurse needs one more ﬁle from
+you.
+17:02
+Upload ﬁle
+W03
+File missing
+in the ﬂow: P18
+Business account
+ALO DOCTOR
+Your ﬁle is complete ✓
+Sent to Dr. Abdullah for review.
+17:02
+Track case
+W04
+File complete
+Business account
+ALO DOCTOR
+Dr. Abdullah chose your
+consultant
+Opinion + video call · 750 SAR.
+17:02
+Pay securely
+W05
+Payment link
+in the ﬂow: C04
+Business account
+ALO DOCTOR
+Payment received ✓
+750 SAR. Your case now goes to Dr.
+Arjun.
+17:02
+View receipt
+W06
+Payment received
+in the ﬂow: P20
+Business account
+ALO DOCTOR
+Dr. Arjun started your case ✓
+Opinion by Tue 2:00 PM.
+17:02
+Track case
+W07
+Consultant started
+Business account
+ALO DOCTOR
+Video call invitation
+Dr. Abdullah invites you with Dr. Arjun
+· Tue 5:00 PM.
+17:02
+Join call
+W08
+Call invitation
+in the ﬂow: P22
+Business account
+ALO DOCTOR
+Your call starts in 10 min
+Dr. Arjun, Dr. Abdullah and Nurse
+Noura will join.
+17:02
+Join call
+W09
+Call reminder
+Business account
+ALO DOCTOR
+Your ALO DOCTOR opinion is
+ready ✓
+Arabic and English PDF.
+17:02
+View opinion
+W10
+Opinion ready
+Business account
+ALO DOCTOR · Workﬂow chain · Internal view 13
+from doctor D03
+opens P15
+after submit P15
+opens P17
+from coordinator C02
+opens P14
+from nurse N06
+opens P17
+from coordinator C03
+opens P19
+from coordinator C05
+opens P21
+on accept K04
+opens P17
+from doctor D08
+opens P23
+auto · 10 min before C07
+opens P23
+from coordinator C08
+opens P25
+--- PAGE 14 ---
+04 · Patient · 8/8
+WhatsApp tracking: services to close
+One update, one button. Buttons open the app after sign-in; no report text inside WhatsApp. Each message is one Meta template.
+Services
+Replies & close
+ALO DOCTOR
+Your doctor added next steps
+Insurance approved · book when
+ready.
+17:02
+Book now
+W11
+Next steps
+Business account
+ALO DOCTOR
+Booking conﬁrmed ✓
+Riyadh Care · Sun 10:30. Reminder 1
+day before.
+17:02
+Directions
+W12
+Booking conﬁrmed
+in the ﬂow: P35
+Business account
+ALO DOCTOR
+Your result is ready ✓
+Reviewed by Dr. Abdullah.
+17:02
+View report
+W13
+Result ready
+Business account
+ALO DOCTOR
+Your prescription is ready ✓
+Your share 45 SAR · pickup code
+A1B2.
+17:02
+Directions
+W14
+Prescription ready
+in the ﬂow: P38
+Business account
+ALO DOCTOR
+Your session is tomorrow
+5:00 PM · Riyadh Care · session 4 of
+8.
+17:02
+View plan
+W15
+Session reminder
+Business account
+ALO DOCTOR
+Your home nurse is on the way
+Arrives 4:30 PM · visit 1 of 4.
+17:02
+Track case
+W16
+Home nurse on the way
+in the ﬂow: V03
+Business account
+ALO DOCTOR
+Nurse Noura replied to you
+Open the chat to read it.
+17:02
+Open chat
+W17
+Nurse replied
+Business account
+ALO DOCTOR
+Dr. Arjun answered your question
+Open the chat to read it.
+17:02
+Open chat
+W18
+Doctor answered
+Business account
+ALO DOCTOR
+Your ﬁnal summary is ready ✓
+PDF 2 · Arabic and English.
+17:02
+View report
+W19
+Final summary
+Business account
+ALO DOCTOR
+Your case is closed
+How was your experience?
+17:02
+★★★★★
+W20
+Closed · rating
+in the ﬂow: P29
+Business account
+ALO DOCTOR · Workﬂow chain · Internal view 14
+from doctor D10
+opens P26
+after booking P33 from doctor D11
+opens P37
+from pharmacy H04 from physio T02
+opens T04
+from home nursing V02
+opens P36
+from nurse N07
+opens P06
+via coordinator C09
+opens P27
+from coordinator C10
+opens P28
+from coordinator C10
+--- PAGE 15 ---
+05 · Saudi treating doctor · 1/2
+Doctor portal + WhatsApp
+Can open a case for his patient. Reviews the ﬁle, picks the Indian consultant, adds questions, conﬁrms the call type, invites the patient, orders services.
+Intake received › Nurse check › Doctor review › Awaiting payment › With consultant › Opinion ready › Partner services › Follow-up 21 days › Closed
+continues
+D01
+Invite
+ALO DOCTOR
+Riyadh Care invited you to
+ALO DOCTOR.
+17:02
+Activate · sign in
+Business account
+D02
+Patients
+alodoctor.sa/portal
+Case Patient Service Status
+ALO-2026-0001 Salem A. Opinion · video Doctor review
+ALO-2026-0002 Mona S. Lab Partner services
++ New case Filter
+D03
+New case for my patient
+alodoctor.sa/portal
+Patient mobile
++966 5• ••• ••••
+National ID / Iqama
+1••• ••• •••
+Specialty
+Cardiology
+Add photo or PDF
+Send to patient to consent Save draft
+D04
+Patient ﬁle
+alodoctor.sa/portal
+ALO-2026-0001 Patient & reports
+report.pdf
+echo.mp4
+MRI.dcm
+Nurse check Complete ✓
+Insurance Bupa · valid
+D05
+Pick Indian consultant
+alodoctor.sa/portal
+Specialty
+Cardiology
+Dr. Arjun · Cardiology · KIMS
+Dr. Rahul · Cardiology · KIMS
+Select Proﬁle
+D06
+Questions · conﬁrm call type
+alodoctor.sa/portal
+Q1 Surgery or medication?
+Q2 Is stenting needed now?
+Written Video Voice
+Patient prefers video · you conﬁrm
+Send to ALO Draft
+ALO DOCTOR · Workﬂow chain · Internal view 15
+from partner admin HA03
+to sign-in AD01
+from nurse N06 patient consents W01
+from ALO admin AD03 to coordinator C03
+--- PAGE 16 ---
+05 · Saudi treating doctor · 2/2
+Channel, call, report, orders, results
+Can open a case for his patient. Reviews the ﬁle, picks the Indian consultant, adds questions, conﬁrms the call type, invites the patient, orders services.
+Intake received › Nurse check › Doctor review › Awaiting payment › With consultant › Opinion ready › Partner services › Follow-up 21 days › Closed
+continues
+D07
+Doctor channel
+alodoctor.sa/portal
+Dr. Arjun: echo shows moderate stenosis.
+Thanks. We will discuss it with the patient on a call.
+Reply View opinion
+D08
+Invite patient · call
+alodoctor.sa/portal
+Time · set by ALO Tue 5:00 PM (KSA)
+Call type Video · conﬁrmed
+Participants Dr. Arjun · you · patient · nurse
+Invite patient Start call
+D09
+Opinion received
+alodoctor.sa/portal
+Dr. Arjun · Consultant, India PDF
+Discuss with patient Ask consultant
+D10
+Orders · referral
+alodoctor.sa/portal
+Lab / imaging
+Prescription
+Physio · home nursing
+Insurance approval Auto-sent
+D11
+Review results · alerts
+alodoctor.sa/portal
+LDL 4.9 · high · review
+Reviewed · next step View PDF
+ALO DOCTOR · Workﬂow chain · Internal view 16
+from consultant K06 from coordinator C07 to patient P22 from coordinator C08 ask consultant D07
+to partners L01 from lab L04 to patient P36
+--- PAGE 17 ---
+06 · ALO nurse
+Case portal · inbox
+Checks every intake, sends missing-ﬁle requests through the coordinator, veriﬁes the summary, hides the patient’s identity for the consultant, answers the nurse line, interprets on calls.
+Intake received › Nurse check › Doctor review › Awaiting payment › With consultant › Opinion ready › Partner services › Follow-up 21 days › Closed
+continues
+N01
+Intake queue
+alodoctor.sa/portal
+5
+New
+2
+Missing ﬁles
+7
+With doctors
+Case Saudi doctor Specialty
+ALO-2026-0001 Dr. Abdullah Cardiology
+ALO-2026-0002 Dr. Khalid Oncology
+N02
+Check ﬁle
+alodoctor.sa/portal
+ALO-2026-0001 Patient & reports
+Reports readable
+Echo attached
+Blood test
+Oncology cases: extra ﬁelds shown
+N03
+Request missing ﬁle
+alodoctor.sa/portal
+ALO-2026-0001 Patient & reports
+Request to patient
+Latest blood test
+Send via coordinator Cancel
+N04
+Verify AI summary · EN
+alodoctor.sa/portal
+AI summary · check before sending
+Veriﬁed Edit
+N05
+Consultant copy · identity
+hidden
+alodoctor.sa/portal
+report.pdf
+echo.mp4
+MRI.dcm
+Name hidden in every ﬁle
+ID and phone removed
+Ready for consultant Preview
+N06
+Ready for doctor
+alodoctor.sa/portal
+Sent to Dr. Abdullah
+ALO-2026-0001 Patient & reports
+N07
+Talk-to-nurse inbox
+alodoctor.sa/portal
+Patient: Is my case urgent?
+Noura: your doctor is reviewing it today.
+9 AM – 5 PM · auto-reply after hours
+N08
+Interpret on call
+alodoctor.sa/call
+ALO in-app call · nurse interprets
+ALO DOCTOR · Workﬂow chain · Internal view 17
+from patient P16 to coordinator C02
+to Saudi doctor D02 from patient chat P06 reply alert W17 from coordinator C07
+--- PAGE 18 ---
+07 · ALO coordinator · 1/2
+Before the consultant starts
+The relay point: nurse requests, payment link, consultant link after payment, call time, report, follow-up questions.
+Intake received › Nurse check › Doctor review › Awaiting payment › With consultant › Opinion ready › Partner services › Follow-up 21 days › Closed
+continues
+C01
+Dashboard
+alodoctor.sa/portal
+2
+Nurse requests
+3
+Doctor
+selections
+2
+Awaiting
+payment
+1
+Over 48h
+Case Consultant Due
+ALO-2026-0001 Dr. Arjun 48h
+ALO-2026-0003 Dr. Rahul 12h
+C02
+Nurse request → patient
+alodoctor.sa/portal
+ALO-2026-0001 Patient & reports
+From Nurse Noura
+Request Latest blood test
+Send link to patient Edit
+C03
+Conﬁrm doctor’s choice
+alodoctor.sa/portal
+Dr. Arjun · selected by Dr. Abdullah
+Q1 Surgery or medication?
+Q2 Is stenting needed now?
+Conﬁrm · set price Suggest other
+C04
+Payment link
+ALO DOCTOR
+Dr. Abdullah chose your
+consultant. Opinion + video
+call · 750 SAR.
+17:02
+Pay securely
+Business account
+C05
+Payment received
+alodoctor.sa/portal
+Paid · 750 SAR · mada
+Receipt Sent · app + WhatsApp
+Status With consultant
+Send link to consultant View receipt
+C06
+Link to consultant
+ALO DOCTOR
+New case ALO-2026-0001 ·
+Cardiology · from Dr.
+Abdullah. 2 questions ·
+opinion due 48h.
+17:02
+Video call requested · offer
+IST slots
+17:02
+Open case
+Business account
+ALO DOCTOR · Workﬂow chain · Internal view 18
+from nurse N03 to patient P18 from Saudi doctor D06 if other suggested D05
+to patient P19
+from payment P19
+to consultant K02
+--- PAGE 19 ---
+07 · ALO coordinator · 2/2
+Call, report, follow-up
+The relay point: nurse requests, payment link, consultant link after payment, call time, report, follow-up questions.
+Intake received › Nurse check › Doctor review › Awaiting payment › With consultant › Opinion ready › Partner services › Follow-up 21 days › Closed
+continues
+C07
+Conﬁrm call time
+alodoctor.sa/portal
+Consultant slots Tue 7:30 PM · Wed 11:30 AM (IST)
+Conﬁrmed Tue 5:00 PM KSA · 7:30 PM IST
+Participants Dr. Arjun · Dr. Abdullah · patient · nurse
+Conﬁrm · notify all Ask for other slots
+C08
+Report PDF 1 · release
+alodoctor.sa/portal
+Dr. Arjun · Consultant, India PDF
+English opinion · from Dr. Arjun
+Arabic version checked
+Release to doctor & patient Edit Arabic
+C09
+Follow-up relay
+alodoctor.sa/portal
+Patient: Can I start the treatment now?
+Forwarded to Dr. Arjun · his reply goes back to the patient
+Forward to consultant Answer myself
+C10
+Follow-up · close
+alodoctor.sa/portal
+Final comment added
+PDF 2 sent
+21 days ended
+Close case Extend
+ALO DOCTOR · Workﬂow chain · Internal view 19
+from consultant K07 to Saudi doctor D08 to doctor & patient D09
+from patient P27 to consultant K09 PDF 2 to patient P28
+--- PAGE 20 ---
+08 · Indian consultant
+Doctor app · always in English
+Gets the link with the Saudi doctor’s questions after payment. Sees no patient name or phone. Follow-up comes through the coordinator.
+Intake received › Nurse check › Doctor review › Awaiting payment › With consultant › Opinion ready › Partner services › Follow-up 21 days › Closed
+K01
+Invite
+ALO DOCTOR
+ALO DOCTOR: you are
+invited to the consultant
+network.
+17:02
+Activate · sign in
+Business account
+K02
+New case link
+ALO DOCTOR
+New case ALO-2026-0001 ·
+Cardiology · from Dr.
+Abdullah. 2 questions ·
+opinion due 48h.
+17:02
+Open case
+Business account
+K03
+Sign in
+Mobile number
++91 •••• ••••
+4 8 1
+Sign in
+9:41
+K04
+Case · timer
+if late X12
+ALO-2026-0001
+Opinion due in 31:40 h
+Patient 58 · M · Saudi Arabia
+From Dr. Abdullah
+Accept
+9:41
+K05
+Summary · questions · ﬁles
+if more ﬁles needed X19
+AI summary · check before
+sending
+Q1 Surgery or medication?
+Q2 Is stenting needed now?
+4 reports · names
+hidden
+2 imaging · DICOM
+9:41
+K06
+Write opinion
+Findings
+Assessment
+Recommendations
+●  Voice note · auto-
+transcribed
+Submit opinion
+9:41
+K07
+Offer call slots · IST
+Video call slots (IST)
+Tue 7:30 PM Wed 11:30 AM
++ Add
+Patient sees KSA time
+9:41
+K08
+In-app call
+9:41
+Patient · ALO-2026-0001 · Nurse
+Noura interprets
+K09
+Follow-up · ﬁnal comment
+Patient (via ALO): Can I
+start treatment now?
+Yes, after the lab result.
+Mark as ﬁnal comment (adds to
+PDF 2)
+Send to ALO
+9:41
+ALO DOCTOR · Workﬂow chain · Internal view 20
+from ALO admin AD03 from coordinator C06 to Saudi doctor D07 to coordinator C07
+from coordinator C09
+reply via coordinator C09
+--- PAGE 21 ---
+09 · Lab technician
+Lab technician · partner portal
+Orders come from the Saudi doctor; results and status go back to the doctor and the patient.
+Intake received › Nurse check › Doctor review › Awaiting payment › With consultant › Opinion ready › Partner services › Follow-up 21 days › Closed
+L01
+Lab orders
+alodoctor.sa/portal
+Patient Test Status
+Salem A. Lipid · CBC New
+Mona S. HbA1c Sample taken
+L02
+Order · insurance
+if insurance rejects X23
+alodoctor.sa/portal
+Ordered by Dr. Abdullah
+Insurance Approved · share 30 SAR
+Due 12:40
+Accept order Message doctor
+L03
+Sample → processing
+alodoctor.sa/portal
+Accepted
+Sample
+Processing
+Uploaded
+Doctor reviewed
+L04
+Upload · ﬂag
+alodoctor.sa/portal
+Add photo or PDF
+Flag abnormal · alerts doctor + ALO admin
+ALO DOCTOR · Workﬂow chain · Internal view 21
+from Saudi doctor D10 to Saudi doctor D11
+--- PAGE 22 ---
+10 · Physiotherapist
+Physiotherapist · partner portal
+Orders come from the Saudi doctor; results and status go back to the doctor and the patient.
+Intake received › Nurse check › Doctor review › Awaiting payment › With consultant › Opinion ready › Partner services › Follow-up 21 days › Closed
+T01
+Referral · approval
+alodoctor.sa/portal
+ALO-2026-0001 Patient & reports
+Plan Cardiac rehab · 8 sessions
+Insurance 6 covered · 2 cash
+T02
+Session plan
+alodoctor.sa/portal
+1 2 3 4 5 6 7 8
+T03
+Log session
+alodoctor.sa/portal
+1 2 3 4 5 6 7 8
+Save session Home exercises
+T04
+Patient sees progress
+Your plan
+3 of 8 sessions · today 2 of 3
+exercises
+9:41
+ALO DOCTOR · Workﬂow chain · Internal view 22
+from Saudi doctor D10
+to patient P36
+--- PAGE 23 ---
+11 · Pharmacist
+Pharmacist · partner portal
+Orders come from the Saudi doctor; results and status go back to the doctor and the patient.
+Intake received › Nurse check › Doctor review › Awaiting payment › With consultant › Opinion ready › Partner services › Follow-up 21 days › Closed
+H01
+Prescriptions
+alodoctor.sa/portal
+Patient Items Status
+Salem A. 3 To price
+Mona S. 1 Ready
+H02
+Price · insurance
+if substitute needed X25
+alodoctor.sa/portal
+Medicine Insurance Price
+Medicine 1 Covered 0
+Medicine 2 Cash 45
+Send price Ask doctor (substitute)
+H03
+Ready · pickup or delivery
+alodoctor.sa/portal
+Pickup Delivery
+Received
+Priced
+Ready
+Dispensed
+H04
+Send price + pickup code
+alodoctor.sa/portal
+Patient share 45 SAR
+Pickup code A1B2
+Pickup Riyadh Care pharmacy
+Send to patient Delivery
+ALO DOCTOR · Workﬂow chain · Internal view 23
+from Saudi doctor D10 to patient P38
+--- PAGE 24 ---
+12 · Home nursing
+Home nursing · partner portal
+Orders come from the Saudi doctor; results and status go back to the doctor and the patient.
+Intake received › Nurse check › Doctor review › Awaiting payment › With consultant › Opinion ready › Partner services › Follow-up 21 days › Closed
+V01
+Home visit requests
+alodoctor.sa/portal
+Patient Service Status
+Salem A. Vitals + meds · 4 visits New
+Mona S. Injection Visited
+V02
+Assign nurse · time
+alodoctor.sa/portal
+Area Riyadh · Al Malqa
+Insurance Approved · 4 visits
+First visit Sun 4:30 PM
+Assign home nurse Call patient
+V03
+Patient told · on the way
+ALO DOCTOR
+Your home nurse is on the
+way · arrives 4:30 PM.
+17:02
+Track case
+Business account
+V04
+Visit log
+if vitals abnormal D11
+Visit 1 of 4
+Blood pressure 130/85
+Pulse 78
+Meds taken Yes ✓
+Note
+Save visit
+Alert doctor
+9:41
+ALO DOCTOR · Workﬂow chain · Internal view 24
+from Saudi doctor D10
+to patient P36
+--- PAGE 25 ---
+13 · Partner admin
+Partner portal
+Hospitals, clinics, labs, pharmacies, home nursing: invite doctors, manage bookings and check-in, receive the monthly statement.
+Intake received › Nurse check › Doctor review › Awaiting payment › With consultant › Opinion ready › Partner services › Follow-up 21 days › Closed
+continues
+HA01
+Partner invite
+ALO DOCTOR
+ALO DOCTOR: your partner
+portal for Riyadh Care is
+ready.
+17:02
+Activate · sign in
+Business account
+HA02
+Partner dashboard
+alodoctor.sa/portal
+12
+ALO cases
+9
+Bookings
+5
+Doctors
+HA03
+Invite doctors
+alodoctor.sa/portal
+Dr. Abdullah · Internal medicine
+Doctor mobile
++966 5• ••• ••••
+Send invite Cancel
+HA04
+Bookings · check-in
+if no-show X21
+alodoctor.sa/portal
+Patient Service Status
+Salem A. Cardiology visit Checked in 10:24
+Mona S. Dental Booked
+HA05
+Monthly statement
+alodoctor.sa/portal
+Month Services Amount
+October 38 SAR •••
+Bill issued by ALO DOCTOR · email + portal
+ALO DOCTOR · Workﬂow chain · Internal view 25
+from ALO admin AD02
+to sign-in AD01
+to doctor D01
+from patient P35
+--- PAGE 26 ---
+14 · ALO admin
+Admin panel
+One staff sign-in, accounts and roles, consultant network, payment and refund rules, WhatsApp ﬂows, reports and alerts.
+Intake received › Nurse check › Doctor review › Awaiting payment › With consultant › Opinion ready › Partner services › Follow-up 21 days › Closed
+continues
+AD01
+Portal sign-in · all staff
+alodoctor.sa/portal
+Mobile or email
+Sign in
+AD02
+Users · patients · roles
+alodoctor.sa/portal
+Name Role Status
+Riyadh Care Partner Active
+Noura Nurse Active
+Salem A. Patient Active
+Invite Roles
+AD03
+Consultant network
+alodoctor.sa/portal
+Dr. Arjun · Cardiology · KIMS
+Dr. Rahul · Cardiology · KIMS
+Visible to Saudi doctors by specialty
+Invite consultant Specialties
+AD04
+Payment · refund rules
+alodoctor.sa/portal
+Dental · skin Cash only
+Other partners Insurance + cash
+Partner services paid online ALO bill · app + email
+ALO opinion · calls Online payment
+Refund · before consultant starts •••%
+Refund · after opinion •••%
+AD05
+WhatsApp ﬂows · templates
+alodoctor.sa/portal
+Entry 3 options · 24/7
+Login Never by WhatsApp · SMS code
+Doctor review Reminder 12h · alert 24h
+Consultant reminder 24h before due
+Call reminder 10 min before
+AD06
+Reports · alerts
+alodoctor.sa/portal
+38
+Cases
+46h
+Avg. opinion
+2
+Idle 24h
+4.8 ★
+Rating
+ALO DOCTOR · Workﬂow chain · Internal view 26
+account deletions P44 to partner HA01 to Saudi doctor D05
+refund decisions X06
+--- PAGE 27 ---
+15 · Exceptions · 1/4
+Payment failed · cancel and refund
+What happens when something goes wrong. Every path returns to the main ﬂow.
+On hold Cancelled No-show
+Payment failed
+Cancel · refund
+X01
+Payment failed
+Opinion + video call
+Payment did not go
+through
+mada Apple
+Pay
+Visa
+Try again
+9:41
+X02
+Reminder · link open 24h
+ALO DOCTOR
+Case ALO-2026-0001: your
+payment link is open for 24
+hours. Your case is saved.
+17:02
+Pay securely
+Business account
+X03
+Unpaid 24h · on hold
+alodoctor.sa/portal
+Case Patient Status
+ALO-2026-0001 Salem A. On hold
+Call patient Cancel case
+X04
+Patient told · cancelled
+ALO DOCTOR
+Your case was cancelled
+because it was not paid.
+You can start again
+anytime.
+17:02
+Track case
+Business account
+X05
+Cancel request
+ALO-2026-0001
+Why cancel?
+Not needed Other doctor
+Note
+Cancel case
+9:41
+X06
+Refund decision
+alodoctor.sa/portal
+ALO-2026-0001 Patient & reports
+Stage Consultant not started
+Status Cancelled
+Rule Admin refund rules
+Refund ••• SAR → mada
+Approve refund Partial
+X07
+Refund sent
+ALO DOCTOR
+Your refund was sent to
+your mada card · 3–5
+working days.
+17:02
+View receipt
+Business account
+X08
+Consultant told
+ALO DOCTOR
+Case ALO-2026-0001 was
+cancelled by the patient.
+No action needed.
+17:02
+Business account
+ALO DOCTOR · Workﬂow chain · Internal view 27
+from payment P19
+from tracker P17
+rules from admin AD04
+to rating P29
+--- PAGE 28 ---
+15 · Exceptions · 2/4
+Doctor late · consultant late or declines
+What happens when something goes wrong. Every path returns to the main ﬂow.
+Saudi doctor late (no review in 24h)
+Consultant late (48h passed) or declines
+X09
+Reminder to Saudi doctor
+ALO DOCTOR
+Reminder: case ALO-2026-
+0001 is waiting for your
+review.
+17:02
+Open case
+Business account
+X10
+Doctor review overdue · 24h
+alodoctor.sa/portal
+ALO-2026-0001 · doctor review 24h · no action
+Saudi doctor Dr. Abdullah · Riyadh Care
+Call doctor Ask partner admin
+X11
+Patient told · still reviewing
+ALO DOCTOR
+Your doctor is still reviewing
+your ﬁle. We will update you
+here.
+17:02
+Track case
+Business account
+X12
+Reminder to consultant
+ALO DOCTOR
+Reminder: opinion for ALO-
+2026-0001 is due in 24h.
+17:02
+Open case
+Business account
+X13
+Overdue or declined
+alodoctor.sa/portal
+1
+Over 48h
+1
+Declined
+ALO-2026-0001 · 49h · no opinion
+Reassign Extend 12h
+X14
+Doctor approves new
+consultant
+alodoctor.sa/portal
+Dr. Rahul · Cardiology · KIMS
+Approve Wait 12h
+X15
+Patient told · new time
+ALO DOCTOR
+Your opinion is taking
+longer. Another consultant
+is on your case · new time
+48h.
+17:02
+Track case
+Business account
+ALO DOCTOR · Workﬂow chain · Internal view 28
+12h after N06
+from consultant timer K04
+new consultant link C06
+--- PAGE 29 ---
+15 · Exceptions · 3/4
+Call dropped · missing ﬁles
+What happens when something goes wrong. Every path returns to the main ﬂow.
+On hold Cancelled No-show
+Call dropped · no-show
+Consultant needs more ﬁles
+X16
+Connection lost
+Connection lost ·
+reconnecting…
+Rejoin call
+Switch to voice
+9:41
+X17
+No-show 10 min · reschedule
+alodoctor.sa/portal
+Patient did not join · 10 min · No-show
+Reschedule Written opinion only
+X18
+New call time
+ALO DOCTOR
+New call time: Wed 9:00 AM
+(KSA).
+17:02
+Join call
+Business account
+X19
+Need more · or decline
+ALO-2026-0001
+Request
+Need echo video, full length
+Not my ﬁeld · decline
+Send request
+9:41
+X20
+Nurse gets request
+alodoctor.sa/portal
+Dr. Arjun: need full echo video.
+Timer paused
+Sent to coordinator
+ALO DOCTOR · Workﬂow chain · Internal view 29
+from call P23
+if written only C08
+to invitation P22
+from case K05
+if declined X13
+to coordinator C02
+--- PAGE 30 ---
+15 · Exceptions · 4/4
+Partner side · no-show · insurance · substitute
+What happens when something goes wrong. Every path returns to the main ﬂow.
+On hold Cancelled No-show
+Partner no-show Insurance rejected
+Medicine substitute
+X21
+Patient no-show
+alodoctor.sa/portal
+Patient Service Status
+Salem A. Cardiology visit No-show
+Rebook Mark no-show
+X22
+Patient told · rebook
+ALO DOCTOR
+You missed your visit at
+Riyadh Care. Book a new
+time.
+17:02
+Book now
+Business account
+X23
+Insurance rejected
+alodoctor.sa/portal
+Insurance rejected · lab test
+Cash price 120 SAR
+Send cash price Ask doctor
+X24
+Patient chooses
+ALO DOCTOR
+Insurance did not approve
+one item. Pay 120 SAR cash
+or ask your doctor for
+another option.
+17:02
+Pay cash
+Ask my doctor
+Business account
+X25
+Substitute needed
+alodoctor.sa/portal
+Medicine 2 out of stock · substitute needed
+Suggested Same medicine · other brand
+Send to doctor Order it
+X26
+Doctor approves substitute
+alodoctor.sa/portal
+Pharmacy request Substitute for medicine 2
+Approve substitute Change prescription
+ALO DOCTOR · Workﬂow chain · Internal view 30
+from check-in HA04 from lab order L02
+from pricing H02 back to pharmacy H03

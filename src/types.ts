@@ -4,7 +4,9 @@ export type RoleCode =
   | 'N'   // ALO nurse (Sara N.)
   | 'D'   // Saudi treating doctor (Dr. Abdullah)
   | 'C'   // ALO coordinator (Abdulrahman)
+  | 'CO'  // ALO coordinator alias
   | 'K'   // Indian consultant (Dr. Arjun / Dr. Alok)
+  | 'CN'  // International consultant alias
   | 'L'   // Diagnostic Lab Partner (Alpha Labs / Facility Lab)
   | 'PH'  // Facility Pharmacy Partner
   | 'REC' // Hospital Reception Desk
@@ -61,6 +63,25 @@ export interface AuditLogEntry {
   target: string;
   details: string;
   ipAddress?: string;
+}
+
+export interface ActivityLogEntry {
+  id: string;
+  caseId: string;
+  timestamp: string;
+  formattedTimeAr: string;
+  formattedTimeEn: string;
+  stage: ClinicalStage;
+  actorRole: RoleCode;
+  actorName: string;
+  actorRoleTitleAr?: string;
+  actorRoleTitleEn?: string;
+  hospitalId?: string;
+  actionCode: string;
+  actionSummaryAr: string;
+  actionSummaryEn: string;
+  notesPreview?: string;
+  isMilestone: boolean;
 }
 
 export interface AdminCatalogsState {
@@ -317,6 +338,7 @@ export interface ClinicalCase {
   finalReportEn?: string;
   finalReportAr?: string;
   followUpExpiresAt?: string;
+  timeline?: ActivityLogEntry[];
   createdAt?: string;
   updatedAt?: string;
 }

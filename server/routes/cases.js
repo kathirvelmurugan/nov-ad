@@ -4,22 +4,131 @@ import { memoryCases, STAGE_ORDER } from '../store.js';
 
 const router = express.Router();
 
-// GET /api/cases
+// GET /api/cases - Role & Identity Scoped
 router.get('/', async (req, res) => {
+  const role = req.headers['x-user-role'] || 'AD';
+  const phone = (req.headers['x-user-phone'] || '').trim();
+  const userId = (req.headers['x-user-id'] || '').trim();
+  const tenantId = (req.headers['x-tenant-id'] || '').trim();
+
   try {
-    const { rows } = await pool.query(`
-      SELECT case_data FROM clinical_cases 
-      WHERE (case_data->>'stage')::int > 1 OR (case_data->>'symptoms') IS NOT NULL AND length(trim(case_data->>'symptoms')) > 0
-      ORDER BY updated_at DESC
-    `);
+    let query = 'SELECT case_data FROM clinical_cases WHERE 1=1';
+    const params = [];
+
+    if (role === 'P' && phone) {
+      params.push(phone);
+      query += ` AND (case_data->>'patientPhone' = $${params.length} OR national_id_masked = $${params.length} OR case_data->>'nationalIdMasked' = $${params.length})`;
+    } else if (role === 'D' && tenantId) {
+      params.push(tenantId);
+      query += ` AND (case_data->'treatingDoctor'->>'hospitalId' = $${params.length} OR case_data->'treatingDoctor'->>'hospital' ILIKE '%' || $${params.length} || '%')`;
+    }
+
+    query += ' ORDER BY updated_at DESC';
+    const { rows } = await pool.query(query, params);
     return res.json({ success: true, data: rows.map((r) => r.case_data) });
   } catch (err) {
-    const filtered = memoryCases.filter(
+    let filtered = memoryCases.filter(
       (c) => (c.stage && Number(c.stage) > 1) || (c.symptoms && String(c.symptoms).trim().length > 0)
     );
+
+    if (role === 'P' && phone) {
+      filtered = filtered.filter((c) => c.patientPhone === phone || c.nationalIdMasked === phone);
+    } else if (role === 'D' && tenantId) {
+      filtered = filtered.filter((c) => 
+        !c.treatingDoctor?.hospital ||
+        c.treatingDoctor?.hospitalId === tenantId ||
+        c.treatingDoctor?.hospital?.toLowerCase().includes('riyadh') ||
+        c.treatingDoctor?.hospital?.includes('الرياض') ||
+        c.treatingDoctor?.hospital?.toLowerCase().includes(tenantId.toLowerCase())
+      );
+    }
+
     return res.json({ success: true, data: filtered, isFallback: true });
   }
 });
+
+function generateAstTimestamps() {
+  const now = new Date();
+  const astOffset = 3 * 60 * 60 * 1000;
+  const astTime = new Date(now.getTime() + astOffset + (now.getTimezoneOffset() * 60000));
+  
+  const hours = astTime.getHours();
+  const minutes = astTime.getMinutes().toString().padStart(2, '0');
+  const periodEn = hours >= 12 ? 'PM' : 'AM';
+  const periodAr = hours >= 12 ? 'م' : 'ص';
+  const displayHours = hours % 12 || 12;
+
+  return {
+    isoUtc: now.toISOString(),
+    formattedTimeAr: `${displayHours.toString().padStart(2, '0')}:${minutes} ${periodAr}`,
+    formattedTimeEn: `${displayHours.toString().padStart(2, '0')}:${minutes} ${periodEn} AST`,
+  };
+}
+
+function mapStageToMilestoneInfo(stage, role, customActorName) {
+  switch (stage) {
+    case 'INTAKE_RECEIVED':
+      return {
+        actionCode: 'M01',
+        actorRole: 'P',
+        actorName: customActorName || 'سامي الحربي (Sami Al-Harbi)',
+        actorRoleTitleAr: 'المريض',
+        actorRoleTitleEn: 'Patient',
+        actionSummaryAr: 'تم تسجيل الحالة والموافقة على سياسة الخصوصية',
+        actionSummaryEn: 'Case registered with MOH consent verified',
+        isMilestone: true,
+      };
+    case 'NURSE_CHECK':
+      return {
+        actionCode: 'M02',
+        actorRole: 'N',
+        actorName: customActorName || 'سارة القحطاني (Sara Al-Qahtani)',
+        actorRoleTitleAr: 'ممرضة ألو للفرز',
+        actorRoleTitleEn: 'ALO Nurse',
+        actionSummaryAr: 'تم الفرز السريري ومراجعة المؤشرات الحيوية',
+        actionSummaryEn: 'Clinical triage completed and vitals reviewed',
+        isMilestone: true,
+      };
+    case 'DOCTOR_REVIEW':
+      return {
+        actionCode: 'M03',
+        actorRole: 'D',
+        actorName: customActorName || 'د. فهد الحربي (Dr. Fahad Al-Harbi)',
+        actorRoleTitleAr: 'الطبيب السعودي المعالج',
+        actorRoleTitleEn: 'Saudi Treating Doctor',
+        actionSummaryAr: 'تمت الموافقة الطبية واعتماد طلب الاستشارة الدولية',
+        actionSummaryEn: 'Medical referral endorsed for cross-border consultation',
+        isMilestone: true,
+      };
+    case 'AWAITING_PAYMENT':
+    case 'WITH_CONSULTANT':
+      return {
+        actionCode: 'M04',
+        actorRole: 'C',
+        actorName: customActorName || 'إيمانويل غونزاليس (Emmanuel Arcon Gonzalez)',
+        actorRoleTitleAr: 'منسق رعاية ألو',
+        actorRoleTitleEn: 'ALO Coordinator',
+        actionSummaryAr: 'تم التحقق من السداد وتوليد رابط الاستشاري الدولي',
+        actionSummaryEn: 'Payment verified and consultant magic link dispatched',
+        isMilestone: true,
+      };
+    case 'OPINION_READY':
+    case 'PARTNER_SERVICES':
+    case 'CLOSED':
+      return {
+        actionCode: 'M05',
+        actorRole: 'K',
+        actorName: customActorName || 'د. براشانث (Dr. V. Prasanth)',
+        actorRoleTitleAr: 'الاستشاري الدولي',
+        actorRoleTitleEn: 'International Consultant',
+        actionSummaryAr: 'تم إصدار واعتماد تقرير الرأي الطبي الثاني',
+        actionSummaryEn: 'Second opinion clinical report released and certified',
+        isMilestone: true,
+      };
+    default:
+      return null;
+  }
+}
 
 // POST /api/cases
 router.post('/', async (req, res) => {
@@ -38,8 +147,8 @@ router.post('/', async (req, res) => {
   }
 
   // Regression Guard: prevent backward stage transitions without admin override
+  let currentStageInDb = null;
   try {
-    let currentStageInDb = null;
     const { rows } = await pool.query('SELECT current_stage FROM clinical_cases WHERE id = $1', [c.id]);
     if (rows && rows.length > 0) {
       currentStageInDb = rows[0].current_stage;
@@ -61,6 +170,46 @@ router.post('/', async (req, res) => {
     }
   } catch (guardErr) {
     // Non-blocking fallback
+  }
+
+  // Ensure timeline exists
+  if (!Array.isArray(c.timeline)) {
+    c.timeline = [];
+  }
+
+  const existingIdx = memoryCases.findIndex((x) => x.id === c.id);
+  const isNewCase = existingIdx < 0;
+  const stageChanged = currentStageInDb && c.currentStage && c.currentStage !== currentStageInDb;
+
+  if (isNewCase && c.timeline.length === 0) {
+    const timeInfo = generateAstTimestamps();
+    const milestoneInfo = mapStageToMilestoneInfo('INTAKE_RECEIVED', req.headers['x-user-role'], c.patientName);
+    if (milestoneInfo) {
+      c.timeline.push({
+        id: `evt-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        caseId: c.id,
+        timestamp: timeInfo.isoUtc,
+        formattedTimeAr: timeInfo.formattedTimeAr,
+        formattedTimeEn: timeInfo.formattedTimeEn,
+        stage: 'INTAKE_RECEIVED',
+        ...milestoneInfo,
+      });
+    }
+  } else if (stageChanged) {
+    const timeInfo = generateAstTimestamps();
+    const actorName = req.headers['x-user-id'] || req.headers['x-user-name'];
+    const milestoneInfo = mapStageToMilestoneInfo(c.currentStage, req.headers['x-user-role'], actorName);
+    if (milestoneInfo) {
+      c.timeline.push({
+        id: `evt-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        caseId: c.id,
+        timestamp: timeInfo.isoUtc,
+        formattedTimeAr: timeInfo.formattedTimeAr,
+        formattedTimeEn: timeInfo.formattedTimeEn,
+        stage: c.currentStage,
+        ...milestoneInfo,
+      });
+    }
   }
 
   try {
@@ -95,7 +244,6 @@ router.post('/', async (req, res) => {
   }
 
   // Always update in-memory cache with full case object
-  const existingIdx = memoryCases.findIndex((x) => x.id === c.id);
   if (existingIdx >= 0) {
     memoryCases[existingIdx] = { ...memoryCases[existingIdx], ...c };
   } else {

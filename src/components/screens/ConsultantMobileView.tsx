@@ -9,6 +9,7 @@ import { ConsultantWrittenOpinionSection } from '../consultant/ConsultantWritten
 import { ConsultantSlotAndCallSection } from '../consultant/ConsultantSlotAndCallSection';
 import { ConsultantCaseClosedSection } from '../consultant/ConsultantCaseClosedSection';
 import { BilingualReportModal } from '../cockpit/BilingualReportModal';
+import { CaseMilestoneHUD } from '../common/CaseMilestoneHUD';
 import {
   checkCaseAccepted,
   checkOpinionSubmitted,
@@ -196,6 +197,11 @@ export const ConsultantMobileView: React.FC<Props> = ({
         tealPrimary={tealPrimary}
         onSelectCase={onSelectCase}
       />
+
+      {/* Universal Milestone HUD & Audit Ledger */}
+      <div style={{ maxWidth: '640px', margin: '0 auto 16px auto' }}>
+        <CaseMilestoneHUD activeCase={activeCase} lang="en" isRTL={false} />
+      </div>
 
       {!isOtpVerified ? (
         <ConsultantOtpChallenge

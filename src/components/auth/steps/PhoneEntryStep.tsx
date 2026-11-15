@@ -60,23 +60,18 @@ export const PhoneEntryStep: React.FC<Props> = ({
   return (
     <div>
       <h2 style={{ fontSize: '20px', fontWeight: 800, color: PALETTE.textDark, margin: '0 0 4px 0', textAlign: isRTL ? 'right' : 'left' }}>
-        {activePortal === 'clinical'
-          ? t('دخول العمليات والتمريض المعتمد', 'ALO Operations & Clinical Login')
-          : activePortal === 'hospital'
-          ? t('بوابة المستشفى الشريك المعتمد', 'Partner Hospital Portal Login')
-          : t('بوابة المرضى · الرأي الطبي الثاني', 'Patient Second Opinion Portal')}
+        {t('تسجيل الدخول الموحد لمنصة ألو', 'Unified ALO Healthcare Login')}
       </h2>
       <p style={{ fontSize: '14px', color: PALETTE.textMuted, margin: '0 0 24px 0', textAlign: isRTL ? 'right' : 'left', lineHeight: 1.6 }}>
-        {isStaffMode
-          ? t('أدخل رقم جوالك المعتمد المسجل لدى المنصة لتسجيل الدخول', 'Enter your registered authorized staff mobile number to log in')
-          : t('أدخل رقم جوالك السعودي لاستلام رمز التحقق والمتابعة', 'Enter your Saudi mobile number to receive verification code')}
+        {t('أدخل رقم جوالك للدخول التلقائي والمباشر إلى بوابتك المخصصة', 'Enter your mobile number for automatic direct routing to your portal')}
       </p>
 
       <form onSubmit={onPhoneSubmit}>
         <label style={labelStyle}>
-          {isStaffMode ? t('رقم جوال الكادر المعتمد', 'Authorized Staff Mobile') : t('رقم الجوال', 'Mobile Number')}
+          {t('رقم الجوال السعودي', 'Saudi Mobile Number')}
         </label>
         <input
+          id="auth-phone-input"
           ref={phoneRef}
           type="tel"
           value={phone}
@@ -85,7 +80,7 @@ export const PhoneEntryStep: React.FC<Props> = ({
           style={getInputStyle(isRTL)}
           autoComplete="tel"
           dir="ltr"
-          aria-label={isStaffMode ? t('رقم جوال الكادر المعتمد', 'Authorized Staff Mobile') : t('رقم الجوال السعودي', 'Saudi Mobile Number')}
+          aria-label={t('رقم الجوال السعودي', 'Saudi Mobile Number')}
           {...inputFocusHandlers}
         />
         {error && (
@@ -94,6 +89,7 @@ export const PhoneEntryStep: React.FC<Props> = ({
           </div>
         )}
         <button
+          id="auth-phone-submit-btn"
           type="submit"
           disabled={isLoading || !validateSaudiMobile(phone)}
           style={{
@@ -106,10 +102,8 @@ export const PhoneEntryStep: React.FC<Props> = ({
         >
           {isLoading ? (
             <span style={{ display: 'inline-block', width: '20px', height: '20px', border: '3px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-          ) : isStaffMode ? (
-            t('تسجيل الدخول', 'Login')
           ) : (
-            t('إرسال رمز التحقق', 'Send Verification Code')
+            t('متابعة وتسجيل الدخول', 'Continue to Login')
           )}
         </button>
       </form>

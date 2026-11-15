@@ -134,6 +134,7 @@ export const OtpVerificationStep: React.FC<Props> = ({
           {otp.map((digit, idx) => (
             <input
               key={idx}
+              id={`auth-otp-digit-${idx}`}
               ref={el => { otpRefs.current[idx] = el; }}
               type="text"
               inputMode="numeric"
@@ -176,6 +177,7 @@ export const OtpVerificationStep: React.FC<Props> = ({
         )}
 
         <button
+          id="auth-otp-submit-btn"
           type="submit"
           disabled={isLoading || otp.join('').length !== 6}
           style={{

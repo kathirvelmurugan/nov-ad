@@ -433,6 +433,79 @@ export const CoordinatorPaymentGateTab: React.FC<Props> = ({
               </div>
             </div>
 
+            {/* Consultant Direct Magic Link & WhatsApp Dispatch Card */}
+            <div style={{ marginTop: '16px', padding: '16px', backgroundColor: '#F0FDF4', borderRadius: '12px', border: '1.5px dashed #22C55E' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
+                <span style={{ fontSize: '13px', fontWeight: 800, color: '#15803D' }}>
+                  {isAr ? '🔗 رابط الاستشاري السريع (Consultant Direct Magic Link):' : '🔗 Consultant Direct Access Magic Link:'}
+                </span>
+                <span style={{ fontSize: '11px', fontWeight: 700, backgroundColor: '#DCFCE7', color: '#166534', padding: '2px 8px', borderRadius: '6px' }}>
+                  {isAr ? 'دخول مباشر دون كلمة مرور' : 'Passwordless Instant Login'}
+                </span>
+              </div>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <input
+                  type="text"
+                  readOnly
+                  value={typeof window !== 'undefined' ? `${window.location.origin}/?magic_token=ML-${activeCase.id}&caseId=${activeCase.id}&consultant=${encodeURIComponent(consultantName)}` : ''}
+                  style={{
+                    flex: 1,
+                    minWidth: '240px',
+                    padding: '8px 12px',
+                    fontSize: '12px',
+                    fontFamily: 'monospace',
+                    borderRadius: '8px',
+                    border: '1px solid #86EFAC',
+                    backgroundColor: '#FFFFFF',
+                    color: '#1E293B',
+                  }}
+                  id="consultant-magic-link-input"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (typeof window !== 'undefined') {
+                      const link = `${window.location.origin}/?magic_token=ML-${activeCase.id}&caseId=${activeCase.id}&consultant=${encodeURIComponent(consultantName)}`;
+                      navigator.clipboard?.writeText(link);
+                      alert(isAr ? 'تم نسخ رابط الاستشاري بنجاح! 📋' : 'Consultant Magic Link copied to clipboard! 📋');
+                    }
+                  }}
+                  style={{
+                    padding: '8px 14px',
+                    borderRadius: '8px',
+                    backgroundColor: '#15803D',
+                    color: '#FFFFFF',
+                    fontWeight: 800,
+                    fontSize: '12px',
+                    border: 'none',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {isAr ? '📋 نسخ الرابط' : '📋 Copy Link'}
+                </button>
+                <a
+                  href={`https://wa.me/?text=${encodeURIComponent((isAr ? 'ملف استشارة طبية عاجل من ALO للمريض: ' : 'Urgent ALO Medical Second Opinion Dossier: ') + (activeCase.caseNumber || activeCase.id) + '\n\n' + (typeof window !== 'undefined' ? `${window.location.origin}/?magic_token=ML-${activeCase.id}&caseId=${activeCase.id}&consultant=${encodeURIComponent(consultantName)}` : ''))}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    padding: '8px 14px',
+                    borderRadius: '8px',
+                    backgroundColor: '#25D366',
+                    color: '#FFFFFF',
+                    fontWeight: 800,
+                    fontSize: '12px',
+                    textDecoration: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                  }}
+                >
+                  <span>📲</span>
+                  <span>{isAr ? 'واتساب' : 'WhatsApp'}</span>
+                </a>
+              </div>
+            </div>
+
             <p style={{ margin: 0, fontSize: '13px', color: '#047857', fontWeight: 600, lineHeight: 1.6 }}>
               {isAr
                 ? 'تم تشفير الملف الطبي وإزالة جميع البيانات التعريفية للمريض وفقًا لبروتوكولات ألو، وتم تسليمه بشكل آمن عبر بوابة التنسيق الدولية. سيتواصل الاستشاري خلال الإطار الزمني المحدد.'

@@ -89,7 +89,16 @@ export function useWorkflowUIState({
     try {
       localStorage.removeItem(USER_SESSION_KEY);
       localStorage.removeItem(VIEW_MODE_KEY);
-      localStorage.setItem('alo_patient_subview_v3.0', 'landing');
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(ACTIVE_CASE_KEY);
+      localStorage.removeItem('alo_patient_subview_v3.0');
+      // Wipe any residual draft keys on shared workstations
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && (k.includes('draft') || k.includes('case'))) {
+          localStorage.removeItem(k);
+        }
+      }
     } catch (e) {}
     setUserSession(null);
     setActivePersona(PERSONAS[0]);
