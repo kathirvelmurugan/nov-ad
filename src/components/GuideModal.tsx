@@ -50,8 +50,8 @@ export const GuideModal: React.FC<Props> = ({
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 {isAr
-                  ? 'تعرّف على تدفق المراحل التسع، الأدوار الـ 11، وأدوات الاختبار السريع'
-                  : 'Explore 9 clinical stages, 11 roles, and demo tools'}
+                  ? 'تعرّف على تدفق المراحل التسع، الأدوار الـ 11، وعمليات المنصة السريرية'
+                  : 'Explore 9 clinical stages, 11 roles, and clinical operations workflow'}
               </p>
             </div>
           </div>

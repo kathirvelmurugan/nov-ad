@@ -27,6 +27,117 @@ import { useWorkflowUIState } from './workflow/useWorkflowUIState';
 export type { UserSession };
 export { STORAGE_KEY, ACTIVE_CASE_KEY, USER_SESSION_KEY, FRESH_PRIMARY_CASE };
 
+const generateAstTimestamp = () => {
+  const now = new Date();
+  const astTime = new Date(now.getTime() + (3 * 3600000) + (now.getTimezoneOffset() * 60000));
+  const hours = astTime.getHours();
+  const minutes = astTime.getMinutes().toString().padStart(2, '0');
+  const periodEn = hours >= 12 ? 'PM' : 'AM';
+  const periodAr = hours >= 12 ? 'م' : 'ص';
+  const displayH = hours % 12 || 12;
+  return {
+    iso: now.toISOString(),
+    timeAr: `${displayH.toString().padStart(2, '0')}:${minutes} ${periodAr}`,
+    timeEn: `${displayH.toString().padStart(2, '0')}:${minutes} ${periodEn} AST`,
+  };
+};
+
+const getMilestoneEventForStage = (stage: string, caseId: string, customActor?: string): any => {
+  const timeInfo = generateAstTimestamp();
+  switch (stage) {
+    case 'INTAKE_RECEIVED':
+      return {
+        id: `evt-${Date.now()}-m01`,
+        caseId,
+        timestamp: timeInfo.iso,
+        formattedTimeAr: timeInfo.timeAr,
+        formattedTimeEn: timeInfo.timeEn,
+        actionCode: 'M01',
+        stage: 'INTAKE_RECEIVED',
+        actorRole: 'P',
+        actorName: customActor || 'Sami Al-Harbi (سامي الحربي)',
+        actorRoleTitleAr: 'المريض',
+        actorRoleTitleEn: 'Patient',
+        actionSummaryAr: 'تم تسجيل الحالة وتوثيق موافقة الخصوصية',
+        actionSummaryEn: 'Case intake registered with MOH verified consent',
+        isMilestone: true,
+      };
+    case 'NURSE_CHECK':
+      return {
+        id: `evt-${Date.now()}-m02`,
+        caseId,
+        timestamp: timeInfo.iso,
+        formattedTimeAr: timeInfo.timeAr,
+        formattedTimeEn: timeInfo.timeEn,
+        actionCode: 'M02',
+        stage: 'NURSE_CHECK',
+        actorRole: 'N',
+        actorName: customActor || 'Sara Al-Qahtani (سارة القحطاني)',
+        actorRoleTitleAr: 'ممرضة ألو للفرز',
+        actorRoleTitleEn: 'ALO Nurse',
+        actionSummaryAr: 'تم الفرز السريري ومراجعة المؤشرات الحيوية',
+        actionSummaryEn: 'Clinical triage completed and vitals reviewed',
+        isMilestone: true,
+      };
+    case 'DOCTOR_REVIEW':
+      return {
+        id: `evt-${Date.now()}-m03`,
+        caseId,
+        timestamp: timeInfo.iso,
+        formattedTimeAr: timeInfo.timeAr,
+        formattedTimeEn: timeInfo.timeEn,
+        actionCode: 'M03',
+        stage: 'DOCTOR_REVIEW',
+        actorRole: 'D',
+        actorName: customActor || 'Dr. Fahad Al-Harbi (د. فهد الحربي)',
+        actorRoleTitleAr: 'الطبيب السعودي المعالج',
+        actorRoleTitleEn: 'Saudi Treating Doctor',
+        actionSummaryAr: 'تمت الموافقة الطبية واعتماد طلب الاستشارة الدولية',
+        actionSummaryEn: 'Medical referral endorsed for cross-border consultation',
+        isMilestone: true,
+      };
+    case 'AWAITING_PAYMENT':
+    case 'WITH_CONSULTANT':
+      return {
+        id: `evt-${Date.now()}-m04`,
+        caseId,
+        timestamp: timeInfo.iso,
+        formattedTimeAr: timeInfo.timeAr,
+        formattedTimeEn: timeInfo.timeEn,
+        actionCode: 'M04',
+        stage,
+        actorRole: 'C',
+        actorName: customActor || 'Emmanuel Arcon Gonzalez',
+        actorRoleTitleAr: 'منسق رعاية ألو',
+        actorRoleTitleEn: 'ALO Coordinator',
+        actionSummaryAr: 'تم التحقق المالي وتأكيد السداد وإحالة الملف للاستشاري',
+        actionSummaryEn: 'Payment verified and case dispatched to specialist',
+        isMilestone: true,
+      };
+    case 'OPINION_READY':
+    case 'PARTNER_SERVICES':
+    case 'CLOSED':
+      return {
+        id: `evt-${Date.now()}-m05`,
+        caseId,
+        timestamp: timeInfo.iso,
+        formattedTimeAr: timeInfo.timeAr,
+        formattedTimeEn: timeInfo.timeEn,
+        actionCode: 'M05',
+        stage,
+        actorRole: 'K',
+        actorName: customActor || 'Dr. V. Prasanth',
+        actorRoleTitleAr: 'الاستشاري الدولي',
+        actorRoleTitleEn: 'International Consultant',
+        actionSummaryAr: 'تم تقديم الرأي الطبي الاستشاري واعتماده',
+        actionSummaryEn: 'Second opinion clinical report released and certified',
+        isMilestone: true,
+      };
+    default:
+      return null;
+  }
+};
+
 const createFreshDraftIntake = (session?: UserSession | null, _isAr = false): ClinicalCase => ({
   ...FRESH_PRIMARY_CASE,
   id: 'draft-intake',
@@ -199,6 +310,7 @@ export function useClinicalWorkflowState() {
       const nameToSet = syncedUpdate.patientName || intakeDraft.patientName || userSession?.fullName || 'Sami Al-Harbi';
       const nameArToSet = syncedUpdate.patientNameAr || intakeDraft.patientNameAr || userSession?.fullName || 'سامي الحربي';
       const nameEnToSet = syncedUpdate.patientNameEn || intakeDraft.patientNameEn || userSession?.fullName || 'Sami Al-Harbi';
+      const initialEvt = getMilestoneEventForStage('INTAKE_RECEIVED', freshId, nameToSet);
       const registeredCase: ClinicalCase = {
         ...intakeDraft,
         ...syncedUpdate,
@@ -212,6 +324,7 @@ export function useClinicalWorkflowState() {
         status: 'open',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        timeline: initialEvt ? [initialEvt] : [],
         metadata: {
           ...(intakeDraft.metadata || {}),
           ...(syncedUpdate.metadata || {}),
@@ -219,6 +332,7 @@ export function useClinicalWorkflowState() {
         },
       };
 
+      try { localStorage.setItem('alo_active_case_id', freshId); } catch {}
       apiClient.saveCase(registeredCase).catch(() => {});
       setCases((prev) => [registeredCase, ...prev.filter((c) => c.id !== freshId && c.id !== 'draft-intake')]);
       setActiveCaseId(registeredCase.id);
@@ -236,19 +350,29 @@ export function useClinicalWorkflowState() {
       if (!exists) {
         if (!isNurseSubmit) return prev;
         const baseCase = (activeCase && activeCase.id === targetId) ? activeCase : FRESH_PRIMARY_CASE;
-        updatedCase = { ...baseCase, ...syncedUpdate, id: targetId, ...(phoneToSet ? { patientPhone: phoneToSet } : {}) };
+        const newEvt = syncedUpdate.currentStage ? getMilestoneEventForStage(syncedUpdate.currentStage, targetId, userSession?.fullName) : null;
+        const existingTimeline = Array.isArray(baseCase.timeline) ? baseCase.timeline : [];
+        const nextTimeline = newEvt ? [...existingTimeline.filter(e => e.actionCode !== newEvt.actionCode), newEvt] : existingTimeline;
+        updatedCase = { ...baseCase, ...syncedUpdate, id: targetId, timeline: nextTimeline, ...(phoneToSet ? { patientPhone: phoneToSet } : {}) };
         setActiveCaseId(updatedCase.id);
+        try { localStorage.setItem('alo_active_case_id', updatedCase.id); } catch {}
         nextCases = [updatedCase, ...prev];
       } else {
         nextCases = prev.map((c) => {
           if (c.id === targetId) {
-            updatedCase = { ...c, ...syncedUpdate, id: targetId, ...(phoneToSet ? { patientPhone: phoneToSet } : {}) };
+            const newEvt = syncedUpdate.currentStage && syncedUpdate.currentStage !== c.currentStage
+              ? getMilestoneEventForStage(syncedUpdate.currentStage, targetId, userSession?.fullName)
+              : null;
+            const existingTimeline = Array.isArray(c.timeline) ? c.timeline : [];
+            const nextTimeline = newEvt ? [...existingTimeline.filter(e => e.actionCode !== newEvt.actionCode), newEvt] : existingTimeline;
+            updatedCase = { ...c, ...syncedUpdate, id: targetId, timeline: nextTimeline, ...(phoneToSet ? { patientPhone: phoneToSet } : {}) };
             return updatedCase;
           }
           return c;
         });
         if (!updatedCase!) updatedCase = { ...activeCase, ...syncedUpdate, id: targetId, ...(phoneToSet ? { patientPhone: phoneToSet } : {}) };
       }
+      try { localStorage.setItem('alo_active_case_id', targetId); } catch {}
       apiClient.saveCase(updatedCase).catch(() => {});
       return nextCases;
     });

@@ -73,7 +73,7 @@ export const GuideOverviewTab: React.FC<GuideOverviewTabProps> = ({ isAr }) => {
           <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
             {isAr
               ? 'كل ما تقوم بتعديله أو إدخاله يُحفظ في متصفحك فقط عبر التخزين المحلي (LocalStorage). لن يؤثر عملك على أي مستخدم آخر، ويمكنك إعادة تعيين المنصة إلى حالتها الأصلية بضغطة زر واحدة (إعادة ضبط).'
-              : 'All entries and updates are saved locally in your browser sandbox. Different reviewers can test simultaneously without conflicting with each other. Click "Reset Demo" at any time to return to factory state.'}
+              : 'All entries and updates are saved locally in your browser sandbox. Different reviewers can test simultaneously without conflicting with each other. Click "Reset Workspace" at any time to return to factory state.'}
           </p>
         </div>
       </div>

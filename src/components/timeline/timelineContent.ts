@@ -19,6 +19,21 @@ export const STAGES: StageStep[] = [
   { stage: 'CLOSED', num: 9, labelAr: 'إغلاق الملف', labelEn: 'Closed' },
 ];
 
+export const getStagesForCase = (consultationType?: string): StageStep[] => {
+  const isWritten = consultationType === 'written';
+  return [
+    { stage: 'INTAKE_RECEIVED', num: 1, labelAr: 'تسجيل الحالة', labelEn: 'Intake' },
+    { stage: 'NURSE_CHECK', num: 2, labelAr: 'فرز التمريض', labelEn: 'Nurse Triage' },
+    { stage: 'DOCTOR_REVIEW', num: 3, labelAr: 'الطبيب السعودي', labelEn: 'Saudi Doctor' },
+    { stage: 'AWAITING_PAYMENT', num: 4, labelAr: 'السداد والفاتورة', labelEn: 'Payment' },
+    { stage: 'WITH_CONSULTANT', num: 5, labelAr: 'الاستشاري الدولي', labelEn: 'Consultant' },
+    { stage: 'OPINION_READY', num: 6, labelAr: isWritten ? 'الرأي الاستشاري' : 'الجلسة المرئية', labelEn: isWritten ? 'Second Opinion' : 'Telehealth' },
+    { stage: 'PARTNER_SERVICES', num: 7, labelAr: 'استلام التقرير', labelEn: 'Report PDF 1' },
+    { stage: 'FOLLOW_UP_21_DAYS', num: 8, labelAr: 'المتابعة 21 يوماً', labelEn: 'Follow-up' },
+    { stage: 'CLOSED', num: 9, labelAr: 'إغلاق الملف', labelEn: 'Closed' },
+  ];
+};
+
 export interface StageContentData {
   badgeAr: string;
   badgeEn: string;

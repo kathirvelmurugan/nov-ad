@@ -1,19 +1,23 @@
 import React from 'react';
-import { STAGES } from './timelineContent';
+import { getStagesForCase } from './timelineContent';
 
 interface TimelineProgressBarProps {
   currentIndex: number;
   isAr: boolean;
+  consultationType?: string;
 }
 
 export const TimelineProgressBar: React.FC<TimelineProgressBarProps> = ({
   currentIndex,
   isAr,
+  consultationType,
 }) => {
+  const stages = getStagesForCase(consultationType);
+
   return (
     <div className="bg-white dark:bg-alo-darkCard border border-slate-200 dark:border-alo-darkBorder rounded-2xl p-4 shadow-sm">
       <div className="flex items-center justify-between gap-1 overflow-x-auto pb-1 scrollbar-thin">
-        {STAGES.map((s, idx) => {
+        {stages.map((s, idx) => {
           const isCompleted = idx < currentIndex;
           const isCurrent = idx === currentIndex;
 
@@ -33,7 +37,7 @@ export const TimelineProgressBar: React.FC<TimelineProgressBarProps> = ({
                 </span>
                 <span>{isAr ? s.labelAr : s.labelEn}</span>
               </div>
-              {idx < STAGES.length - 1 && (
+              {idx < stages.length - 1 && (
                 <span className="text-slate-300 dark:text-slate-600 mx-1">
                   {isAr ? '←' : '→'}
                 </span>

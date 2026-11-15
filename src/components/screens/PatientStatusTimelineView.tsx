@@ -20,6 +20,7 @@ import { TimelineProgressBar } from '../timeline/TimelineProgressBar';
 import { TimelinePhysicalExamAlert } from '../timeline/TimelinePhysicalExamAlert';
 import { TimelineReleasedReportCard } from '../timeline/TimelineReleasedReportCard';
 import { TimelineDossierSummaryCard } from '../timeline/TimelineDossierSummaryCard';
+import { CaseMilestoneHUD } from '../common/CaseMilestoneHUD';
 
 interface Props {
   activeCase: ClinicalCase;
@@ -347,6 +348,9 @@ export const PatientStatusTimelineView: React.FC<Props> = ({
         </div>
       )}
 
+      {/* Universal Milestone HUD & Audit Ledger for Patient */}
+      <CaseMilestoneHUD activeCase={activeCase} lang={lang} isRTL={isAr} />
+
       {/* 1. Header: Patient Journey Banner */}
       <div className="bg-gradient-to-r from-teal-900 via-slate-900 to-teal-950 p-6 rounded-2xl border border-teal-800/60 shadow-lg text-white">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -384,18 +388,6 @@ export const PatientStatusTimelineView: React.FC<Props> = ({
                 <span>{isAr ? 'طلب استشارة جديدة' : 'New Consultation'}</span>
               </button>
             )}
-
-            {/* Quick Isolated Reset (QA Only) */}
-            {isDemoMode && onResetActiveCase && (
-              <button
-                onClick={onResetActiveCase}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-rose-900/60 text-slate-300 hover:text-rose-200 border border-slate-700 hover:border-rose-500/50 text-xs font-bold transition-all"
-                title={isAr ? 'إعادة ضبط مسار هذا المريض فقط' : 'Reset this patient case only'}
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>{isAr ? 'إعادة ضبط هذه الحالة فقط' : 'Reset This Case'}</span>
-              </button>
-            )}
           </div>
         </div>
       </div>
@@ -404,7 +396,7 @@ export const PatientStatusTimelineView: React.FC<Props> = ({
       <TimelineDossierSummaryCard activeCase={activeCase} isAr={isAr} />
 
       {/* 2. Visual Stepper: Patient Journey Progress Pipeline */}
-      <TimelineProgressBar currentIndex={currentIndex} isAr={isAr} />
+      <TimelineProgressBar currentIndex={currentIndex} isAr={isAr} consultationType={activeCase.consultationType} />
 
       {/* 2.5 In-Person Physical Examination Required Alert */}
       <TimelinePhysicalExamAlert activeCase={activeCase} isAr={isAr} />

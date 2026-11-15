@@ -176,21 +176,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         />
       )}
 
-      {/* Floating Demo Cockpit Badge (?demo=1) */}
-      {isPureLandingPage &&
-        typeof window !== 'undefined' &&
-        new URLSearchParams(window.location.search).get('demo') === '1' && (
-        <button
-          type="button"
-          onClick={handleStartCaseToCockpit}
-          className="fixed bottom-6 start-6 z-50 inline-flex items-center gap-2 px-4 py-2.5 bg-slate-900/90 hover:bg-slate-900 text-teal-300 hover:text-white rounded-full shadow-2xl border border-teal-500/30 backdrop-blur-md text-xs font-bold transition-all hover:scale-105 active:scale-95 cursor-pointer"
-          title={isAr ? 'الانتقال إلى قمرة المحاكاة الخماسية (Demo Cockpit)' : 'Open 5-Role Demo Cockpit'}
-        >
-          <span className="w-2 h-2 rounded-full bg-teal-400 animate-pulse" />
-          <span>{isAr ? '📱 قمرة المحاكاة الخماسية' : '📱 5-Role Demo Cockpit'}</span>
-        </button>
-      )}
-
       {/* 2. Main Area: Studio Cockpit OR Workstation */}
       {viewMode === 'studio' ? (
         <FiveDeviceCockpitView

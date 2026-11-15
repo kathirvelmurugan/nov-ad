@@ -48,11 +48,11 @@ export const GuideToolsTab: React.FC<GuideToolsTabProps> = ({ isAr }) => {
           </p>
         </div>
 
-        {/* Tool 4: Reset Demo */}
+        {/* Tool 4: Reset Clean Workspace */}
         <div className="p-4 rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50/40 dark:bg-rose-950/20">
           <div className="flex items-center gap-2 font-bold text-xs text-rose-800 dark:text-rose-300 mb-1.5">
             <RotateCcw className="w-4 h-4 text-rose-600" />
-            <span>{isAr ? '🔄 إعادة ضبط المنصة (Reset Demo)' : '🔄 Reset Demo Sandbox'}</span>
+            <span>{isAr ? '🔄 إعادة ضبط المنصة للحالة النظيفة' : '🔄 Reset Clean Workspace'}</span>
           </div>
           <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
             {isAr
