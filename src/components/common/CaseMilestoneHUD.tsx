@@ -123,7 +123,12 @@ export const CaseMilestoneHUD: React.FC<CaseMilestoneHUDProps> = ({
 
     const currentOrder = stageOrder[currentStage] ?? 0;
     if (index < currentOrder) return 'completed';
-    if (index === currentOrder) return 'active';
+    if (index === currentOrder) {
+      if (currentStage === 'CLOSED' || activeCase.status === 'closed' || Boolean(activeCase.metadata?.pdf2Released)) {
+        return 'completed';
+      }
+      return 'active';
+    }
     return 'upcoming';
   };
 

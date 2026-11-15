@@ -137,25 +137,9 @@ const FollowUpChatView: React.FC<Props> = ({ activeCase, onAdvanceStage, onUpdat
     }
   }, [messages]);
 
-  const handleDownloadPDF = async () => {
-    setIsDownloading(true);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    const checksum = generateMockSHA256();
-    const blob = new Blob(
-      [
-        `ALO DOCTOR v2.4 Saudi Edition - Certified Medical Opinion\nCase ID: ${activeCase.id}\nSHA256: ${checksum}\nMOH Seal: VERIFIED\n\nThis document represents a certified medical opinion relayed through ALO DOCTOR's secure infrastructure.`,
-      ],
-      { type: 'application/pdf' }
-    );
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `ALO_Doctor_Report_PDF1_${activeCase.id}.pdf`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    setIsDownloading(false);
+  const handleDownloadPDF = () => {
+    setReportModalType(activeCase.currentStage === 'CLOSED' ? 'pdf2' : 'pdf1');
+    setIsReportModalOpen(true);
     setDownloadComplete(true);
   };
 

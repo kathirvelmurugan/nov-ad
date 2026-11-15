@@ -50,6 +50,7 @@ export const DoctorOpinionEndorsementPanel: React.FC<Props> = ({
 
   const handleApproveToCoordinator = () => {
     onUpdateCase({
+      doctorReleasedToPatient: true,
       saudiEndorsement: {
         status: 'endorsed',
         doctorName: effectiveDoctorName,
@@ -326,6 +327,7 @@ export const DoctorOpinionEndorsementPanel: React.FC<Props> = ({
         onClose={() => setIsReportPreviewOpen(false)}
         activeCase={activeCase}
         lang={lang}
+        reportType="pdf1"
       />
     </div>
   );

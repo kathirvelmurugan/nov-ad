@@ -96,10 +96,10 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
       return cases.filter((c) => c.patientPhone === phone || c.nationalIdMasked === phone);
     }
     if (role === 'D') {
+      const cleanName = (userSession?.fullName || '').replace(/^(د\.|dr\.)\s*/i, '').trim().toLowerCase();
       return cases.filter((c) => {
-        const docName = (userSession?.fullName || '').toLowerCase();
-        const cDocName = (c.treatingDoctor?.name || '').toLowerCase();
-        if (docName && cDocName && (cDocName.includes(docName) || docName.includes(cDocName))) return true;
+        const cDocName = (c.treatingDoctor?.name || '').replace(/^(د\.|dr\.)\s*/i, '').trim().toLowerCase();
+        if (cleanName && cDocName && (cDocName.includes(cleanName) || cleanName.includes(cDocName))) return true;
         if (!hospital) return true;
         const hospStr = (c.treatingDoctor?.hospital || '').toLowerCase();
         if (hospStr.includes(hospital.toLowerCase())) return true;

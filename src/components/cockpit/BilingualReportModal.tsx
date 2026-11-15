@@ -47,8 +47,17 @@ export const BilingualReportModal: React.FC<Props> = ({
   const consultantName = activeCase.consultant?.name || 'Dr. Pradeep Kumar, MBBS, MS, MCh (CTVS)';
   const invoiceNum = activeCase.pricing?.invoiceNumber || 'INV-2026-001';
 
-  const customAnswers = activeCase.consultantAnswers || [];
-  const customQuestions = activeCase.focusQuestions || activeCase.treatingDoctor?.focusQuestions || [];
+  const customAnswers =
+    (activeCase.consultantAnswers && activeCase.consultantAnswers.length > 0
+      ? activeCase.consultantAnswers
+      : (activeCase.metadata?.consultantAnswers as string[] | undefined) ||
+        (activeCase.metadata?.focusAnswers as string[] | undefined)) || [];
+
+  const customQuestions =
+    (activeCase.focusQuestions && activeCase.focusQuestions.length > 0
+      ? activeCase.focusQuestions
+      : activeCase.treatingDoctor?.focusQuestions ||
+        (activeCase.metadata?.focusQuestions as string[] | undefined)) || [];
 
   const questionsAndAnswers: QuestionAndAnswerItem[] = [
     {

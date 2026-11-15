@@ -79,7 +79,7 @@ export function useClinicalWorkflowState() {
         const search = new URLSearchParams(window.location.search);
         const role = (search.get('role') || '').toUpperCase();
         const portal = (search.get('portal') || '').toLowerCase();
-        const token = search.get('token') || search.get('magic');
+        const token = search.get('token') || search.get('magic') || search.get('magic_token');
 
         const portalRoleMap: Record<string, string> = {
           consultant: 'K', doctor: 'D', nurse: 'N', coordinator: 'C',
@@ -99,10 +99,12 @@ export function useClinicalWorkflowState() {
     try {
       if (typeof window !== 'undefined') {
         const search = new URLSearchParams(window.location.search);
-        if (search.get('demo') === '1' || search.get('cockpit') === '1' || search.get('auth') === 'bypass' || search.get('token') || search.get('magic') || window.location.hash === '#cockpit') {
-          const roleCode = (search.get('role') || 'P').toUpperCase();
+        const hasConsultantToken = Boolean(search.get('token') || search.get('magic') || search.get('magic_token'));
+        if (search.get('demo') === '1' || search.get('cockpit') === '1' || search.get('auth') === 'bypass' || hasConsultantToken || window.location.hash === '#cockpit') {
+          const roleCode = (search.get('role') || (hasConsultantToken ? 'K' : 'P')).toUpperCase();
           const personaId = roleCode === 'D' ? 'doctor' : roleCode === 'K' ? 'consultant' : roleCode === 'N' ? 'nurse' : roleCode === 'C' ? 'coordinator' : roleCode === 'HA' ? 'hospital_admin' : roleCode === 'AD' ? 'super_admin' : 'patient';
-          return { isAuthenticated: true, phone: '+966501111111', personaId, isGuest: true, expiresAt: Date.now() + 30 * 24 * 3600 * 1000, lang: 'ar' };
+          const defaultName = roleCode === 'K' ? (search.get('consultant') || 'Dr. Pradeep Kumar, MBBS, MS, MCh (CTVS)') : undefined;
+          return { isAuthenticated: true, phone: roleCode === 'K' ? '+919876543210' : '+966501111111', roleCode, fullName: defaultName, personaId, isGuest: true, expiresAt: Date.now() + 30 * 24 * 3600 * 1000, lang: 'ar' };
         }
         const saved = localStorage.getItem(USER_SESSION_KEY);
         if (saved) {

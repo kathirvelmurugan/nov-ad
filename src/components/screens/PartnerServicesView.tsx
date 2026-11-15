@@ -82,6 +82,14 @@ export const PartnerServicesView: React.FC<Props> = ({
           status: newStatus === 'results_uploaded' ? 'completed' : 'pending',
         },
       },
+      saudiEndorsement: {
+        status: activeCase.saudiEndorsement?.status || 'pending',
+        prescriptionIssued: Boolean(activeCase.saudiEndorsement?.prescriptionIssued),
+        releasedToPatient: Boolean(activeCase.saudiEndorsement?.releasedToPatient),
+        doctorName: activeCase.saudiEndorsement?.doctorName,
+        endorsementDate: activeCase.saudiEndorsement?.endorsementDate,
+        requiresLocalLab: newStatus !== 'results_uploaded',
+      },
     });
   };
 
@@ -108,6 +116,14 @@ export const PartnerServicesView: React.FC<Props> = ({
           substituteAllowed: activeCase.partnerOrders?.pharmacy?.substituteAllowed ?? true,
           status: newStatus === 'dispensed' || newStatus === 'delivered' ? 'ready' : 'pending',
         },
+      },
+      saudiEndorsement: {
+        status: activeCase.saudiEndorsement?.status || 'pending',
+        releasedToPatient: Boolean(activeCase.saudiEndorsement?.releasedToPatient),
+        doctorName: activeCase.saudiEndorsement?.doctorName,
+        endorsementDate: activeCase.saudiEndorsement?.endorsementDate,
+        requiresLocalLab: Boolean(activeCase.saudiEndorsement?.requiresLocalLab),
+        prescriptionIssued: true,
       },
     });
   };

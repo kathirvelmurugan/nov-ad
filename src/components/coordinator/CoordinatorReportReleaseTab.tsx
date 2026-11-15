@@ -279,6 +279,7 @@ export const CoordinatorReportReleaseTab: React.FC<Props> = ({
         onClose={() => setIsReportPreviewOpen(false)}
         activeCase={activeCase}
         lang={lang}
+        reportType="pdf1"
       />
     </section>
   );
