@@ -1,6 +1,52 @@
 import { TenantHospital, StaffAccountRecord, ClinicalCase, AuditLogEntry } from '../types';
 import { TENANTS_KEY, PLATFORM_USERS_KEY, STORAGE_KEY, ACTIVE_CASE_KEY } from '../hooks/workflowConstants';
+import { DEFAULT_TENANT_HOSPITALS, DEFAULT_STAFF_DIRECTORY } from '../data/accreditedStaffAndTenants';
 import { purgeAllCaseStorage } from '../utils/storagePurge';
+
+function normalizeTenant(raw: any): TenantHospital {
+  const nameEn = (raw.nameEn || raw.name_en || '').trim();
+  const normalizedNameEn = (nameEn === 'Alo Care Specialist Medical Center' || !nameEn)
+    ? 'Riyadh Care Medical Center'
+    : nameEn;
+  const nameAr = (raw.nameAr || raw.name_ar || '').trim();
+  const normalizedNameAr = (nameAr === 'مركز ألو كير الطبي التخصصي' || nameAr === 'مركز الرعاية التخصصية الطبي (الرياض)' || !nameAr)
+    ? 'مستشفى رعاية الرياض المعتمد'
+    : nameAr;
+
+  return {
+    id: raw.id || 'hosp-alo-riyadh-01',
+    nameEn: normalizedNameEn,
+    nameAr: normalizedNameAr,
+    city: raw.city || 'الرياض',
+    cityAr: raw.cityAr || raw.city_ar || raw.city || 'الرياض',
+    mciLicenseNumber: raw.mciLicenseNumber || raw.mci_license_number || 'MCI-SA-2024-8891',
+    status: (raw.status as any) || 'active',
+    hospitalAdminName: raw.hospitalAdminName || raw.hospital_admin_name || 'David Nunez',
+    hospitalAdminPhone: raw.hospitalAdminPhone || raw.hospital_admin_phone || '+966504444444',
+    doctorCount: typeof raw.doctorCount === 'number' ? raw.doctorCount : (typeof raw.doctor_count === 'number' ? raw.doctor_count : 8),
+    createdAt: raw.createdAt || raw.created_at || '2026-01-01T08:00:00.000Z',
+  };
+}
+
+function normalizeCase(c: ClinicalCase): ClinicalCase {
+  if (!c) return c;
+  const rawHospital = c.treatingDoctor?.hospital;
+  if (
+    rawHospital === 'Alo Care Specialist Medical Center' ||
+    rawHospital === 'مركز ألو كير الطبي التخصصي' ||
+    rawHospital === 'مركز الرعاية التخصصية الطبي (الرياض)' ||
+    rawHospital === 'المجمع الطبي الشريك'
+  ) {
+    return {
+      ...c,
+      treatingDoctor: {
+        ...c.treatingDoctor,
+        hospital: 'Riyadh Care Medical Center',
+      },
+    };
+  }
+  return c;
+}
 
 function getApiBase(): string {
   if (typeof window === 'undefined') return '';
@@ -60,9 +106,11 @@ export const apiClient = {
       const res = await safeFetch('/api/tenants', { headers: { 'Content-Type': 'application/json' } });
       if (res.ok) {
         const json = await res.json();
-        if (Array.isArray(json.data)) {
-          localStorage.setItem(TENANTS_KEY, JSON.stringify(json.data));
-          return json.data;
+        const rawList = Array.isArray(json) ? json : (Array.isArray(json?.data) ? json.data : null);
+        if (rawList && rawList.length > 0) {
+          const mapped = rawList.map(normalizeTenant);
+          localStorage.setItem(TENANTS_KEY, JSON.stringify(mapped));
+          return mapped;
         }
       }
     } catch (e) {
@@ -70,10 +118,12 @@ export const apiClient = {
     }
     try {
       const saved = localStorage.getItem(TENANTS_KEY);
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed.map(normalizeTenant);
+      }
+    } catch {}
+    return DEFAULT_TENANT_HOSPITALS;
   },
 
   async createTenant(data: Omit<TenantHospital, 'id' | 'createdAt'>): Promise<TenantHospital> {
@@ -85,7 +135,8 @@ export const apiClient = {
       });
       if (res.ok) {
         const json = await res.json();
-        if (json.data) return json.data;
+        const created = json?.data || json;
+        if (created && created.id) return normalizeTenant(created);
       }
     } catch (e) {
       console.warn('[API] Failed to create tenant on backend:', e);
@@ -104,7 +155,8 @@ export const apiClient = {
       const res = await safeFetch('/api/users', { headers: { 'Content-Type': 'application/json' } });
       if (res.ok) {
         const json = await res.json();
-        if (Array.isArray(json.data)) {
+        const rawList = Array.isArray(json) ? json : (Array.isArray(json?.data) ? json.data : null);
+        if (rawList && rawList.length > 0) {
           // Preserve local activation flags across remote sync
           const existing = (() => {
             try {
@@ -112,9 +164,23 @@ export const apiClient = {
               return saved ? JSON.parse(saved) : [];
             } catch { return []; }
           })();
-          const merged = json.data.map((u: StaffAccountRecord) => {
+          const merged = rawList.map((u: any) => {
             const loc = existing.find((e: any) => e.id === u.id || e.phone === u.phone || e.phone?.replace(/\D/g, '') === u.phone?.replace(/\D/g, ''));
-            return loc?.hasCustomPin ? { ...u, hasCustomPin: true, pin: loc.pin || u.pin } : u;
+            const record: StaffAccountRecord = {
+              id: u.id,
+              staffCode: u.staffCode || u.staff_code || u.id,
+              fullName: u.fullName || u.full_name || '',
+              fullNameAr: u.fullNameAr || u.full_name_ar || u.fullName,
+              roleCode: u.roleCode || u.role_code || 'P',
+              hospitalId: u.hospitalId || u.hospital_id || (u.roleCode === 'D' || u.role_code === 'D' ? 'hosp-alo-riyadh-01' : undefined),
+              phone: u.phone,
+              pin: loc?.pin || u.pin || '1234',
+              hasCustomPin: Boolean(loc?.hasCustomPin || u.hasCustomPin || u.has_custom_pin),
+              department: u.department,
+              status: u.status || 'active',
+              createdAt: u.createdAt || u.created_at || new Date().toISOString(),
+            };
+            return record;
           });
           localStorage.setItem(PLATFORM_USERS_KEY, JSON.stringify(merged));
           return merged;
@@ -125,9 +191,9 @@ export const apiClient = {
     }
     try {
       const saved = localStorage.getItem(PLATFORM_USERS_KEY);
-      return saved ? JSON.parse(saved) : [];
+      return saved ? JSON.parse(saved) : DEFAULT_STAFF_DIRECTORY;
     } catch {
-      return [];
+      return DEFAULT_STAFF_DIRECTORY;
     }
   },
 
@@ -184,9 +250,11 @@ export const apiClient = {
       const res = await safeFetch('/api/cases', { headers: { 'Content-Type': 'application/json' } });
       if (res.ok) {
         const json = await res.json();
-        if (Array.isArray(json.data)) {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(json.data));
-          return json.data;
+        const rawList = Array.isArray(json) ? json : (Array.isArray(json?.data) ? json.data : null);
+        if (rawList) {
+          const normalized = rawList.map(normalizeCase);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+          return normalized;
         }
       }
     } catch (e) {
@@ -194,7 +262,11 @@ export const apiClient = {
     }
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
-      return saved ? JSON.parse(saved) : [];
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed.map(normalizeCase);
+      }
+      return [];
     } catch {
       return [];
     }

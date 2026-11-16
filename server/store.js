@@ -12,7 +12,20 @@ export const STAGE_ORDER = Object.freeze({
   CLOSED: 9
 });
 
-export let memoryTenants = [];
+export let memoryTenants = [
+  {
+    id: 'hosp-alo-riyadh-01',
+    name_en: 'Riyadh Care Medical Center',
+    name_ar: 'مستشفى رعاية الرياض المعتمد',
+    city: 'الرياض',
+    mci_license_number: 'MCI-SA-2024-8891',
+    status: 'active',
+    hospital_admin_name: 'David Nunez',
+    hospital_admin_phone: '+966504444444',
+    doctor_count: 8,
+    created_at: '2026-01-01T08:00:00.000Z',
+  },
+];
 export let memoryUsers = [
   {
     id: 'staff-ad-01',

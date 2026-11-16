@@ -90,6 +90,39 @@ export async function initDatabase() {
           medications JSONB NOT NULL DEFAULT '[]'::jsonb,
           updated_at TIMESTAMPTZ DEFAULT NOW()
         );
+
+        -- Standardize default accredited hospital tenant
+        INSERT INTO tenants (id, name_en, name_ar, city, mci_license_number, status, hospital_admin_name, hospital_admin_phone, doctor_count, created_at)
+        VALUES (
+          'hosp-alo-riyadh-01',
+          'Riyadh Care Medical Center',
+          'مستشفى رعاية الرياض المعتمد',
+          'الرياض',
+          'MCI-SA-2024-8891',
+          'active',
+          'David Nunez',
+          '+966504444444',
+          8,
+          NOW()
+        )
+        ON CONFLICT (id) DO UPDATE SET
+          name_en = 'Riyadh Care Medical Center',
+          name_ar = 'مستشفى رعاية الرياض المعتمد',
+          city = 'الرياض',
+          mci_license_number = 'MCI-SA-2024-8891',
+          hospital_admin_name = 'David Nunez',
+          hospital_admin_phone = '+966504444444',
+          doctor_count = 8;
+
+        -- Update any existing clinical cases referencing legacy hospital name
+        UPDATE clinical_cases
+        SET case_data = jsonb_set(
+          case_data,
+          '{treatingDoctor,hospital}',
+          '"Riyadh Care Medical Center"'::jsonb
+        )
+        WHERE case_data->'treatingDoctor'->>'hospital' = 'Alo Care Specialist Medical Center'
+           OR case_data->'treatingDoctor'->>'hospital' = 'مركز ألو كير الطبي التخصصي';
       `);
       console.log('✅ PostgreSQL database tables initialized successfully.');
     } finally {

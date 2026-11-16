@@ -217,7 +217,7 @@ export const DoctorBilingualEndorsementSection: React.FC<DoctorBilingualEndorsem
                   stage: 7,
                   saudiEndorsement: {
                     status: 'endorsed',
-                    doctorName: activeCase.treatingDoctor?.name || 'د. عبدالله الشمري',
+                    doctorName: activeCase.treatingDoctor?.name || 'د. فهد الحربي',
                     scfhsLicense: 'SCFHS-2024-KSA-8821',
                     endorsementDate: new Date().toISOString(),
                     localClinicalNotes: localDirectives,

@@ -40,11 +40,13 @@ export const CaseDetailsDrillDownModal: React.FC<CaseDetailsDrillDownModalProps>
     ? caseItem.diagnosisAr || caseItem.diagnosis || 'استشارة طبية عامة'
     : caseItem.diagnosisEn || caseItem.diagnosis || 'Clinical Consultation';
 
-  const hospitalName = isRTL
-    ? caseItem.treatingDoctor?.hospital || 'مجمع الرعاية الطبية - الرياض'
-    : caseItem.treatingDoctor?.hospital || 'Riyadh Care Medical Center';
+  const rawHospital = caseItem.treatingDoctor?.hospital;
+  const isLegacyAloCare = !rawHospital || rawHospital === 'Alo Care Specialist Medical Center' || rawHospital === 'مركز ألو كير الطبي التخصصي' || rawHospital === 'مجمع الرعاية الطبية - الرياض' || rawHospital === 'المجمع الطبي الشريك' || rawHospital === 'Partner Medical Center';
+  const hospitalName = isLegacyAloCare
+    ? (isRTL ? 'مستشفى رعاية الرياض المعتمد' : 'Riyadh Care Medical Center')
+    : rawHospital;
 
-  const doctorName = caseItem.treatingDoctor?.name || 'د. عبدالله الشمري';
+  const doctorName = caseItem.treatingDoctor?.name || (isRTL ? 'د. فهد الحربي' : 'Dr. Fahad Al-Harbi');
   const consultantName = caseItem.consultant?.name || 'Dr. Pradeep Kumar, MBBS, MS, MCh (CTVS)';
 
   const patientQuestions = (caseItem.metadata?.patientQuestions as string[]) || [];

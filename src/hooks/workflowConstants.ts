@@ -46,13 +46,13 @@ export const DEFAULT_CONSULTANT = {
 
 export const DEFAULT_TREATING_DOCTOR = {
   id: 'doc-001',
-  name: 'د. عبدالله الشمري',
-  nameEn: 'Dr. Abdullah Al-Shammari',
-  hospital: 'مستشفى الملك فيصل التخصصي',
-  hospitalEn: 'King Faisal Specialist Hospital',
+  name: 'د. فهد الحربي',
+  nameEn: 'Dr. Fahad Al-Harbi',
+  hospital: 'مستشفى رعاية الرياض المعتمد',
+  hospitalEn: 'Riyadh Care Medical Center',
   city: 'الرياض',
   cityEn: 'Riyadh',
-  specialty: 'استشاري أمراض القلب وقسطرة الشرايين',
+  specialty: 'استشاري جراحة القلب والصدر',
   scfhsNumber: 'SCFHS-2024-KSA-8821',
   focusQuestions: [
     'هل مؤشرات تضيق الصمام الأبهري تستوجب التدخل عبر القسطرة (TAVR)؟',

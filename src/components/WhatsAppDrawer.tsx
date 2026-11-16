@@ -78,7 +78,7 @@ export const WhatsAppDrawer: React.FC<Props> = ({
       list.push({
         code: 'W05',
         title: 'موافقة الطبيب المعالج وصياغة الأسئلة (Doctor Approved)',
-        body: `اعتمد ${activeCase.treatingDoctor?.name || 'د. عبدالله الشمري'} في ${activeCase.treatingDoctor?.hospital || 'مستشفى رعاية الرياض'} إحالة حالتك. أُرسل الطلب إلى منسق رعاية ألو لإعداد الفاتورة وطرق الدفع.`,
+        body: `اعتمد ${activeCase.treatingDoctor?.name || 'د. فهد الحربي'} في ${activeCase.treatingDoctor?.hospital || 'مستشفى رعاية الرياض المعتمد'} إحالة حالتك. أُرسل الطلب إلى منسق رعاية ألو لإعداد الفاتورة وطرق الدفع.`,
         button: 'عرض الأسئلة السريرية الموجهة للاستشاري',
         time: '10:20 AM',
       });
@@ -144,7 +144,7 @@ export const WhatsAppDrawer: React.FC<Props> = ({
       list.push({
         code: 'W13',
         title: 'إحالة الملف المعرب للطبيب المعالج (Treating MD Sign-Off)',
-        body: `وصل التقرير الطبي ثنائي اللغة إلى طبيبك السعودي المعالج (${activeCase.treatingDoctor?.name || 'د. عبدالله الشمري'}) للمصادقة السريرية النهائية قبل إتاحته لك.`,
+        body: `وصل التقرير الطبي ثنائي اللغة إلى طبيبك السعودي المعالج (${activeCase.treatingDoctor?.name || 'د. فهد الحربي'}) للمصادقة السريرية النهائية قبل إتاحته لك.`,
         button: 'بانتظار المصادقة السريرية للطبيب المعالج',
         time: '03:10 PM',
       });
@@ -154,7 +154,7 @@ export const WhatsAppDrawer: React.FC<Props> = ({
       list.push({
         code: 'W14',
         title: 'صدور التقرير الطبي الثاني المعتمد (Bilingual Report Released)',
-        body: `اعتمد ${activeCase.treatingDoctor?.name || 'د. عبدالله الشمري'} الرأي الطبي الثاني لحالة ${activeCase.caseNumber}. التقرير الطبي ثنائي اللغة متاح الآن للتحميل بختم المستشفى المعتمد.`,
+        body: `اعتمد ${activeCase.treatingDoctor?.name || 'د. فهد الحربي'} الرأي الطبي الثاني لحالة ${activeCase.caseNumber}. التقرير الطبي ثنائي اللغة متاح الآن للتحميل بختم المستشفى المعتمد.`,
         button: 'تحميل التقرير الطبي المعتمد (Download PDF)',
         time: '03:45 PM',
       });

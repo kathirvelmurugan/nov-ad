@@ -69,7 +69,9 @@ export const TimelineDossierSummaryCard: React.FC<TimelineDossierSummaryCardProp
                 {activeCase.treatingDoctor?.name || (isAr ? 'د. فهد الحربي' : 'Dr. Fahad Al-Harbi')}
               </p>
               <p className="text-[11px] text-emerald-700 dark:text-emerald-400 mt-0.5 font-medium">
-                {activeCase.treatingDoctor?.hospital || (isAr ? 'المجمع الطبي الشريك' : 'Partner Medical Center')} ({activeCase.treatingDoctor?.city || (isAr ? 'الرياض' : 'Riyadh')})
+                {(!activeCase.treatingDoctor?.hospital || activeCase.treatingDoctor.hospital === 'Alo Care Specialist Medical Center' || activeCase.treatingDoctor.hospital === 'مركز ألو كير الطبي التخصصي' || activeCase.treatingDoctor.hospital === 'المجمع الطبي الشريك' || activeCase.treatingDoctor.hospital === 'Partner Medical Center')
+                  ? (isAr ? 'مستشفى رعاية الرياض المعتمد' : 'Riyadh Care Medical Center')
+                  : activeCase.treatingDoctor.hospital} ({activeCase.treatingDoctor?.city || (isAr ? 'الرياض' : 'Riyadh')})
               </p>
             </div>
           </div>

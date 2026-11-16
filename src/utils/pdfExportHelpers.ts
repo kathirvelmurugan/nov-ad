@@ -10,7 +10,11 @@ export const downloadPDF1 = (activeCase: ClinicalCase, isAr: boolean = false): v
   const patName = activeCase.patientName || activeCase.patientNameAr || (isAr ? 'المريض' : 'Patient');
   const treatingDoc = activeCase.treatingDoctor?.name || (isAr ? 'د. فهد الحربي' : 'Dr. Fahad Al-Harbi');
   const consultant = activeCase.consultant?.name || 'Dr. V. Prasanth, MBBS, MS, MCh';
-  const hospital = activeCase.treatingDoctor?.hospital || (isAr ? 'مستشفى رعاية الرياض' : 'Riyadh Care Hospital');
+  const rawHosp = activeCase.treatingDoctor?.hospital;
+  const isLegacy = !rawHosp || rawHosp === 'Alo Care Specialist Medical Center' || rawHosp === 'مركز ألو كير الطبي التخصصي' || rawHosp === 'المجمع الطبي الشريك' || rawHosp === 'Partner Medical Center';
+  const hospital = isLegacy
+    ? (isAr ? 'مستشفى رعاية الرياض المعتمد' : 'Riyadh Care Medical Center')
+    : rawHosp;
 
   const content = [
     `========================================================================`,

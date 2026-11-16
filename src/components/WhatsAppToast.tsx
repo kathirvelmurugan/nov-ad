@@ -62,8 +62,8 @@ export const WhatsAppToast: React.FC<Props> = ({
           code: 'W05',
           titleAr: 'مراجعة الطبيب السعودي وصياغة الأسئلة',
           titleEn: 'Doctor Review & Referral',
-          bodyAr: `اعتمد ${activeCase.treatingDoctor?.name || 'د. عبدالله الشمري'} الإحالة وصاغ الأسئلة السريرية. الفاتورة جاهزة.`,
-          bodyEn: `${activeCase.treatingDoctor?.name || 'Dr. Al-Shammari'} reviewed case and formulated clinical focus questions.`,
+          bodyAr: `اعتمد ${activeCase.treatingDoctor?.name || 'د. فهد الحربي'} الإحالة وصاغ الأسئلة السريرية. الفاتورة جاهزة.`,
+          bodyEn: `${activeCase.treatingDoctor?.name || 'Dr. Fahad Al-Harbi'} reviewed case and formulated clinical focus questions.`,
         };
         break;
       case 'AWAITING_PAYMENT': {

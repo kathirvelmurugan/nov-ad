@@ -28,8 +28,8 @@ export const NewCaseModal: React.FC<Props> = ({
   const [city, setCity] = useState(isAr ? 'الرياض' : 'Riyadh');
   const [specialty, setSpecialty] = useState(isAr ? 'جراحة العمود الفقري والعظام' : 'Spine & Orthopedic Surgery');
   const [complaint, setComplaint] = useState('');
-  const [hospital, setHospital] = useState(isAr ? 'مستشفى الدكتور سليمان الحبيب' : 'Dr. Sulaiman Al-Habib Hospital');
-  const [doctorName, setDoctorName] = useState(isAr ? 'د. محمد الشمري' : 'Dr. Mohammed Al-Shammari');
+  const [hospital, setHospital] = useState(isAr ? 'مستشفى رعاية الرياض المعتمد' : 'Riyadh Care Medical Center');
+  const [doctorName, setDoctorName] = useState(isAr ? 'د. فهد الحربي' : 'Dr. Fahad Al-Harbi');
 
   if (!isOpen) return null;
 

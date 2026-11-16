@@ -25,7 +25,7 @@ export const PatientIntakeFormCard: React.FC<PatientIntakeFormCardProps> = ({
   const [nationalId, setNationalId] = useState(activeCase.nationalIdMasked ? '1089****10' : '');
   const [specialty, setSpecialty] = useState(activeCase.specialtyAr || activeCase.specialty || '');
   const [symptoms, setSymptoms] = useState(activeCase.symptomsAr || activeCase.symptoms || '');
-  const [selectedDoctor, setSelectedDoctor] = useState(activeCase.treatingDoctor?.name || 'د. عبدالله الشمري (مستشفى رعاية الرياض)');
+  const [selectedDoctor, setSelectedDoctor] = useState(activeCase.treatingDoctor?.name || 'د. فهد الحربي (مستشفى رعاية الرياض المعتمد)');
   const [hasScans, setHasScans] = useState((activeCase.files && activeCase.files.length > 0) || false);
 
   useEffect(() => {
@@ -33,7 +33,7 @@ export const PatientIntakeFormCard: React.FC<PatientIntakeFormCardProps> = ({
     setNationalId(activeCase.nationalIdMasked ? activeCase.nationalIdMasked : '');
     setSpecialty(activeCase.specialtyAr || activeCase.specialty || '');
     setSymptoms(activeCase.symptomsAr || activeCase.symptoms || '');
-    setSelectedDoctor(activeCase.treatingDoctor?.name || 'د. عبدالله الشمري (مستشفى رعاية الرياض)');
+    setSelectedDoctor(activeCase.treatingDoctor?.name || 'د. فهد الحربي (مستشفى رعاية الرياض المعتمد)');
     setHasScans((activeCase.files && activeCase.files.length > 0) || false);
   }, [activeCase.id, activeCase.patientName, activeCase.nationalIdMasked, activeCase.symptoms, activeCase.stage]);
 
@@ -46,7 +46,7 @@ export const PatientIntakeFormCard: React.FC<PatientIntakeFormCardProps> = ({
         ? 'ضيق تنفس تدريجي عند بذل الجهد (NYHA III) مع نوبات دوخة وألم ضاغط في الصدر' 
         : 'Progressive exertional dyspnea (NYHA Class III) and angina'
     );
-    setSelectedDoctor('د. عبدالله الشمري (مستشفى رعاية الرياض)');
+    setSelectedDoctor('د. فهد الحربي (مستشفى رعاية الرياض المعتمد)');
     setHasScans(true);
   };
 
@@ -135,8 +135,8 @@ export const PatientIntakeFormCard: React.FC<PatientIntakeFormCardProps> = ({
               onChange={(e) => setSelectedDoctor(e.target.value)}
               style={{ width: '100%', padding: '8px', fontSize: '11px', border: '1px solid #cbd5e1', borderRadius: '6px', backgroundColor: '#ffffff', outline: 'none' }}
             >
-              <option value="د. عبدالله الشمري (مستشفى رعاية الرياض)">
-                {isAr ? 'د. عبدالله الشمري (مستشفى رعاية الرياض - قلب)' : 'Dr. Abdullah Al-Shammari (Riyadh Care - Cardiology)'}
+              <option value="د. فهد الحربي (مستشفى رعاية الرياض المعتمد)">
+                {isAr ? 'د. فهد الحربي (مستشفى رعاية الرياض المعتمد - قلب)' : 'Dr. Fahad Al-Harbi (Riyadh Care - Cardiology)'}
               </option>
               <option value="د. منى الغامدي (مدينة الملك فهد الطبية)">
                 {isAr ? 'د. منى الغامدي (مدينة الملك فهد الطبية - أورام)' : 'Dr. Mona Al-Ghamdi (KFMC - Oncology)'}

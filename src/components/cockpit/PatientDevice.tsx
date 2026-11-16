@@ -99,12 +99,12 @@ export const PatientDevice: React.FC<CockpitDeviceProps> = ({
             <div>
               <p style={{ fontSize: '12px', fontWeight: 700, color: '#0f172a', margin: 0 }}>
                 {activeCase.coordinatorForwardedToDoctor
-                  ? (isAr ? 'طبيبك المعالج د. عبدالله الشمري يراجع التقرير لاعتماده' : 'Dr. Abdullah Al-Shammari is reviewing the report for sign-off')
+                  ? (isAr ? 'طبيبك المعالج د. فهد الحربي يراجع التقرير لاعتماده' : 'Dr. Fahad Al-Harbi is reviewing the report for sign-off')
                   : (isAr ? 'فاتورة ضريبية مسددة (INV-2026-001)' : 'Paid Tax Invoice (INV-2026-001)')}
               </p>
               <p style={{ fontSize: '11px', color: '#166534', margin: '2px 0 0 0', lineHeight: 1.4 }}>
                 {activeCase.coordinatorForwardedToDoctor
-                  ? (isAr ? 'الملف الطبي المترجم وصل لطبيبك المعالج بمستشفى رعاية الرياض. سيتاح التقرير لك فور اعتماده رسمياً.' : 'Bilingual dossier submitted to your treating doctor. Download unlocks immediately upon physician sign-off.')
+                  ? (isAr ? 'الملف الطبي المترجم وصل لطبيبك المعالج بمستشفى رعاية الرياض المعتمد. سيتاح التقرير لك فور اعتماده رسمياً.' : 'Bilingual dossier submitted to your treating doctor at Riyadh Care Medical Center. Download unlocks immediately upon physician sign-off.')
                   : (isAr ? 'الاستشاري د. براديب كومار يراجع الأشعة 3D والأسئلة الثلاثة الآن في الهند.' : 'Dr. Pradeep Kumar is reviewing 3D DICOM & focus questions at Apollo Hospitals.')}
               </p>
             </div>
@@ -120,7 +120,7 @@ export const PatientDevice: React.FC<CockpitDeviceProps> = ({
             <span style={{ fontSize: '24px' }}>📄</span>
             <div>
               <p style={{ fontSize: '12px', fontWeight: 700, color: '#0f172a', margin: 0 }}>
-                {isAr ? 'معتمد رسمياً من د. عبدالله الشمري (مستشفى رعاية الرياض)' : 'Officially endorsed by Dr. Abdullah Al-Shammari'}
+                {isAr ? 'معتمد رسمياً من د. فهد الحربي (مستشفى رعاية الرياض المعتمد)' : 'Officially endorsed by Dr. Fahad Al-Harbi (Riyadh Care Medical Center)'}
               </p>
               <p style={{ fontSize: '11px', color: '#64748b', margin: '4px 0 0 0' }}>
                 ALO-2026-BILINGUAL-SECOND-OPINION.pdf

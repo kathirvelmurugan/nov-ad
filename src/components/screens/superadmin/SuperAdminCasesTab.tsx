@@ -498,8 +498,12 @@ export const SuperAdminCasesTab: React.FC<SuperAdminCasesTabProps> = ({
               {filteredCases.map((c) => {
                 const stageMeta = getStageBadgeMeta(c.currentStage, isRTL);
                 const patientName = isRTL ? c.patientNameAr || c.patientName : c.patientNameEn || c.patientName;
-                const hospital = isRTL ? c.treatingDoctor?.hospital || 'مجمع الرعاية الطبية' : c.treatingDoctor?.hospital || 'Riyadh Care Medical Center';
-                const doctorName = c.treatingDoctor?.name || 'د. عبدالله الشمري';
+                const rawHospital = c.treatingDoctor?.hospital;
+                const isLegacyAloCare = !rawHospital || rawHospital === 'Alo Care Specialist Medical Center' || rawHospital === 'مركز ألو كير الطبي التخصصي' || rawHospital === 'مجمع الرعاية الطبية' || rawHospital === 'المجمع الطبي الشريك' || rawHospital === 'Partner Medical Center';
+                const hospital = isLegacyAloCare
+                  ? (isRTL ? 'مستشفى رعاية الرياض المعتمد' : 'Riyadh Care Medical Center')
+                  : rawHospital;
+                const doctorName = c.treatingDoctor?.name || (isRTL ? 'د. فهد الحربي' : 'Dr. Fahad Al-Harbi');
                 const consultantName = c.consultant?.name || 'Dr. Pradeep Kumar';
 
                 return (

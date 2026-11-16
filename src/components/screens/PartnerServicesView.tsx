@@ -35,8 +35,8 @@ export const PartnerServicesView: React.FC<Props> = ({
   );
 
   const internalOrders: MedicalCenterInternalOrders = activeCase.internalOrders || {
-    medicalCenterId: 'mc-riyadh-01',
-    medicalCenterName: 'مركز الرعاية التخصصية الطبي (الرياض)',
+    medicalCenterId: 'hosp-alo-riyadh-01',
+    medicalCenterName: 'مستشفى رعاية الرياض المعتمد',
     lab: {
       ordered: true,
       tests: ['Troponin-I (Quantitative)', 'Complete Blood Count (CBC)', 'Renal Function Panel (eGFR)'],

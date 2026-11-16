@@ -411,8 +411,8 @@ export const CoordinatorDevice: React.FC<CockpitDeviceProps> = ({
               <strong>⏳ {isAr ? 'قيد مصادقة الطبيب السعودي المعالج:' : 'Awaiting Treating Physician Approval:'}</strong>
               <div style={{ marginTop: '2px', fontSize: '10px' }}>
                 {isAr
-                  ? 'تم إرسال الملف المترجم إلى د. عبدالله الشمري (مستشفى رعاية الرياض). سيتاح التقرير للمريض فور مصادقة الطبيب في الشاشة 3.'
-                  : 'Bilingual dossier sent to Dr. Abdullah Al-Shammari. Patient access unlocks once doctor gives final sign-off on Slot 3.'}
+                  ? 'تم إرسال الملف المترجم إلى د. فهد الحربي (مستشفى رعاية الرياض المعتمد). سيتاح التقرير للمريض فور مصادقة الطبيب في الشاشة 3.'
+                  : 'Bilingual dossier sent to Dr. Fahad Al-Harbi (Riyadh Care Medical Center). Patient access unlocks once doctor gives final sign-off on Slot 3.'}
               </div>
             </div>
           )}

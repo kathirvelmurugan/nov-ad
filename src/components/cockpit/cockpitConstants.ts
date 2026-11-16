@@ -11,8 +11,8 @@ export const WHATSAPP_CUES: Record<number, { ar: string; en: string }> = {
     en: '💬 WhatsApp (Nurse ➔ Doctor): Triage complete with vitals and SDAIA PII masking. Ready for physician audit.',
   },
   3: {
-    ar: '💬 واتساب (الطبيب ➔ المنسق والمريض): اعتمد د. عبدالله الشمري الإحالة وصاغ 3 أسئلة استشارية. رابط الدفع متاح.',
-    en: '💬 WhatsApp (Doctor ➔ Coordinator): Referral approved by Dr. Al-Shammari with 3 focus questions. Payment link ready.',
+    ar: '💬 واتساب (الطبيب ➔ المنسق والمريض): اعتمد د. فهد الحربي الإحالة وصاغ 3 أسئلة استشارية. رابط الدفع متاح.',
+    en: '💬 WhatsApp (Doctor ➔ Coordinator): Referral approved by Dr. Fahad Al-Harbi with 3 focus questions. Payment link ready.',
   },
   4: {
     ar: '💬 واتساب (المنسق ➔ المريض): تم سداد الفاتورة الضريبية 250 ر.س عبر مدى. تم توجيه الملف للاستشاري بالهند.',
@@ -132,8 +132,8 @@ export function getCurrentCue(stageNum: number, activeCase: ClinicalCase): { ar:
   }
   if (stageNum === 3) {
     return {
-      ar: '💬 واتساب (الطبيب ➔ منسق ألو): اعتمد د. عبدالله الشمري الإحالة وصاغ ٣ أسئلة استشارية. بانتظار مراجعة المنسق.',
-      en: '💬 WhatsApp (Doctor ➔ Coordinator): Referral approved by Dr. Al-Shammari with 3 focus questions. Pending invoice.',
+      ar: '💬 واتساب (الطبيب ➔ منسق ألو): اعتمد د. فهد الحربي الإحالة وصاغ ٣ أسئلة استشارية. بانتظار مراجعة المنسق.',
+      en: '💬 WhatsApp (Doctor ➔ Coordinator): Referral approved by Dr. Fahad Al-Harbi with 3 focus questions. Pending invoice.',
     };
   }
   if (stageNum === 4) {
@@ -174,12 +174,12 @@ export function getCurrentCue(stageNum: number, activeCase: ClinicalCase): { ar:
   }
   if (!activeCase.doctorReleasedToPatient) {
     return {
-      ar: '💬 واتساب (المنسق ➔ الطبيب المعالج): تم تسليم الملف المعرب لد. عبدالله الشمري للمصادقة السريرية قبل إتاحته للمريض.',
-      en: '💬 WhatsApp (Coordinator ➔ Saudi Doctor): Localized dossier routed to Dr. Al-Shammari for final clinical sign-off.',
+      ar: '💬 واتساب (المنسق ➔ الطبيب المعالج): تم تسليم الملف المعرب لد. فهد الحربي للمصادقة السريرية قبل إتاحته للمريض.',
+      en: '💬 WhatsApp (Coordinator ➔ Saudi Doctor): Localized dossier routed to Dr. Fahad Al-Harbi for final clinical sign-off.',
     };
   }
   return {
-    ar: '💬 واتساب (د. عبدالله الشمري ➔ المريض): اعتمد الطبيب السعودي المعالج التقرير النهائي ثنائي اللغة وتم تسليمه للمريض.',
-    en: '💬 WhatsApp (Saudi Doctor ➔ Patient): Dr. Al-Shammari endorsed the certified bilingual report and released it to the patient.',
+    ar: '💬 واتساب (د. فهد الحربي ➔ المريض): اعتمد الطبيب السعودي المعالج التقرير النهائي ثنائي اللغة وتم تسليمه للمريض.',
+    en: '💬 WhatsApp (Saudi Doctor ➔ Patient): Dr. Fahad Al-Harbi endorsed the certified bilingual report and released it to the patient.',
   };
 }

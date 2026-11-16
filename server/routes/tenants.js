@@ -8,10 +8,10 @@ const router = express.Router();
 router.get('/', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM tenants ORDER BY created_at DESC');
-    return res.status(200).json(result.rows);
+    return res.status(200).json({ success: true, data: result.rows });
   } catch (error) {
     console.error('[ALO DOCTOR] Tenants GET fallback to memory:', error.message);
-    return res.status(200).json([...memoryTenants].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)));
+    return res.status(200).json({ success: true, data: [...memoryTenants].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)) });
   }
 });
 

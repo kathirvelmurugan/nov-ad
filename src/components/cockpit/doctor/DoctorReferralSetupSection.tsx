@@ -168,8 +168,8 @@ export const DoctorReferralSetupSection: React.FC<DoctorReferralSetupSectionProp
             invoiceIssued: false, // Enforce Alo Coordinator Gate 1!
             treatingDoctor: {
               ...(activeCase.treatingDoctor || {
-                name: 'د. عبدالله الشمري',
-                hospital: 'مستشفى رعاية الرياض',
+                name: 'د. فهد الحربي',
+                hospital: 'مستشفى رعاية الرياض المعتمد',
                 city: 'الرياض',
               }),
               focusQuestions: [focusQs[0], focusQs[1], focusQs[2]],
