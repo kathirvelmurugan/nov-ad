@@ -1,321 +1,205 @@
-import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
+import crypto from 'node:crypto';
 
-export interface MemoryUser {
-  id: string;
-  name: string;
-  role: string;
-  phone: string;
-  altPhone?: string;
-  pin: string;
-  hospitalId?: string;
-}
-
-export interface MemoryTenant {
-  id: string;
-  name: string;
-  region: string;
-}
-
-export interface CaseMilestone {
-  id: string;
-  status: string;
-  timestamp: string;
-  note?: string;
-}
-
-export interface MedicalCase {
-  id: string;
-  patientName: string;
-  tenantId: string;
-  assignedStaffId: string;
-  status: string;
-  milestones: CaseMilestone[];
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface ResponseEnvelope<T> {
-  success: boolean;
-  data: T | null;
-  error: string | null;
-  timestamp: string;
-}
-
-const getSaudiASTTimestamp = (): string => {
-  return new Date().toLocaleString('en-US', { timeZone: 'Asia/Riyadh' });
-};
-
-const generateId = (): string => {
-  return `id_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-};
-
-const initialMemoryUsers: MemoryUser[] = [
-  { id: 'staff-ad-01', name: 'Adrian Lewis', role: 'AD', phone: '+966500000001', pin: '1234' },
-  { id: 'staff-ha-01', name: 'David Nunez', role: 'HA', phone: '+966504444444', pin: '1234', hospitalId: 'hosp-alo-riyadh-01' },
-  { id: 'staff-c-01', name: 'Emmanuel Arcon Gonzalez', role: 'C', phone: '+966500000003', pin: '1234' },
-  { id: 'staff-n-01', name: 'Sara Al-Qahtani', role: 'N', phone: '+966500000004', pin: '1234' },
-  { id: 'staff-d-01', name: 'Dr. Fahad Al-Harbi', role: 'D', phone: '+966502222222', pin: '1234', hospitalId: 'hosp-alo-riyadh-01' },
-  { id: 'staff-k-01', name: 'Dr. V. Prasanth', role: 'K', phone: '+919876543210', altPhone: '+966500000006', pin: '1234' },
-  { id: 'staff-l-01', name: 'Omar Al-Zahrani', role: 'L', phone: '+966500000007', pin: '1234' },
-  { id: 'staff-ph-01', name: 'Noura Al-Dosari', role: 'PH', phone: '+966500000008', pin: '1234' },
-  { id: 'staff-rec-01', name: 'Marcus Vance', role: 'REC', phone: '+966500000009', pin: '1234' }
-];
-
-const initialMemoryTenants: MemoryTenant[] = [
-  { id: 'hosp-alo-riyadh-01', name: 'Riyadh Care Medical Center', region: 'Riyadh' }
-];
-
-interface StoreContextType {
-  users: MemoryUser[];
-  tenants: MemoryTenant[];
-  cases: MedicalCase[];
-  findUserByPhone: (phone: string) => ResponseEnvelope<MemoryUser>;
-  findUserById: (id: string) => ResponseEnvelope<MemoryUser>;
-  getTenantById: (id: string) => ResponseEnvelope<MemoryTenant>;
-  lookupCasesByStaff: (staffId: string) => ResponseEnvelope<MedicalCase[]>;
-  lookupCasesByTenant: (tenantId: string) => ResponseEnvelope<MedicalCase[]>;
-  mutateCaseStatus: (caseId: string, newStatus: string) => ResponseEnvelope<MedicalCase>;
-  appendMilestone: (caseId: string, status: string, note?: string) => ResponseEnvelope<MedicalCase>;
-  createCase: (c: Omit<MedicalCase, 'id' | 'milestones' | 'createdAt' | 'updatedAt'>) => ResponseEnvelope<MedicalCase>;
-}
-
-const StoreContext = createContext<StoreContextType | null>(null);
-
-export const useAloStore = (): StoreContextType => {
-  const context = useContext(StoreContext);
-  if (!context) {
-    throw new Error('useAloStore must be used within an AloStoreProvider');
-  }
-  return context;
-};
-
-const wrapResponse = <T,>(success: boolean, data: T | null, error: string | null): ResponseEnvelope<T> => ({
-  success,
-  data,
-  error,
-  timestamp: getSaudiASTTimestamp()
+export const STAGE_ORDER = Object.freeze({
+  INTAKE_RECEIVED: 1,
+  NURSE_CHECK: 2,
+  DOCTOR_REVIEW: 3,
+  AWAITING_PAYMENT: 4,
+  WITH_CONSULTANT: 5,
+  OPINION_READY: 6,
+  PARTNER_SERVICES: 7,
+  FOLLOW_UP_21_DAYS: 8,
+  CLOSED: 9
 });
 
-export const AloStoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [users] = useState<MemoryUser[]>(initialMemoryUsers);
-  const [tenants] = useState<MemoryTenant[]>(initialMemoryTenants);
-  const [cases, setCases] = useState<MedicalCase[]>([]);
+export let memoryTenants = [];
+export let memoryUsers = [
+  {
+    id: 'staff-ad-01',
+    staffCode: '00001',
+    fullName: 'Adrian Lewis',
+    fullNameAr: 'المشرف العام أدريان لويس',
+    roleCode: 'AD',
+    phone: '+966500000001',
+    pin: '1234',
+    hasCustomPin: true,
+    department: 'Platform Operations',
+    status: 'active',
+    createdAt: '2026-01-01T00:00:00Z',
+  },
+];
+export let memoryCases = [];
+export let memoryAudit = [];
 
-  const findUserByPhone = useCallback((phone: string): ResponseEnvelope<MemoryUser> => {
-    const user = users.find(u => u.phone === phone || u.altPhone === phone);
-    if (!user) return wrapResponse(false, null, 'User not found by phone');
-    return wrapResponse(true, user, null);
-  }, [users]);
+export const getTenants = () => [...memoryTenants];
 
-  const findUserById = useCallback((id: string): ResponseEnvelope<MemoryUser> => {
-    const user = users.find(u => u.id === id);
-    if (!user) return wrapResponse(false, null, 'User not found by ID');
-    return wrapResponse(true, user, null);
-  }, [users]);
-
-  const getTenantById = useCallback((id: string): ResponseEnvelope<MemoryTenant> => {
-    const tenant = tenants.find(t => t.id === id);
-    if (!tenant) return wrapResponse(false, null, 'Tenant not found');
-    return wrapResponse(true, tenant, null);
-  }, [tenants]);
-
-  const lookupCasesByStaff = useCallback((staffId: string): ResponseEnvelope<MedicalCase[]> => {
-    const filtered = cases.filter(c => c.assignedStaffId === staffId);
-    return wrapResponse(true, filtered, null);
-  }, [cases]);
-
-  const lookupCasesByTenant = useCallback((tenantId: string): ResponseEnvelope<MedicalCase[]> => {
-    const filtered = cases.filter(c => c.tenantId === tenantId);
-    return wrapResponse(true, filtered, null);
-  }, [cases]);
-
-  const mutateCaseStatus = useCallback((caseId: string, newStatus: string): ResponseEnvelope<MedicalCase> => {
-    let updatedCase: MedicalCase | null = null;
-    const now = getSaudiASTTimestamp();
-    
-    setCases(prev => prev.map(c => {
-      if (c.id === caseId) {
-        updatedCase = { ...c, status: newStatus, updatedAt: now };
-        return updatedCase;
-      }
-      return c;
-    }));
-
-    if (!updatedCase) return wrapResponse(false, null, 'Case not found for status mutation');
-    return wrapResponse(true, updatedCase, null);
-  }, []);
-
-  const appendMilestone = useCallback((caseId: string, status: string, note?: string): ResponseEnvelope<MedicalCase> => {
-    let updatedCase: MedicalCase | null = null;
-    const now = getSaudiASTTimestamp();
-    const milestone: CaseMilestone = {
-      id: generateId(),
-      status,
-      timestamp: now,
-      note
-    };
-
-    setCases(prev => prev.map(c => {
-      if (c.id === caseId) {
-        updatedCase = {
-          ...c,
-          status,
-          milestones: [...c.milestones, milestone],
-          updatedAt: now
-        };
-        return updatedCase;
-      }
-      return c;
-    }));
-
-    if (!updatedCase) return wrapResponse(false, null, 'Case not found for milestone append');
-    return wrapResponse(true, updatedCase, null);
-  }, []);
-
-  const createCase = useCallback((c: Omit<MedicalCase, 'id' | 'milestones' | 'createdAt' | 'updatedAt'>): ResponseEnvelope<MedicalCase> => {
-    const now = getSaudiASTTimestamp();
-    const newCase: MedicalCase = {
-      ...c,
-      id: generateId(),
-      milestones: [{ id: generateId(), status: c.status, timestamp: now, note: 'Case initialized' }],
-      createdAt: now,
-      updatedAt: now
-    };
-    setCases(prev => [...prev, newCase]);
-    return wrapResponse(true, newCase, null);
-  }, []);
-
-  const value = useMemo(() => ({
-    users,
-    tenants,
-    cases,
-    findUserByPhone,
-    findUserById,
-    getTenantById,
-    lookupCasesByStaff,
-    lookupCasesByTenant,
-    mutateCaseStatus,
-    appendMilestone,
-    createCase
-  }), [
-    users, tenants, cases, findUserByPhone, findUserById, getTenantById,
-    lookupCasesByStaff, lookupCasesByTenant, mutateCaseStatus, appendMilestone, createCase
-  ]);
-
-  return (
-    <StoreContext.Provider value={value}>
-      {children}
-    </StoreContext.Provider>
-  );
+export const setTenants = (tenants) => {
+  if (!Array.isArray(tenants)) {
+    throw new TypeError('Tenants payload must be an array');
+  }
+  memoryTenants = tenants.map((tenant) => ({ ...tenant }));
+  return getTenants();
 };
 
-export const PersonaSwitcher: React.FC = () => {
-  const { users, findUserById } = useAloStore();
-  const [activePersona, setActivePersona] = useState<string>('staff-ad-01');
-  const [dir, setDir] = useState<'rtl' | 'ltr'>('rtl');
+export const addTenant = (tenant) => {
+  if (!tenant || typeof tenant !== 'object') {
+    throw new TypeError('Tenant must be a valid object');
+  }
+  const record = { ...tenant, createdAt: new Date().toISOString() };
+  memoryTenants.push(record);
+  return { ...record };
+};
 
-  const handleSwitch = (userId: string) => {
-    const response = findUserById(userId);
-    if (response.success && response.data) {
-      setActivePersona(userId);
+export const updateTenant = (id, updates) => {
+  const index = memoryTenants.findIndex((t) => t.id === id);
+  if (index === -1) return null;
+  memoryTenants[index] = {
+    ...memoryTenants[index],
+    ...updates,
+    id: memoryTenants[index].id,
+    updatedAt: new Date().toISOString()
+  };
+  return { ...memoryTenants[index] };
+};
+
+export const getUsers = () => memoryUsers.map((user) => ({ ...user }));
+
+export const setUsers = (users) => {
+  if (!Array.isArray(users)) {
+    throw new TypeError('Users payload must be an array');
+  }
+  memoryUsers = users.map((user) => ({ ...user }));
+  return getUsers();
+};
+
+export const addUser = (user) => {
+  if (!user || typeof user !== 'object') {
+    throw new TypeError('User must be a valid object');
+  }
+  const record = {
+    ...user,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  memoryUsers.push(record);
+  return { ...record };
+};
+
+export const updateUser = (id, updates) => {
+  const index = memoryUsers.findIndex((u) => u.id === id);
+  if (index === -1) return null;
+  const sanitizedUpdates = { ...updates };
+  delete sanitizedUpdates.id;
+  memoryUsers[index] = {
+    ...memoryUsers[index],
+    ...sanitizedUpdates,
+    updatedAt: new Date().toISOString()
+  };
+  return { ...memoryUsers[index] };
+};
+
+export const getUserById = (id) => {
+  const user = memoryUsers.find((u) => u.id === id);
+  return user ? { ...user } : null;
+};
+
+export const getCases = () => memoryCases.map((c) => ({ ...c }));
+
+export const setCases = (cases) => {
+  if (!Array.isArray(cases)) {
+    throw new TypeError('Cases payload must be an array');
+  }
+  memoryCases = cases.map((caseItem) => ({ ...caseItem }));
+  return getCases();
+};
+
+export const addCase = (caseRecord) => {
+  if (!caseRecord || typeof caseRecord !== 'object') {
+    throw new TypeError('Case must be a valid object');
+  }
+  const stageOrder = caseRecord.stage ? STAGE_ORDER[caseRecord.stage] || 0 : 1;
+  const record = {
+    ...caseRecord,
+    stageOrder,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  memoryCases.push(record);
+  return { ...record };
+};
+
+export const updateCase = (id, updates) => {
+  const index = memoryCases.findIndex((c) => c.id === id);
+  if (index === -1) return null;
+  const sanitizedUpdates = { ...updates };
+  delete sanitizedUpdates.id;
+  if (sanitizedUpdates.stage && STAGE_ORDER[sanitizedUpdates.stage]) {
+    sanitizedUpdates.stageOrder = STAGE_ORDER[sanitizedUpdates.stage];
+  }
+  memoryCases[index] = {
+    ...memoryCases[index],
+    ...sanitizedUpdates,
+    updatedAt: new Date().toISOString()
+  };
+  return { ...memoryCases[index] };
+};
+
+export const getCaseById = (id) => {
+  const caseRecord = memoryCases.find((c) => c.id === id);
+  return caseRecord ? { ...caseRecord } : null;
+};
+
+export const getAudit = () => memoryAudit.map((entry) => ({ ...entry }));
+
+export const setAudit = (audit) => {
+  if (!Array.isArray(audit)) {
+    throw new TypeError('Audit payload must be an array');
+  }
+  memoryAudit = audit.map((entry) => ({ ...entry }));
+  return getAudit();
+};
+
+export const addAuditEntry = (entry) => {
+  if (!entry || typeof entry !== 'object') {
+    throw new TypeError('Audit entry must be a valid object');
+  }
+  const record = {
+    ...entry,
+    timestamp: new Date().toISOString()
+  };
+  memoryAudit.push(record);
+  return { ...record };
+};
+
+export const resetStore = () => {
+  memoryTenants = [];
+  memoryUsers = [
+    {
+      id: INITIAL_SUPER_ADMIN_ID,
+      name: INITIAL_SUPER_ADMIN_NAME,
+      role: INITIAL_SUPER_ADMIN_ROLE,
+      pinHash: crypto.createHash('sha256').update(INITIAL_SUPER_ADMIN_PIN).digest('hex'),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     }
-  };
-
-  const toggleDirection = () => {
-    setDir(prev => prev === 'rtl' ? 'ltr' : 'rtl');
-  };
-
-  return (
-    <div 
-      dir={dir} 
-      style={{
-        fontFamily: 'Cairo, sans-serif',
-        backgroundColor: '#E6FAF7',
-        padding: '24px',
-        borderRadius: '16px',
-        border: '1px solid #00C6AE',
-        maxWidth: '800px',
-        margin: '20px auto',
-        direction: dir
-      }}
-    >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <h2 style={{ color: '#007B6E', margin: 0, fontSize: '20px', fontWeight: 700 }}>
-          {dir === 'rtl' ? 'مبدل ملفات التعريف' : 'Persona Profile Switcher'}
-        </h2>
-        <button
-          onClick={toggleDirection}
-          style={{
-            backgroundColor: '#007B6E',
-            color: '#FFFFFF',
-            border: 'none',
-            padding: '8px 16px',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontFamily: 'Cairo, sans-serif',
-            fontWeight: 600
-          }}
-          aria-label="Toggle Language Direction"
-        >
-          {dir === 'rtl' ? 'English LTR' : 'عربي RTL'}
-        </button>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '12px' }}>
-        {users.map(user => (
-          <button
-            key={user.id}
-            onClick={() => handleSwitch(user.id)}
-            aria-pressed={activePersona === user.id}
-            style={{
-              backgroundColor: activePersona === user.id ? '#007B6E' : '#FFFFFF',
-              color: activePersona === user.id ? '#FFFFFF' : '#007B6E',
-              border: `2px solid ${activePersona === user.id ? '#007B6E' : '#00C6AE'}`,
-              padding: '16px',
-              borderRadius: '12px',
-              cursor: 'pointer',
-              textAlign: dir === 'rtl' ? 'right' : 'left',
-              fontFamily: 'Cairo, sans-serif',
-              transition: 'all 0.2s ease-in-out',
-              boxShadow: activePersona === user.id ? '0 4px 12px rgba(0, 123, 110, 0.2)' : 'none'
-            }}
-          >
-            <div style={{ fontWeight: 700, fontSize: '14px', marginBottom: '4px' }}>{user.name}</div>
-            <div style={{ fontSize: '12px', opacity: 0.8, display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{
-                backgroundColor: activePersona === user.id ? 'rgba(255,255,255,0.2)' : '#E6FAF7',
-                padding: '2px 8px',
-                borderRadius: '6px',
-                fontWeight: 800
-              }}>
-                {user.role}
-              </span>
-              <span>{user.phone}</span>
-            </div>
-            {user.hospitalId && (
-              <div style={{ fontSize: '10px', marginTop: '6px', opacity: 0.7 }}>
-                {dir === 'rtl' ? 'المستشفى:' : 'Hospital:'} {user.hospitalId}
-              </div>
-            )}
-          </button>
-        ))}
-      </div>
-
-      <div style={{
-        marginTop: '24px',
-        padding: '16px',
-        backgroundColor: '#FFFFFF',
-        borderRadius: '12px',
-        borderLeft: dir === 'ltr' ? '4px solid #25D366' : 'none',
-        borderRight: dir === 'rtl' ? '4px solid #25D366' : 'none',
-      }}>
-        <p style={{ margin: 0, color: '#007B6E', fontSize: '14px', fontWeight: 600 }}>
-          {dir === 'rtl' ? 'الملف النشط: ' : 'Active Profile: '} 
-          <span style={{ color: '#25D366' }}>{findUserById(activePersona).data?.name}</span>
-        </p>
-      </div>
-    </div>
-  );
+  ];
+  memoryCases = [];
+  memoryAudit = [];
 };
 
-export default AloStoreProvider;
+export const resetInMemoryStore = resetStore;
+
+export const updateInMemoryStore = (payload = {}) => {
+  if (Array.isArray(payload.tenants)) memoryTenants = payload.tenants;
+  if (Array.isArray(payload.users)) memoryUsers = payload.users;
+  if (Array.isArray(payload.cases)) memoryCases = payload.cases;
+  if (Array.isArray(payload.audit)) memoryAudit = payload.audit;
+};
+
+export const getStoreSnapshot = () => ({
+  tenantsCount: memoryTenants.length,
+  usersCount: memoryUsers.length,
+  casesCount: memoryCases.length,
+  auditCount: memoryAudit.length,
+  stageOrder: { ...STAGE_ORDER }
+});
