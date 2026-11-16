@@ -133,6 +133,17 @@ async function safeFetchWithRetry(endpoint: string, options?: RequestInit): Prom
 
 export const apiClient = {
   // ── Authentication ────────────────────────────────────────────────────────
+  async checkUserExists(phone: string): Promise<{ exists: boolean; hasPin: boolean }> {
+    try {
+      const users = await this.fetchUsers();
+      const sanitized = phone.replace(/[\s\-\(\)\.]/g, '');
+      const user = users.find((u) => u.phone.replace(/[\s\-\(\)\.]/g, '').endsWith(sanitized.slice(-8)));
+      return { exists: !!user, hasPin: Boolean(user?.hasCustomPin || user?.pin) };
+    } catch {
+      return { exists: false, hasPin: false };
+    }
+  },
+
   async login(phone: string, pin: string): Promise<StaffAccountRecord> {
     const res = await safeFetchWithRetry('/api/users/login', {
       method: 'POST',

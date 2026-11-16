@@ -1,17 +1,19 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import apiClient from '../../services/apiClient';
+import { apiClient } from '../../services/apiClient';
 
 type AuthStep = 'phone' | 'pin' | 'pin_setup' | 'super_admin';
 
 interface UnifiedAuthGateProps {
-  onComplete: (
+  onAuthenticated?: (session: any) => void;
+  onComplete?: (
     isSuperAdmin: boolean,
     roleCode: string,
     hospitalId: string | null,
     displayName: string
   ) => void;
-  isRTL: boolean;
-  lang: 'ar' | 'en';
+  initialLang?: 'ar' | 'en';
+  isRTL?: boolean;
+  lang?: 'ar' | 'en';
 }
 
 const PERSONA_PROFILES = [
@@ -28,7 +30,9 @@ const PERSONA_PROFILES = [
   { id: 'super_admin', labelAr: 'مدير النظام', labelEn: 'Super Admin' },
 ];
 
-const UnifiedAuthGate: React.FC<UnifiedAuthGateProps> = ({ onComplete, isRTL, lang }) => {
+const UnifiedAuthGate: React.FC<UnifiedAuthGateProps> = ({ onComplete, onAuthenticated, initialLang, isRTL: propIsRTL, lang: propLang }) => {
+  const effectiveLang = initialLang || propLang || 'ar';
+  const isRTL = propIsRTL !== undefined ? propIsRTL : effectiveLang === 'ar';
   const [step, setStep] = useState<AuthStep>('phone');
   const [rawPhone, setRawPhone] = useState('');
   const [enteredPin, setEnteredPin] = useState('');
@@ -56,9 +60,24 @@ const UnifiedAuthGate: React.FC<UnifiedAuthGateProps> = ({ onComplete, isRTL, la
 
   const completeAuth = useCallback(
     (isSuperAdmin: boolean, roleCode: string, hospitalId: string | null, displayName: string) => {
-      onComplete(isSuperAdmin, roleCode, hospitalId, displayName);
+      if (onAuthenticated) {
+        onAuthenticated({
+          isAuthenticated: true,
+          phone: rawPhone,
+          personaId: roleCode.toLowerCase(),
+          roleCode: roleCode as any,
+          hospitalId: hospitalId || undefined,
+          fullName: displayName,
+          isGuest: false,
+          expiresAt: Date.now() + 30 * 24 * 3600 * 1000,
+          lang: effectiveLang,
+        });
+      }
+      if (onComplete) {
+        onComplete(isSuperAdmin, roleCode, hospitalId, displayName);
+      }
     },
-    [onComplete]
+    [onAuthenticated, onComplete, rawPhone, effectiveLang]
   );
 
   const handlePhoneSubmit = async (e: React.FormEvent) => {
