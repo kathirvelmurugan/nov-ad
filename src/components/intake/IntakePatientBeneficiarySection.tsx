@@ -2,6 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { UserCheck, Shield, Users, User, CheckCircle2, Phone, AlertCircle } from 'lucide-react';
 import { ClinicalCase } from '../../types';
 import { UserSession } from '../../hooks/workflowConstants';
+import { clampAge, maskNationalId, validateNationalId } from '../../utils/phoneValidation';
+
+/** Placeholder identity of the logged-in account holder (verified at login, never retyped here). */
+const ACCOUNT_HOLDER_NATIONAL_ID = '1029384756';
 
 interface Props {
   activeCase: ClinicalCase;
@@ -23,9 +27,7 @@ export const IntakePatientBeneficiarySection: React.FC<Props> = ({
   const [beneficiaryName, setBeneficiaryName] = useState(
     mode === 'family' ? (activeCase.patientName || '') : ''
   );
-  const [beneficiaryId, setBeneficiaryId] = useState(
-    mode === 'family' ? (activeCase.nationalIdMasked?.replace(/\*/g, '') || '') : ''
-  );
+  const [beneficiaryId, setBeneficiaryId] = useState('');
   const [relationship, setRelationship] = useState(activeCase.caregiver?.relationship || 'Parent');
   const [beneficiaryAge, setBeneficiaryAge] = useState<number>(activeCase.age || 58);
   const [beneficiaryGender, setBeneficiaryGender] = useState<'M' | 'F'>(activeCase.gender || 'M');
@@ -62,7 +64,7 @@ export const IntakePatientBeneficiarySection: React.FC<Props> = ({
           isProxy: true,
           name: userSession?.fullName || 'المرافق المفوض',
           relationship: relationship,
-          nationalId: '1029384756',
+          nationalId: ACCOUNT_HOLDER_NATIONAL_ID,
           phone: userSession?.phone || activeCase.patientPhone,
           hasLegalConsent: proxyConsent,
         },
@@ -85,14 +87,17 @@ export const IntakePatientBeneficiarySection: React.FC<Props> = ({
     const nextGender = updates.gender !== undefined ? updates.gender : beneficiaryGender;
     const nextConsent = updates.consent !== undefined ? updates.consent : proxyConsent;
 
+    const idValidation = validateNationalId(nextId);
+
     if (updates.name !== undefined) setBeneficiaryName(nextName);
-    if (updates.id !== undefined) setBeneficiaryId(nextId);
+    if (updates.id !== undefined) setBeneficiaryId(idValidation.value);
     if (updates.rel !== undefined) setRelationship(nextRel);
     if (updates.age !== undefined) setBeneficiaryAge(nextAge);
     if (updates.gender !== undefined) setBeneficiaryGender(nextGender);
     if (updates.consent !== undefined) setProxyConsent(nextConsent);
 
-    const maskedId = nextId ? `${nextId.slice(0, 2)}********` : activeCase.nationalIdMasked;
+    // Only a complete 10-digit ID produces a mask; partial input must never pass the submit gate.
+    const maskedId = maskNationalId(nextId);
 
     onUpdateCase({
       beneficiaryMode: 'family',
@@ -106,7 +111,7 @@ export const IntakePatientBeneficiarySection: React.FC<Props> = ({
         isProxy: true,
         name: userSession?.fullName || (isAr ? 'المرافق المفوض' : 'Caregiver Proxy'),
         relationship: nextRel,
-        nationalId: '1029384756',
+        nationalId: ACCOUNT_HOLDER_NATIONAL_ID,
         phone: userSession?.phone || activeCase.patientPhone,
         hasLegalConsent: nextConsent,
       },
@@ -115,7 +120,8 @@ export const IntakePatientBeneficiarySection: React.FC<Props> = ({
 
   const accountName = userSession?.fullName || (isAr ? 'سامي الحربي' : 'Sami Al-Harbi');
   const accountPhone = userSession?.phone || activeCase.patientPhone || '+966 50 000 0099';
-  const accountId = '1029384756';
+  const accountId = ACCOUNT_HOLDER_NATIONAL_ID;
+  const idCheck = beneficiaryId ? validateNationalId(beneficiaryId) : null;
 
   return (
     <div className="space-y-4">
@@ -231,16 +237,23 @@ export const IntakePatientBeneficiarySection: React.FC<Props> = ({
                     {isAr ? 'رقم الهوية الوطنية / الإقامة:' : 'National ID / Iqama:'} *
                   </label>
                   <input
+                    id="field-nationalId"
                     type="text"
+                    inputMode="numeric"
                     maxLength={10}
                     value={beneficiaryId}
                     placeholder="10XXXXXXXX"
-                    onChange={(e) => {
-                      const clean = e.target.value.replace(/\D/g, '').slice(0, 10);
-                      handleUpdateBeneficiary({ id: clean });
-                    }}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 font-mono font-bold text-slate-900 dark:text-slate-100 outline-none focus:border-emerald-600 shadow-xs"
+                    aria-invalid={!!idCheck && !idCheck.isValid}
+                    onChange={(e) => handleUpdateBeneficiary({ id: e.target.value })}
+                    className={`w-full bg-slate-50 dark:bg-slate-800 border rounded-xl px-3 py-2 font-mono font-bold text-slate-900 dark:text-slate-100 outline-none focus:border-emerald-600 shadow-xs ${
+                      idCheck && !idCheck.isValid ? 'border-rose-400' : 'border-slate-300 dark:border-slate-700'
+                    }`}
                   />
+                  {idCheck && !idCheck.isValid && (
+                    <p className="mt-1 text-[10px] font-bold text-rose-600" role="alert">
+                      {isAr ? idCheck.issue?.ar : idCheck.issue?.en}
+                    </p>
+                  )}
                 </div>
 
                 {/* Relationship */}
@@ -270,7 +283,7 @@ export const IntakePatientBeneficiarySection: React.FC<Props> = ({
                     min={1}
                     max={120}
                     value={beneficiaryAge}
-                    onChange={(e) => handleUpdateBeneficiary({ age: parseInt(e.target.value, 10) || 58 })}
+                    onChange={(e) => handleUpdateBeneficiary({ age: clampAge(e.target.value, beneficiaryAge) })}
                     className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 font-mono font-bold text-slate-900 dark:text-slate-100 outline-none focus:border-emerald-600 shadow-xs"
                   />
                 </div>

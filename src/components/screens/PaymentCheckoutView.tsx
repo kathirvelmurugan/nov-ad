@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { ClinicalCase, PaymentMethodId } from '../../types';
 import { CreditCard, CheckCircle2, ShieldCheck, Receipt, ArrowRight, Zap, QrCode, Sparkles, Video, FileText } from 'lucide-react';
+import { defaultRailIds, enabledRails, formatSar, installmentCount, newInvoiceNumber, priceTierForType, tabbyInstallment, vatPercent } from '../../config/platformConfig';
 
 interface Props {
   activeCase: ClinicalCase;
@@ -25,63 +26,68 @@ interface TierConfig {
   recommended: boolean;
 }
 
-const TIERS: TierConfig[] = [
-  {
-    id: 1,
-    tierNameEn: 'Written opinion only',
-    tierNameAr: 'رأي مكتوب فقط',
-    baseSar: 65.22,
-    vatSar: 9.78,
-    totalSar: 75,
-    featuresEn: ['Written second opinion · report PDF 1', '48-hour delivery', 'Follow-up 21 days'],
-    featuresAr: ['رأي طبي ثانٍ مكتوب · تقرير PDF 1', 'تسليم خلال 48 ساعة', 'متابعة 21 يوماً'],
-    icon: FileText,
-    recommended: false,
-  },
-  {
-    id: 2,
-    tierNameEn: 'Video + written opinion',
-    tierNameAr: 'مرئي + رأي مكتوب',
-    baseSar: 130.43,
-    vatSar: 19.57,
-    totalSar: 150,
-    featuresEn: ['30-min video / voice call', 'ALO nurse interprets on call', 'Written opinion · report PDF 1', 'Follow-up 21 days'],
-    featuresAr: ['مكالمة مرئية / صوتية 30 دقيقة', 'ممرضة ألو تترجم خلال المكالمة', 'رأي مكتوب · تقرير PDF 1', 'متابعة 21 يوماً'],
-    icon: Video,
-    recommended: true,
-  },
-];
-
-const PAYMENT_METHODS = {
-  en: [
-    { id: 'mada' as PaymentMethod, label: 'mada', sublabel: 'Saudi Most Popular', icon: CreditCard },
-    { id: 'applepay' as PaymentMethod, label: 'Apple Pay', sublabel: '1-Click', icon: Zap },
-    { id: 'visa' as PaymentMethod, label: 'Visa / Mastercard', sublabel: 'Global Secure', icon: CreditCard },
-    { id: 'tabby' as PaymentMethod, label: 'Tabby (4 Installments)', sublabel: '0% Interest Split', icon: Sparkles },
-  ],
-  ar: [
-    { id: 'mada' as PaymentMethod, label: 'مدى', sublabel: 'الأكثر شعبية في السعودية', icon: CreditCard },
-    { id: 'applepay' as PaymentMethod, label: 'Apple Pay', sublabel: 'بنقرة واحدة', icon: Zap },
-    { id: 'visa' as PaymentMethod, label: 'فيزا / ماستركارد', sublabel: 'دفع عالمي آمن', icon: CreditCard },
-    { id: 'tabby' as PaymentMethod, label: 'تابي (4 دفعات)', sublabel: 'تقسيط بدون فوائد', icon: Sparkles },
-  ],
+/** Tier cards are rebuilt on call so a settings change applies immediately. */
+const buildTiers = (): TierConfig[] => {
+  const written = priceTierForType('written');
+  const video = priceTierForType('video');
+  return [
+    {
+      id: written.id,
+      tierNameEn: written.tierNameEn,
+      tierNameAr: written.tierNameAr,
+      baseSar: written.baseSar,
+      vatSar: written.vatSar,
+      totalSar: written.totalSar,
+      featuresEn: ['Written second opinion · report PDF 1', '48-hour delivery', 'Follow-up 21 days'],
+      featuresAr: ['رأي طبي ثانٍ مكتوب · تقرير PDF 1', 'تسليم خلال 48 ساعة', 'متابعة 21 يوماً'],
+      icon: FileText,
+      recommended: false,
+    },
+    {
+      id: video.id,
+      tierNameEn: video.tierNameEn,
+      tierNameAr: video.tierNameAr,
+      baseSar: video.baseSar,
+      vatSar: video.vatSar,
+      totalSar: video.totalSar,
+      featuresEn: ['30-min video / voice call', 'ALO nurse interprets on call', 'Written opinion · report PDF 1', 'Follow-up 21 days'],
+      featuresAr: ['مكالمة مرئية / صوتية 30 دقيقة', 'ممرضة ألو تترجم خلال المكالمة', 'رأي مكتوب · تقرير PDF 1', 'متابعة 21 يوماً'],
+      icon: Video,
+      recommended: true,
+    },
+  ];
 };
 
-const UI_STRINGS = {
+const railIcon = (id: PaymentMethodId) =>
+  id === 'applepay' ? Zap : id === 'tabby' ? Sparkles : CreditCard;
+
+/** Enabled payment rails from settings, labelled per language. */
+const buildMethods = (lang: 'ar' | 'en') =>
+  enabledRails().map((rail) => ({
+    id: rail.id as PaymentMethod,
+    label: lang === 'ar' ? rail.labelAr : rail.labelEn,
+    sublabel: lang === 'ar' ? rail.subLabelAr : rail.subLabelEn,
+    icon: railIcon(rail.id),
+  }));
+
+const buildUiStrings = (lang: 'ar' | 'en') => {
+  const vat = vatPercent();
+  const installments = installmentCount();
+  return {
   en: {
     title: 'Select Your Consultation Package',
     subtitle: 'Choose the care level that best fits your clinical needs. All packages include ZATCA-compliant invoicing.',
     recommended: 'Recommended',
     baseFee: 'Base Fee',
-    vat: 'VAT (15%)',
+    vat: `VAT (${vat}%)`,
     total: 'Total',
-    tabbySplit: 'or 4 interest-free payments of',
+    tabbySplit: `or ${installments} interest-free payments of`,
     perMonth: '/mo',
     paymentMethodTitle: 'Payment Method',
     invoiceTitle: 'ZATCA Phase-2 Tax Invoice',
     caseNumber: 'Case Number',
     serviceFee: 'Service Fee',
-    zatcaVat: 'ZATCA VAT (15%)',
+    zatcaVat: `ZATCA VAT (${vat}%)`,
     totalDue: 'Total Amount Due',
     qrIndicator: 'ZATCA QR Code Generated',
     samaBadge: 'SAMA Compliant Gateway',
@@ -95,15 +101,15 @@ const UI_STRINGS = {
     subtitle: 'اختر مستوى الرعاية الذي يناسب احتياجاتك الطبية. جميع الباقات تشمل فوترة متوافقة مع هيئة الزكاة والضريبة والجمارك.',
     recommended: 'الأكثر طلباً',
     baseFee: 'الرسوم الأساسية',
-    vat: 'ضريبة القيمة المضافة (15%)',
+    vat: `ضريبة القيمة المضافة (${vat}%)`,
     total: 'الإجمالي',
-    tabbySplit: 'أو 4 دفعات بدون فوائد بقيمة',
+    tabbySplit: `أو ${installments} دفعات بدون فوائد بقيمة`,
     perMonth: '/شهر',
     paymentMethodTitle: 'طريقة الدفع',
     invoiceTitle: 'فاتورة ضريبية - المرحلة الثانية (ZATCA)',
     caseNumber: 'رقم الحالة',
     serviceFee: 'رسوم الخدمة',
-    zatcaVat: 'ضريبة ZATCA (15%)',
+    zatcaVat: `ضريبة ZATCA (${vat}%)`,
     totalDue: 'إجمالي المبلغ المستحق',
     qrIndicator: 'تم إنشاء رمز QR الضريبي',
     samaBadge: 'بوابة دفع متوافقة مع ساما',
@@ -112,6 +118,7 @@ const UI_STRINGS = {
     processing: 'جارٍ المعالجة بأمان...',
     sar: 'ر.س',
   },
+  }[lang];
 };
 
 export const PaymentCheckoutView: React.FC<Props> = ({
@@ -122,17 +129,18 @@ export const PaymentCheckoutView: React.FC<Props> = ({
   lang = 'en',
 }) => {
   const isRTL = lang === 'ar';
-  const t = UI_STRINGS[lang];
+  const t = buildUiStrings(lang);
+  const TIERS = buildTiers();
   const allowedIds = activeCase.allowedPaymentMethods && activeCase.allowedPaymentMethods.length > 0
     ? activeCase.allowedPaymentMethods
     : [];
-  const methods = PAYMENT_METHODS[lang].filter((m) => allowedIds.includes(m.id));
+  const methods = buildMethods(lang).filter((m) => allowedIds.includes(m.id));
   const isCoordinatorAssigned = !!activeCase.invoiceIssued && methods.length > 0;
 
   const [selectedTierId, setSelectedTierId] = useState<number>(
     activeCase.consultationType === 'written' ? 1 : 2
   );
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(methods[0]?.id || 'mada');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(methods[0]?.id || defaultRailIds()[0]);
   const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
@@ -145,15 +153,9 @@ export const PaymentCheckoutView: React.FC<Props> = ({
     }
   }, [activeCase.allowedPaymentMethods, lang]);
 
-  const selectedTier = useMemo(
-    () => TIERS.find((tier) => tier.id === selectedTierId) || TIERS[1],
-    [selectedTierId]
-  );
+  const selectedTier = TIERS.find((tier) => tier.id === selectedTierId) || TIERS[1];
 
-  const tabbyMonthly = useMemo(
-    () => (selectedTier.totalSar / 4).toFixed(2),
-    [selectedTier.totalSar]
-  );
+  const tabbyMonthly = tabbyInstallment(selectedTier.totalSar).toFixed(2);
 
   const handleTierSelect = (tier: TierConfig) => {
     setSelectedTierId(tier.id);
@@ -179,7 +181,7 @@ export const PaymentCheckoutView: React.FC<Props> = ({
     await new Promise((resolve) => setTimeout(resolve, 1600));
 
     const tapChargeId = `chg_tap_ksa_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 9)}`;
-    const invoiceNumber = activeCase.pricing?.invoiceNumber || `INV-2026-${Math.floor(100000 + Math.random() * 900000)}`;
+    const invoiceNumber = activeCase.pricing?.invoiceNumber || newInvoiceNumber();
 
     onUpdateCase({
       id: activeCase.id,
@@ -190,6 +192,7 @@ export const PaymentCheckoutView: React.FC<Props> = ({
         baseSar: selectedTier.baseSar,
         vatSar: selectedTier.vatSar,
         totalSar: selectedTier.totalSar,
+        vatPercent: vatPercent(),
         tierName: isRTL ? selectedTier.tierNameAr : selectedTier.tierNameEn,
         invoiceNumber,
         tapChargeId,
@@ -214,12 +217,7 @@ export const PaymentCheckoutView: React.FC<Props> = ({
     onAdvanceStage();
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat(isRTL ? 'ar-SA' : 'en-US', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(amount);
-  };
+  const formatCurrency = (amount: number) => formatSar(amount, isRTL ? 'ar' : 'en');
 
   const selectedMethodLabel = methods.find((m) => m.id === paymentMethod)?.label || '';
 

@@ -2,6 +2,7 @@ import React from 'react';
 import { ClinicalCase } from '../../../types';
 import { TEAL_PRIMARY, TEAL_SECONDARY, TEAL_BG } from '../types';
 import { INDIAN_CONSULTANTS } from './doctorConstants';
+import { tierById } from '../../../data/pricing';
 
 interface DoctorReferralSetupSectionProps {
   activeCase: ClinicalCase;
@@ -105,7 +106,7 @@ export const DoctorReferralSetupSection: React.FC<DoctorReferralSetupSectionProp
               >
                 <div>{isAr ? m.labelAr : m.labelEn}</div>
                 <div style={{ fontSize: '9px', fontWeight: 600, color: isSelected ? TEAL_SECONDARY : '#94a3b8', marginTop: '2px' }}>
-                  {m.tier === 1 ? 'Tier 1 (250 SAR)' : 'Tier 2 (450 SAR)'}
+                  {`Tier ${m.tier} (${tierById(m.tier).totalSar} SAR)`}
                 </div>
               </button>
             );
@@ -164,7 +165,6 @@ export const DoctorReferralSetupSection: React.FC<DoctorReferralSetupSectionProp
           onUpdateCase({
             referralApproved: true,
             currentStage: 'AWAITING_PAYMENT',
-            stage: 4,
             invoiceIssued: false, // Enforce Alo Coordinator Gate 1!
             treatingDoctor: {
               ...(activeCase.treatingDoctor || {
@@ -176,7 +176,6 @@ export const DoctorReferralSetupSection: React.FC<DoctorReferralSetupSectionProp
             },
             focusQuestions: [focusQs[0], focusQs[1], focusQs[2]],
           });
-          onAdvanceStage();
         }}
         style={{
           backgroundColor: activeCase.referralApproved ? '#e2e8f0' : TEAL_PRIMARY,

@@ -1,5 +1,6 @@
 import { ClinicalCase } from '../types';
 import { generateMockSHA256 } from '../components/followup/followUpConstants';
+import { defaultRailIds } from '../config/platformConfig';
 
 /**
  * Downloads PDF 1 (Certified Second Opinion Dossier)
@@ -9,7 +10,7 @@ export const downloadPDF1 = (activeCase: ClinicalCase, isAr: boolean = false): v
   const caseNum = activeCase.caseNumber || activeCase.id;
   const patName = activeCase.patientName || activeCase.patientNameAr || (isAr ? 'المريض' : 'Patient');
   const treatingDoc = activeCase.treatingDoctor?.name || (isAr ? 'د. فهد الحربي' : 'Dr. Fahad Al-Harbi');
-  const consultant = activeCase.consultant?.name || 'Dr. V. Prasanth, MBBS, MS, MCh';
+  const consultant = activeCase.consultant?.name || 'International Consultant';
   const rawHosp = activeCase.treatingDoctor?.hospital;
   const isLegacy = !rawHosp || rawHosp === 'Alo Care Specialist Medical Center' || rawHosp === 'مركز ألو كير الطبي التخصصي' || rawHosp === 'المجمع الطبي الشريك' || rawHosp === 'Partner Medical Center';
   const hospital = isLegacy
@@ -68,7 +69,7 @@ export const downloadPDF2 = (activeCase: ClinicalCase, isAr: boolean = false): v
   const caseNum = activeCase.caseNumber || activeCase.id;
   const patName = activeCase.patientName || activeCase.patientNameAr || (isAr ? 'المريض' : 'Patient');
   const treatingDoc = activeCase.treatingDoctor?.name || (isAr ? 'د. فهد الحربي' : 'Dr. Fahad Al-Harbi');
-  const consultant = activeCase.consultant?.name || 'Dr. V. Prasanth, MBBS, MS, MCh';
+  const consultant = activeCase.consultant?.name || 'International Consultant';
   const invoiceNum = activeCase.pricing?.invoiceNumber || 'INV-2026-001';
 
   const followUpQ = (activeCase.metadata?.patientQuestions as string[]) || [];
@@ -108,8 +109,9 @@ export const downloadPDF2 = (activeCase: ClinicalCase, isAr: boolean = false): v
     `Physiotherapy Status: ${activeCase.partnerOrders?.physio?.status || 'Completed'}`,
     `------------------------------------------------------------------------`,
     `SECTION 4: ZATCA PHASE-2 TAX INVOICE RECEIPT`,
-    `Total Amount: ${(activeCase.pricing?.totalSar || 750).toFixed(2)} SAR (Includes 15% VAT)`,
-    `Payment Method: ${activeCase.paymentDetails?.method || activeCase.allowedPaymentMethods?.[0] || 'mada'}`,
+    // Print the VAT actually charged on this case, never a live/default rate.
+    `Total Amount: ${(activeCase.pricing?.totalSar ?? 0).toFixed(2)} SAR (Includes ${activeCase.pricing?.vatPercent ?? 0}% VAT)`,
+    `Payment Method: ${activeCase.paymentDetails?.method || activeCase.allowedPaymentMethods?.[0] || defaultRailIds()[0]}`,
     `Receipt Verification: Cryptographically Signed & Archived in Permanent Health Record`,
     `========================================================================`,
   ].join('\n');

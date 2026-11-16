@@ -1,6 +1,7 @@
 import React from 'react';
 import { ClinicalCase } from '../../types';
-import { TEAL_PRIMARY } from '../cockpit/types';
+import { TEAL_PRIMARY } from '../../theme/brandColors';
+import { priceTierForType } from '../../config/platformConfig';
 import DossierClinicalSection from './dossier/DossierClinicalSection';
 import DossierRecommendationsSection from './dossier/DossierRecommendationsSection';
 import DossierEndorsementQrSection from './dossier/DossierEndorsementQrSection';
@@ -28,9 +29,11 @@ export const ReportComprehensiveDossier: React.FC<Props> = ({
     (activeCase.metadata?.assignedCoordinatorName as string) ||
     (isAr ? 'سارة المهندس (منسق رعاية ألو)' : 'Sarah Al-Mohandis (ALO Care Coordinator)');
 
-  const totalSar = activeCase.pricing?.totalSar || (activeCase.consultationType === 'video' ? 150 : 75);
-  const baseSar = activeCase.pricing?.baseSar || (totalSar === 150 ? 130.43 : 65.22);
-  const vatSar = activeCase.pricing?.vatSar || (totalSar === 150 ? 19.57 : 9.78);
+  // Derive the fallback from the priced tier, never from a hardcoded amount.
+  const fallbackTier = priceTierForType(activeCase.consultationType || 'written');
+  const totalSar = activeCase.pricing?.totalSar || fallbackTier.totalSar;
+  const baseSar = activeCase.pricing?.baseSar || fallbackTier.baseSar;
+  const vatSar = activeCase.pricing?.vatSar || fallbackTier.vatSar;
 
   const archiveDate = activeCase.metadata?.pdf2Timestamp
     ? new Date(activeCase.metadata.pdf2Timestamp as string).toLocaleDateString(isAr ? 'ar-SA' : 'en-US', {

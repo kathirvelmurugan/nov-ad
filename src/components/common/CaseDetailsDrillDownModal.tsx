@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Layers, Activity, Stethoscope, MessageSquare, Receipt } from 'lucide-react';
 import { ClinicalCase } from '../../types';
 import { getStageBadgeMeta } from './PortalCaseTrackerPanel';
-import { BilingualReportModal } from '../cockpit/BilingualReportModal';
+import { BilingualReportModal } from '../reports/BilingualReportModal';
 import DrillDownHeader, { TabType, DrillDownHeaderTab } from '../modals/drilldown/DrillDownHeader';
 import DrillDownJourneyTab from '../modals/drilldown/DrillDownJourneyTab';
 import DrillDownClinicalTab from '../modals/drilldown/DrillDownClinicalTab';

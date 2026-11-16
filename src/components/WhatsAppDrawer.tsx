@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MessageCircle, X, ExternalLink, CheckCheck, ShieldCheck, Clock } from 'lucide-react';
 import { ClinicalCase } from '../types';
+import { priceTierForType } from '../config/platformConfig';
 
 interface Props {
   activeCase: ClinicalCase;
@@ -104,9 +105,9 @@ export const WhatsAppDrawer: React.FC<Props> = ({
           : 'رابط سداد باقة الرأي الطبي الثاني (Invoice Ready)',
         body: isPaid
           ? (isVerified
-              ? `تم التحقق من سداد باقة الرأي الطبي الثاني (${activeCase.pricing?.totalSar || 150} ر.س شامل 15% ضريبة). تم تفعيل الرمز السيادي المشفّر (${activeCase.egressToken || 'ALO-KSA-9482'}) وتوجيه الملف للاستشاري الدولي.`
-              : `تم استلام سدادك (${activeCase.pricing?.totalSar || 150} ر.س). يقوم منسق رعاية ألو بالتحقق من العملية قبل إرسال الملف للاستشاري الدولي.`)
-          : `أصدر منسق رعاية ألو فاتورة الباقة (${activeCase.pricing?.totalSar || 150} ر.س شامل ضريبة القيمة المضافة 15%) وحدد طرق الدفع المتاحة لك.`,
+              ? `تم التحقق من سداد باقة الرأي الطبي الثاني (${activeCase.pricing?.totalSar ?? priceTierForType(activeCase.consultationType || 'written').totalSar} ر.س شامل 15% ضريبة). تم تفعيل الرمز السيادي المشفّر (${activeCase.egressToken || 'ALO-KSA-9482'}) وتوجيه الملف للاستشاري الدولي.`
+              : `تم استلام سدادك (${activeCase.pricing?.totalSar ?? priceTierForType(activeCase.consultationType || 'written').totalSar} ر.س). يقوم منسق رعاية ألو بالتحقق من العملية قبل إرسال الملف للاستشاري الدولي.`)
+          : `أصدر منسق رعاية ألو فاتورة الباقة (${activeCase.pricing?.totalSar ?? priceTierForType(activeCase.consultationType || 'written').totalSar} ر.س شامل ضريبة القيمة المضافة 15%) وحدد طرق الدفع المتاحة لك.`,
         button: isPaid ? 'تحميل الفاتورة الضريبية المعتمدة (ZATCA)' : 'ادفع بأمان عبر بوابة السداد المعتمدة',
         time: '11:05 AM',
       });

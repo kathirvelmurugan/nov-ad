@@ -32,7 +32,6 @@ export const App: React.FC = () => {
       activeCaseId={state.activeCaseId}
       setActiveCaseId={state.setActiveCaseId}
       // View
-      viewMode={state.viewMode}
       patientSubView={state.patientSubView}
       theme={state.theme}
       // UI flags
@@ -59,7 +58,6 @@ export const App: React.FC = () => {
       handleAutoFill={state.handleAutoFill}
       handleToggleLang={state.handleToggleLang}
       handleToggleTheme={state.handleToggleTheme}
-      handleToggleViewMode={state.handleToggleViewMode}
       handleSetStage={state.handleSetStage}
       handleSelectPatientSubView={state.handleSelectPatientSubView}
       handleSelectCaseFromPipeline={state.handleSelectCaseFromPipeline}
@@ -67,7 +65,6 @@ export const App: React.FC = () => {
       handleAutoDemoPrevStage={state.handleAutoDemoPrevStage}
       handleConfirmHandoff={state.handleConfirmHandoff}
       handleLogout={state.handleLogout}
-      handleStartCaseToCockpit={state.handleStartCaseToCockpit}
     >
       <ErrorBoundary>
         <ScreenRouter

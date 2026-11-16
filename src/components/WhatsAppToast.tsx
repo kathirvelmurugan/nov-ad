@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { MessageCircle, ExternalLink, X, ArrowRight, ArrowLeft } from 'lucide-react';
 import { ClinicalCase } from '../types';
+import { priceTier } from '../config/platformConfig';
 
 interface Props {
   activeCase: ClinicalCase;
@@ -81,8 +82,8 @@ export const WhatsAppToast: React.FC<Props> = ({
             code: 'W06',
             titleAr: 'فاتورة سداد الرأي الطبي الثاني',
             titleEn: 'Payment Invoice & Options Ready',
-            bodyAr: `صدرت فاتورة الباقة (${activeCase.pricing?.totalSar || 75} ر.س شامل الضريبة) بطرق الدفع المحددة.`,
-            bodyEn: `Invoice issued (${activeCase.pricing?.totalSar || 75} SAR incl. VAT) with your assigned payment options.`,
+            bodyAr: `صدرت فاتورة الباقة (${activeCase.pricing?.totalSar ?? priceTier(activeCase.tier).totalSar} ر.س شامل الضريبة) بطرق الدفع المحددة.`,
+            bodyEn: `Invoice issued (${activeCase.pricing?.totalSar ?? priceTier(activeCase.tier).totalSar} SAR incl. VAT) with your assigned payment options.`,
           };
         } else {
           payload = {

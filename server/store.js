@@ -17,7 +17,7 @@ export let memoryUsers = [
   {
     id: 'staff-ad-01',
     staffCode: '00001',
-    fullName: 'Adrian Lewis',
+    fullName: 'Rehmaan',
     fullNameAr: 'المشرف العام أدريان لويس',
     roleCode: 'AD',
     phone: '+966500000001',
@@ -173,16 +173,7 @@ export const addAuditEntry = (entry) => {
 
 export const resetStore = () => {
   memoryTenants = [];
-  memoryUsers = [
-    {
-      id: INITIAL_SUPER_ADMIN_ID,
-      name: INITIAL_SUPER_ADMIN_NAME,
-      role: INITIAL_SUPER_ADMIN_ROLE,
-      pinHash: crypto.createHash('sha256').update(INITIAL_SUPER_ADMIN_PIN).digest('hex'),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    }
-  ];
+  memoryUsers = [];
   memoryCases = [];
   memoryAudit = [];
 };

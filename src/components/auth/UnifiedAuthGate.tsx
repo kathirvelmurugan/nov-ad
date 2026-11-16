@@ -1,8 +1,11 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
 import { apiClient } from '../../services/apiClient';
 import { USER_SESSION_KEY } from '../../hooks/workflowConstants';
+import { PhoneEntryStep } from './steps/PhoneEntryStep';
+import { CountryCode } from './authTypesAndUtils';
+import { normalizePhone, validatePhone, validatePin } from '../../utils/phoneValidation';
 
-type AuthStep = 'phone' | 'pin' | 'pin_setup' | 'super_admin';
+type AuthStep = 'phone' | 'access_code' | 'pin' | 'pin_setup' | 'super_admin';
 
 interface UnifiedAuthGateProps {
   onAuthenticated?: (session: any) => void;
@@ -36,11 +39,16 @@ const UnifiedAuthGate: React.FC<UnifiedAuthGateProps> = ({ onComplete, onAuthent
   const isRTL = propIsRTL !== undefined ? propIsRTL : effectiveLang === 'ar';
   const [step, setStep] = useState<AuthStep>('phone');
   const [rawPhone, setRawPhone] = useState('');
+  const [country, setCountry] = useState<CountryCode>('SA');
   const [enteredPin, setEnteredPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [accessCode, setAccessCode] = useState('');
   const [selectedPersona, setSelectedPersona] = useState<string>('doctor');
+  const phoneRef = useRef<HTMLInputElement>(null);
+
+  const ACCESS_CODE = '123456';
 
   const t = useMemo(() => ({
     phoneLabel: isRTL ? 'رقم الجوال' : 'Mobile Number',
@@ -60,7 +68,7 @@ const UnifiedAuthGate: React.FC<UnifiedAuthGateProps> = ({ onComplete, onAuthent
   }), [isRTL]);
 
   const completeAuth = useCallback(
-    (isSuperAdmin: boolean, roleCode: string, hospitalId: string | null, displayName: string) => {
+    (isSuperAdmin: boolean, roleCode: string, hospitalId: string | null, displayName: string, token?: string) => {
       const sessionObj = {
         isAuthenticated: true,
         phone: rawPhone,
@@ -71,6 +79,7 @@ const UnifiedAuthGate: React.FC<UnifiedAuthGateProps> = ({ onComplete, onAuthent
         isGuest: false,
         expiresAt: Date.now() + 30 * 24 * 3600 * 1000,
         lang: effectiveLang,
+        token,
       };
       try {
         localStorage.setItem(USER_SESSION_KEY, JSON.stringify(sessionObj));
@@ -85,30 +94,42 @@ const UnifiedAuthGate: React.FC<UnifiedAuthGateProps> = ({ onComplete, onAuthent
     [onAuthenticated, onComplete, rawPhone, effectiveLang]
   );
 
+  const handleCountryChange = useCallback((newCountry: CountryCode) => {
+    if (newCountry !== country) {
+      setCountry(newCountry);
+      setRawPhone('');
+      setError('');
+      // Refocus the phone input after country switch
+      setTimeout(() => phoneRef.current?.focus(), 100);
+    }
+  }, [country]);
+
   const handlePhoneSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     if (!rawPhone.trim()) return;
 
+    const validation = validatePhone(rawPhone, country);
+    if (!validation.isValid) {
+      setError(isRTL ? validation.issue?.ar || '' : validation.issue?.en || '');
+      return;
+    }
+
     setIsLoading(true);
     try {
-      let formattedPhone = rawPhone.trim();
-      if (formattedPhone.startsWith('05')) {
-        formattedPhone = `+966${formattedPhone.slice(1)}`;
-      } else if (formattedPhone.startsWith('5') && formattedPhone.length === 9) {
-        formattedPhone = `+966${formattedPhone}`;
-      } else if (!formattedPhone.startsWith('+')) {
-        formattedPhone = `+${formattedPhone}`;
-      }
+      const formattedPhone = validation.e164;
       const response = await apiClient.checkUserExists(formattedPhone);
       
       if (response && response.exists && response.hasPin) {
+        // Existing user with PIN → login directly
         setStep('pin');
       } else {
-        setStep('pin_setup'); // Guide new patients to set a PIN for their medical record
+        // New patient (or user without PIN) → verify access code first
+        setStep('access_code');
       }
     } catch (err: any) {
-      setStep('pin_setup');
+      // On network error, still allow new user signup via access code
+      setStep('access_code');
     } finally {
       setIsLoading(false);
     }
@@ -120,20 +141,13 @@ const UnifiedAuthGate: React.FC<UnifiedAuthGateProps> = ({ onComplete, onAuthent
     setIsLoading(true);
 
     try {
-      let formattedPhone = rawPhone.trim();
-      if (formattedPhone.startsWith('05')) {
-        formattedPhone = `+966${formattedPhone.slice(1)}`;
-      } else if (formattedPhone.startsWith('5') && formattedPhone.length === 9) {
-        formattedPhone = `+966${formattedPhone}`;
-      } else if (!formattedPhone.startsWith('+')) {
-        formattedPhone = `+${formattedPhone}`;
-      }
+      const formattedPhone = normalizePhone(rawPhone, country);
       const user = await apiClient.login(formattedPhone, enteredPin);
       
       const displayName = isRTL ? (user.fullNameAr || user.fullName) : user.fullName;
-      completeAuth(false, user.roleCode, user.hospitalId, displayName);
+      completeAuth(false, user.roleCode, user.hospitalId, displayName, user.token);
     } catch (err: any) {
-      if (err?.response?.status === 401 || err?.message?.includes('401') || err?.message?.includes('Invalid') || err?.message?.includes('غير صحيح')) {
+      if (err?.response?.status === 401) {
         setError(t.errorInvalid);
       } else {
         setError(t.errorNetwork);
@@ -142,6 +156,20 @@ const UnifiedAuthGate: React.FC<UnifiedAuthGateProps> = ({ onComplete, onAuthent
       setIsLoading(false);
       setEnteredPin('');
     }
+  };
+
+  const handleAccessCodeSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    if (accessCode !== ACCESS_CODE) {
+      setError(isRTL ? 'رمز التحقق غير صحيح. الرجاء المحاولة مرة أخرى.' : 'Invalid access code. Please try again.');
+      setAccessCode('');
+      return;
+    }
+
+    // Access code verified → proceed to PIN setup for new user registration
+    setStep('pin_setup');
   };
 
   const handlePinSetupSubmit = async (e: React.FormEvent) => {
@@ -153,26 +181,21 @@ const UnifiedAuthGate: React.FC<UnifiedAuthGateProps> = ({ onComplete, onAuthent
       return;
     }
 
-    if (enteredPin.length < 4) {
-      setError(isRTL ? 'رمز المرور يجب أن يكون 4 أرقام على الأقل.' : 'PIN must be at least 4 digits.');
+    const pinCheck = validatePin(enteredPin, 4, 6);
+    if (!pinCheck.isValid) {
+      setError(isRTL ? pinCheck.issue?.ar || '' : pinCheck.issue?.en || '');
       return;
     }
 
     setIsLoading(true);
     try {
-      let formattedPhone = rawPhone.trim();
-      if (formattedPhone.startsWith('05')) {
-        formattedPhone = `+966${formattedPhone.slice(1)}`;
-      } else if (formattedPhone.startsWith('5') && formattedPhone.length === 9) {
-        formattedPhone = `+966${formattedPhone}`;
-      } else if (!formattedPhone.startsWith('+')) {
-        formattedPhone = `+${formattedPhone}`;
-      }
+      // Country-aware formatting: +966 for KSA, +91 for Indian consultants
+      const formattedPhone = normalizePhone(rawPhone, country);
       await apiClient.updateUserPin(formattedPhone, enteredPin);
       
       const user = await apiClient.login(formattedPhone, enteredPin);
-      const displayName = isRTL ? (user.fullNameAr || 'مريض جديد') : (user.fullName || 'New Patient');
-      completeAuth(false, user.roleCode || 'P', user.hospitalId, displayName);
+      const displayName = isRTL ? (user.fullNameAr || user.fullName) : (user.fullName || 'Patient');
+      completeAuth(false, user.roleCode || 'P', user.hospitalId, displayName, user.token);
     } catch (err: any) {
       setError(t.errorNetwork);
     } finally {
@@ -189,7 +212,7 @@ const UnifiedAuthGate: React.FC<UnifiedAuthGateProps> = ({ onComplete, onAuthent
 
     try {
       const user = await apiClient.login('+966500000001', enteredPin);
-      completeAuth(true, 'AD', user.hospitalId || 'GLOBAL', isRTL ? 'مدير النظام الأعلى' : 'Super Administrator');
+      completeAuth(true, 'AD', user.hospitalId || 'GLOBAL', isRTL ? 'مدير النظام الأعلى' : 'Super Administrator', user.token);
     } catch (err: any) {
       if (err?.response?.status === 401) {
         setError(t.errorSuperAdmin);
@@ -336,23 +359,19 @@ const UnifiedAuthGate: React.FC<UnifiedAuthGateProps> = ({ onComplete, onAuthent
         <p style={subHeaderStyle}>v2.4 Saudi Edition</p>
 
         {step === 'phone' && (
-          <form onSubmit={handlePhoneSubmit} noValidate>
-            <label htmlFor="auth-phone" style={labelStyle}>{t.phoneLabel}</label>
-            <input
-              id="auth-phone"
-              type="tel"
-              value={rawPhone}
-              onChange={(e) => setRawPhone(e.target.value)}
-              placeholder={t.phonePlaceholder}
-              style={inputStyle}
-              autoComplete="tel"
-              disabled={isLoading}
-              aria-required="true"
+          <>
+            <PhoneEntryStep
+              isRTL={isRTL}
+              phone={rawPhone}
+              country={country}
+              onCountryChange={handleCountryChange}
+              error={error}
+              isLoading={isLoading}
+              phoneRef={phoneRef}
+              onPhoneChange={(e) => setRawPhone(e.target.value)}
+              onPhoneSubmit={handlePhoneSubmit}
+              t={(ar, en) => isRTL ? ar : en}
             />
-
-            <button type="submit" style={{ ...buttonStyle, marginTop: '20px' }} disabled={isLoading || !rawPhone.trim()}>
-              {isLoading ? (isRTL ? 'جاري التحقق...' : 'Verifying...') : t.submit}
-            </button>
 
             <button
               type="button"
@@ -362,7 +381,46 @@ const UnifiedAuthGate: React.FC<UnifiedAuthGateProps> = ({ onComplete, onAuthent
             >
               {t.superAdmin}
             </button>
-          </form>
+          </>
+        )}
+
+        {step === 'access_code' && (
+          <>
+            <p style={{ ...subHeaderStyle, marginBottom: '16px', fontWeight: 600 }}>
+              {isRTL
+                ? 'أدخل رمز التحقق للمتابعة'
+                : 'Enter Access Code to continue'}
+            </p>
+            <form onSubmit={handleAccessCodeSubmit} noValidate>
+              <label htmlFor="auth-access-code" style={labelStyle}>
+                {isRTL ? 'رمز التحقق' : 'Access Code'}
+              </label>
+              <input
+                id="auth-access-code"
+                type="password"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={6}
+                value={accessCode}
+                onChange={(e) => setAccessCode(e.target.value.replace(/[^0-9]/g, ''))}
+                style={{ ...inputStyle, letterSpacing: '8px', textAlign: 'center' }}
+                autoComplete="one-time-code"
+                autoFocus
+                aria-required="true"
+              />
+              <button type="submit" style={buttonStyle} disabled={accessCode.length < 4}>
+                {isRTL ? 'تحقق' : 'Verify'}
+              </button>
+              <button
+                type="button"
+                style={secondaryButtonStyle}
+                onClick={() => { setStep('phone'); setError(''); setAccessCode(''); }}
+              >
+                {t.back}
+              </button>
+              {error && <p style={errorStyle} role="alert" aria-live="assertive">{error}</p>}
+            </form>
+          </>
         )}
 
         {step === 'pin' && (

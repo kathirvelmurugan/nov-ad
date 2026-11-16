@@ -2,6 +2,7 @@ import React from 'react';
 import { RoleCode, StaffAccountRecord } from '../../types';
 import { DEFAULT_STAFF_DIRECTORY } from '../../data/accreditedStaffAndTenants';
 import { PLATFORM_USERS_KEY } from '../../hooks/workflowConstants';
+import { formatPhoneDisplay as formatE164Display, normalizePhone, validatePhone } from '../../utils/phoneValidation';
 
 export const PALETTE = {
   primary: '#007B6E',
@@ -71,66 +72,15 @@ export const detectCountryFromPhone = (value: string): CountryCode => {
   return 'SA';
 };
 
-export const formatPhoneByCountry = (value: string, country: CountryCode = 'SA'): string => {
-  const digits = value.replace(/\D/g, '');
-  if (country === 'IN') {
-    let localDigits = digits;
-    if (localDigits.startsWith('91') && localDigits.length > 10) {
-      localDigits = localDigits.slice(2);
-    }
-    localDigits = localDigits.slice(0, 10);
-    if (localDigits.length === 0) return '+91 ';
-    if (localDigits.length <= 5) return `+91 ${localDigits}`;
-    return `+91 ${localDigits.slice(0, 5)} ${localDigits.slice(5)}`;
-  }
-  let localDigits = digits;
-  if (localDigits.startsWith('966')) {
-    localDigits = localDigits.slice(3);
-  } else if (localDigits.startsWith('0')) {
-    localDigits = localDigits.slice(1);
-  }
-  localDigits = localDigits.slice(0, 9);
-  if (localDigits.length === 0) return '+966 ';
-  if (localDigits.length <= 2) return `+966 ${localDigits}`;
-  if (localDigits.length <= 5) return `+966 ${localDigits.slice(0, 2)} ${localDigits.slice(2)}`;
-  return `+966 ${localDigits.slice(0, 2)} ${localDigits.slice(2, 5)} ${localDigits.slice(5, 9)}`;
-};
+// Phone rules live in src/utils/phoneValidation.ts — these are thin, backward-compatible delegates.
+export const formatPhoneByCountry = (value: string, country: CountryCode = 'SA'): string =>
+  formatE164Display(normalizePhone(value, country), country);
 
-export const extractRawPhoneByCountry = (value: string, country: CountryCode = 'SA'): string => {
-  const digits = value.replace(/\D/g, '');
-  if (country === 'IN') {
-    let localDigits = digits;
-    if (localDigits.startsWith('91') && localDigits.length > 10) {
-      localDigits = localDigits.slice(2);
-    }
-    return '+91' + localDigits.slice(0, 10);
-  }
-  let localDigits = digits;
-  if (localDigits.startsWith('966')) {
-    localDigits = localDigits.slice(3);
-  } else if (localDigits.startsWith('0')) {
-    localDigits = localDigits.slice(1);
-  }
-  return '+966' + localDigits.slice(0, 9);
-};
+export const extractRawPhoneByCountry = (value: string, country: CountryCode = 'SA'): string =>
+  normalizePhone(value, country);
 
-export const validateMobileByCountry = (value: string, country: CountryCode = 'SA'): boolean => {
-  const digits = value.replace(/\D/g, '');
-  if (country === 'IN') {
-    let localDigits = digits;
-    if (localDigits.startsWith('91') && localDigits.length > 10) {
-      localDigits = localDigits.slice(2);
-    }
-    return /^[6-9]\d{9}$/.test(localDigits);
-  }
-  let localDigits = digits;
-  if (localDigits.startsWith('966')) {
-    localDigits = localDigits.slice(3);
-  } else if (localDigits.startsWith('0')) {
-    localDigits = localDigits.slice(1);
-  }
-  return /^5\d{8}$/.test(localDigits);
-};
+export const validateMobileByCountry = (value: string, country: CountryCode = 'SA'): boolean =>
+  validatePhone(value, country).isValid;
 
 export const getUserPin = (rawPhone: string): string | null => {
   if (!rawPhone) return null;
@@ -231,7 +181,7 @@ export interface PersonaPreset {
 }
 
 export const PERSONA_PRESETS: PersonaPreset[] = [
-  { id: 'super_admin', nameAr: 'المشرف العام', nameEn: 'Adrian Lewis', phone: '+966500000001', role: 'Super Admin / المشرف العام', roleCode: 'AD' },
+  { id: 'super_admin', nameAr: 'المشرف العام', nameEn: 'Rehmaan', phone: '+966500000001', role: 'Super Admin / المشرف العام', roleCode: 'AD' },
   { id: 'hospital_admin', nameAr: 'مدير المجمع الطبي', nameEn: 'David Nunez', phone: '+966500000002', role: 'Hospital Admin / مدير المجمع الطبي', roleCode: 'HA', hospitalId: 'hosp-alo-riyadh-01' },
   { id: 'hospital_admin_alias', nameAr: 'مدير المجمع الطبي', nameEn: 'David Nunez', phone: '+966504444444', role: 'Hospital Admin / مدير المجمع الطبي', roleCode: 'HA', hospitalId: 'hosp-alo-riyadh-01' },
   { id: 'coordinator', nameAr: 'منسق رعاية ألو', nameEn: 'Emmanuel Arcon Gonzalez', phone: '+966500000003', role: 'ALO Coordinator / منسق رعاية ألو', roleCode: 'C' },
@@ -239,8 +189,9 @@ export const PERSONA_PRESETS: PersonaPreset[] = [
   { id: 'nurse', nameAr: 'ممرضة ألو للفرز', nameEn: 'Sara Al-Qahtani', phone: '+966500000004', role: 'ALO Nurse / ممرضة ألو', roleCode: 'N' },
   { id: 'doctor', nameAr: 'الطبيب السعودي المعالج', nameEn: 'Dr. Fahad Al-Harbi', phone: '+966500000005', role: 'Treating Doctor / الطبيب المعالج', roleCode: 'D', hospitalId: 'hosp-alo-riyadh-01' },
   { id: 'doctor_alias', nameAr: 'الطبيب السعودي المعالج', nameEn: 'Dr. Fahad Al-Harbi', phone: '+966502222222', role: 'Treating Doctor / الطبيب المعالج', roleCode: 'D', hospitalId: 'hosp-alo-riyadh-01' },
-  { id: 'consultant', nameAr: 'الاستشاري الدولي', nameEn: 'Dr. V. Prasanth', phone: '+966500000006', role: 'Consultant / الاستشاري الدولي', roleCode: 'K' },
-  { id: 'consultant_in', nameAr: 'الاستشاري الدولي (الهند)', nameEn: 'Dr. V. Prasanth (India)', phone: '+919876543210', role: 'Consultant / الاستشاري الدولي', roleCode: 'K' },
+  { id: 'consultant_cardio', nameAr: 'الاستشاري الدولي (قلب)', nameEn: 'Dr. Rajesh Kumar', phone: '+919876543211', role: 'Consultant / الاستشاري الدولي', roleCode: 'K' },
+  { id: 'consultant_onco', nameAr: 'الاستشارية الدولية (أورام)', nameEn: 'Dr. Ananya Sharma', phone: '+919876543212', role: 'Consultant / الاستشارية الدولية', roleCode: 'K' },
+  { id: 'consultant_ortho', nameAr: 'الاستشاري الدولي (عظام)', nameEn: 'Dr. Sanjay Mehta', phone: '+919876543213', role: 'Consultant / الاستشاري الدولي', roleCode: 'K' },
   { id: 'lab', nameAr: 'المختبر التشخيصي', nameEn: 'Omar Al-Zahrani', phone: '+966500000007', role: 'Lab / المختبر', roleCode: 'L', hospitalId: 'hosp-alo-riyadh-01' },
   { id: 'pharmacy', nameAr: 'الصيدلية السريرية', nameEn: 'Noura Al-Dosari', phone: '+966500000008', role: 'Pharmacy / الصيدلية', roleCode: 'PH', hospitalId: 'hosp-alo-riyadh-01' },
   { id: 'reception', nameAr: 'الاستقبال والمواعيد', nameEn: 'Marcus Vance', phone: '+966500000009', role: 'Reception / الاستقبال', roleCode: 'REC', hospitalId: 'hosp-alo-riyadh-01' },
@@ -434,7 +385,7 @@ export const getRoleTitle = (code: RoleCode, isRTL: boolean = true): string => {
     case 'D': return isRTL ? 'الطبيب السعودي المعالج' : 'Saudi Treating Doctor';
     case 'N': return isRTL ? 'ممرضة ألو' : 'ALO Nurse';
     case 'C': return isRTL ? 'منسق رعاية ألو' : 'ALO Coordinator';
-    case 'K': return isRTL ? 'الاستشاري الدولي' : 'Indian Consultant';
+    case 'K': return isRTL ? 'الاستشاري الدولي' : 'International Consultant';
     default: return isRTL ? 'حساب المريض' : 'Patient Account';
   }
 };
@@ -450,7 +401,7 @@ export const getActiveConsultantSession = (lang: 'ar' | 'en' = 'ar'): SessionDat
           phone: parsed.phone || '+919876543210',
           personaId: 'k',
           roleCode: 'K',
-          fullName: parsed.fullName || 'Dr. Pradeep Kumar (Apollo Hospitals)',
+          fullName: parsed.fullName || 'International Consultant',
           isGuest: false,
           expiresAt: parsed.expiresAt,
           lang,

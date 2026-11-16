@@ -1,4 +1,5 @@
 import { ClinicalCase, ClinicalStage } from '../../types';
+import { STAGE_ORDER_META, timelineLabelFor } from '../../config/stageMeta';
 
 export interface StageStep {
   stage: ClinicalStage;
@@ -7,32 +8,17 @@ export interface StageStep {
   labelEn: string;
 }
 
-export const STAGES: StageStep[] = [
-  { stage: 'INTAKE_RECEIVED', num: 1, labelAr: 'تسجيل الحالة', labelEn: 'Intake' },
-  { stage: 'NURSE_CHECK', num: 2, labelAr: 'فرز التمريض', labelEn: 'Nurse Triage' },
-  { stage: 'DOCTOR_REVIEW', num: 3, labelAr: 'الطبيب السعودي', labelEn: 'Saudi Doctor' },
-  { stage: 'AWAITING_PAYMENT', num: 4, labelAr: 'السداد والفاتورة', labelEn: 'Payment' },
-  { stage: 'WITH_CONSULTANT', num: 5, labelAr: 'الاستشاري الدولي', labelEn: 'Consultant' },
-  { stage: 'OPINION_READY', num: 6, labelAr: 'الجلسة المرئية', labelEn: 'Telehealth' },
-  { stage: 'PARTNER_SERVICES', num: 7, labelAr: 'استلام التقرير', labelEn: 'Report PDF 1' },
-  { stage: 'FOLLOW_UP_21_DAYS', num: 8, labelAr: 'المتابعة 21 يوماً', labelEn: 'Follow-up' },
-  { stage: 'CLOSED', num: 9, labelAr: 'إغلاق الملف', labelEn: 'Closed' },
-];
+export const STAGES: StageStep[] = STAGE_ORDER_META.map((m) => ({
+  stage: m.stage, num: m.num, labelAr: m.labelAr, labelEn: m.labelEn,
+}));
 
-export const getStagesForCase = (consultationType?: string): StageStep[] => {
-  const isWritten = consultationType === 'written';
-  return [
-    { stage: 'INTAKE_RECEIVED', num: 1, labelAr: 'تسجيل الحالة', labelEn: 'Intake' },
-    { stage: 'NURSE_CHECK', num: 2, labelAr: 'فرز التمريض', labelEn: 'Nurse Triage' },
-    { stage: 'DOCTOR_REVIEW', num: 3, labelAr: 'الطبيب السعودي', labelEn: 'Saudi Doctor' },
-    { stage: 'AWAITING_PAYMENT', num: 4, labelAr: 'السداد والفاتورة', labelEn: 'Payment' },
-    { stage: 'WITH_CONSULTANT', num: 5, labelAr: 'الاستشاري الدولي', labelEn: 'Consultant' },
-    { stage: 'OPINION_READY', num: 6, labelAr: isWritten ? 'الرأي الاستشاري' : 'الجلسة المرئية', labelEn: isWritten ? 'Second Opinion' : 'Telehealth' },
-    { stage: 'PARTNER_SERVICES', num: 7, labelAr: 'استلام التقرير', labelEn: 'Report PDF 1' },
-    { stage: 'FOLLOW_UP_21_DAYS', num: 8, labelAr: 'المتابعة 21 يوماً', labelEn: 'Follow-up' },
-    { stage: 'CLOSED', num: 9, labelAr: 'إغلاق الملف', labelEn: 'Closed' },
-  ];
-};
+export const getStagesForCase = (consultationType?: string): StageStep[] =>
+  STAGE_ORDER_META.map((m) => ({
+    stage: m.stage,
+    num: m.num,
+    labelAr: timelineLabelFor(m.stage, consultationType, true),
+    labelEn: timelineLabelFor(m.stage, consultationType, false),
+  }));
 
 export interface StageContentData {
   badgeAr: string;

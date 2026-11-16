@@ -45,6 +45,7 @@ export interface StaffAccountRecord {
   hospitalId?: string;
   phone: string;
   pin: string;
+  token?: string;
   hasCustomPin?: boolean;
   tempPassword?: string;
   scfhsLicense?: string;

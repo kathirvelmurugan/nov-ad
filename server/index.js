@@ -12,6 +12,7 @@ import adminRouter from './routes/admin.js';
 import auditRouter from './routes/audit.js';
 import storageRouter from './routes/storage.js';
 import livekitRouter from './routes/livekit.js';
+import settingsRouter, { seedSettings } from './routes/settings.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -19,7 +20,8 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
+const CORS_ORIGINS = (process.env.CORS_ORIGINS || 'http://localhost:5173,http://localhost:4173').split(',').map(s => s.trim());
+app.use(cors({ origin: (origin, cb) => { if (!origin || CORS_ORIGINS.includes(origin)) return cb(null, true); cb(null, CORS_ORIGINS[0] || false); }, credentials: true }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
@@ -33,6 +35,7 @@ apiRouter.use('/admin', adminRouter);
 apiRouter.use('/admin/cases', casesRouter);
 apiRouter.use('/audit', auditRouter);
 apiRouter.use('/livekit', livekitRouter);
+apiRouter.use('/settings', settingsRouter);
 apiRouter.use('/', storageRouter);
 
 // Mount API router for both direct /api and prefixed /:prefix/api (e.g. /feature-sarat/api)
@@ -63,7 +66,7 @@ app.use((req, res) => {
 // Server Start
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 ALO DOCTOR Unified Backend Server running on port ${PORT}`);
-  initDatabase().catch((e) => console.warn('Database init warning:', e.message));
+  initDatabase().then(() => seedSettings()).catch((e) => console.warn('Database init warning:', e.message));
   initStorage().catch((e) => console.warn('Storage init warning:', e.message));
 });
 

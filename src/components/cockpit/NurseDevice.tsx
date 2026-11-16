@@ -170,9 +170,7 @@ export const NurseDevice: React.FC<CockpitDeviceProps> = ({
                 dualTokenGenerated: true,
                 egressToken: 'ALO-KSA-9482',
                 currentStage: 'DOCTOR_REVIEW',
-                stage: 3,
               });
-              onAdvanceStage();
             }}
             style={{
               backgroundColor: activeCase.triageComplete ? '#e2e8f0' : TEAL_PRIMARY,

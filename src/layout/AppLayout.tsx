@@ -2,7 +2,7 @@
  * AppLayout
  * ─────────────────────────────────────────────────────────────────────────────
  * Single-responsibility: owns the shell HTML, auth gate, and all overlay UI
- * (TopProfileSwitcher, StageProgressBar, WhatsApp*, modals, cockpit view).
+ * (TopProfileSwitcher, StageProgressBar, WhatsApp*, modals).
  *
  * Receives full workflow state from useClinicalWorkflowState via App.tsx.
  * The main content slot is passed as `children` (output of ScreenRouter).
@@ -19,7 +19,6 @@ import { USER_SESSION_KEY }        from '../hooks/workflowConstants';
 import { TopProfileSwitcher }      from '../components/TopProfileSwitcher';
 import { UniversalHeader }         from './UniversalHeader';
 import { StageProgressBar }        from '../components/StageProgressBar';
-import { FiveDeviceCockpitView }   from '../components/FiveDeviceCockpitView';
 import { NewCaseModal }            from '../components/NewCaseModal';
 import UnifiedAuthGate             from '../components/auth/UnifiedAuthGate';
 import ApiErrorModal               from '../components/common/ApiErrorModal';
@@ -38,7 +37,6 @@ interface AppLayoutProps {
   activeCaseId: string;
   setActiveCaseId: (id: string) => void;
   // View
-  viewMode: 'workstation' | 'studio';
   patientSubView: 'landing' | 'intake' | 'timeline' | 'telehealth' | 'checkout';
   theme: 'light' | 'dark';
   // UI flags
@@ -60,7 +58,6 @@ interface AppLayoutProps {
   handleAutoFill: () => void;
   handleToggleLang: () => void;
   handleToggleTheme: () => void;
-  handleToggleViewMode: () => void;
   handleSetStage: (s: ClinicalStage) => void;
   handleSelectPatientSubView: (v: 'landing' | 'intake' | 'timeline' | 'telehealth') => void;
   handleSelectCaseFromPipeline: (c: ClinicalCase, code: string) => void;
@@ -68,7 +65,6 @@ interface AppLayoutProps {
   handleAutoDemoPrevStage: () => void;
   handleConfirmHandoff: () => void;
   handleLogout: () => void;
-  handleStartCaseToCockpit: () => void;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -77,7 +73,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   userSession, setUserSession,
   lang,
   activePersona, activeCase, cases, activeCaseId, setActiveCaseId,
-  viewMode, patientSubView, theme,
+  patientSubView, theme,
   isAuthModalOpen, setIsAuthModalOpen,
   isGuideOpen, setIsGuideOpen,
   isPipelineBoardOpen, setIsPipelineBoardOpen,
@@ -87,15 +83,14 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   handleSelectPersona, handleAdvanceStage, handleUpdateCase,
   handleNextCase, handleResetDemo, handleResetActiveCase,
   handleAddNewCase, handleAutoFill,
-  handleToggleLang, handleToggleTheme, handleToggleViewMode,
+  handleToggleLang, handleToggleTheme,
   handleSetStage, handleSelectPatientSubView,
   handleSelectCaseFromPipeline,
   handleAutoDemoNextStage, handleAutoDemoPrevStage,
-  handleConfirmHandoff, handleLogout, handleStartCaseToCockpit,
+  handleConfirmHandoff, handleLogout,
 }) => {
   const isAr = lang === 'ar';
-  const isPureLandingPage = (!userSession || (activePersona.code === 'P' && patientSubView === 'landing')) && viewMode !== 'studio';
-  const isDemoMode = false;
+  const isPureLandingPage = !userSession || (activePersona.code === 'P' && patientSubView === 'landing');
 
   // ── Authentication Handler ───────────────────────────────────────────────
   const handleAuthSuccess = (session: UserSession) => {
@@ -148,8 +143,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
       dir={isAr ? 'rtl' : 'ltr'}
       lang={lang}
     >
-      {/* 1. Universal Top Navigation Header across all portals */}
-      {!isPureLandingPage && (userSession?.roleCode === 'AD' || (typeof window !== 'undefined' && window.location.search.includes('demo=true'))) ? (
+      {/* 1. Universal Top Navigation Header across all portals. The persona
+          switcher is Super Admin only — it is no longer reachable via ?demo=true. */}
+      {!isPureLandingPage && userSession?.roleCode === 'AD' ? (
         <TopProfileSwitcher
           activePersona={activePersona}
           onSelectPersona={handleSelectPersona}
@@ -168,8 +164,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
           onToggleLang={handleToggleLang}
           theme={theme}
           onToggleTheme={handleToggleTheme}
-          viewMode={viewMode}
-          onToggleViewMode={handleToggleViewMode}
           patientSubView={patientSubView}
           onSelectPatientSubView={handleSelectPatientSubView}
           onLogout={handleLogout}
@@ -188,34 +182,23 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         />
       ) : null}
 
-      {/* 2. Main Area: Studio Cockpit OR Workstation */}
-      {viewMode === 'studio' ? (
-        <FiveDeviceCockpitView
-          activeCase={activeCase}
-          onAdvanceStage={handleAdvanceStage}
-          onUpdateCase={handleUpdateCase}
-          onResetActiveCase={handleResetActiveCase}
-          lang={lang}
-          onSwitchToWorkstation={() => handleSelectPatientSubView('landing')}
-        />
-      ) : (
-        <>
-          {/* Stage Progress Bar (visible in demo mode or for clinical staff portals with an active case) */}
-          {(isDemoMode || (Boolean(activeCase?.caseNumber) && !['P', 'AD', 'HA'].includes(activePersona.code))) && !(activePersona.code === 'P' && patientSubView === 'landing') && (
-            <StageProgressBar
-              currentStage={activeCase.currentStage}
-              onSetStage={handleSetStage}
-              lang={lang}
-              readOnly={!isDemoMode}
-            />
-          )}
+      {/* 2. Main Area: Workstation */}
+      <>
+        {/* Stage Progress Bar (visible for clinical staff portals with an active case) */}
+        {(activeCase?.caseNumber && !['P', 'AD', 'HA'].includes(activePersona.code)) && !(activePersona.code === 'P' && patientSubView === 'landing') && (
+          <StageProgressBar
+            currentStage={activeCase.currentStage}
+            onSetStage={handleSetStage}
+            lang={lang}
+            readOnly={activePersona.code !== 'AD'}
+          />
+        )}
 
-          {/* Main Clinical Screen */}
-          <main className={activePersona.code === 'P' && patientSubView === 'landing' ? 'flex-1 w-full p-0' : 'flex-1 p-4 sm:p-6 lg:p-8'}>
-            {children}
-          </main>
-        </>
-      )}
+        {/* Main Clinical Screen */}
+        <main className={activePersona.code === 'P' && patientSubView === 'landing' ? 'flex-1 w-full p-0' : 'flex-1 p-4 sm:p-6 lg:p-8'}>
+          {children}
+        </main>
+      </>
 
       {/* 9. New Case Modal */}
       <NewCaseModal

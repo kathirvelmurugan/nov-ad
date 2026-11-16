@@ -8,14 +8,8 @@ import {
   ArrowLeft,
   ArrowRight,
   Sparkles,
-  FileText,
-  Video,
-  Phone,
-  FlaskConical,
-  Pill,
-  Building2,
-  Activity,
 } from 'lucide-react';
+import { intakeServices, serviceById } from '../../config/services';
 import { IntakeDoctorSelectionCard } from '../intake/IntakeDoctorSelectionCard';
 import { IntakeSymptomsAndDiagnosisSection } from '../intake/IntakeSymptomsAndDiagnosisSection';
 import { IntakePatientBeneficiarySection } from '../intake/IntakePatientBeneficiarySection';
@@ -23,6 +17,7 @@ import { IntakeUploadZone } from '../intake/IntakeUploadZone';
 import { FieldError } from '../common/FieldError';
 import { FormErrorSummary } from '../common/FormErrorSummary';
 import { CaseMilestoneHUD } from '../common/CaseMilestoneHUD';
+import { isMaskedNationalId } from '../../utils/phoneValidation';
 
 interface Props {
   activeCase: ClinicalCase;
@@ -39,15 +34,6 @@ interface Props {
   onOpenLogin?: () => void;
   onLogout?: () => void;
 }
-
-const INTAKE_SERVICES = [
-  { id: 'second-opinion', titleAr: 'الرأي الطبي الثاني (مكتوب)', titleEn: 'Second Opinion (Written)', icon: FileText, consultationType: 'written' as const },
-  { id: 'video-consultation', titleAr: 'الاستشارة المرئية', titleEn: 'Video Consultation', icon: Video, consultationType: 'video' as const },
-  { id: 'voice-consultation', titleAr: 'الاستشارة الصوتية', titleEn: 'Voice Consultation', icon: Phone, consultationType: 'voice' as const },
-  { id: 'lab-tests', titleAr: 'الفحوصات المخبرية', titleEn: 'Lab Tests', icon: FlaskConical },
-  { id: 'pharmacy', titleAr: 'الصيدلية والدواء', titleEn: 'Pharmacy', icon: Pill },
-  { id: 'hospital-services', titleAr: 'خدمات المستشفيات', titleEn: 'Hospital Services', icon: Building2 },
-];
 
 export const PatientIntakeView: React.FC<Props> = ({
   activeCase,
@@ -150,13 +136,15 @@ export const PatientIntakeView: React.FC<Props> = ({
     if (onSelectService) {
       onSelectService(serviceId);
     }
-    const matched = INTAKE_SERVICES.find((s) => s.id === serviceId);
-    if (matched?.consultationType) {
+    // Informational services (lab, pharmacy, hospital) carry no consultation
+    // type — switching to them must not wipe the clinical track in progress.
+    const matched = serviceById(serviceId);
+    if (matched.consultationType !== 'none') {
       onUpdateCase({ consultationType: matched.consultationType });
     }
   };
 
-  const currentServiceMeta = INTAKE_SERVICES.find((s) => s.id === activeServiceId) || INTAKE_SERVICES[0];
+  const currentServiceMeta = serviceById(activeServiceId);
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -243,7 +231,7 @@ export const PatientIntakeView: React.FC<Props> = ({
         </div>
 
         <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none sm:grid sm:grid-cols-6">
-          {INTAKE_SERVICES.map((serv) => {
+          {intakeServices().map((serv) => {
             const Icon = serv.icon;
             const isCurrent = activeServiceId === serv.id;
 
@@ -332,6 +320,12 @@ export const PatientIntakeView: React.FC<Props> = ({
                   ? 'التشخيص الطبي الأولي مطلوب (3 أحرف على الأقل).'
                   : 'Medical Diagnosis is required (minimum 3 characters).';
               }
+              // Dependent beneficiaries need their own verified National ID; the account holder is verified at login.
+              if ((activeCase.beneficiaryMode || 'me') === 'family' && !isMaskedNationalId(activeCase.nationalIdMasked || '')) {
+                errors.nationalId = isAr
+                  ? 'رقم الهوية الوطنية / الإقامة للمستفيد مطلوب (10 أرقام).'
+                  : 'Beneficiary National ID / Iqama is required (10 digits).';
+              }
 
               if (Object.keys(errors).length > 0) {
                 setValidationErrors(errors);
@@ -386,7 +380,6 @@ export const PatientIntakeView: React.FC<Props> = ({
                 files: activeCase.files || [],
                 consultationType: activeCase.consultationType || 'written',
                 currentStage: 'NURSE_CHECK',
-                stage: 2,
                 status: 'open',
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),

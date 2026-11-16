@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ClinicalCase } from '../../../types';
-import { BilingualReportModal } from '../../cockpit/BilingualReportModal';
+import { BilingualReportModal } from '../../reports/BilingualReportModal';
 import { Check, Eye, Globe2, HelpCircle, MessageSquareWarning, ShieldCheck, CalendarClock, Send, CheckCircle2 } from 'lucide-react';
 
 interface Props {

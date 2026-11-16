@@ -5,7 +5,6 @@ export const STORAGE_KEY        = 'alo_cases_v4.0_clean';
 export const ACTIVE_CASE_KEY    = 'alo_active_case_id_v4.0_clean';
 export const THEME_KEY          = 'alo_theme_preference';
 export const LANG_KEY           = 'alo_lang_preference';
-export const VIEW_MODE_KEY      = 'alo_view_mode_v4.0_clean';
 export const USER_SESSION_KEY   = 'alo_user_session_v4.0_clean';
 export const TENANTS_KEY        = 'alo_tenants_v4.0_clean';
 export const PLATFORM_USERS_KEY = 'alo_platform_users_v4.0_clean';
@@ -53,14 +52,14 @@ export const ACTORS = {
   },
   CONSULTANT: {
     id: 'actor_cons_01',
-    name: 'Dr. V. Prasanth',
+    name: 'International Consultant',
     phone: '+919876543210',
     role: 'CONSULTANT' as ActorRole,
     personaIndex: 2,
   },
   SUPER_ADMIN: {
     id: 'actor_superadmin_01',
-    name: 'Adrian Lewis',
+    name: 'Rehmaan',
     phone: '+966500000001',
     role: 'SUPER_ADMIN' as ActorRole,
     personaIndex: 3,
@@ -94,6 +93,7 @@ export interface UserSession {
   isGuest: boolean;
   expiresAt: number;
   lang: 'ar' | 'en';
+  token?: string;
 }
 
 export const DEFAULT_PARTNER_ORDERS = {
@@ -104,14 +104,14 @@ export const DEFAULT_PARTNER_ORDERS = {
 };
 
 export const DEFAULT_CONSULTANT = {
-  name: 'Dr. V. Prasanth',
-  center: 'Apollo Cancer & Heart Institute',
-  city: 'Hyderabad, India',
-  specialty: 'Interventional Cardiology & Oncology',
-  subspecialty: 'Complex CAD & TAVR',
-  experienceYears: 18,
-  rating: 4.9,
-  casesReviewed: 340,
+  name: '',
+  center: '',
+  city: '',
+  specialty: '',
+  subspecialty: '',
+  experienceYears: 0,
+  rating: 0,
+  casesReviewed: 0,
 };
 
 export const DEFAULT_TREATING_DOCTOR = {
@@ -169,11 +169,12 @@ export const FRESH_PRIMARY_CASE: ClinicalCase = {
   doctorSelectionPreference: 'need_assistance',
   treatingDoctor: undefined,
   consultant: undefined,
+  // Unpriced template: the invoice flow fills these from the active tier.
   pricing: {
     tier: 1,
     tierName: 'Written',
     baseSar: 0,
-    vatPercent: 15,
+    vatPercent: 0,
     vatSar: 0,
     totalSar: 0,
     paid: false,

@@ -2,7 +2,7 @@ name: CI/CD Pipeline & Automated Deploy (nov-ad)
 
 on:
   push:
-    branches: [ main, feature-sarat ]
+    branches: [ main ]
   workflow_dispatch:
 
 concurrency:
@@ -41,15 +41,21 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           password: ${{ secrets.VPS_PASSWORD }}
           script: |
+            set -e
             echo "🚀 Auto-deploy triggered for branch: ${{ github.ref_name }}"
 
             if [ "${{ github.ref_name }}" = "feature-sarat" ]; then
               echo "${{ secrets.VPS_PASSWORD }}" | sudo -S bash -c '
                 cd /data/alodoctor/preview-sarat
+                if [ -n "$(git status --porcelain)" ]; then
+                  echo "ABORT: uncommitted server-side edits exist in preview-sarat."
+                  echo "Commit and push them from the VPS first, otherwise reset --hard would destroy them."
+                  git status --porcelain
+                  exit 1
+                fi
                 git fetch origin feature-sarat
                 git checkout feature-sarat
                 git reset --hard origin/feature-sarat
-                sed -i "s/export default defineConfig({/export default defineConfig({ base: \x27.\/\x27,/g" vite.config.ts
                 docker build -t alo-preview-sarat:latest .
                 docker rm -f alo-preview-sarat 2>/dev/null || true
                 PG_PASS=$(docker exec alo-postgres env 2>/dev/null | grep POSTGRES_PASSWORD | cut -d= -f2-)

@@ -71,8 +71,6 @@ interface Props {
   onToggleLang: () => void;
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
-  viewMode?: 'workstation' | 'studio';
-  onToggleViewMode?: () => void;
   patientSubView?: 'landing' | 'intake' | 'timeline' | 'telehealth' | 'checkout';
   onSelectPatientSubView?: (view: 'landing' | 'intake' | 'timeline' | 'telehealth') => void;
   onLogout?: () => void;
@@ -96,15 +94,12 @@ export const TopProfileSwitcher: React.FC<Props> = ({
   onToggleLang,
   theme,
   onToggleTheme,
-  viewMode = 'workstation',
-  onToggleViewMode,
   patientSubView = 'landing',
   onSelectPatientSubView,
   onLogout,
 }) => {
   const isAr = lang === 'ar';
   const isCustom = activeCase.id.startsWith('TEST-') || activeCase.id.startsWith('REAL-');
-  const isDemoMode = false;
 
   const cleanPatientName = isAr
     ? (activeCase.patientNameAr || activeCase.patientName || '')
@@ -128,7 +123,8 @@ export const TopProfileSwitcher: React.FC<Props> = ({
 
           <div className="h-4 w-[1px] bg-slate-300 dark:bg-slate-700 hidden sm:block" />
 
-          {/* Focused Case Indicator */}
+          {/* Focused Case Indicator (hidden for Super Admin — oversees all cases) */}
+          {activePersona.code !== 'AD' && (
           <div className="flex items-center gap-2">
             <span className="text-slate-500 dark:text-slate-400 font-medium">
               {isAr ? 'ملف الحالة:' : 'Case File:'}
@@ -150,30 +146,31 @@ export const TopProfileSwitcher: React.FC<Props> = ({
                 </span>
               )}
             </div>
-
-            {/* QA-Only: Next Case Rotator & Reset */}
-            {isDemoMode && onNextCase && (
-              <button
-                onClick={onNextCase}
-                className="flex items-center gap-1 bg-teal-50 hover:bg-teal-100 dark:bg-teal-950/40 dark:hover:bg-teal-900/50 text-teal-700 dark:text-teal-300 px-2 py-1 rounded-lg border border-teal-300 dark:border-teal-700 font-bold transition-all shadow-sm active:scale-95 text-xs cursor-pointer"
-                title={isAr ? 'الانتقال للحالة التالية' : 'Next Case'}
-              >
-                <RefreshCw className="w-3 h-3 text-teal-600 dark:text-teal-400" />
-                <span>{isAr ? 'حالة تالية' : 'Next Case'}</span>
-              </button>
-            )}
-
-            {isDemoMode && onResetCurrentCase && (
-              <button
-                onClick={onResetCurrentCase}
-                className="flex items-center gap-1 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-300 px-2.5 py-1 rounded-lg border border-rose-300 dark:border-rose-700 font-bold transition-all shadow-sm active:scale-95"
-                title={isAr ? 'تصفير المسار بالكامل والعودة للبداية' : 'Reset Flow back to Step 1'}
-              >
-                <RotateCcw className="w-3 h-3 text-rose-600 dark:text-rose-400" />
-                <span>{isAr ? 'تصفير المسار' : 'Reset Flow'}</span>
-              </button>
-            )}
           </div>
+          )}
+
+          {/* QA-Only: Next Case Rotator & Reset — now gated by role (AD only) */}
+          {activePersona.code === 'AD' && onNextCase && (
+            <button
+              onClick={onNextCase}
+              className="flex items-center gap-1 bg-teal-50 hover:bg-teal-100 dark:bg-teal-950/40 dark:hover:bg-teal-900/50 text-teal-700 dark:text-teal-300 px-2 py-1 rounded-lg border border-teal-300 dark:border-teal-700 font-bold transition-all shadow-sm active:scale-95 text-xs cursor-pointer"
+              title={isAr ? 'الانتقال للحالة التالية' : 'Next Case'}
+            >
+              <RefreshCw className="w-3 h-3 text-teal-600 dark:text-teal-400" />
+              <span>{isAr ? 'حالة تالية' : 'Next Case'}</span>
+            </button>
+          )}
+
+          {activePersona.code === 'AD' && onResetCurrentCase && (
+            <button
+              onClick={onResetCurrentCase}
+              className="flex items-center gap-1 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-300 px-2.5 py-1 rounded-lg border border-rose-300 dark:border-rose-700 font-bold transition-all shadow-sm active:scale-95"
+              title={isAr ? 'تصفير المسار بالكامل والعودة للبداية' : 'Reset Flow back to Step 1'}
+            >
+              <RotateCcw className="w-3 h-3 text-rose-600 dark:text-rose-400" />
+              <span>{isAr ? 'تصفير المسار' : 'Reset Flow'}</span>
+            </button>
+          )}
         </div>
 
         {/* Right Section: Pipeline Board + Theme + Lang + Logout */}
@@ -233,8 +230,8 @@ export const TopProfileSwitcher: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* Active Role Ribbon */}
-      {(() => {
+      {/* Active Role Ribbon (hidden for Super Admin — redundant with portal header) */}
+      {activePersona.code !== 'AD' && (() => {
         const activeMeta = ROLE_METADATA[activePersona.code];
         let activeLabel = activeMeta
           ? (isAr ? activeMeta.labelAr : activeMeta.labelEn)

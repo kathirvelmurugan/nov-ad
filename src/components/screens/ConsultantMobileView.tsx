@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { TEAL_PRIMARY, TEAL_SECONDARY, TEAL_BG, WHATSAPP_GREEN } from '../../theme/brandColors';
 import { ClinicalCase } from '../../types';
 import { useSlaCountdown } from '../../hooks/useSlaCountdown';
 import ConsultantPortalHeader from '../consultant/ConsultantPortalHeader';
@@ -8,7 +9,7 @@ import { ConsultantCaseReviewSection } from '../consultant/ConsultantCaseReviewS
 import { ConsultantWrittenOpinionSection } from '../consultant/ConsultantWrittenOpinionSection';
 import { ConsultantSlotAndCallSection } from '../consultant/ConsultantSlotAndCallSection';
 import { ConsultantCaseClosedSection } from '../consultant/ConsultantCaseClosedSection';
-import { BilingualReportModal } from '../cockpit/BilingualReportModal';
+import { BilingualReportModal } from '../reports/BilingualReportModal';
 import { CaseMilestoneHUD } from '../common/CaseMilestoneHUD';
 import { OpinionTelehealthView } from './OpinionTelehealthView';
 import {
@@ -122,10 +123,10 @@ export const ConsultantMobileView: React.FC<Props> = ({
     else if (currentScreen === 'K01_K04' || currentScreen === 'K09') setCurrentScreen(isOpinionSubmitted ? 'K06' : 'K05');
   }, [activeCase.id, isCaseAccepted, isOpinionSubmitted, isCaseClosed, hasMagicToken]);
 
-  const tealPrimary = '#007B6E';
-  const tealSecondary = '#00C6AE';
-  const tealBg = '#E6FAF7';
-  const whatsappGreen = '#25D366';
+  const tealPrimary = TEAL_PRIMARY;
+  const tealSecondary = TEAL_SECONDARY;
+  const tealBg = TEAL_BG;
+  const whatsappGreen = WHATSAPP_GREEN;
 
   const callSlots = [
     { id: 'slot_a', label: 'Slot A: Tomorrow 16:00 AST · 18:30 IST (India)' },
@@ -182,7 +183,6 @@ export const ConsultantMobileView: React.FC<Props> = ({
   const handleSaveSlots = () => {
     onUpdateCase({
       currentStage: 'OPINION_READY',
-      stage: 6,
       secondOpinionSubmitted: true,
       proposedCallSlot: selectedSlot,
       consultant: { ...activeCase.consultant, proposedSlot: selectedSlot },

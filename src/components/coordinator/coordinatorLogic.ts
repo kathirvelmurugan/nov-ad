@@ -1,4 +1,5 @@
 import { ClinicalCase, PaymentMethodId } from '../../types';
+import { priceTierForType, tierNameFor } from '../../config/platformConfig';
 
 export const isActionableForCoordinator = (c: ClinicalCase): boolean =>
   c.currentStage === 'AWAITING_PAYMENT' ||
@@ -7,10 +8,16 @@ export const isActionableForCoordinator = (c: ClinicalCase): boolean =>
   (c.saudiEndorsement?.status === 'endorsed' && !c.reportReleased) ||
   (Boolean(c.secondOpinionSubmitted || c.currentStage === 'OPINION_READY') && !c.reportReleased && !c.metadata?.coordinatorDispatched);
 
-export const getTierData = (type: 'written' | 'video', isAr: boolean) =>
-  type === 'written'
-    ? { tier: 1, tierName: isAr ? 'رأي مكتوب فقط (Tier 1)' : 'Written opinion only (Tier 1)', baseSar: 65.22, vatSar: 9.78, totalSar: 75 }
-    : { tier: 2, tierName: isAr ? 'مرئي + رأي مكتوب (Tier 2)' : 'Video + written opinion (Tier 2)', baseSar: 130.43, vatSar: 19.57, totalSar: 150 };
+export const getTierData = (type: 'written' | 'video', isAr: boolean) => {
+  const tier = priceTierForType(type);
+  return {
+    tier: tier.id,
+    tierName: tierNameFor(tier, isAr),
+    baseSar: tier.baseSar,
+    vatSar: tier.vatSar,
+    totalSar: tier.totalSar,
+  };
+};
 
 export const getDefaultProposedSlots = (isAr: boolean) => [
   { id: 'slot_1', time: isAr ? 'غداً، 10:00 صباحاً بتوقيت الهند' : 'Tomorrow, 10:00 AM IST' },

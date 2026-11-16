@@ -1,11 +1,11 @@
 import React from 'react';
 import { Clock, CheckCircle2, HelpCircle } from 'lucide-react';
-import { HealthcareServiceItem } from '../../data/healthcareServices';
+import type { ServiceItem } from '../../config/services';
 
 interface Props {
   isAr: boolean;
   ArrowIcon: React.ElementType;
-  services: HealthcareServiceItem[];
+  services: ServiceItem[];
   selectedServiceId: string;
   onServiceClick: (serviceId: string) => void;
 }

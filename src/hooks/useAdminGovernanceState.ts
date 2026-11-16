@@ -13,7 +13,6 @@ import { PERSONAS } from '../data/personas';
 import {
   TENANTS_KEY,
   PLATFORM_USERS_KEY,
-  CATALOGS_KEY,
   AUDIT_LOGS_KEY,
 } from './workflowConstants';
 
@@ -69,14 +68,14 @@ export function useAdminGovernanceState(
     return DEFAULT_STAFF_DIRECTORY;
   });
 
-  // 3. Catalogs State
+  // 3. Catalogs State — read from platform config defaults (no localStorage cache)
   const [catalogs, setCatalogs] = useState<AdminCatalogsState>(() => {
     try {
-      const saved = localStorage.getItem(CATALOGS_KEY);
-      return saved ? JSON.parse(saved) : DEFAULT_ADMIN_CATALOGS;
-    } catch {
-      return DEFAULT_ADMIN_CATALOGS;
-    }
+      const { getPlatformConfig } = require('../config/platformConfig');
+      const cfg = getPlatformConfig();
+      if (cfg?.catalogs) return cfg.catalogs as AdminCatalogsState;
+    } catch {}
+    return DEFAULT_ADMIN_CATALOGS;
   });
 
   // 4. Audit Logs State
@@ -102,11 +101,7 @@ export function useAdminGovernanceState(
     } catch {}
   }, [staffDirectory]);
 
-  useEffect(() => {
-    try {
-      localStorage.setItem(CATALOGS_KEY, JSON.stringify(catalogs));
-    } catch {}
-  }, [catalogs]);
+  // Catalogs: persisted via settings API (PUT /api/settings), not localStorage.
 
   useEffect(() => {
     try {

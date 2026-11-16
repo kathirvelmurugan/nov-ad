@@ -1,24 +1,22 @@
 import express from 'express';
 import pool from '../db.js';
 import { resetInMemoryStore, updateInMemoryStore } from '../store.js';
+import { requireAuth, requireRole } from '../middleware/auth.js';
 
 const router = express.Router();
 
-router.post('/clean-slate', async (req, res) => {
+router.post('/clean-slate', requireAuth, requireRole('AD'), async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
 
+    // Delete all cases, audit logs, and tenants
     await client.query('DELETE FROM audit_logs');
     await client.query('DELETE FROM clinical_cases');
     await client.query('DELETE FROM tenants');
-    await client.query('DELETE FROM platform_users');
 
-    await client.query(
-      `INSERT INTO platform_users (user_id, full_name, role, is_active, created_at, updated_at)
-       VALUES ($1, $2, $3, true, NOW(), NOW())`,
-      ['staff-ad-01', 'Adrian Lewis', 'AD']
-    );
+    // Preserve super admin — delete all other platform users only
+    await client.query('DELETE FROM platform_users WHERE phone != $1', ['+966500000001']);
 
     await client.query('COMMIT');
 
@@ -26,11 +24,10 @@ router.post('/clean-slate', async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Clean slate executed successfully. Platform reset to Super Admin only.',
+      message: 'Clean slate executed. Super admin preserved, all other data cleared.',
       meta: {
-        super_admin_id: 'staff-ad-01',
-        super_admin_name: 'Adrian Lewis',
-        super_admin_role: 'AD'
+        super_admin_phone: '+966500000001',
+        preserved_role: 'AD'
       }
     });
   } catch (error) {
@@ -46,7 +43,7 @@ router.post('/clean-slate', async (req, res) => {
   }
 });
 
-router.post('/purge-patients-and-cases', async (req, res) => {
+router.post('/purge-patients-and-cases', requireAuth, requireRole('AD'), async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');

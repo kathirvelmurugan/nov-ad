@@ -7,7 +7,7 @@ import { NurseDevice } from './NurseDevice';
 import { SaudiDoctorDevice } from './SaudiDoctorDevice';
 import { CoordinatorDevice } from './CoordinatorDevice';
 import { IndianConsultantDevice } from './IndianConsultantDevice';
-import { BilingualReportModal } from './BilingualReportModal';
+import { BilingualReportModal } from '../reports/BilingualReportModal';
 import { WHATSAPP_CUES, SLOTS, deriveStageNum, getCurrentCue } from './cockpitConstants';
 import { CockpitHeader } from './CockpitHeader';
 import { CockpitLockedSlotPlaceholder } from './CockpitLockedSlotPlaceholder';
@@ -15,6 +15,7 @@ import { CockpitLockedSlotPlaceholder } from './CockpitLockedSlotPlaceholder';
 export interface FiveDeviceCockpitProps {
   activeCase: ClinicalCase;
   onAdvanceStage: () => void;
+  onVerifyPaymentAndDispatch?: () => void;
   onUpdateCase: (updated: Partial<ClinicalCase>) => void;
   onResetActiveCase?: () => void;
   lang?: 'ar' | 'en';
@@ -24,6 +25,7 @@ export interface FiveDeviceCockpitProps {
 export const FiveDeviceCockpitView: React.FC<FiveDeviceCockpitProps> = ({
   activeCase,
   onAdvanceStage,
+  onVerifyPaymentAndDispatch,
   onUpdateCase,
   onResetActiveCase,
   lang = 'en',
@@ -44,6 +46,7 @@ export const FiveDeviceCockpitView: React.FC<FiveDeviceCockpitProps> = ({
     activeCase,
     stageNum,
     onAdvanceStage,
+    onVerifyPaymentAndDispatch,
     onUpdateCase,
     lang,
     onOpenReportModal: () => setIsReportModalOpen(true),

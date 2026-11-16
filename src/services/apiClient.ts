@@ -62,12 +62,10 @@ function getAuthHeaders(): Record<string, string> {
     const raw = localStorage.getItem('alo_user_session_v4.0_clean') || localStorage.getItem('alo_user_session_v3.0');
     if (!raw) return {};
     const session = JSON.parse(raw);
-    return {
-      'x-user-role': session.roleCode || 'P',
-      'x-user-phone': session.phone || '',
-      'x-user-id': session.userId || session.id || '',
-      'x-tenant-id': session.hospitalId || session.tenantId || '',
-    };
+    if (session.token) {
+      return { 'Authorization': `Bearer ${session.token}` };
+    }
+    return {};
   } catch {
     return {};
   }
@@ -135,10 +133,13 @@ export const apiClient = {
   // ── Authentication ────────────────────────────────────────────────────────
   async checkUserExists(phone: string): Promise<{ exists: boolean; hasPin: boolean }> {
     try {
-      const users = await this.fetchUsers();
-      const sanitized = phone.replace(/[\s\-\(\)\.]/g, '');
-      const user = users.find((u) => u.phone.replace(/[\s\-\(\)\.]/g, '').endsWith(sanitized.slice(-8)));
-      return { exists: !!user, hasPin: Boolean(user?.hasCustomPin || user?.pin) };
+      const res = await safeFetchWithRetry('/api/users/lookup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone }),
+      });
+      const json = await res.json();
+      return { exists: json.exists, hasPin: json.requiresPin };
     } catch {
       return { exists: false, hasPin: false };
     }
@@ -194,10 +195,10 @@ export const apiClient = {
       staffCode: u.staffCode || u.staff_code || u.id,
       fullName: u.fullName || u.full_name || '',
       fullNameAr: u.fullNameAr || u.full_name_ar || u.fullName,
-      roleCode: u.roleCode || u.role_code || 'P',
+      roleCode: u.roleCode || u.role_code || '',
       hospitalId: u.hospitalId || u.hospital_id,
       phone: u.phone,
-      pin: u.pin || '1234',
+      pin: u.pin || null,
       hasCustomPin: Boolean(u.hasCustomPin || u.has_custom_pin),
       department: u.department,
       status: u.status || 'active',
@@ -245,10 +246,11 @@ export const apiClient = {
   },
 
   async saveCase(c: ClinicalCase): Promise<void> {
+    const stamped = { ...c, updatedAt: new Date().toISOString() };
     await safeFetchWithRetry('/api/cases', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(c),
+      body: JSON.stringify(stamped),
     });
   },
 

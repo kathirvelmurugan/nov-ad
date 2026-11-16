@@ -1,6 +1,7 @@
 import React from 'react';
 import { ClinicalCase } from '../../../types';
 import { TEAL_PRIMARY, TEAL_BG, WHATSAPP_GREEN } from '../types';
+import { defaultRailIds, newInvoiceNumber, priceTier, vatPercent } from '../../../config/platformConfig';
 
 interface PatientPaymentGateCardProps {
   activeCase: ClinicalCase;
@@ -18,7 +19,8 @@ export const PatientPaymentGateCard: React.FC<PatientPaymentGateCardProps> = ({
   onUpdateCase,
 }) => {
   const prescribedTier = activeCase.tier || (activeCase.modality === 'Video' ? 2 : 1);
-  const prescribedAmount = prescribedTier === 2 ? 450 : 250;
+  const prescribedPrice = priceTier(prescribedTier);
+  const prescribedAmount = prescribedPrice.totalSar;
   const prescribedLabelAr = prescribedTier === 2 
     ? 'مكالمة فيديو تفاعلية + تقرير استشاري كتابي معتمد (Tier 2)' 
     : 'تقرير استشاري كتابي تخصصي معتمد (Tier 1)';
@@ -28,7 +30,7 @@ export const PatientPaymentGateCard: React.FC<PatientPaymentGateCardProps> = ({
 
   const allowedLabels = (activeCase.allowedPaymentMethods && activeCase.allowedPaymentMethods.length > 0
     ? activeCase.allowedPaymentMethods
-    : ['mada', 'applepay']
+    : defaultRailIds()
   ).map((m) => m === 'mada' ? (isAr ? 'مدى' : 'Mada') : m === 'applepay' ? 'Apple Pay' : m === 'visa' ? 'Visa' : 'Tabby').join(' / ');
 
   return (
@@ -94,7 +96,7 @@ export const PatientPaymentGateCard: React.FC<PatientPaymentGateCardProps> = ({
             </div>
 
             <div style={{ fontSize: '10px', color: '#64748b', marginTop: '3px' }}>
-              {isAr ? 'فاتورة ضريبية معتمدة من هيئة الزكاة والضريبة والجمارك (ZATCA)' : 'ZATCA Tax Compliant Invoice (INV-2026-001)'}
+              {isAr ? 'فاتورة ضريبية معتمدة من هيئة الزكاة والضريبة والجمارك (ZATCA)' : `ZATCA Tax Compliant Invoice (${activeCase.pricing?.invoiceNumber || 'pending'})`}
             </div>
           </div>
 
@@ -102,26 +104,27 @@ export const PatientPaymentGateCard: React.FC<PatientPaymentGateCardProps> = ({
           <button
             type="button"
             onClick={() => {
+              const invoiceNumber = activeCase.pricing?.invoiceNumber || newInvoiceNumber();
               onUpdateCase({
                 tier: prescribedTier,
                 paymentVerified: false,
                 pricing: {
                   ...(activeCase.pricing || {}),
-                  tier: prescribedTier,
-                  baseSar: prescribedAmount,
-                  totalSar: prescribedAmount,
-                  vatPercent: 15,
-                  vatSar: 0,
-                  tierName: prescribedTier === 1 ? 'Written' : 'Video',
-                  invoiceNumber: activeCase.pricing?.invoiceNumber || 'INV-2026-001',
+                  tier: prescribedPrice.id,
+                  baseSar: prescribedPrice.baseSar,
+                  totalSar: prescribedPrice.totalSar,
+                  vatPercent: vatPercent(),
+                  vatSar: prescribedPrice.vatSar,
+                  tierName: prescribedPrice.tierNameEn,
+                  invoiceNumber,
                   paid: true,
                 },
                 paymentDetails: {
                   ...(activeCase.paymentDetails || {}),
-                  method: (activeCase.allowedPaymentMethods && activeCase.allowedPaymentMethods[0]) || 'mada',
+                  method: (activeCase.allowedPaymentMethods && activeCase.allowedPaymentMethods[0]) || defaultRailIds()[0],
                   status: 'completed',
                   amount: prescribedAmount,
-                  invoiceNumber: activeCase.pricing?.invoiceNumber || 'INV-2026-001',
+                  invoiceNumber,
                   currency: 'SAR',
                 },
               });
@@ -158,7 +161,7 @@ export const PatientPaymentGateCard: React.FC<PatientPaymentGateCardProps> = ({
             <span style={{ fontSize: '20px' }}>⏳</span>
             <div>
               <p style={{ fontSize: '12px', fontWeight: 800, color: '#166534', margin: 0 }}>
-                {isAr ? '✓ تم استلام سداد الفاتورة (INV-2026-001)' : '✓ Payment Confirmed (INV-2026-001)'}
+                {isAr ? `✓ تم استلام سداد الفاتورة (${activeCase.pricing?.invoiceNumber || 'pending'})` : `✓ Payment Confirmed (${activeCase.pricing?.invoiceNumber || 'pending'})`}
               </p>
               <p style={{ fontSize: '11px', color: '#334155', margin: '3px 0 0 0', lineHeight: 1.4 }}>
                 {isAr

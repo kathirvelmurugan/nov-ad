@@ -1,5 +1,6 @@
 import express from 'express';
 import { AccessToken } from 'livekit-server-sdk';
+import { requireAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -11,7 +12,7 @@ const LIVEKIT_API_SECRET = process.env.LIVEKIT_API_SECRET || 'Oj7blmfqaXWndhxlg2
  * POST /token
  * Safely mints an AccessToken on the backend without leaking apiSecret to the client.
  */
-router.post('/token', async (req, res) => {
+router.post('/token', requireAuth, async (req, res) => {
   try {
     const {
       roomName = 'ALO-2026-LIVE',

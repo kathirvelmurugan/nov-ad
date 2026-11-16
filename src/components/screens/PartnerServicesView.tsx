@@ -152,7 +152,6 @@ export const PartnerServicesView: React.FC<Props> = ({
     
     onUpdateCase({
       currentStage: 'FOLLOW_UP_21_DAYS',
-      stage: 8,
       followUpExpiresAt: expiry.toISOString(),
       saudiEndorsement: activeCase.saudiEndorsement ? {
         ...activeCase.saudiEndorsement,

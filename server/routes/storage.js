@@ -2,6 +2,7 @@ import { Router } from 'express';
 import path from 'path';
 import crypto from 'crypto';
 import { saveFile, getFile } from '../storage.js';
+import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -48,7 +49,7 @@ function generateSafeKey(fileName) {
   return `${timestamp}-${randomHash}-${sanitized}`;
 }
 
-router.post('/upload', async (req, res) => {
+router.post('/upload', requireAuth, async (req, res) => {
   try {
     const { fileData, fileName, fileType } = req.body;
 

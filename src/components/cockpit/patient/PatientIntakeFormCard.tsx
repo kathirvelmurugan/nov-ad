@@ -57,10 +57,8 @@ export const PatientIntakeFormCard: React.FC<PatientIntakeFormCardProps> = ({
       specialty: specialty || 'Cardiology',
       specialtyAr: specialty || 'أمراض القلب والشرايين',
       symptoms: symptoms || 'Severe exertional dyspnea',
-      stage: 2,
       currentStage: 'NURSE_CHECK',
     });
-    onAdvanceStage();
   };
 
   return (

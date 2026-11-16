@@ -1,10 +1,8 @@
 import React from 'react';
 import { PaymentMethodId } from '../../types';
+import { TEAL_PRIMARY, TEAL_ACCENT, TEAL_BG, WHATSAPP_GREEN } from '../../theme/brandColors';
 
-export const TEAL_PRIMARY = '#007B6E';
-export const TEAL_ACCENT = '#00C6AE';
-export const TEAL_BG = '#E6FAF7';
-export const WHATSAPP_GREEN = '#25D366';
+export { TEAL_PRIMARY, TEAL_ACCENT, TEAL_BG, WHATSAPP_GREEN };
 
 export const ALL_PAYMENT_METHODS: Array<{ id: PaymentMethodId; labelEn: string; labelAr: string; descEn: string; descAr: string }> = [
   { id: 'mada', labelEn: 'mada', labelAr: 'مدى', descEn: 'Saudi Debit Network', descAr: 'شبكة المدفوعات السعودية' },

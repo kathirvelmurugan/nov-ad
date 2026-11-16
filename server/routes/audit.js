@@ -1,10 +1,11 @@
 import { Router } from 'express';
 import pool from '../db.js';
 import { memoryAudit } from '../store.js';
+import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
 
-router.get('/', async (req, res) => {
+router.get('/', requireAuth, async (req, res) => {
   try {
     const result = await pool.query(
       'SELECT * FROM audit_logs ORDER BY timestamp DESC LIMIT 200'
@@ -19,7 +20,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.post('/', async (req, res) => {
+router.post('/', requireAuth, async (req, res) => {
   const { actionType, details } = req.body;
 
   if (!actionType || typeof actionType !== 'string' || actionType.trim() === '') {

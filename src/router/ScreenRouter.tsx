@@ -212,7 +212,8 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
     const targetCase = queryCaseId ? cases.find((c) => c.id === queryCaseId || c.caseNumber === queryCaseId) : null;
 
     const isCaseUnlocked = (c: ClinicalCase) => {
-      if (hasMagicLinkToken) return true;
+      // Magic-link tokens are validated server-side via GET /api/cases/:id/magic?token=.
+      // A token present in the URL does not automatically unlock every case.
       const isPaid = !!c.pricing?.paid || c.paymentDetails?.status === 'completed';
       const isVerified = !!c.paymentVerified || !!c.metadata?.paymentVerified;
       const isInConsultantStage = ['WITH_CONSULTANT', 'OPINION_READY', 'PARTNER_SERVICES', 'FOLLOW_UP_21_DAYS', 'CLOSED'].includes(c.currentStage);

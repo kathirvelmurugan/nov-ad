@@ -453,9 +453,7 @@ export const IndianConsultantDevice: React.FC<CockpitDeviceProps> = ({
                 consultantNotes: resolvedNotes,
                 consultantOpinion: selectedVerdicts.join('; ') || resolvedAnswers.join(' | '),
                 currentStage: 'OPINION_READY',
-                stage: 6,
               });
-              onAdvanceStage();
             }}
             style={{
               backgroundColor: activeCase.secondOpinionSubmitted ? '#e2e8f0' : TEAL_PRIMARY,

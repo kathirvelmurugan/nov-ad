@@ -1,5 +1,6 @@
 import React from 'react';
 import { ClinicalStage } from '../types';
+import { STAGE_ORDER_META } from '../config/stageMeta';
 import { 
   FileCheck2, 
   Stethoscope, 
@@ -27,17 +28,25 @@ interface StageStep {
   icon: React.ReactNode;
 }
 
-const STAGES: StageStep[] = [
-  { key: 'INTAKE_RECEIVED', num: 1, labelAr: '1. استلام وتفويض', labelEn: '1. Intake received', icon: <FileCheck2 className="w-3.5 h-3.5" /> },
-  { key: 'NURSE_CHECK', num: 2, labelAr: '2. فرز التمريض', labelEn: '2. Nurse check', icon: <Clock className="w-3.5 h-3.5" /> },
-  { key: 'DOCTOR_REVIEW', num: 3, labelAr: '3. مراجعة الطبيب السعودي', labelEn: '3. Saudi Doctor review', icon: <Stethoscope className="w-3.5 h-3.5" /> },
-  { key: 'AWAITING_PAYMENT', num: 4, labelAr: '4. سداد الباقة (Tap)', labelEn: '4. Payment (Tier 1/2)', icon: <CreditCard className="w-3.5 h-3.5" /> },
-  { key: 'WITH_CONSULTANT', num: 5, labelAr: '5. الاستشاري الهندي', labelEn: '5. Indian consultant', icon: <Globe2 className="w-3.5 h-3.5" /> },
-  { key: 'OPINION_READY', num: 6, labelAr: '6. مكالمة الاستشارة والمترجمة', labelEn: '6. Opinion ready', icon: <FileText className="w-3.5 h-3.5" /> },
-  { key: 'PARTNER_SERVICES', num: 7, labelAr: '7. إصدار التقرير (PDF 1)', labelEn: '7. Release Report (PDF 1)', icon: <Layers className="w-3.5 h-3.5" /> },
-  { key: 'FOLLOW_UP_21_DAYS', num: 8, labelAr: '8. متابعة 21 يوماً', labelEn: '8. Follow-up 21 days', icon: <MessageSquare className="w-3.5 h-3.5" /> },
-  { key: 'CLOSED', num: 9, labelAr: '9. إغلاق والحفظ (PDF 2)', labelEn: '9. Case closed', icon: <CheckCircle className="w-3.5 h-3.5" /> },
-];
+const STAGE_ICON_MAP: Record<string, React.ReactNode> = {
+  INTAKE_RECEIVED: <FileCheck2 className="w-3.5 h-3.5" />,
+  NURSE_CHECK: <Clock className="w-3.5 h-3.5" />,
+  DOCTOR_REVIEW: <Stethoscope className="w-3.5 h-3.5" />,
+  AWAITING_PAYMENT: <CreditCard className="w-3.5 h-3.5" />,
+  WITH_CONSULTANT: <Globe2 className="w-3.5 h-3.5" />,
+  OPINION_READY: <FileText className="w-3.5 h-3.5" />,
+  PARTNER_SERVICES: <Layers className="w-3.5 h-3.5" />,
+  FOLLOW_UP_21_DAYS: <MessageSquare className="w-3.5 h-3.5" />,
+  CLOSED: <CheckCircle className="w-3.5 h-3.5" />,
+};
+
+const STAGES: StageStep[] = STAGE_ORDER_META.map((m) => ({
+  key: m.stage,
+  num: m.num,
+  labelAr: `${m.num}. ${m.longLabelAr}`,
+  labelEn: `${m.num}. ${m.longLabelEn}`,
+  icon: STAGE_ICON_MAP[m.stage] || <CheckCircle className="w-3.5 h-3.5" />,
+}));
 
 export const StageProgressBar: React.FC<Props> = ({ currentStage, onSetStage, lang = 'ar', readOnly = false }) => {
   const currentIndex = STAGES.findIndex((s) => s.key === currentStage);

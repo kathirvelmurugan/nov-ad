@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { TEAL_PRIMARY, TEAL_SECONDARY, TEAL_BG, WHATSAPP_GREEN } from '../../theme/brandColors';
 
 interface SuperAdminAuthCardProps {
   onSubmit?: (phone: string, passcode: string) => void;
@@ -74,10 +75,10 @@ const SuperAdminAuthCard: React.FC<SuperAdminAuthCardProps> = ({
     }
   };
 
-  const tealPrimary = '#007B6E';
-  const tealSecondary = '#00C6AE';
-  const tealLight = '#E6FAF7';
-  const whatsappGreen = '#25D366';
+  const tealPrimary = TEAL_PRIMARY;
+  const tealSecondary = TEAL_SECONDARY;
+  const tealLight = TEAL_BG;
+  const whatsappGreen = WHATSAPP_GREEN;
 
   const bgClass = isDarkMode ? 'bg-[#0f1716]' : 'bg-[#E6FAF7]';
   const cardBg = isDarkMode ? 'bg-[#1a2423] border-[#007B6E]/30' : 'bg-white border-[#00C6AE]/20';
@@ -192,7 +193,7 @@ const SuperAdminAuthCard: React.FC<SuperAdminAuthCardProps> = ({
               <button
                 type="button"
                 onClick={() => setIsMasked(!isMasked)}
-                className={`absolute top-1/2 -translate-y-1/2 p-2 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[${tealSecondary}]`}
+                className={`absolute top-1/2 -translate-y-1/2 p-2 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#00C6AE]`}
                 style={{ [direction === 'rtl' ? 'left' : 'right']: '8px' }}
                 aria-label={isMasked ? 'Show passcode' : 'Hide passcode'}
                 tabIndex={-1}
@@ -262,7 +263,7 @@ const SuperAdminAuthCard: React.FC<SuperAdminAuthCardProps> = ({
             </span>
           </div>
           <p className={`text-[10px] font-medium tracking-wider uppercase ${textSecondary} opacity-70`}>
-            Maintained by Adrian Lewis (Operations Lead)
+            Maintained by Rehmaan (Operations Lead)
           </p>
           <p className={`text-[10px] font-medium ${textSecondary} opacity-50`}>
             ALO DOCTOR v2.4 Saudi Edition &copy; {new Date().getFullYear()}

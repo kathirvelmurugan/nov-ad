@@ -1,5 +1,5 @@
 import React from 'react';
-import { TEAL_PRIMARY, TEAL_SECONDARY } from '../cockpit/types';
+import { TEAL_PRIMARY, TEAL_SECONDARY } from '../../theme/brandColors';
 
 export interface QuestionAndAnswerItem {
   num: number;

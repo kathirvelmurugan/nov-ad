@@ -7,7 +7,6 @@ import {
   ACTIVE_CASE_KEY,
   THEME_KEY,
   LANG_KEY,
-  VIEW_MODE_KEY,
   USER_SESSION_KEY,
   UserSession,
 } from '../workflowConstants';
@@ -47,15 +46,6 @@ export function useWorkflowUIState({
   });
 
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
-
-  const [viewMode, setViewMode] = useState<'workstation' | 'studio'>(() => {
-    try {
-      if (typeof window !== 'undefined' && window.location.hash === '#cockpit') return 'studio';
-      const stored = localStorage.getItem(VIEW_MODE_KEY);
-      if (stored === 'studio' || stored === 'workstation') return stored;
-    } catch (e) {}
-    return 'workstation';
-  });
 
   const [patientSubView, setPatientSubView] = useState<'landing' | 'intake' | 'timeline' | 'telehealth' | 'checkout'>(() => {
     try {
@@ -99,7 +89,6 @@ export function useWorkflowUIState({
         'alo_session_token',
         'alo_token_v1',
         'alo_token',
-        VIEW_MODE_KEY,
         STORAGE_KEY,
         ACTIVE_CASE_KEY,
         'alo_active_case_id',
@@ -131,7 +120,6 @@ export function useWorkflowUIState({
     setUserSession(null);
     setActivePersona(PERSONAS[0]);
     setPatientSubView('landing');
-    setViewMode('workstation');
     setIsAuthModalOpen(false);
 
     if (typeof window !== 'undefined') {
@@ -150,31 +138,14 @@ export function useWorkflowUIState({
 
   const handleToggleTheme = () => setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
 
-  const handleToggleViewMode = () => {
-    setViewMode((prev) => {
-      const next = prev === 'workstation' ? 'studio' : 'workstation';
-      try { localStorage.setItem(VIEW_MODE_KEY, next); } catch (e) {}
-      if (typeof window !== 'undefined') {
-        if (next === 'studio' && window.location.hash !== '#cockpit') {
-          window.history.pushState({ viewMode: 'studio' }, '', '#cockpit');
-        } else if (next === 'workstation' && window.location.hash === '#cockpit') {
-          window.history.pushState({ viewMode: 'workstation' }, '', window.location.pathname + window.location.search);
-        }
-      }
-      return next;
-    });
-  };
-
   const handleSelectPatientSubView = (subView: 'landing' | 'intake' | 'timeline' | 'telehealth' | 'checkout', skipPush?: boolean) => {
     if (userSession?.isAuthenticated && userSession.roleCode && userSession.roleCode !== 'P' && userSession.roleCode !== 'AD') return;
 
     setPatientSubView(subView);
-    setViewMode('workstation');
     const p = PERSONAS.find((x) => x.code === 'P') || PERSONAS[0];
     setActivePersona(p);
     try {
       localStorage.setItem('alo_patient_subview_v3.0', subView);
-      localStorage.setItem(VIEW_MODE_KEY, 'workstation');
     } catch (e) {}
 
     if (typeof window !== 'undefined' && !skipPush) {
@@ -188,8 +159,7 @@ export function useWorkflowUIState({
           url.searchParams.set('subview', subView);
           if (activeCase?.id) url.searchParams.set('caseId', activeCase.id);
         }
-        if (url.hash === '#cockpit') url.hash = '';
-        window.history.pushState({ portal: 'patient', subView, caseId: activeCase?.id, viewMode: 'workstation' }, '', url.pathname + url.search);
+        window.history.pushState({ portal: 'patient', subView, caseId: activeCase?.id }, '', url.pathname + url.search);
       } catch (err) {}
     }
   };
@@ -210,18 +180,8 @@ export function useWorkflowUIState({
         const url = new URL(window.location.href);
         url.searchParams.set('subview', 'intake');
         url.searchParams.delete('caseId');
-        window.history.pushState({ portal: 'patient', subView: 'intake', viewMode: 'workstation' }, '', url.pathname + url.search);
+        window.history.pushState({ portal: 'patient', subView: 'intake' }, '', url.pathname + url.search);
       } catch (err) {}
-    }
-  };
-
-  const handleStartCaseToCockpit = () => {
-    setViewMode('studio');
-    const patientPersona = PERSONAS.find((p) => p.code === 'P') || PERSONAS[0];
-    setActivePersona(patientPersona);
-    try { localStorage.setItem(VIEW_MODE_KEY, 'studio'); } catch (e) {}
-    if (typeof window !== 'undefined' && window.location.hash !== '#cockpit') {
-      window.history.pushState({ viewMode: 'studio' }, '', '#cockpit');
     }
   };
 
@@ -288,15 +248,15 @@ export function useWorkflowUIState({
   };
 
   return {
-    lang, setLang, theme, setTheme, viewMode, setViewMode,
+    lang, setLang, theme, setTheme,
     patientSubView, setPatientSubView, selectedServiceId, setSelectedServiceId,
     isAuthModalOpen, setIsAuthModalOpen, isWhatsAppDrawerOpen, setIsWhatsAppDrawerOpen,
     isGuideOpen, setIsGuideOpen, isPipelineBoardOpen, setIsPipelineBoardOpen,
     isNewCaseModalOpen, setIsNewCaseModalOpen, isAutoDemoActive, setIsAutoDemoActive,
     pendingHandoff, setPendingHandoff,
-    handleLogout, handleToggleLang, handleToggleTheme, handleToggleViewMode,
+    handleLogout, handleToggleLang, handleToggleTheme,
     handleSelectPatientSubView, handleSelectServiceFromLanding, handleStartNewCase,
-    handleStartCaseToCockpit, handleNextCase, handleSelectCaseFromPipeline,
+    handleNextCase, handleSelectCaseFromPipeline,
     handleResetDemo, handleResetActiveCase, handleAddNewCase, handleAutoFill,
   };
 }

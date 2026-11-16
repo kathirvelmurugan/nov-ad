@@ -9,6 +9,7 @@ import {
   getBadgeStyle,
   getPrimaryButtonStyle,
 } from './coordinatorStyles';
+import { defaultRailIds, priceTierForType } from '../../config/platformConfig';
 
 interface Props {
   activeCase: ClinicalCase;
@@ -41,7 +42,7 @@ export const CoordinatorPaymentGateTab: React.FC<Props> = ({
   const fontFamily = isAr ? "'Cairo', sans-serif" : "'Inter', sans-serif";
   const paymentLinkIssued = !!activeCase.metadata?.paymentLinkIssued || isInvoiceIssued;
   const isPreCoordinatorStage = ['INTAKE_RECEIVED', 'NURSE_CHECK', 'DOCTOR_REVIEW'].includes(activeCase.currentStage);
-  const totalSar = selectedConsultationType === 'written' ? 75 : 150;
+  const totalSar = priceTierForType(selectedConsultationType || 'written').totalSar;
   const invoiceNumber = activeCase.pricing?.invoiceNumber || activeCase.paymentDetails?.invoiceNumber || 'ZATCA-PENDING';
   const consultantName = activeCase.consultant?.name || 'Dr. Arjun Mehta';
   const egressToken = activeCase.egressToken || 'ALO-KSA-9482';
@@ -338,13 +339,13 @@ export const CoordinatorPaymentGateTab: React.FC<Props> = ({
               <div>
                 <span style={{ fontSize: '11px', color: '#64748B', display: 'block', fontFamily }}>{isAr ? 'المبلغ المدفوع:' : 'Amount Paid:'}</span>
                 <strong style={{ fontSize: '14px', color: '#065F46', fontFamily }}>
-                  {activeCase.paymentDetails?.amount || activeCase.pricing?.totalSar || 150} SAR
+                  {(activeCase.paymentDetails?.amount || activeCase.pricing?.totalSar) ?? priceTierForType(activeCase.consultationType || 'written').totalSar} SAR
                 </strong>
               </div>
               <div>
                 <span style={{ fontSize: '11px', color: '#64748B', display: 'block', fontFamily }}>{isAr ? 'طريقة الدفع المستخدمة:' : 'Method Used:'}</span>
                 <strong style={{ fontSize: '14px', color: '#065F46', textTransform: 'uppercase', fontFamily }}>
-                  {activeCase.paymentDetails?.method || 'mada'}
+                  {activeCase.paymentDetails?.method || defaultRailIds()[0]}
                 </strong>
               </div>
               <div>

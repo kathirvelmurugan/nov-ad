@@ -1,6 +1,6 @@
 import React from 'react';
 import { ClinicalCase } from '../../types';
-import { TEAL_PRIMARY, TEAL_SECONDARY, WHATSAPP_GREEN } from '../cockpit/types';
+import { TEAL_PRIMARY, TEAL_SECONDARY, WHATSAPP_GREEN } from '../../theme/brandColors';
 
 interface ReportDemographicsHeaderProps {
   activeCase: ClinicalCase;

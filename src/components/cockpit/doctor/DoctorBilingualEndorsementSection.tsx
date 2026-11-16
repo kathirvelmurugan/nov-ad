@@ -213,8 +213,7 @@ export const DoctorBilingualEndorsementSection: React.FC<DoctorBilingualEndorsem
                 onUpdateCase({
                   doctorReleasedToPatient: true,
                   reportReleased: true,
-                  currentStage: 'CLOSED',
-                  stage: 7,
+                  currentStage: 'PARTNER_SERVICES',
                   saudiEndorsement: {
                     status: 'endorsed',
                     doctorName: activeCase.treatingDoctor?.name || 'د. فهد الحربي',
@@ -226,7 +225,6 @@ export const DoctorBilingualEndorsementSection: React.FC<DoctorBilingualEndorsem
                     releasedToPatient: true,
                   }
                 });
-                onAdvanceStage();
               }}
               style={{
                 width: '100%',

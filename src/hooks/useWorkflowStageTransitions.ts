@@ -1,8 +1,10 @@
 import React from 'react';
 import { PERSONAS } from '../data/personas';
 import { ClinicalCase, ClinicalStage, PaymentMethodId, Persona } from '../types';
-import { STAGE_ORDER, isCasePaid, isCaseVerified, LANG_KEY, VIEW_MODE_KEY, UserSession, DEFAULT_CONSULTANT, DEFAULT_TREATING_DOCTOR } from './workflowConstants';
+import { STAGE_ORDER, isCasePaid, isCaseVerified, LANG_KEY, UserSession, DEFAULT_CONSULTANT, DEFAULT_TREATING_DOCTOR } from './workflowConstants';
 import { apiClient } from '../services/apiClient';
+import { nextStageOf, prevStageOf, stageGateError, stageGateMessage } from './stageLogic';
+import { newInvoiceNumber, tabbyInstallment, vatPercent } from '../config/platformConfig';
 
 interface TransitionParams {
   activeCase: ClinicalCase;
@@ -10,7 +12,6 @@ interface TransitionParams {
   setLang: (lang: 'ar' | 'en') => void;
   isAutoDemoActive: boolean;
   setActivePersona: (p: Persona) => void;
-  setViewMode: React.Dispatch<React.SetStateAction<'workstation' | 'studio'>>;
   setPatientSubView: (psv: 'landing' | 'intake' | 'timeline' | 'telehealth' | 'checkout') => void;
   setIsWhatsAppDrawerOpen: (open: boolean) => void;
   pendingHandoff: { fromStage: ClinicalStage; toStage: ClinicalStage; nextPersona: Persona } | null;
@@ -18,7 +19,6 @@ interface TransitionParams {
   handleUpdateCase: (updated: Partial<ClinicalCase>) => void;
   setCases: React.Dispatch<React.SetStateAction<ClinicalCase[]>>;
   userSession?: UserSession | null;
-  viewMode?: 'workstation' | 'studio';
 }
 
 export function useWorkflowStageTransitions({
@@ -27,7 +27,6 @@ export function useWorkflowStageTransitions({
   setLang,
   isAutoDemoActive,
   setActivePersona,
-  setViewMode,
   setPatientSubView,
   setIsWhatsAppDrawerOpen,
   pendingHandoff,
@@ -35,7 +34,6 @@ export function useWorkflowStageTransitions({
   handleUpdateCase,
   setCases,
   userSession,
-  viewMode,
 }: TransitionParams) {
 
   const handleSelectPersona = (p: Persona) => {
@@ -44,10 +42,6 @@ export function useWorkflowStageTransitions({
     }
 
     setActivePersona(p);
-    if (p.code === 'P') {
-      setViewMode('workstation');
-      try { localStorage.setItem(VIEW_MODE_KEY, 'workstation'); } catch (e) {}
-    }
     const lockedLang = localStorage.getItem(LANG_KEY);
     if (!lockedLang) setLang(p.lang);
 
@@ -65,38 +59,28 @@ export function useWorkflowStageTransitions({
           url.searchParams.delete('subview');
           url.searchParams.delete('caseId');
         }
-        window.history.pushState({ portal, viewMode }, '', url.pathname + url.search);
+        window.history.pushState({ portal }, '', url.pathname + url.search);
       } catch (e) {}
     }
   };
 
   const handleSetStage = (stage: ClinicalStage) => {
-    const gated: ClinicalStage[] = ['WITH_CONSULTANT', 'OPINION_READY', 'PARTNER_SERVICES', 'FOLLOW_UP_21_DAYS', 'CLOSED'];
-    if (gated.includes(stage) && (!isCasePaid(activeCase) || !isCaseVerified(activeCase)) && !isAutoDemoActive) {
-      alert(
-        !isCasePaid(activeCase)
-          ? (lang === 'ar' ? 'لا يمكن الانتقال إلى ما بعد السداد قبل تأكيد الدفع.' : 'Payment must be completed before moving past Awaiting payment.')
-          : (lang === 'ar' ? 'يجب تحقق منسق رعاية ألو من السداد أولاً قبل الانتقال للاستشاري الهندي.' : 'ALO Coordinator must verify payment before connecting to the Indian consultant.')
-      );
+    const gateError = stageGateError(stage, activeCase, { autoDemo: isAutoDemoActive });
+    if (gateError) {
+      alert(stageGateMessage(gateError, lang));
       return;
     }
     handleUpdateCase({ currentStage: stage });
   };
 
   const handleAdvanceStage = () => {
-    const currentIndex = STAGE_ORDER.indexOf(activeCase.currentStage);
-    if (currentIndex >= STAGE_ORDER.length - 1) return;
-    const nextStage = STAGE_ORDER[currentIndex + 1];
+    const nextStage = nextStageOf(activeCase.currentStage);
+    if (!nextStage) return;
 
-    if (nextStage === 'WITH_CONSULTANT' && !isAutoDemoActive) {
-      if (!isCasePaid(activeCase)) {
-        alert(lang === 'ar' ? 'لا يمكن الانتقال للاستشاري قبل إتمام المريض للدفع.' : 'Patient must complete payment first.');
-        return;
-      }
-      if (!isCaseVerified(activeCase)) {
-        alert(lang === 'ar' ? 'يجب تحقق منسق رعاية ألو من السداد أولاً قبل الاتصال بالاستشاري الهندي.' : 'ALO Coordinator must verify payment before connecting to the Indian consultant.');
-        return;
-      }
+    const gateError = stageGateError(nextStage, activeCase, { autoDemo: isAutoDemoActive });
+    if (gateError) {
+      alert(stageGateMessage(gateError, lang));
+      return;
     }
 
     handleUpdateCase({ currentStage: nextStage });
@@ -117,7 +101,7 @@ export function useWorkflowStageTransitions({
     tierData: { tier: number; tierName: string; baseSar: number; vatSar: number; totalSar: number },
   ) => {
     if (!methods.length) return;
-    const invoiceNumber = activeCase.pricing?.invoiceNumber || `INV-2026-${Math.floor(100000 + Math.random() * 900000)}`;
+    const invoiceNumber = activeCase.pricing?.invoiceNumber || newInvoiceNumber();
     handleUpdateCase({
       currentStage: 'AWAITING_PAYMENT',
       invoiceIssued: true,
@@ -129,8 +113,8 @@ export function useWorkflowStageTransitions({
       pricing: {
         ...activeCase.pricing,
         ...tierData,
-        vatPercent: 15,
-        tabbyInstallmentSar: Number((tierData.totalSar / 4).toFixed(2)),
+        vatPercent: vatPercent(),
+        tabbyInstallmentSar: tabbyInstallment(tierData.totalSar),
         invoiceNumber,
         paid: false,
       },
@@ -181,7 +165,6 @@ export function useWorkflowStageTransitions({
         const updated: ClinicalCase = {
           ...c,
           currentStage: 'WITH_CONSULTANT',
-          stage: 5,
           paymentVerified: true,
           consultant: c.consultant || DEFAULT_CONSULTANT,
           treatingDoctor: c.treatingDoctor || DEFAULT_TREATING_DOCTOR,
@@ -213,7 +196,6 @@ export function useWorkflowStageTransitions({
         const updated: ClinicalCase = {
           ...c,
           currentStage: 'PARTNER_SERVICES',
-          stage: 7,
           consultant: c.consultant || DEFAULT_CONSULTANT,
           treatingDoctor: c.treatingDoctor || DEFAULT_TREATING_DOCTOR,
           reportReleased: true,
@@ -227,7 +209,6 @@ export function useWorkflowStageTransitions({
           },
         };
         apiClient.saveCase(updated).catch(() => {});
-        apiClient.closeCase(activeCase.id).catch(() => {});
         return updated;
       })
     );
@@ -235,18 +216,18 @@ export function useWorkflowStageTransitions({
 
   const handleConfirmHandoff = () => {
     if (!pendingHandoff) return;
-    handleUpdateCase({ currentStage: pendingHandoff.toStage });
+    handleSetStage(pendingHandoff.toStage);
     setPendingHandoff(null);
   };
 
   const handleAutoDemoNextStage = () => {
-    const idx = STAGE_ORDER.indexOf(activeCase.currentStage);
-    handleSetStage(STAGE_ORDER[(idx + 1) % STAGE_ORDER.length]);
+    const nextStage = nextStageOf(activeCase.currentStage);
+    if (nextStage) handleSetStage(nextStage);
   };
 
   const handleAutoDemoPrevStage = () => {
-    const idx = STAGE_ORDER.indexOf(activeCase.currentStage);
-    handleSetStage(STAGE_ORDER[(idx - 1 + STAGE_ORDER.length) % STAGE_ORDER.length]);
+    const prevStage = prevStageOf(activeCase.currentStage);
+    if (prevStage) handleSetStage(prevStage);
   };
 
   return {

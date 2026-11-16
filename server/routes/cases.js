@@ -1,37 +1,32 @@
 import express from 'express';
 import pool from '../db.js';
 import { memoryCases, STAGE_ORDER } from '../store.js';
+import { requireAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// GET /api/cases - Role & Identity Scoped
-router.get('/', async (req, res) => {
-  const role = req.headers['x-user-role'] || 'AD';
-  const phone = (req.headers['x-user-phone'] || '').trim();
-  const userId = (req.headers['x-user-id'] || '').trim();
-  const tenantId = (req.headers['x-tenant-id'] || '').trim();
+// National IDs are persisted masked (10******** or 1089****10); full 10-digit values are also accepted.
+const MASKED_NATIONAL_ID_RE = /^\d{2}[\d*]{8}$/;
+const digitCount = (value) => String(value ?? '').replace(/\D/g, '').length;
+
+// GET /api/cases — Role & Identity Scoped (auth required)
+router.get('/', requireAuth, async (req, res) => {
+  // Scoped from req.auth (set by middleware); ignore untrusted headers entirely.
+  const role = req.auth.role || 'GUEST';
+  const userId = req.auth.userId || '';
+  const tenantId = req.auth.hospitalId || '';
 
   try {
     let query = 'SELECT case_data FROM clinical_cases WHERE 1=1';
     const params = [];
 
-    if (role === 'P' && phone) {
-      params.push(phone);
-      query += ` AND (case_data->>'patientPhone' = $${params.length} OR national_id_masked = $${params.length} OR case_data->>'nationalIdMasked' = $${params.length})`;
-    } else if (role === 'D') {
-      if (tenantId) {
-        params.push(tenantId);
-        const pIdx = params.length;
-        query += ` AND (
-          case_data->'treatingDoctor'->>'hospitalId' = $${pIdx}
-          OR case_data->'treatingDoctor'->>'hospital' ILIKE '%' || $${pIdx} || '%'
-          OR case_data->'treatingDoctor'->>'hospital' ILIKE '%Riyadh%'
-          OR case_data->'treatingDoctor'->>'hospital' ILIKE '%الرياض%'
-          OR case_data->'treatingDoctor'->>'name' ILIKE '%Fahad%'
-          OR case_data->'treatingDoctor'->>'name' ILIKE '%فهد%'
-          OR case_data->>'currentStage' IN ('DOCTOR_REVIEW', 'OPINION_READY')
-        )`;
-      }
+    if (role === 'P' && userId) {
+      // Scoped: patient can only see their own cases (matched by patientPhone in case_data)
+      params.push(userId);
+      query += ` AND (case_data->>'patientPhone' = $${params.length} OR regexp_replace(case_data->>'patientPhone', '\\D', '', 'g') = $${params.length})`;
+    } else if (role === 'D' && tenantId) {
+      params.push(tenantId);
+      query += ` AND (case_data->'treatingDoctor'->>'hospitalId' = $${params.length} OR case_data->'treatingDoctor'->>'hospital' ILIKE '%' || $${params.length} || '%')`;
     }
 
     query += ' ORDER BY updated_at DESC';
@@ -42,18 +37,15 @@ router.get('/', async (req, res) => {
       (c) => (c.stage && Number(c.stage) > 1) || (c.symptoms && String(c.symptoms).trim().length > 0)
     );
 
-    if (role === 'P' && phone) {
-      filtered = filtered.filter((c) => c.patientPhone === phone || c.nationalIdMasked === phone);
+    if (role === 'P' && userId) {
+      filtered = filtered.filter((c) => c.patientPhone === userId || digitsOf(c.patientPhone) === digitsOf(userId));
     } else if (role === 'D' && tenantId) {
       filtered = filtered.filter((c) => 
         !c.treatingDoctor?.hospital ||
         c.treatingDoctor?.hospitalId === tenantId ||
         c.treatingDoctor?.hospital?.toLowerCase().includes('riyadh') ||
         c.treatingDoctor?.hospital?.includes('الرياض') ||
-        c.treatingDoctor?.name?.includes('Fahad') ||
-        c.treatingDoctor?.name?.includes('فهد') ||
-        c.currentStage === 'DOCTOR_REVIEW' ||
-        c.currentStage === 'OPINION_READY'
+        c.treatingDoctor?.hospital?.toLowerCase().includes(tenantId.toLowerCase())
       );
     }
 
@@ -85,7 +77,7 @@ function mapStageToMilestoneInfo(stage, role, customActorName) {
       return {
         actionCode: 'M01',
         actorRole: 'P',
-        actorName: customActorName || 'سامي الحربي (Sami Al-Harbi)',
+        actorName: customActorName || null,
         actorRoleTitleAr: 'المريض',
         actorRoleTitleEn: 'Patient',
         actionSummaryAr: 'تم تسجيل الحالة والموافقة على سياسة الخصوصية',
@@ -96,7 +88,7 @@ function mapStageToMilestoneInfo(stage, role, customActorName) {
       return {
         actionCode: 'M02',
         actorRole: 'N',
-        actorName: customActorName || 'سارة القحطاني (Sara Al-Qahtani)',
+        actorName: customActorName || null,
         actorRoleTitleAr: 'ممرضة ألو للفرز',
         actorRoleTitleEn: 'ALO Nurse',
         actionSummaryAr: 'تم الفرز السريري ومراجعة المؤشرات الحيوية',
@@ -107,7 +99,7 @@ function mapStageToMilestoneInfo(stage, role, customActorName) {
       return {
         actionCode: 'M03',
         actorRole: 'D',
-        actorName: customActorName || 'د. فهد الحربي (Dr. Fahad Al-Harbi)',
+        actorName: customActorName || null,
         actorRoleTitleAr: 'الطبيب السعودي المعالج',
         actorRoleTitleEn: 'Saudi Treating Doctor',
         actionSummaryAr: 'تمت الموافقة الطبية واعتماد طلب الاستشارة الدولية',
@@ -119,7 +111,7 @@ function mapStageToMilestoneInfo(stage, role, customActorName) {
       return {
         actionCode: 'M04',
         actorRole: 'C',
-        actorName: customActorName || 'إيمانويل غونزاليس (Emmanuel Arcon Gonzalez)',
+        actorName: customActorName || null,
         actorRoleTitleAr: 'منسق رعاية ألو',
         actorRoleTitleEn: 'ALO Coordinator',
         actionSummaryAr: 'تم التحقق من السداد وتوليد رابط الاستشاري الدولي',
@@ -132,7 +124,7 @@ function mapStageToMilestoneInfo(stage, role, customActorName) {
       return {
         actionCode: 'M05',
         actorRole: 'K',
-        actorName: customActorName || 'د. براشانث (Dr. V. Prasanth)',
+        actorName: customActorName || null,
         actorRoleTitleAr: 'الاستشاري الدولي',
         actorRoleTitleEn: 'International Consultant',
         actionSummaryAr: 'تم إصدار واعتماد تقرير الرأي الطبي الثاني',
@@ -144,11 +136,40 @@ function mapStageToMilestoneInfo(stage, role, customActorName) {
   }
 }
 
-// POST /api/cases
-router.post('/', async (req, res) => {
+// P patient write guard: assert patientPhone matches the authenticated user
+function patientOwnsCase(req, caseData) {
+  if (req.auth?.role !== 'P') return true;
+  const authPhone = req.auth.userId || '';
+  if (!authPhone) return false;
+  const casePhone = (caseData.patientPhone || '').replace(/\D/g, '');
+  const authDigits = authPhone.replace(/\D/g, '');
+  return casePhone.endsWith(authDigits.slice(-8)) || authDigits.endsWith(casePhone.slice(-8)) || casePhone === authDigits;
+}
+
+// POST /api/cases — auth required; P may only write own cases
+router.post('/', requireAuth, async (req, res) => {
   const c = req.body;
   if (!c || !c.id || c.id === 'draft-intake') {
     return res.status(400).json({ error: 'Valid case ID required' });
+  }
+
+  // Lenient guard: tolerates dashes/spaces around the number, rejects garbage before it hits the DB.
+  if (c.patientPhone && (digitCount(c.patientPhone) < 9 || digitCount(c.patientPhone) > 13)) {
+    return res.status(400).json({ error: 'INVALID_PHONE', message: 'patientPhone must contain 9-13 digits.' });
+  }
+  if (c.nationalIdMasked && !MASKED_NATIONAL_ID_RE.test(String(c.nationalIdMasked))) {
+    return res.status(400).json({
+      error: 'INVALID_NATIONAL_ID',
+      message: 'nationalIdMasked must be a 10-character masked or 10-digit National ID.',
+    });
+  }
+
+  // P-scope: patient must only write their own cases
+  if (!patientOwnsCase(req, c)) {
+    return res.status(403).json({
+      error: 'FORBIDDEN',
+      message: 'Patient may only write cases whose patientPhone matches their own.',
+    });
   }
 
   const hasSymptoms =
@@ -186,6 +207,18 @@ router.post('/', async (req, res) => {
     // Non-blocking fallback
   }
 
+  // Payment gate mirror of the client rule: once an invoice has been issued, the
+  // post-payment stages cannot be entered until the invoice is actually paid.
+  const GATED_STAGES = ['WITH_CONSULTANT', 'OPINION_READY', 'PARTNER_SERVICES', 'FOLLOW_UP_21_DAYS', 'CLOSED'];
+  const isPaid = Boolean(c.pricing && c.pricing.paid) || c.paymentDetails?.status === 'completed';
+  if (c.invoiceIssued && !isPaid && GATED_STAGES.includes(c.currentStage)) {
+    return res.status(402).json({
+      error: 'PAYMENT_GATE_REQUIRED',
+      message: `Cannot enter ${c.currentStage} while the issued invoice is unpaid.`,
+      currentStage: c.currentStage,
+    });
+  }
+
   // Ensure timeline exists
   if (!Array.isArray(c.timeline)) {
     c.timeline = [];
@@ -197,7 +230,7 @@ router.post('/', async (req, res) => {
 
   if (isNewCase && c.timeline.length === 0) {
     const timeInfo = generateAstTimestamps();
-    const milestoneInfo = mapStageToMilestoneInfo('INTAKE_RECEIVED', req.headers['x-user-role'], c.patientName);
+    const milestoneInfo = mapStageToMilestoneInfo('INTAKE_RECEIVED', req.auth?.role, c.patientName);
     if (milestoneInfo) {
       c.timeline.push({
         id: `evt-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
@@ -211,8 +244,8 @@ router.post('/', async (req, res) => {
     }
   } else if (stageChanged) {
     const timeInfo = generateAstTimestamps();
-    const actorName = req.headers['x-user-id'] || req.headers['x-user-name'];
-    const milestoneInfo = mapStageToMilestoneInfo(c.currentStage, req.headers['x-user-role'], actorName);
+    const actorName = req.auth?.userId || '';
+    const milestoneInfo = mapStageToMilestoneInfo(c.currentStage, req.auth?.role, actorName);
     if (milestoneInfo) {
       c.timeline.push({
         id: `evt-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
@@ -372,7 +405,7 @@ router.post('/:id/opinion', async (req, res) => {
     stage: 'OPINION_READY',
     actionCode: 'M05',
     actorRole: 'K',
-    actorName: 'د. براشانث (Dr. V. Prasanth)',
+    actorName: (currentCase.consultant && currentCase.consultant.name) ? currentCase.consultant.name : 'الاستشاري الدولي (International Consultant)',
     actionSummaryAr: 'تم إصدار واعتماد تقرير الرأي الطبي الثاني',
     actionSummaryEn: 'Second opinion clinical report released and certified',
     isMilestone: true,
@@ -418,10 +451,39 @@ router.delete('/:id', async (req, res) => {
   return res.json({ success: true, deletedId: id });
 });
 
+// GET /api/cases/:id/magic — validate magic link token (public, no auth)
+router.get('/:id/magic', async (req, res) => {
+  const { id } = req.params;
+  const token = req.query.token || '';
+  if (!token) {
+    return res.status(400).json({ success: false, error: 'token query param is required' });
+  }
+  try {
+    const { rows } = await pool.query(
+      `SELECT case_data FROM clinical_cases WHERE id = $1 AND case_data->>'consultantToken' = $2 LIMIT 1`,
+      [id, token]
+    );
+    if (!rows.length) {
+      return res.status(404).json({ success: false, error: 'Invalid or expired magic link' });
+    }
+    const c = rows[0].case_data;
+    return res.json({ success: true, data: { caseId: c.id, caseNumber: c.caseNumber, patientName: c.patientName, currentStage: c.currentStage } });
+  } catch (err) {
+    console.error('[cases/magic] error:', err.message);
+    // Fallback: check memory
+    const mc = memoryCases.find((x) => x.id === id && x.consultantToken === token);
+    if (mc) {
+      return res.json({ success: true, data: { caseId: mc.id, caseNumber: mc.caseNumber, patientName: mc.patientName, currentStage: mc.currentStage } });
+    }
+    return res.status(404).json({ success: false, error: 'Invalid or expired magic link' });
+  }
+});
+
 // Admin forced stage jump / rollback
 router.post(['/:id/force-stage', '/admin/cases/:id/force-stage'], async (req, res) => {
   const adminToken = req.headers['x-admin-token'];
-  if (adminToken !== 'ALO-ADMIN-OVERRIDE-2026') {
+  const expectedAdminToken = process.env.ADMIN_OVERRIDE_TOKEN || 'ALO-ADMIN-OVERRIDE-2026';
+  if (!adminToken || adminToken !== expectedAdminToken) {
     return res.status(403).json({ error: 'Admin token required' });
   }
   const { targetStage } = req.body;

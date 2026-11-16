@@ -1,7 +1,6 @@
-export const TEAL_PRIMARY = '#007B6E';
-export const TEAL_SECONDARY = '#00C6AE';
-export const TEAL_BG = '#E6FAF7';
-export const WHATSAPP_GREEN = '#25D366';
+import { TEAL_PRIMARY, TEAL_SECONDARY, TEAL_BG, WHATSAPP_GREEN } from '../../theme/brandColors';
+
+export { TEAL_PRIMARY, TEAL_SECONDARY, TEAL_BG, WHATSAPP_GREEN };
 
 export const FEEDBACK_TAGS_AR = ['دقة التشخيص', 'وضوح التفسير الطبي', 'سرعة الاستجابة', 'التعامل الراقي', 'جودة التقرير'];
 export const FEEDBACK_TAGS_EN = ['Diagnostic Accuracy', 'Clear Explanation', 'Fast Response', 'Professionalism', 'Report Quality'];

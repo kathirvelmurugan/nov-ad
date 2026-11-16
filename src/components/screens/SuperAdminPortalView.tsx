@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Shield, Building2, UserCheck, Database, FileText, Globe, LogOut, FolderKanban } from 'lucide-react';
+import { Shield, Building2, UserCheck, Database, FileText, Globe, LogOut, FolderKanban, Settings } from 'lucide-react';
 import { Persona, ClinicalCase } from '../../types';
 import { UserSession } from '../../hooks/workflowConstants';
+import { STAGE_ORDER_META } from '../../config/stageMeta';
 import { PERSONAS, PERSONA_BY_CODE } from '../../data/personas';
 import { RoleCode } from '../../data/rbacMatrix';
 import { useAdminGovernanceState } from '../../hooks/useAdminGovernanceState';
@@ -11,6 +12,7 @@ import { SuperAdminTenantsTab } from './superadmin/SuperAdminTenantsTab';
 import { SuperAdminCentralStaffTab } from './superadmin/SuperAdminCentralStaffTab';
 import { SuperAdminCatalogsTab } from './superadmin/SuperAdminCatalogsTab';
 import { SuperAdminAuditTab } from './superadmin/SuperAdminAuditTab';
+import { SuperAdminSettingsTab } from './superadmin/SuperAdminSettingsTab';
 
 interface SuperAdminPortalViewProps {
   lang: 'ar' | 'en';
@@ -21,7 +23,7 @@ interface SuperAdminPortalViewProps {
   cases?: ClinicalCase[];
 }
 
-type TabKey = 'cases' | 'roles' | 'tenants' | 'staff' | 'catalogs' | 'audit';
+type TabKey = 'cases' | 'roles' | 'tenants' | 'staff' | 'catalogs' | 'audit' | 'settings';
 
 export const SuperAdminPortalView: React.FC<SuperAdminPortalViewProps> = ({
   lang,
@@ -33,6 +35,44 @@ export const SuperAdminPortalView: React.FC<SuperAdminPortalViewProps> = ({
 }) => {
   const isRTL = lang === 'ar';
   const [activeTab, setActiveTab] = useState<TabKey>('cases');
+  const [focusCaseId, setFocusCaseId] = useState<string | null>(null);
+
+  // Stage meta for badge coloring in Latest Activity card — derived from single source.
+  const STAGE_META: Record<string, { labelAr: string; labelEn: string; color: string }> = Object.fromEntries(
+    STAGE_ORDER_META.map((m) => [m.stage, { labelAr: m.shortLabelAr, labelEn: m.shortLabelEn, color: m.color }])
+  );
+
+  const latestCase = React.useMemo(() => {
+    if (!cases.length) return null;
+    return [...cases].sort((a, b) => {
+      const da = a.updatedAt || a.createdAt || '';
+      const db = b.updatedAt || b.createdAt || '';
+      return db.localeCompare(da);
+    })[0];
+  }, [cases]);
+
+  const latestStageMeta = latestCase ? STAGE_META[latestCase.currentStage] : null;
+
+  const timeAgo = (iso: string | undefined): string => {
+    if (!iso) return '';
+    const diff = Date.now() - new Date(iso).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return isRTL ? 'الآن' : 'now';
+    if (mins < 60) return isRTL ? `قبل ${mins} د` : `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return isRTL ? `قبل ${hrs} س` : `${hrs}h ago`;
+    const days = Math.floor(hrs / 24);
+    return isRTL ? `قبل ${days} يوم` : `${days}d ago`;
+  };
+
+  const handleViewLatestCase = () => {
+    if (latestCase) {
+      setFocusCaseId(latestCase.id);
+      setActiveTab('cases');
+    }
+  };
+
+  const handleFocusCaseHandled = () => setFocusCaseId(null);
 
   const {
     tenants,
@@ -58,6 +98,7 @@ export const SuperAdminPortalView: React.FC<SuperAdminPortalViewProps> = ({
     { id: 'staff', labelAr: 'الكوادر المركزية', labelEn: 'Central Staff', icon: <UserCheck className="w-4 h-4" /> },
     { id: 'catalogs', labelAr: 'الكتالوجات الطبية', labelEn: 'Medical Catalogs', icon: <Database className="w-4 h-4" /> },
     { id: 'audit', labelAr: 'سجلات التدقيق', labelEn: 'Audit Logs', icon: <FileText className="w-4 h-4" /> },
+    { id: 'settings', labelAr: 'الإعدادات', labelEn: 'Settings', icon: <Settings className="w-4 h-4" /> },
   ];
 
   return (
@@ -86,14 +127,52 @@ export const SuperAdminPortalView: React.FC<SuperAdminPortalViewProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="text-right text-xs bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm">
-            <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">
-              {isRTL ? 'المشرف العام (Super Admin)' : 'ALO Master (Super Admin)'}
-            </span>
-            <span className="font-bold text-slate-800 font-mono">
-              {userSession?.fullName || 'Adrian Lewis'} ({userSession?.phone || '+966 50 000 0001'})
-            </span>
-          </div>
+          {/* Latest Case Activity Card */}
+          {latestCase && latestStageMeta ? (
+            <button
+              type="button"
+              onClick={handleViewLatestCase}
+              className="text-left bg-white px-4 py-3 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-slate-300 transition-all cursor-pointer group min-w-[260px]"
+            >
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                </span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  {isRTL ? 'آخر تحديث' : 'Latest Activity'}
+                </span>
+                <span className="text-[10px] text-slate-400 font-mono ml-auto">
+                  {timeAgo(latestCase.updatedAt)}
+                </span>
+              </div>
+              <div className="font-bold text-sm text-slate-800 mb-1.5">
+                {isRTL
+                  ? (latestCase.patientNameAr || latestCase.patientName)
+                  : (latestCase.patientNameEn || latestCase.patientName)}
+              </div>
+              <div className="flex items-center gap-2">
+                <span
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold text-white"
+                  style={{ backgroundColor: latestStageMeta.color }}
+                >
+                  {isRTL ? latestStageMeta.labelAr : latestStageMeta.labelEn}
+                </span>
+                <span className="text-[11px] font-bold text-[#007B6E] group-hover:text-[#005B4F] transition-colors ml-auto">
+                  {isRTL ? 'عرض ←' : '→ View'}
+                </span>
+              </div>
+            </button>
+          ) : (
+            <div className="text-right text-xs bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm">
+              <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">
+                {isRTL ? 'لا توجد حالات' : 'No Cases Yet'}
+              </span>
+              <span className="font-bold text-slate-800 font-mono">
+                {isRTL ? 'بانتظار التسجيل الأول' : 'Awaiting first registration'}
+              </span>
+            </div>
+          )}
           {onLogout && (
             <button
               onClick={onLogout}
@@ -135,6 +214,8 @@ export const SuperAdminPortalView: React.FC<SuperAdminPortalViewProps> = ({
             isRTL={isRTL}
             cases={cases}
             tenants={tenants}
+            focusCaseId={focusCaseId}
+            onFocusCaseHandled={handleFocusCaseHandled}
           />
         )}
         {activeTab === 'roles' && (
@@ -171,6 +252,9 @@ export const SuperAdminPortalView: React.FC<SuperAdminPortalViewProps> = ({
         )}
         {activeTab === 'audit' && (
           <SuperAdminAuditTab isRTL={isRTL} auditLogs={auditLogs} />
+        )}
+        {activeTab === 'settings' && (
+          <SuperAdminSettingsTab isRTL={isRTL} />
         )}
       </main>
     </div>

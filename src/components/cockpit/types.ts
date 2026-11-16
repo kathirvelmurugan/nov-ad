@@ -11,16 +11,14 @@ export interface CockpitDeviceProps {
   activeCase: ClinicalCase;
   stageNum: number;
   onAdvanceStage: () => void;
+  onVerifyPaymentAndDispatch?: () => void;
   onUpdateCase: (updated: Partial<ClinicalCase>) => void;
   lang: 'ar' | 'en';
   onOpenReportModal?: () => void;
 }
 
-export const TEAL_PRIMARY = '#007B6E';
-export const TEAL_SECONDARY = '#00C6AE';
-export const TEAL_BG = '#E6FAF7';
-export const WHATSAPP_GREEN = '#25D366';
-
+// Palette lives in src/theme so product components never import the cockpit.
+export { TEAL_PRIMARY, TEAL_SECONDARY, TEAL_BG, WHATSAPP_GREEN } from '../../theme/brandColors';
 export const PROCESS_CODES: Record<CockpitRole, { code: string; desc: Record<'ar' | 'en', string> }[]> = {
   Patient: [
     { code: 'P01', desc: { ar: 'الاستقبال ورفع التقرير', en: 'Intake & Dossier Upload' } },

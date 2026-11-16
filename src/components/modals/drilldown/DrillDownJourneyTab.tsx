@@ -40,10 +40,12 @@ const DrillDownJourneyTab: React.FC<DrillDownJourneyTabProps> = ({ caseItem, sta
           <p style={{ margin: 0, fontWeight: 700, color: '#1a1a1a' }}>{stageMeta?.currentStage || 'Intake'}</p>
         </div>
 
+        {caseItem?.egressToken && (
         <div style={{ background: '#fff', padding: '1rem', borderRadius: 8, borderRight: isRTL ? '4px solid #00C6AE' : 'none', borderLeft: !isRTL ? '4px solid #00C6AE' : 'none' }}>
           <h4 style={{ margin: '0 0 0.5rem', color: '#007B6E', fontSize: '0.9rem' }}>Cross-Border Egress Token</h4>
-          <p style={{ margin: 0, fontWeight: 700, color: '#1a1a1a', fontFamily: 'monospace' }}>{caseItem?.egressToken || 'N/A'}</p>
+          <p style={{ margin: 0, fontWeight: 700, color: '#1a1a1a', fontFamily: 'monospace' }}>{caseItem.egressToken}</p>
         </div>
+        )}
 
         <div style={{ background: '#fff', padding: '1rem', borderRadius: 8, borderRight: isRTL ? '4px solid #25D366' : 'none', borderLeft: !isRTL ? '4px solid #25D366' : 'none' }}>
           <h4 style={{ margin: '0 0 0.5rem', color: '#007B6E', fontSize: '0.9rem' }}>Registered Date</h4>

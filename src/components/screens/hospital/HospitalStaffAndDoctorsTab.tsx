@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Stethoscope, Plus, CheckCircle, XCircle, Phone, Award, Shield, AlertCircle } from 'lucide-react';
+import { Stethoscope, Plus, CheckCircle, XCircle, Phone, Award, Shield } from 'lucide-react';
 import { StaffAccountRecord, TenantHospital, RoleCode } from '../../../types';
-import { sanitizeDigits, validatePhoneNumber } from '../../../utils/phoneValidation';
+import { validatePhone } from '../../../utils/phoneValidation';
+import { PhoneField } from '../../common/PhoneField';
 
 interface HospitalStaffAndDoctorsTabProps {
   isRTL: boolean;
@@ -27,10 +28,8 @@ export const HospitalStaffAndDoctorsTab: React.FC<HospitalStaffAndDoctorsTabProp
   const [scfhs, setScfhs] = useState('');
 
   const handlePhoneChange = (val: string) => {
-    const cleaned = sanitizeDigits(val);
-    setPhone(cleaned);
-    const result = validatePhoneNumber(cleaned, false);
-    setPhoneError(result.isValid ? '' : (isRTL ? result.errorMessageAr || '' : result.errorMessage || ''));
+    setPhone(val);
+    setPhoneError('');
   };
 
   // Hospital staff are those assigned to this hospital or matching hospital roles (D, L, PH, REC)
@@ -42,14 +41,14 @@ export const HospitalStaffAndDoctorsTab: React.FC<HospitalStaffAndDoctorsTabProp
     e.preventDefault();
     if (!nameEn.trim() || !phone.trim()) return;
 
-    const validation = validatePhoneNumber(phone, false);
+    const validation = validatePhone(phone, 'SA');
     if (!validation.isValid) {
-      setPhoneError(isRTL ? validation.errorMessageAr || '' : validation.errorMessage || '');
+      setPhoneError(isRTL ? validation.issue?.ar || '' : validation.issue?.en || '');
       return;
     }
 
     onCreateStaff({
-      phone: phone.trim(),
+      phone: validation.e164,
       fullName: nameEn.trim(),
       fullNameAr: nameAr.trim() || undefined,
       roleCode,
@@ -118,7 +117,7 @@ export const HospitalStaffAndDoctorsTab: React.FC<HospitalStaffAndDoctorsTabProp
                 required
                 value={nameEn}
                 onChange={(e) => setNameEn(e.target.value)}
-                placeholder="Dr. Adrian Lewis"
+                placeholder="Dr. Rehmaan"
                 className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500"
               />
             </div>
@@ -150,22 +149,18 @@ export const HospitalStaffAndDoctorsTab: React.FC<HospitalStaffAndDoctorsTabProp
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">
-                {isRTL ? 'رقم الجوال (واتساب)' : 'Mobile Phone (WhatsApp)'}
-              </label>
-              <input
-                type="text"
-                required
+              <PhoneField
+                id="hospital-staff-phone"
+                label={isRTL ? 'رقم الجوال (واتساب)' : 'Mobile Phone (WhatsApp)'}
                 value={phone}
-                onChange={(e) => handlePhoneChange(e.target.value)}
+                onChange={handlePhoneChange}
+                isAr={isRTL}
+                country="SA"
+                error={phoneError}
+                required
+                accentClass="focus:ring-emerald-500"
                 placeholder="+96650XXXXXXX"
-                className={`w-full px-3 py-2 text-sm bg-white border rounded-xl focus:ring-2 focus:ring-emerald-500 ${
-                  phoneError ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200'
-                }`}
               />
-              {phoneError && (
-                <p className="text-xs text-rose-600 mt-1 font-medium">{phoneError}</p>
-              )}
             </div>
             <div>
               <label className="block text-xs font-semibold text-slate-600 mb-1">

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ClinicalCase } from '../../types';
 import { generateMockSHA256 } from '../followup/followUpConstants';
+import { priceTier } from '../../config/platformConfig';
 
 interface Props {
   activeCase: ClinicalCase;
@@ -65,7 +66,7 @@ export const ConsultantCaseClosedSection: React.FC<Props> = ({
         activeCase.finalClosureNote ? `Specialist Final Remarks: ${activeCase.finalClosureNote}` : '',
         `------------------------------------------------------------------------`,
         `PART 3: ZATCA PHASE-2 TAX INVOICE RECEIPT`,
-        `Amount Paid: ${(activeCase.pricing?.totalSar || 75).toFixed(2)} SAR (Includes 15% VAT)`,
+        `Amount Paid: ${(activeCase.pricing?.totalSar ?? priceTier(activeCase.tier || 1).totalSar).toFixed(2)} SAR (Includes 15% VAT)`,
         `Payment Status: VERIFIED & CAPTURED`,
         `========================================================================`,
       ].join('\n');

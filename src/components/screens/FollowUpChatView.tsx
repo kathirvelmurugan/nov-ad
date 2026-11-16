@@ -10,7 +10,7 @@ import {
 import { FollowUpReportDownloadCard } from '../followup/FollowUpReportDownloadCard';
 import { FollowUpChatThread, ChatMessage } from '../followup/FollowUpChatThread';
 import { FollowUpSatisfactionWidget } from '../followup/FollowUpSatisfactionWidget';
-import { BilingualReportModal } from '../cockpit/BilingualReportModal';
+import { BilingualReportModal } from '../reports/BilingualReportModal';
 
 interface Props {
   activeCase: ClinicalCase;

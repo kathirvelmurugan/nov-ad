@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
-import { FaqItem } from '../../data/healthcareServices';
+import type { FaqItem } from '../../data/landingFaq';
 
 interface Props {
   isAr: boolean;

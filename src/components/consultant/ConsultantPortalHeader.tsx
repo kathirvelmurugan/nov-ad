@@ -65,7 +65,7 @@ const ConsultantPortalHeader: React.FC<ConsultantPortalHeaderProps> = ({
             <span style={{ fontSize: '11px', color: '#718096', fontWeight: 600 }}>Apollo / KIMS Specialist Network</span>
           </div>
           <h1 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#0F172A' }}>
-            Dr. V. Prasanth, MBBS, MS, MCh (Spine & Neuro)
+            {activeCase?.consultant?.name || 'International Consultant'}, {activeCase?.consultant?.center || 'Specialist Network'}
           </h1>
         </div>
 

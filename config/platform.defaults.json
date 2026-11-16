@@ -1,0 +1,123 @@
+{
+  "schemaVersion": 1,
+  "currency": {
+    "code": "SAR",
+    "symbolEn": "SAR",
+    "symbolAr": "ر.س",
+    "vatPercent": 15,
+    "taxInclusive": true
+  },
+  "pricing": {
+    "tiers": [
+      {
+        "id": 1,
+        "consultationType": "written",
+        "tierNameEn": "Written opinion only",
+        "tierNameAr": "رأي مكتوب فقط",
+        "totalSar": 75
+      },
+      {
+        "id": 2,
+        "consultationType": "video",
+        "tierNameEn": "Video + written opinion",
+        "tierNameAr": "مرئي + رأي مكتوب",
+        "totalSar": 150
+      }
+    ],
+    "installmentPlan": {
+      "provider": "tabby",
+      "labelEn": "Tabby",
+      "labelAr": "تابي",
+      "installments": 4,
+      "interestFree": true
+    },
+    "invoicePrefix": "INV",
+    "casePrefix": "ALO"
+  },
+  "payment": {
+    "rails": [
+      {
+        "id": "mada",
+        "labelEn": "mada",
+        "labelAr": "مدى",
+        "subLabelEn": "Saudi Most Popular",
+        "subLabelAr": "الأكثر شعبية في السعودية",
+        "enabled": true,
+        "requiresInstallments": false
+      },
+      {
+        "id": "applepay",
+        "labelEn": "Apple Pay",
+        "labelAr": "Apple Pay",
+        "subLabelEn": "1-Click",
+        "subLabelAr": "بنقرة واحدة",
+        "enabled": true,
+        "requiresInstallments": false
+      },
+      {
+        "id": "visa",
+        "labelEn": "Visa / Mastercard",
+        "labelAr": "فيزا / ماستركارد",
+        "subLabelEn": "Global Secure",
+        "subLabelAr": "دفع عالمي آمن",
+        "enabled": true,
+        "requiresInstallments": false
+      },
+      {
+        "id": "tabby",
+        "labelEn": "Tabby (4 Installments)",
+        "labelAr": "تابي (4 دفعات)",
+        "subLabelEn": "0% Interest Split",
+        "subLabelAr": "تقسيط بدون فوائد",
+        "enabled": true,
+        "requiresInstallments": true
+      }
+    ]
+  },
+  "policy": {
+    "followUpDays": 21,
+    "slaHours": {
+      "INTAKE_RECEIVED": 0,
+      "NURSE_CHECK": 4,
+      "DOCTOR_REVIEW": 24,
+      "AWAITING_PAYMENT": 24,
+      "WITH_CONSULTANT": 48,
+      "OPINION_READY": 48,
+      "PARTNER_SERVICES": 72,
+      "FOLLOW_UP_21_DAYS": 504,
+      "CLOSED": 0
+    }
+  },
+  "services": {
+    "second-opinion": { "enabled": true, "priceTierId": 1 },
+    "video-consultation": { "enabled": true, "priceTierId": 2 },
+    "voice-consultation": { "enabled": true, "priceTierId": 2 },
+    "lab-tests": { "enabled": true, "priceTierId": null },
+    "pharmacy": { "enabled": true, "priceTierId": null },
+    "hospital-services": { "enabled": true, "priceTierId": null },
+    "other-services": { "enabled": true, "priceTierId": null }
+  },
+  "catalogs": {
+    "specialties": [
+      "أمراض وجراحة القلب (Cardiology & CTVS)",
+      "جراحة المخ والأعصاب (Neurosurgery)",
+      "طب وأورام الأطفال (Pediatric Oncology)",
+      "جراحة العظام والمفاصل (Orthopedics)",
+      "أمراض الدم والأورام (Hematology & Oncology)"
+    ],
+    "labTests": [
+      "تروبونين عالي الحساسية (hs-cTnI)",
+      "فحص الدهون الشامل (Lipid Profile)",
+      "وظائف كلى وأملاح (Renal Function Panel)",
+      "تخطيط كهربية القلب (12-Lead ECG)",
+      "فحص السكر التراكمي (HbA1c)"
+    ],
+    "medications": [
+      "Lipitor 40mg (Atorvastatin)",
+      "Plavix 75mg (Clopidogrel)",
+      "Concor 5mg (Bisoprolol)",
+      "Aspirin Protect 81mg",
+      "Crestor 20mg (Rosuvastatin)"
+    ]
+  }
+}

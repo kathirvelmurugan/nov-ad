@@ -92,6 +92,32 @@ export async function initDatabase() {
           updated_at TIMESTAMPTZ DEFAULT NOW()
         );
 
+        CREATE TABLE IF NOT EXISTS sessions (
+          token UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          user_id VARCHAR(100) NOT NULL,
+          role_code VARCHAR(20) NOT NULL,
+          hospital_id VARCHAR(100),
+          issued_at TIMESTAMPTZ DEFAULT NOW(),
+          expires_at TIMESTAMPTZ NOT NULL,
+          revoked_at TIMESTAMPTZ
+        );
+
+        CREATE TABLE IF NOT EXISTS platform_settings (
+          id INT PRIMARY KEY DEFAULT 1,
+          config JSONB NOT NULL,
+          version INT NOT NULL DEFAULT 1,
+          updated_at TIMESTAMPTZ DEFAULT NOW(),
+          updated_by VARCHAR(100)
+        );
+
+        CREATE TABLE IF NOT EXISTS platform_settings_history (
+          id BIGSERIAL PRIMARY KEY,
+          version INT NOT NULL,
+          config JSONB,
+          changed_by VARCHAR(100),
+          changed_at TIMESTAMPTZ DEFAULT NOW()
+        );
+
         -- Standardize default accredited hospital tenant
         INSERT INTO tenants (id, name_en, name_ar, city, mci_license_number, status, hospital_admin_name, hospital_admin_phone, doctor_count, created_at)
         VALUES (

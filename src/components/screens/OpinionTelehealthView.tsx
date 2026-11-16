@@ -251,8 +251,9 @@ const OpinionTelehealthView: React.FC<Props> = ({
             data-lk-theme="default"
             style={{ height: '520px' }}
             onDisconnected={() => {
+              // A dropped call is not a clinical decision: the stage advances only
+              // through the explicit submit action below.
               setIsLiveKitConnected(false);
-              onAdvanceStage();
             }}
           >
             <VideoConference />

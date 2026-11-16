@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { ArrowRight, ArrowLeft } from 'lucide-react';
 import { ClinicalCase } from '../../types';
 import { UserSession } from '../../hooks/workflowConstants';
-import { HEALTHCARE_SERVICES, LANDING_FAQ_ITEMS } from '../../data/healthcareServices';
+import { landingServices } from '../../config/services';
+import { LANDING_FAQ_ITEMS } from '../../data/landingFaq';
 import { LandingHeader } from '../landing/LandingHeader';
 import { LandingHeroSection } from '../landing/LandingHeroSection';
 import { LandingServicesSection } from '../landing/LandingServicesSection';
@@ -12,9 +13,6 @@ import { LandingManagementSection } from '../landing/LandingManagementSection';
 import { LandingFaqSection } from '../landing/LandingFaqSection';
 import { LandingFooter } from '../landing/LandingFooter';
 import { LandingAccountModal } from '../landing/LandingAccountModal';
-
-export { HEALTHCARE_SERVICES };
-export type { HealthcareServiceItem } from '../../data/healthcareServices';
 
 interface Props {
   activeCase: ClinicalCase;
@@ -96,7 +94,7 @@ export const PatientLandingView: React.FC<Props> = ({
       <LandingServicesSection
         isAr={isAr}
         ArrowIcon={ArrowIcon}
-        services={HEALTHCARE_SERVICES}
+        services={landingServices()}
         selectedServiceId={selectedServiceId}
         onServiceClick={handleServiceClick}
       />

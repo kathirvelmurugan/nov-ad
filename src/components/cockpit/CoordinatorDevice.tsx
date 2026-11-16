@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { PaymentMethodId } from '../../types';
 import { CockpitDeviceProps, TEAL_PRIMARY, TEAL_SECONDARY, WHATSAPP_GREEN } from './types';
+import { defaultRailIds, enabledRails, newInvoiceNumber, priceTier, priceTierForType, vatPercent } from '../../config/platformConfig';
 
-const COCKPIT_PAYMENT_METHODS: Array<{ id: PaymentMethodId; label: string }> = [
-  { id: 'mada', label: 'Mada' },
-  { id: 'applepay', label: 'Apple Pay' },
-  { id: 'visa', label: 'Visa' },
-  { id: 'tabby', label: 'Tabby' },
-];
+/** Rails come from settings so cockpit and portal can never disagree. */
+const cockpitPaymentMethods = (): Array<{ id: PaymentMethodId; label: string }> =>
+  enabledRails().map((rail) => ({
+    id: rail.id,
+    label: rail.id === 'mada' ? 'Mada' : rail.labelEn,
+  }));
 
 const DEFAULT_CONSULTANT_ANSWERS = [
   'Based on 3D DICOM volumetric review, severe asymmetric annular calcification favors Open SAVR with a 23mm valve over TAVR to prevent paravalvular leak.',
@@ -25,6 +26,7 @@ export const CoordinatorDevice: React.FC<CockpitDeviceProps> = ({
   activeCase,
   stageNum,
   onAdvanceStage,
+  onVerifyPaymentAndDispatch,
   onUpdateCase,
   lang,
   onOpenReportModal,
@@ -38,7 +40,7 @@ export const CoordinatorDevice: React.FC<CockpitDeviceProps> = ({
   const [selectedMethods, setSelectedMethods] = useState<PaymentMethodId[]>(
     activeCase.allowedPaymentMethods && activeCase.allowedPaymentMethods.length > 0
       ? activeCase.allowedPaymentMethods
-      : ['mada', 'applepay', 'visa', 'tabby']
+      : defaultRailIds()
   );
 
   const toggleMethod = (id: PaymentMethodId) => {
@@ -105,7 +107,7 @@ export const CoordinatorDevice: React.FC<CockpitDeviceProps> = ({
           <div style={cardInnerStyle}>
             <span style={labelStyle}>C02–C04 · {isAr ? 'طرق الدفع وإصدار فاتورة ZATCA' : 'Payment Methods & ZATCA Invoice'}</span>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px', marginBottom: '8px' }}>
-              {COCKPIT_PAYMENT_METHODS.map((pm) => {
+              {cockpitPaymentMethods().map((pm) => {
                 const active = selectedMethods.includes(pm.id);
                 return (
                   <button
@@ -134,21 +136,22 @@ export const CoordinatorDevice: React.FC<CockpitDeviceProps> = ({
               disabled={isInvoiceIssued || !isReferralApproved || selectedMethods.length === 0}
               onClick={() => {
                 const prescribedTier = activeCase.tier || (activeCase.modality === 'Video' ? 2 : 1);
-                const prescribedAmount = prescribedTier === 2 ? 450 : 250;
+                const prescribedPrice = priceTier(prescribedTier);
                 onUpdateCase({
                   invoiceIssued: true,
                   allowedPaymentMethods: selectedMethods,
                   paymentAssignedAt: new Date().toISOString(),
-                  tier: prescribedTier,
+                  currentStage: 'AWAITING_PAYMENT',
+                  tier: prescribedPrice.id,
                   pricing: {
                     ...(activeCase.pricing || {}),
-                    baseSar: prescribedAmount,
-                    totalSar: prescribedAmount,
-                    vatPercent: 15,
-                    vatSar: 0,
-                    tierName: prescribedTier === 1 ? 'Written' : 'Video',
-                    tier: prescribedTier,
-                    invoiceNumber: 'INV-2026-001',
+                    tier: prescribedPrice.id,
+                    baseSar: prescribedPrice.baseSar,
+                    vatSar: prescribedPrice.vatSar,
+                    totalSar: prescribedPrice.totalSar,
+                    vatPercent: vatPercent(),
+                    tierName: prescribedPrice.tierNameEn,
+                    invoiceNumber: activeCase.pricing?.invoiceNumber || newInvoiceNumber(),
                     paid: false,
                   },
                 });
@@ -205,14 +208,16 @@ export const CoordinatorDevice: React.FC<CockpitDeviceProps> = ({
               type="button"
               disabled={isPaymentVerified || !isPatientPaid}
               onClick={() => {
+                if (onVerifyPaymentAndDispatch) {
+                  onVerifyPaymentAndDispatch();
+                  return;
+                }
                 onUpdateCase({
                   paymentVerified: true,
                   isCrossBorderDeidentified: true,
                   egressToken: 'ALO-KSA-9482',
                   currentStage: 'WITH_CONSULTANT',
-                  stage: 5,
                 });
-                onAdvanceStage();
               }}
               style={{
                 width: '100%',
@@ -241,8 +246,8 @@ export const CoordinatorDevice: React.FC<CockpitDeviceProps> = ({
               ) : isPatientPaid ? (
                 <span>
                   {isAr 
-                    ? `⚡ C06 · اعتماد سداد مدى (${activeCase.pricing?.totalSar || 250} ر.س) وتجهيل الهوية وتوجيه الملف للهند` 
-                    : `⚡ C06 · Approve Mada Payment (${activeCase.pricing?.totalSar || 250} SAR), Mask PII & Dispatch to India`}
+                    ? `⚡ C06 · اعتماد سداد مدى (${activeCase.pricing?.totalSar ?? priceTierForType(activeCase.consultationType || 'written').totalSar} ر.س) وتجهيل الهوية وتوجيه الملف للهند` 
+                    : `⚡ C06 · Approve Mada Payment (${activeCase.pricing?.totalSar ?? priceTierForType(activeCase.consultationType || 'written').totalSar} SAR), Mask PII & Dispatch to India`}
                 </span>
               ) : (
                 <span>{isAr ? 'C05 · بانتظار سداد المريض للفاتورة' : 'C05 · Awaiting Patient Payment'}</span>
@@ -369,10 +374,8 @@ export const CoordinatorDevice: React.FC<CockpitDeviceProps> = ({
             onClick={() => {
               onUpdateCase({
                 coordinatorForwardedToDoctor: true,
-                currentStage: 'DOCTOR_REVIEW',
-                stage: 6,
+                currentStage: 'OPINION_READY',
               });
-              onAdvanceStage();
             }}
             style={{
               backgroundColor: activeCase.coordinatorForwardedToDoctor ? '#e2e8f0' : (activeCase.secondOpinionSubmitted ? TEAL_PRIMARY : '#f1f5f9'),

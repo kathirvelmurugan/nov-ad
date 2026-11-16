@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ClinicalCase } from '../types';
 import { X, Sparkles, UserPlus, ShieldCheck, Stethoscope, Building2 } from 'lucide-react';
+import { priceTierForType, vatPercent } from '../config/platformConfig';
 
 interface Props {
   isOpen: boolean;
@@ -40,6 +41,7 @@ export const NewCaseModal: React.FC<Props> = ({
     const pNameEn = nameEn.trim() || 'Test Patient';
     const pComplaint = complaint.trim() || (isAr ? 'ألم مزمن في أسفل الظهر مع خدر ممتد للساقين يستدعي رأياً جراحياً ثانياً' : 'Chronic lumbar radiculopathy requiring surgical second opinion');
 
+    const testTier = priceTierForType('written');
     const newCase: ClinicalCase = {
       id: dynamicId,
       caseNumber: `SA-2026-${dynamicId.replace('TEST-', '')}`,
@@ -72,12 +74,12 @@ export const NewCaseModal: React.FC<Props> = ({
       },
       consultant: undefined,
       pricing: {
-        tier: 1,
+        tier: testTier.id,
         tierName: isAr ? 'الرأي الطبي المكتوب (Tier 1)' : 'Written Second Opinion Report (Tier 1)',
-        baseSar: 65.22,
-        vatPercent: 15,
-        vatSar: 9.78,
-        totalSar: 75,
+        baseSar: testTier.baseSar,
+        vatPercent: vatPercent(),
+        vatSar: testTier.vatSar,
+        totalSar: testTier.totalSar,
         paid: false,
       },
       files: [],

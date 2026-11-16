@@ -11,6 +11,7 @@ import { useState, useEffect } from 'react';
 import { PERSONAS } from '../data/personas';
 import { Persona, ClinicalCase } from '../types';
 import { apiClient } from '../services/apiClient';
+import { priceTier, vatPercent } from '../config/platformConfig';
 import { matchesSaudiPhone } from '../components/auth/authTypesAndUtils';
 import {
   STORAGE_KEY,
@@ -22,10 +23,29 @@ import {
   DEFAULT_TREATING_DOCTOR,
 } from './workflowConstants';
 import { useWorkflowStageTransitions } from './useWorkflowStageTransitions';
+import { isKnownStage, stageNumberOf } from './stageLogic';
 import { useWorkflowUIState } from './workflow/useWorkflowUIState';
 
 export type { UserSession };
 export { STORAGE_KEY, ACTIVE_CASE_KEY, USER_SESSION_KEY, FRESH_PRIMARY_CASE };
+
+/**
+ * Consultant magic link — the only URL that may open a session without a PIN.
+ * Every other persona signs in with their phone + PIN; there is no query-string
+ * shortcut for patients or staff, because they all exist in the database.
+ */
+const MAGIC_LINK_PHONE = '+919876543210';
+
+const buildConsultantSession = (consultantName?: string): UserSession => ({
+  isAuthenticated: true,
+  phone: MAGIC_LINK_PHONE,
+  roleCode: 'K',
+  fullName: consultantName,
+  personaId: 'consultant',
+  isGuest: true,
+  expiresAt: Date.now() + 30 * 24 * 3600 * 1000,
+  lang: 'ar',
+});
 
 const generateAstTimestamp = () => {
   const now = new Date();
@@ -55,7 +75,7 @@ const getMilestoneEventForStage = (stage: string, caseId: string, customActor?: 
         actionCode: 'M01',
         stage: 'INTAKE_RECEIVED',
         actorRole: 'P',
-        actorName: customActor || 'Sami Al-Harbi (سامي الحربي)',
+        actorName: customActor || '',
         actorRoleTitleAr: 'المريض',
         actorRoleTitleEn: 'Patient',
         actionSummaryAr: 'تم تسجيل الحالة وتوثيق موافقة الخصوصية',
@@ -72,7 +92,7 @@ const getMilestoneEventForStage = (stage: string, caseId: string, customActor?: 
         actionCode: 'M02',
         stage: 'NURSE_CHECK',
         actorRole: 'N',
-        actorName: customActor || 'Sara Al-Qahtani (سارة القحطاني)',
+        actorName: customActor || '',
         actorRoleTitleAr: 'ممرضة ألو للفرز',
         actorRoleTitleEn: 'ALO Nurse',
         actionSummaryAr: 'تم الفرز السريري ومراجعة المؤشرات الحيوية',
@@ -89,7 +109,7 @@ const getMilestoneEventForStage = (stage: string, caseId: string, customActor?: 
         actionCode: 'M03',
         stage: 'DOCTOR_REVIEW',
         actorRole: 'D',
-        actorName: customActor || 'Dr. Fahad Al-Harbi (د. فهد الحربي)',
+        actorName: customActor || '',
         actorRoleTitleAr: 'الطبيب السعودي المعالج',
         actorRoleTitleEn: 'Saudi Treating Doctor',
         actionSummaryAr: 'تمت الموافقة الطبية واعتماد طلب الاستشارة الدولية',
@@ -107,7 +127,7 @@ const getMilestoneEventForStage = (stage: string, caseId: string, customActor?: 
         actionCode: 'M04',
         stage,
         actorRole: 'C',
-        actorName: customActor || 'Emmanuel Arcon Gonzalez',
+        actorName: customActor || '',
         actorRoleTitleAr: 'منسق رعاية ألو',
         actorRoleTitleEn: 'ALO Coordinator',
         actionSummaryAr: 'تم التحقق المالي وتأكيد السداد وإحالة الملف للاستشاري',
@@ -126,7 +146,7 @@ const getMilestoneEventForStage = (stage: string, caseId: string, customActor?: 
         actionCode: 'M05',
         stage,
         actorRole: 'K',
-        actorName: customActor || 'Dr. V. Prasanth',
+        actorName: customActor || '',
         actorRoleTitleAr: 'الاستشاري الدولي',
         actorRoleTitleEn: 'International Consultant',
         actionSummaryAr: 'تم تقديم الرأي الطبي الاستشاري واعتماده',
@@ -137,6 +157,8 @@ const getMilestoneEventForStage = (stage: string, caseId: string, customActor?: 
       return null;
   }
 };
+
+const DRAFT_TIER = priceTier(1);
 
 const createFreshDraftIntake = (session?: UserSession | null, _isAr = false): ClinicalCase => ({
   ...FRESH_PRIMARY_CASE,
@@ -170,12 +192,12 @@ const createFreshDraftIntake = (session?: UserSession | null, _isAr = false): Cl
   consultant: undefined,
   files: [],
   pricing: {
-    tier: 1,
-    tierName: 'Written',
-    baseSar: 65.22,
-    vatSar: 9.78,
-    totalSar: 75,
-    vatPercent: 15,
+    tier: DRAFT_TIER.id,
+    tierName: DRAFT_TIER.tierNameEn,
+    baseSar: DRAFT_TIER.baseSar,
+    vatSar: DRAFT_TIER.vatSar,
+    totalSar: DRAFT_TIER.totalSar,
+    vatPercent: vatPercent(),
     paid: false,
   },
   metadata: {
@@ -210,12 +232,9 @@ export function useClinicalWorkflowState() {
     try {
       if (typeof window !== 'undefined') {
         const search = new URLSearchParams(window.location.search);
-        const hasConsultantToken = Boolean(search.get('token') || search.get('magic') || search.get('magic_token'));
-        if (search.get('demo') === '1' || search.get('cockpit') === '1' || search.get('auth') === 'bypass' || hasConsultantToken || window.location.hash === '#cockpit') {
-          const roleCode = (search.get('role') || (hasConsultantToken ? 'K' : 'P')).toUpperCase();
-          const personaId = roleCode === 'D' ? 'doctor' : roleCode === 'K' ? 'consultant' : roleCode === 'N' ? 'nurse' : roleCode === 'C' ? 'coordinator' : roleCode === 'HA' ? 'hospital_admin' : roleCode === 'AD' ? 'super_admin' : 'patient';
-          const defaultName = roleCode === 'K' ? (search.get('consultant') || 'Dr. Pradeep Kumar, MBBS, MS, MCh (CTVS)') : undefined;
-          return { isAuthenticated: true, phone: roleCode === 'K' ? '+919876543210' : '+966501111111', roleCode, fullName: defaultName, personaId, isGuest: true, expiresAt: Date.now() + 30 * 24 * 3600 * 1000, lang: 'ar' };
+        // Consultant magic link — the only URL that may open a session without a PIN.
+        if (search.get('token') || search.get('magic') || search.get('magic_token')) {
+          return buildConsultantSession(search.get('consultant') || 'International Consultant');
         }
         const saved = localStorage.getItem(USER_SESSION_KEY);
         if (saved) {
@@ -273,6 +292,19 @@ export function useClinicalWorkflowState() {
     }
   }, [userSession]);
 
+  // Super Admin lands directly on their portal — no persona switching required
+  useEffect(() => {
+    if (userSession && userSession.roleCode === 'AD' && activePersona.code !== 'AD') {
+      const adPersona = PERSONAS.find((p) => p.code === 'AD');
+      if (adPersona) {
+        setActivePersona({
+          ...adPersona,
+          name: userSession.fullName || adPersona.name,
+        });
+      }
+    }
+  }, [userSession, activePersona.code]);
+
   useEffect(() => {
     let isSubscribed = true;
     apiClient.fetchCases().then((serverCases) => {
@@ -317,6 +349,11 @@ export function useClinicalWorkflowState() {
     const syncedUpdate = { ...updatedFields };
     const isPatientUser = !userSession?.roleCode || userSession.roleCode === 'P';
 
+    // `stage` (1-9) is always derived from currentStage: callers never hand-write it.
+    if (isKnownStage(syncedUpdate.currentStage)) {
+      syncedUpdate.stage = stageNumberOf(syncedUpdate.currentStage);
+    }
+
     // If updating draft intake fields prior to explicit submission, mutate intakeDraft in-place without stage jumping
     if (activeCase.id === 'draft-intake' && !isNurseSubmit && syncedUpdate.currentStage !== 'NURSE_CHECK') {
       setIntakeDraft((prev) => ({
@@ -328,9 +365,9 @@ export function useClinicalWorkflowState() {
 
     if (activeCase.id === 'draft-intake' || isNurseSubmit || syncedUpdate.currentStage === 'NURSE_CHECK') {
       const freshId = syncedUpdate.id || `case-${Date.now()}`;
-      const nameToSet = syncedUpdate.patientName || intakeDraft.patientName || userSession?.fullName || 'Sami Al-Harbi';
-      const nameArToSet = syncedUpdate.patientNameAr || intakeDraft.patientNameAr || userSession?.fullName || 'سامي الحربي';
-      const nameEnToSet = syncedUpdate.patientNameEn || intakeDraft.patientNameEn || userSession?.fullName || 'Sami Al-Harbi';
+      const nameToSet = syncedUpdate.patientName || intakeDraft.patientName || userSession?.fullName || '';
+      const nameArToSet = syncedUpdate.patientNameAr || intakeDraft.patientNameAr || userSession?.fullName || '';
+      const nameEnToSet = syncedUpdate.patientNameEn || intakeDraft.patientNameEn || userSession?.fullName || '';
       const initialEvt = getMilestoneEventForStage('INTAKE_RECEIVED', freshId, nameToSet);
       const registeredCase: ClinicalCase = {
         ...intakeDraft,
@@ -374,7 +411,7 @@ export function useClinicalWorkflowState() {
         const newEvt = syncedUpdate.currentStage ? getMilestoneEventForStage(syncedUpdate.currentStage, targetId, userSession?.fullName) : null;
         const existingTimeline = Array.isArray(baseCase.timeline) ? baseCase.timeline : [];
         const nextTimeline = newEvt ? [...existingTimeline.filter(e => e.actionCode !== newEvt.actionCode), newEvt] : existingTimeline;
-        updatedCase = { ...baseCase, ...syncedUpdate, id: targetId, timeline: nextTimeline, ...(phoneToSet ? { patientPhone: phoneToSet } : {}) };
+        updatedCase = { ...baseCase, ...syncedUpdate, id: targetId, timeline: nextTimeline, updatedAt: new Date().toISOString(), ...(phoneToSet ? { patientPhone: phoneToSet } : {}) };
         setActiveCaseId(updatedCase.id);
         try { localStorage.setItem('alo_active_case_id', updatedCase.id); } catch {}
         nextCases = [updatedCase, ...prev];
@@ -386,7 +423,7 @@ export function useClinicalWorkflowState() {
               : null;
             const existingTimeline = Array.isArray(c.timeline) ? c.timeline : [];
             const nextTimeline = newEvt ? [...existingTimeline.filter(e => e.actionCode !== newEvt.actionCode), newEvt] : existingTimeline;
-            updatedCase = { ...c, ...syncedUpdate, id: targetId, timeline: nextTimeline, ...(phoneToSet ? { patientPhone: phoneToSet } : {}) };
+            updatedCase = { ...c, ...syncedUpdate, id: targetId, timeline: nextTimeline, updatedAt: new Date().toISOString(), ...(phoneToSet ? { patientPhone: phoneToSet } : {}) };
             return updatedCase;
           }
           return c;
@@ -419,7 +456,6 @@ export function useClinicalWorkflowState() {
     setLang: ui.setLang,
     isAutoDemoActive: ui.isAutoDemoActive,
     setActivePersona,
-    setViewMode: ui.setViewMode,
     setPatientSubView: ui.setPatientSubView,
     setIsWhatsAppDrawerOpen: ui.setIsWhatsAppDrawerOpen,
     pendingHandoff: ui.pendingHandoff,
@@ -427,7 +463,6 @@ export function useClinicalWorkflowState() {
     handleUpdateCase,
     setCases,
     userSession,
-    viewMode: ui.viewMode,
   });
 
   return {
@@ -440,14 +475,12 @@ export function useClinicalWorkflowState() {
     isNewCaseModalOpen: ui.isNewCaseModalOpen, setIsNewCaseModalOpen: ui.setIsNewCaseModalOpen,
     isAutoDemoActive: ui.isAutoDemoActive, setIsAutoDemoActive: ui.setIsAutoDemoActive,
     pendingHandoff: ui.pendingHandoff, setPendingHandoff: ui.setPendingHandoff,
-    viewMode: ui.viewMode, setViewMode: ui.setViewMode,
     patientSubView: ui.patientSubView, setPatientSubView: ui.setPatientSubView,
     selectedServiceId: ui.selectedServiceId, setSelectedServiceId: ui.setSelectedServiceId,
     handleUpdateCase, handleLogout: ui.handleLogout, handleToggleLang: ui.handleToggleLang,
-    handleToggleTheme: ui.handleToggleTheme, handleToggleViewMode: ui.handleToggleViewMode,
+    handleToggleTheme: ui.handleToggleTheme,
     handleSelectPatientSubView: ui.handleSelectPatientSubView,
     handleSelectServiceFromLanding: ui.handleSelectServiceFromLanding,
-    handleStartCaseToCockpit: ui.handleStartCaseToCockpit,
     handleStartNewCase: ui.handleStartNewCase,
     handleSelectPersona: transitions.handleSelectPersona, handleSetStage: transitions.handleSetStage,
     handleAdvanceStage: transitions.handleAdvanceStage,

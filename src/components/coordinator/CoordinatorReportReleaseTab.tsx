@@ -1,6 +1,6 @@
 import React from 'react';
 import { ClinicalCase } from '../../types';
-import { BilingualReportModal } from '../cockpit/BilingualReportModal';
+import { BilingualReportModal } from '../reports/BilingualReportModal';
 import {
   TEAL_PRIMARY,
   TEAL_ACCENT,

@@ -17,6 +17,8 @@ import {
   UserCog,
 } from 'lucide-react';
 import { ClinicalCase, TenantHospital } from '../../../types';
+import { STAGE_ORDER_META } from '../../../config/stageMeta';
+import { priceTierForType } from '../../../config/platformConfig';
 import { getStageBadgeMeta } from '../../common/PortalCaseTrackerPanel';
 import { CaseDetailsDrillDownModal } from '../../common/CaseDetailsDrillDownModal';
 import { apiClient } from '../../../services/apiClient';
@@ -28,6 +30,8 @@ interface SuperAdminCasesTabProps {
   tenants: TenantHospital[];
   onCaseDeleted?: (caseId: string) => void;
   onAllCasesDeleted?: () => void;
+  focusCaseId?: string | null;
+  onFocusCaseHandled?: () => void;
 }
 
 // ─── Confirmation Modal ───────────────────────────────────────────────────────
@@ -162,12 +166,27 @@ export const SuperAdminCasesTab: React.FC<SuperAdminCasesTabProps> = ({
   tenants = [],
   onCaseDeleted,
   onAllCasesDeleted,
+  focusCaseId,
+  onFocusCaseHandled,
 }) => {
   const [localCases, setLocalCases] = useState<ClinicalCase[]>(initialCases);
   const cases = localCases;
 
   // Sync when parent prop changes (e.g. initial load)
   React.useEffect(() => { setLocalCases(initialCases); }, [initialCases]);
+
+  // Auto-open drill-down when focusCaseId is set from header widget
+  React.useEffect(() => {
+    if (focusCaseId) {
+      const target = cases.find((c) => c.id === focusCaseId);
+      if (target) {
+        setSelectedCaseForDrillDown(target);
+        onFocusCaseHandled?.();
+      }
+    }
+    // Only trigger when focusCaseId changes to a truthy value
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusCaseId]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedHospital, setSelectedHospital] = useState<string>('ALL');
@@ -297,7 +316,14 @@ export const SuperAdminCasesTab: React.FC<SuperAdminCasesTabProps> = ({
 
       const matchesHospital =
         selectedHospital === 'ALL' ||
-        (c.treatingDoctor?.hospital && c.treatingDoctor.hospital.toLowerCase().includes(selectedHospital.toLowerCase()));
+        (c.treatingDoctor?.hospital && (
+          c.treatingDoctor.hospital.toLowerCase().includes(selectedHospital.toLowerCase()) ||
+          tenants.some((t) =>
+            t.nameEn === selectedHospital &&
+            (t.nameAr.toLowerCase().includes(c.treatingDoctor!.hospital.toLowerCase()) ||
+             c.treatingDoctor!.hospital.toLowerCase().includes(t.nameAr.toLowerCase()))
+          )
+        ));
 
       const matchesStage =
         selectedStage === 'ALL' ||
@@ -307,13 +333,28 @@ export const SuperAdminCasesTab: React.FC<SuperAdminCasesTabProps> = ({
 
       return matchesSearch && matchesHospital && matchesStage;
     });
-  }, [cases, searchQuery, selectedHospital, selectedStage]);
+  }, [cases, searchQuery, selectedHospital, selectedStage, tenants]);
 
   // Aggregated Metric counts
   const totalCasesCount = cases.length;
   const activeCasesCount = cases.filter((c) => c.currentStage !== 'CLOSED').length;
   const closedCasesCount = cases.filter((c) => c.currentStage === 'CLOSED').length;
-  const totalRevenueSar = cases.reduce((acc, c) => acc + (c.pricing?.totalSar || (c.consultationType === 'video' ? 150 : 75)), 0);
+  const totalRevenueSar = cases.reduce((acc, c) => acc + (c.pricing?.totalSar || priceTierForType(c.consultationType || 'written').totalSar), 0);
+
+  // ─── Stage Pipeline Config — derived from single source ───────────────────
+  const STAGE_CONFIG = useMemo(() => STAGE_ORDER_META.map((m) => ({
+    key: m.stage, num: m.num, labelAr: m.shortLabelAr, labelEn: m.shortLabelEn,
+    color: m.color, bg: m.bg, border: m.border,
+  })), []);
+
+  const stageCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    STAGE_CONFIG.forEach((s) => { counts[s.key] = 0; });
+    cases.forEach((c) => {
+      if (counts[c.currentStage] !== undefined) counts[c.currentStage]++;
+    });
+    return counts;
+  }, [cases, STAGE_CONFIG]);
 
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -381,78 +422,154 @@ export const SuperAdminCasesTab: React.FC<SuperAdminCasesTabProps> = ({
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-xs flex flex-col md:flex-row gap-3 items-center justify-between">
-        {/* Search Input */}
-        <div className="relative w-full md:w-96">
-          <Search className="w-4 h-4 text-slate-400 absolute top-1/2 -translate-y-1/2 left-3 rtl:right-3 rtl:left-auto" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={isRTL ? 'ابحث برقم الحالة، اسم المريض، الهوية...' : 'Search by Case ID, Patient Name, ID...'}
-            className="w-full pl-9 pr-4 rtl:pr-9 rtl:pl-4 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#007B6E] transition-all"
-          />
+      <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-xs space-y-4">
+        {/* Row 1: Search + Hospital Filter + Actions */}
+        <div className="flex flex-col md:flex-row gap-3 items-center justify-between">
+          <div className="relative w-full md:w-96">
+            <Search className="w-4 h-4 text-slate-400 absolute top-1/2 -translate-y-1/2 left-3 rtl:right-3 rtl:left-auto" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={isRTL ? 'ابحث برقم الحالة، اسم المريض، الهوية...' : 'Search by Case ID, Patient Name, ID...'}
+              className="w-full pl-9 pr-4 rtl:pr-9 rtl:pl-4 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#007B6E] transition-all"
+            />
+          </div>
+
+          <div className="flex items-center gap-2.5 w-full md:w-auto flex-wrap">
+            {/* Hospital Filter */}
+            <select
+              value={selectedHospital}
+              onChange={(e) => setSelectedHospital(e.target.value)}
+              className="text-xs font-bold py-2 px-3 rounded-xl border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#007B6E] cursor-pointer"
+            >
+              <option value="ALL">{isRTL ? 'كافة المراكز والمستشفيات' : 'All Medical Centers'}</option>
+              {tenants.map((t) => (
+                <option key={t.id} value={t.nameEn}>
+                  {t.nameEn}
+                </option>
+              ))}
+            </select>
+
+            {(searchQuery || selectedHospital !== 'ALL' || selectedStage !== 'ALL') && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery('');
+                  setSelectedHospital('ALL');
+                  setSelectedStage('ALL');
+                }}
+                className="text-xs text-slate-500 hover:text-slate-800 font-bold px-2 py-1"
+              >
+                {isRTL ? 'إعادة ضبط' : 'Reset'}
+              </button>
+            )}
+
+            {cases.length > 0 && (
+              <button
+                type="button"
+                onClick={openPurgeAll}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-50 hover:bg-red-600 hover:text-white text-red-700 border border-red-200 text-xs font-bold transition-all shadow-xs ml-2"
+                title={isRTL ? 'حذف جميع الحالات' : 'Delete All Cases'}
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>{isRTL ? 'حذف الكل' : 'Purge All'}</span>
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* Filters */}
-        <div className="flex items-center gap-2.5 w-full md:w-auto flex-wrap">
-          {/* Hospital Filter */}
-          <select
-            value={selectedHospital}
-            onChange={(e) => setSelectedHospital(e.target.value)}
-            className="text-xs font-bold py-2 px-3 rounded-xl border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#007B6E] cursor-pointer"
+        {/* Row 2: Stage Pipeline Pills */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* ALL Pill */}
+          <button
+            type="button"
+            onClick={() => setSelectedStage('ALL')}
+            className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-150 border ${
+              selectedStage === 'ALL'
+                ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
+                : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400 hover:bg-slate-50'
+            }`}
           >
-            <option value="ALL">{isRTL ? 'كافة المراكز والمستشفيات' : 'All Medical Centers'}</option>
-            {tenants.map((t) => (
-              <option key={t.id} value={t.nameEn}>
-                {isRTL ? t.nameAr : t.nameEn}
-              </option>
-            ))}
-          </select>
+            <span className="text-[10px]">●</span>
+            <span>{isRTL ? 'الكل' : 'ALL'}</span>
+            <span className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-black ${
+              selectedStage === 'ALL' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
+            }`}>
+              {totalCasesCount}
+            </span>
+          </button>
 
-          {/* Stage Filter */}
-          <select
-            value={selectedStage}
-            onChange={(e) => setSelectedStage(e.target.value)}
-            className="text-xs font-bold py-2 px-3 rounded-xl border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#007B6E] cursor-pointer"
-          >
-            <option value="ALL">{isRTL ? 'كافة المراحل السريرية' : 'All Stages'}</option>
-            <option value="ACTIVE">{isRTL ? 'الحالات النشطة فقط' : 'Active Only'}</option>
-            <option value="CLOSED">{isRTL ? 'الحالات المغلقة والمؤرشفة' : 'Closed & Archived'}</option>
-            <option value="INTAKE_RECEIVED">{isRTL ? '1. استلام الطلب' : '1. Intake'}</option>
-            <option value="NURSE_CHECK">{isRTL ? '2. فرز التمريض' : '2. Nurse Triage'}</option>
-            <option value="DOCTOR_REVIEW">{isRTL ? '3. الطبيب السعودي' : '3. Saudi Doctor'}</option>
-            <option value="AWAITING_PAYMENT">{isRTL ? '4. بانتظار السداد' : '4. Awaiting Payment'}</option>
-            <option value="WITH_CONSULTANT">{isRTL ? '5. الاستشاري الدولي' : '5. Consultant'}</option>
-            <option value="FOLLOW_UP_21_DAYS">{isRTL ? '8. متابعة 21 يوماً' : '8. 21-Day Follow-Up'}</option>
-          </select>
+          {/* Divider */}
+          <span className="w-[1px] h-6 bg-slate-200 mx-1" />
 
-          {(searchQuery || selectedHospital !== 'ALL' || selectedStage !== 'ALL') && (
-            <button
-              type="button"
-              onClick={() => {
-                setSearchQuery('');
-                setSelectedHospital('ALL');
-                setSelectedStage('ALL');
-              }}
-              className="text-xs text-slate-500 hover:text-slate-800 font-bold px-2 py-1"
-            >
-              {isRTL ? 'إعادة ضبط' : 'Reset'}
-            </button>
-          )}
+          {/* Stage Pills */}
+          {STAGE_CONFIG.map((stage) => {
+            const isActive = selectedStage === stage.key;
+            const count = stageCounts[stage.key] || 0;
+            return (
+              <button
+                key={stage.key}
+                type="button"
+                onClick={() => setSelectedStage(isActive ? 'ALL' : stage.key)}
+                className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all duration-150 border ${
+                  isActive
+                    ? 'text-white shadow-sm'
+                    : 'text-slate-600 border-slate-200 hover:border-slate-400 hover:bg-slate-50'
+                }`}
+                style={isActive ? { backgroundColor: stage.color, borderColor: stage.color } : {}}
+                title={isRTL ? `${stage.labelAr} (${count})` : `${stage.labelEn} (${count})`}
+              >
+                <span className="text-[10px] opacity-90">{stage.num}</span>
+                <span>{isRTL ? stage.labelAr : stage.labelEn}</span>
+                <span className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-black ${
+                  isActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
+                }`}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
 
-          {/* Purge All Cases Button */}
-          {cases.length > 0 && (
-            <button
-              type="button"
-              onClick={openPurgeAll}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-50 hover:bg-red-600 hover:text-white text-red-700 border border-red-200 text-xs font-bold transition-all shadow-xs ml-2"
-              title={isRTL ? 'حذف جميع الحالات' : 'Delete All Cases'}
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              <span>{isRTL ? 'حذف الكل' : 'Purge All'}</span>
-            </button>
-          )}
+        {/* Row 3: Mini Pipeline Flow */}
+        <div className="flex items-center gap-0.5 pt-1">
+          {STAGE_CONFIG.map((stage, idx) => {
+            const count = stageCounts[stage.key] || 0;
+            const isActive = selectedStage === stage.key || selectedStage === 'ALL';
+            const isFirst = idx === 0;
+            const isLast = idx === STAGE_CONFIG.length - 1;
+            return (
+              <React.Fragment key={stage.key}>
+                {/* Connector (except first) */}
+                {!isFirst && (
+                  <div className="flex-1 h-0.5 min-w-[12px]" style={{ backgroundColor: isActive ? stage.color : '#E2E8F0' }} />
+                )}
+                {/* Stage node */}
+                <button
+                  type="button"
+                  onClick={() => setSelectedStage(selectedStage === stage.key ? 'ALL' : stage.key)}
+                  className="flex flex-col items-center gap-0.5 group cursor-pointer"
+                  title={isRTL ? `${stage.labelAr}: ${count}` : `${stage.labelEn}: ${count}`}
+                >
+                  <span
+                    className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-black transition-all duration-150"
+                    style={{
+                      backgroundColor: isActive ? stage.color : (count > 0 ? stage.bg : '#F1F5F9'),
+                      color: isActive ? '#FFFFFF' : (count > 0 ? stage.color : '#94A3B8'),
+                      border: `2px solid ${isActive ? stage.color : (count > 0 ? stage.border : '#E2E8F0')}`,
+                      boxShadow: isActive ? `0 0 0 3px ${stage.color}22` : 'none',
+                    }}
+                  >
+                    {count > 0 ? count : '·'}
+                  </span>
+                  <span className="text-[9px] font-semibold text-slate-500 group-hover:text-slate-700 transition-colors">
+                    {stage.num}
+                  </span>
+                </button>
+              </React.Fragment>
+            );
+          })}
         </div>
       </div>
 
@@ -481,7 +598,7 @@ export const SuperAdminCasesTab: React.FC<SuperAdminCasesTabProps> = ({
                 <th className="py-3.5 px-4">{isRTL ? 'رقم الحالة / المريض' : 'Case / Patient'}</th>
                 <th className="py-3.5 px-4">{isRTL ? 'المركز الطبي الشريك' : 'Medical Center'}</th>
                 <th className="py-3.5 px-4">{isRTL ? 'التخصص والتشخيص' : 'Specialty & Diagnosis'}</th>
-                <th className="py-3.5 px-4">{isRTL ? 'الفريق الطبي' : 'Care Team'}</th>
+                <th className="py-3.5 px-4">{isRTL ? 'الفريق الطبي السعودي' : 'Care Team SA'}</th>
                 <th className="py-3.5 px-4">{isRTL ? 'المرحلة والحالة الراهنة' : 'Current Stage & Status'}</th>
                 <th className="py-3.5 px-4">{isRTL ? 'الفوترة (ZATCA)' : 'ZATCA Invoice'}</th>
                 <th className="py-3.5 px-4 text-center">{isRTL ? 'الإجراء والتفاصيل' : 'Action'}</th>
@@ -556,7 +673,7 @@ export const SuperAdminCasesTab: React.FC<SuperAdminCasesTabProps> = ({
                         {c.pricing?.invoiceNumber || 'INV-2026-LIVE'}
                       </div>
                       <div className="text-[11px] text-emerald-600 font-semibold">
-                        {(c.pricing?.totalSar || 75).toFixed(0)} SAR (Paid)
+                        {(c.pricing?.totalSar ?? priceTierForType(c.consultationType || 'written').totalSar).toFixed(0)} SAR (Paid)
                       </div>
                     </td>
 

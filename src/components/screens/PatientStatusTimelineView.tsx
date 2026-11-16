@@ -1,6 +1,6 @@
 import React from 'react';
 import { ClinicalCase, UserSession } from '../../types';
-import { BilingualReportModal } from '../cockpit/BilingualReportModal';
+import { BilingualReportModal } from '../reports/BilingualReportModal';
 import {
   ShieldCheck,
   CheckCircle2,
@@ -209,7 +209,6 @@ export const PatientStatusTimelineView: React.FC<Props> = ({
 
   const stage = activeCase.currentStage;
   const currentIndex = STAGES.findIndex((s) => s.stage === stage);
-  const isDemoMode = false;
   const isInvoiceIssued = !!activeCase.invoiceIssued && Array.isArray(activeCase.allowedPaymentMethods) && activeCase.allowedPaymentMethods.length > 0;
   const isPaid = !!activeCase.pricing?.paid || activeCase.paymentDetails?.status === 'completed';
   const isPaymentVerified = !!activeCase.paymentVerified || !!activeCase.metadata?.paymentVerified;
