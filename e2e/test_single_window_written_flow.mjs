@@ -234,7 +234,7 @@ async function runWrittenOpinionFlow() {
       await sleep(2000);
       console.log('   ✅ Referral endorsed! Case requires payment.');
     }
-    await doctorPage.screenshot({ path: 'e2e_screenshots/written_flow_3_doctor_endorsed.png' });
+    await doctorPage.screenshot({ path: 'e2e_screenshots/written_flow_3_doctor_endorsed.png', fullPage: true });
 
     // ════════════════════════════════════════════════════════════════════════
     // STEP 4: SWITCH TO PATIENT (Observe Payment Requirement & Pay)
@@ -314,7 +314,7 @@ async function runWrittenOpinionFlow() {
       await sleep(2000);
       console.log('   ✅ Doctor clinical endorsement completed with license SCFHS-2024-KSA-8821!');
     }
-    await doctorPage.screenshot({ path: 'e2e_screenshots/written_flow_6_doctor_endorsed.png' });
+    await doctorPage.screenshot({ path: 'e2e_screenshots/written_flow_6_doctor_endorsed.png', fullPage: true });
 
     // ════════════════════════════════════════════════════════════════════════
     // STEP 7: SWITCH TO COORDINATOR (Verify & Release Bilingual Reports)
@@ -357,7 +357,7 @@ async function runWrittenOpinionFlow() {
         console.log('   ✅ Case officially closed and archived in registry.');
       }
     }
-    await coordPage.screenshot({ path: 'e2e_screenshots/written_flow_7_coordinator_closed.png' });
+    await coordPage.screenshot({ path: 'e2e_screenshots/written_flow_7_coordinator_closed.png', fullPage: true });
 
     // ════════════════════════════════════════════════════════════════════════
     // STEP 8: SWITCH TO PATIENT (Observe Final Closed State & Report Downloads)
@@ -368,7 +368,7 @@ async function runWrittenOpinionFlow() {
     console.log('   Verifying PDF download buttons on Patient screen...');
     const pdfButtons = await patientPage.$$('button:has-text("PDF"), a:has-text("PDF"), button:has-text("تحميل"), button:has-text("Download")');
     console.log(`   ✅ Found ${pdfButtons.length} report action buttons accessible to patient.`);
-    await patientPage.screenshot({ path: 'e2e_screenshots/written_flow_8_patient_final_reports.png' });
+    await patientPage.screenshot({ path: 'e2e_screenshots/written_flow_8_patient_final_reports.png', fullPage: true });
 
     console.log('\n========================================================================');
     console.log('🎉 DEMONSTRATION COMPLETE: FULL WRITTEN OPINION FLOW VALIDATED CLEANLY!');

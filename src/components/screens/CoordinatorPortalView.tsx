@@ -44,6 +44,18 @@ export const CoordinatorPortalView: React.FC<Props> = ({
 }) => {
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
 
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const search = new URLSearchParams(window.location.search);
+    const qCase = search.get('caseId') || search.get('case_id');
+    if (qCase && cases.length > 0) {
+      const match = cases.find((c) => c.id === qCase || c.caseNumber === qCase);
+      if (match && selectedCaseId !== match.id) {
+        setSelectedCaseId(match.id);
+      }
+    }
+  }, [cases, selectedCaseId]);
+
   const pendingCoordinatorCases = useMemo(() => {
     return cases.filter(isActionableForCoordinator);
   }, [cases]);
@@ -60,15 +72,21 @@ export const CoordinatorPortalView: React.FC<Props> = ({
   const isSaudiDoctorApproved = activeCase?.saudiEndorsement?.status === 'endorsed' || !!activeCase?.metadata?.saudiDoctorApprovedOpinion;
 
   const getInitialTab = (): 'C01' | 'C07' | 'C08' | 'C09' | 'C10' => {
+    if (activeCase?.currentStage === 'CLOSED' || Boolean(activeCase?.metadata?.pdf2Released) || activeCase?.status === 'closed') return 'C10';
     if (activeCase?.currentStage === 'AWAITING_PAYMENT' || (isPaid && !isPaymentVerified)) return 'C01';
     if (activeCase?.currentStage === 'PARTNER_SERVICES' || (Boolean(activeCase?.secondOpinionSubmitted || activeCase?.currentStage === 'OPINION_READY') && !activeCase?.reportReleased) || (isSaudiDoctorApproved && !activeCase?.reportReleased)) return 'C08';
-    if (activeCase?.currentStage === 'CLOSED') return 'C10';
     if (activeCase?.currentStage === 'FOLLOW_UP_21_DAYS') return 'C09';
     if (activeCase?.consultationType === 'video' && isPaid && isPaymentVerified) return 'C07';
     return 'C01';
   };
 
   const [activeTab, setActiveTab] = useState<'C01' | 'C07' | 'C08' | 'C09' | 'C10'>(getInitialTab);
+
+  React.useEffect(() => {
+    if (activeCase?.currentStage === 'CLOSED' || Boolean(activeCase?.metadata?.pdf2Released) || activeCase?.status === 'closed') {
+      setActiveTab('C10');
+    }
+  }, [activeCase?.currentStage, activeCase?.metadata?.pdf2Released, activeCase?.status]);
   const [isReportPreviewOpen, setIsReportPreviewOpen] = useState(false);
   const [isPDF2ModalOpen, setIsPDF2ModalOpen] = useState(false);
   const [coordinatorReportType, setCoordinatorReportType] = useState<'pdf1' | 'pdf2'>('pdf2');
@@ -174,6 +192,7 @@ export const CoordinatorPortalView: React.FC<Props> = ({
     try {
       await new Promise(r => setTimeout(r, 800));
       onUpdateCase({ metadata: { ...(activeCase?.metadata || {}), pdf2Released: true, pdf2Timestamp: new Date().toISOString() } });
+      setActiveTab('C10');
     } finally { setIsProcessing(false); }
   };
 
@@ -185,6 +204,7 @@ export const CoordinatorPortalView: React.FC<Props> = ({
         status: 'closed', currentStage: 'CLOSED', stage: 9,
         metadata: { ...(activeCase?.metadata || {}), pdf2Released: true, archived: true, closedAt: new Date().toISOString(), stage: 'CLOSED' },
       });
+      setActiveTab('C10');
       onAdvanceStage();
     } finally { setIsProcessing(false); }
   };

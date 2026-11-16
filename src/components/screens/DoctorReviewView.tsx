@@ -60,10 +60,20 @@ export const DoctorReviewView: React.FC<Props> = ({
   const activeCase = (currentCase || propsActiveCase) as ClinicalCase;
 
   React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const search = new URLSearchParams(window.location.search);
+    const qCase = search.get('caseId') || search.get('case_id');
+    if (qCase && cases.length > 0) {
+      const match = cases.find((c) => c.id === qCase || c.caseNumber === qCase);
+      if (match && selectedCaseId !== match.id) {
+        setSelectedCaseId(match.id);
+        return;
+      }
+    }
     if (propsActiveCase?.id && (!selectedCaseId || !cases.some((c) => c.id === selectedCaseId))) {
       setSelectedCaseId(propsActiveCase.id);
     }
-  }, [propsActiveCase?.id, cases, selectedCaseId]);
+  }, [cases, propsActiveCase?.id, selectedCaseId]);
 
   const isAr = lang === 'ar';
   const doctorName = userSession?.fullName || activePersona?.name || activeCase?.treatingDoctor?.name || (isAr ? 'الطبيب السعودي المعالج' : 'Saudi Treating Doctor');
@@ -76,10 +86,10 @@ export const DoctorReviewView: React.FC<Props> = ({
     initialSeconds: 15,
   });
 
-  const assignedConsultant = activeCase?.consultant || {
-    name: 'Dr. Arjun Mehta',
-    center: 'KIMS Heart Institute',
-    city: 'Hyderabad, India',
+  const assignedConsultant = {
+    name: activeCase?.consultant?.name || 'Dr. V. Prasanth',
+    center: activeCase?.consultant?.center || 'Apollo Hospitals / Specialist Center',
+    city: activeCase?.consultant?.city || 'Chennai, India',
   };
 
   const DEFAULT_CLINICAL_QUESTIONS_AR: [string, string, string] = [
