@@ -214,7 +214,7 @@ async function runWrittenOpinionFlow() {
     // ════════════════════════════════════════════════════════════════════════
     // STEP 3: SWITCH TO SAUDI DOCTOR (Observe Impact & Referral Endorsement)
     // ════════════════════════════════════════════════════════════════════════
-    await safeReload(doctorPage, `${BASE_URL}/?portal=doctor`);
+    await safeReload(doctorPage, `${BASE_URL}/?portal=doctor&caseId=${registeredCaseId}`);
     await loginStaff(doctorPage, '0500000005', '1234');
     await transitionTo(doctorPage, 'Saudi Doctor (Dr. Fahad Al-Harbi)', `Verify case ${registeredCaseId} arrived in Doctor Review Queue`);
 
@@ -229,7 +229,7 @@ async function runWrittenOpinionFlow() {
 
     console.log('   Dr. Fahad endorsing referral and requesting patient payment (D10)...');
     const approveBtn = await doctorPage.$('button:has-text("D10"), button:has-text("اعتماد الإحالة"), button:has-text("الموافقة على طلب الاستشارة"), button:has-text("موافق")');
-    if (approveBtn) {
+    if (approveBtn && (await approveBtn.isEnabled())) {
       await approveBtn.click();
       await sleep(2000);
       console.log('   ✅ Referral endorsed! Case requires payment.');
@@ -297,7 +297,7 @@ async function runWrittenOpinionFlow() {
     // ════════════════════════════════════════════════════════════════════════
     // STEP 6: SWITCH TO SAUDI DOCTOR (Observe Opinion & License Endorsement)
     // ════════════════════════════════════════════════════════════════════════
-    await safeReload(doctorPage, `${BASE_URL}/?portal=doctor`);
+    await safeReload(doctorPage, `${BASE_URL}/?portal=doctor&caseId=${registeredCaseId}`);
     await loginStaff(doctorPage, '0500000005', '1234');
     await transitionTo(doctorPage, 'Saudi Doctor (Dr. Fahad Al-Harbi)', `Dr. Fahad reviews Dr. Prasanth's Written Opinion & signs with SCFHS Stamp`);
 
@@ -319,7 +319,7 @@ async function runWrittenOpinionFlow() {
     // ════════════════════════════════════════════════════════════════════════
     // STEP 7: SWITCH TO COORDINATOR (Verify & Release Bilingual Reports)
     // ════════════════════════════════════════════════════════════════════════
-    await safeReload(coordPage, `${BASE_URL}/?portal=coordinator`);
+    await safeReload(coordPage, `${BASE_URL}/?portal=coordinator&caseId=${registeredCaseId}`);
     await loginStaff(coordPage, '0500000003', '1234');
     await transitionTo(coordPage, 'ALO Coordinator (Emmanuel Arcon Gonzalez)', `Verify completed file, release PDF 1 & PDF 2, and seal case closure`);
 
@@ -343,17 +343,17 @@ async function runWrittenOpinionFlow() {
       await closureTab.click();
       await sleep(1000);
 
-      const releasePdf2Btn = await coordPage.$('button:has-text("اعتماد وإصدار"), button:has-text("Release Final Dossier"), button:has-text("PDF 2")');
+      const releasePdf2Btn = await coordPage.$('button:has-text("اعتماد وإصدار الملف الشامل"), button:has-text("Release Final Dossier")');
       if (releasePdf2Btn && (await releasePdf2Btn.isEnabled())) {
         await releasePdf2Btn.click();
-        await sleep(1500);
+        await sleep(2000);
         console.log('   ✅ Full Clinical Dossier (PDF 2) released!');
       }
 
-      const closeCaseBtn = await coordPage.$('button:has-text("إغلاق الحالة نهائياً"), button:has-text("Close Case"), button:has-text("🔒")');
+      const closeCaseBtn = await coordPage.$('button:has-text("إغلاق الحالة نهائياً وأرشفتها"), button:has-text("Close Case Completely")');
       if (closeCaseBtn && (await closeCaseBtn.isEnabled())) {
         await closeCaseBtn.click();
-        await sleep(1500);
+        await sleep(2000);
         console.log('   ✅ Case officially closed and archived in registry.');
       }
     }

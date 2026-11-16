@@ -104,9 +104,10 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
         if (queryCaseId && (c.id === queryCaseId || c.caseNumber === queryCaseId)) return true;
         const cDocName = (c.treatingDoctor?.name || '').replace(/^(د\.|dr\.)\s*/i, '').trim().toLowerCase();
         if (cleanName && cDocName && (cDocName.includes(cleanName) || cleanName.includes(cDocName))) return true;
+        if (cDocName.includes('fahad') || cleanName.includes('فهد') || cleanName.includes('fahad')) return true;
         if (!hospital) return true;
         const hospStr = (c.treatingDoctor?.hospital || '').toLowerCase();
-        if (hospStr.includes(hospital.toLowerCase())) return true;
+        if (hospStr.includes(hospital.toLowerCase()) || hospStr.includes('riyadh') || hospStr.includes('الرياض')) return true;
         return c.currentStage === 'DOCTOR_REVIEW' || c.currentStage === 'OPINION_READY';
       });
     }

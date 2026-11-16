@@ -48,7 +48,6 @@ export const DoctorReviewView: React.FC<Props> = ({
   const isActionableForDoctor = (c: ClinicalCase) =>
     c.currentStage === 'DOCTOR_REVIEW' ||
     (c.currentStage === 'OPINION_READY' &&
-      (Boolean(c.metadata?.coordinatorDispatched) || Boolean(c.reportReleased)) &&
       c.saudiEndorsement?.status !== 'endorsed');
 
   const pendingDoctorCases = React.useMemo(() => {

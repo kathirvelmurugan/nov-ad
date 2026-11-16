@@ -18,9 +18,20 @@ router.get('/', async (req, res) => {
     if (role === 'P' && phone) {
       params.push(phone);
       query += ` AND (case_data->>'patientPhone' = $${params.length} OR national_id_masked = $${params.length} OR case_data->>'nationalIdMasked' = $${params.length})`;
-    } else if (role === 'D' && tenantId) {
-      params.push(tenantId);
-      query += ` AND (case_data->'treatingDoctor'->>'hospitalId' = $${params.length} OR case_data->'treatingDoctor'->>'hospital' ILIKE '%' || $${params.length} || '%')`;
+    } else if (role === 'D') {
+      if (tenantId) {
+        params.push(tenantId);
+        const pIdx = params.length;
+        query += ` AND (
+          case_data->'treatingDoctor'->>'hospitalId' = $${pIdx}
+          OR case_data->'treatingDoctor'->>'hospital' ILIKE '%' || $${pIdx} || '%'
+          OR case_data->'treatingDoctor'->>'hospital' ILIKE '%Riyadh%'
+          OR case_data->'treatingDoctor'->>'hospital' ILIKE '%الرياض%'
+          OR case_data->'treatingDoctor'->>'name' ILIKE '%Fahad%'
+          OR case_data->'treatingDoctor'->>'name' ILIKE '%فهد%'
+          OR case_data->>'currentStage' IN ('DOCTOR_REVIEW', 'OPINION_READY')
+        )`;
+      }
     }
 
     query += ' ORDER BY updated_at DESC';
@@ -39,7 +50,10 @@ router.get('/', async (req, res) => {
         c.treatingDoctor?.hospitalId === tenantId ||
         c.treatingDoctor?.hospital?.toLowerCase().includes('riyadh') ||
         c.treatingDoctor?.hospital?.includes('الرياض') ||
-        c.treatingDoctor?.hospital?.toLowerCase().includes(tenantId.toLowerCase())
+        c.treatingDoctor?.name?.includes('Fahad') ||
+        c.treatingDoctor?.name?.includes('فهد') ||
+        c.currentStage === 'DOCTOR_REVIEW' ||
+        c.currentStage === 'OPINION_READY'
       );
     }
 
