@@ -1,52 +1,20 @@
-import type { CSSProperties } from 'react';
+import { ClinicalCase, ClinicalStage, RoleCode } from '../types';
 
-// ============================================================================
-// ALO DOCTOR (v2.4 Saudi Edition) - Workflow Constants & Storage Isolation
-// Target: src/hooks/workflowConstants.ts
-// Architect: Lead Clinical Software Engineer
-// Palette: Pinterest-Teal (#007B6E, #00C6AE, #E6FAF7, #25D366)
-// Typography: Cairo (Native Arabic RTL / English LTR)
-// ============================================================================
+// ─── Storage Keys (v4.0 Clean Slate) ─────────────────────────────────────────
+export const STORAGE_KEY        = 'alo_cases_v4.0_clean';
+export const ACTIVE_CASE_KEY    = 'alo_active_case_id_v4.0_clean';
+export const THEME_KEY          = 'alo_theme_preference';
+export const LANG_KEY           = 'alo_lang_preference';
+export const VIEW_MODE_KEY      = 'alo_view_mode_v4.0_clean';
+export const USER_SESSION_KEY   = 'alo_user_session_v4.0_clean';
+export const TENANTS_KEY        = 'alo_tenants_v4.0_clean';
+export const PLATFORM_USERS_KEY = 'alo_platform_users_v4.0_clean';
+export const CATALOGS_KEY       = 'alo_catalogs_v4.0_clean';
+export const AUDIT_LOGS_KEY     = 'alo_audit_logs_v4.0_clean';
+export const USER_PINS_KEY      = 'alo_user_pins_v4.0_clean';
+export const DRAFT_INTAKE_KEY   = 'alo_draft_intake_v4.0_clean';
 
-// --------------------------------------------------------------------------
-// 1. STRICT LOCALSTORAGE ISOLATION (Drafts & Transient Preferences Only)
-// --------------------------------------------------------------------------
-
-/** Transient user session cache (not a source of truth) */
-export const USER_SESSION_KEY = 'alo_user_session_v4.0_clean' as const;
-
-/** Client language preference (ar-SA | en-US) */
-export const LANG_KEY = 'alo_lang_preference' as const;
-
-/** Client UI theme preference */
-export const THEME_KEY = 'alo_theme_preference' as const;
-
-/** Client view mode state */
-export const VIEW_MODE_KEY = 'alo_view_mode_v4.0_clean' as const;
-
-/** Unsubmitted clinical intake draft */
-export const DRAFT_INTAKE_KEY = 'alo_draft_intake_v4.0_clean' as const;
-
-// --------------------------------------------------------------------------
-// 2. VOLATILE SESSION CACHES (Legacy Keys - Deprecated as Sources of Truth)
-// --------------------------------------------------------------------------
-
-/** 
- * @deprecated Volatile session cache only. Do not use as canonical source of truth.
- * Legacy full-case storage key isolated to transient memory.
- */
-export const STORAGE_KEY = 'alo_legacy_storage_volatile' as const;
-
-/** 
- * @deprecated Volatile session cache only. Do not use as canonical source of truth.
- * Legacy active case pointer isolated to transient memory.
- */
-export const ACTIVE_CASE_KEY = 'alo_legacy_active_case_volatile' as const;
-
-// --------------------------------------------------------------------------
-// 3. CANONICAL ACTOR TYPES & REGISTRY (11 Persona Profile Switcher Compat)
-// --------------------------------------------------------------------------
-
+// ─── Canonical Actors ─────────────────────────────────────────────────────────
 export type ActorRole = 
   | 'COORDINATOR'
   | 'DOCTOR'
@@ -65,7 +33,7 @@ export interface CanonicalActor {
   readonly name: string;
   readonly phone: string;
   readonly role: ActorRole;
-  readonly personaIndex: number; // 0-10 for profile switcher compatibility
+  readonly personaIndex: number;
 }
 
 export const ACTORS = {
@@ -73,132 +41,163 @@ export const ACTORS = {
     id: 'actor_coord_01',
     name: 'Emmanuel Arcon Gonzalez',
     phone: '+966500000003',
-    role: 'COORDINATOR',
+    role: 'COORDINATOR' as ActorRole,
     personaIndex: 0,
   },
   DOCTOR: {
     id: 'actor_doc_01',
     name: 'Dr. Fahad Al-Harbi',
     phone: '+966502222222',
-    role: 'DOCTOR',
+    role: 'DOCTOR' as ActorRole,
     personaIndex: 1,
   },
   CONSULTANT: {
     id: 'actor_cons_01',
     name: 'Dr. V. Prasanth',
     phone: '+919876543210',
-    role: 'CONSULTANT',
+    role: 'CONSULTANT' as ActorRole,
     personaIndex: 2,
   },
   SUPER_ADMIN: {
     id: 'actor_superadmin_01',
     name: 'Adrian Lewis',
     phone: '+966500000001',
-    role: 'SUPER_ADMIN',
+    role: 'SUPER_ADMIN' as ActorRole,
     personaIndex: 3,
   },
   HOSPITAL_ADMIN: {
     id: 'actor_hospadmin_01',
     name: 'David Nunez',
     phone: '+966504444444',
-    role: 'HOSPITAL_ADMIN',
+    role: 'HOSPITAL_ADMIN' as ActorRole,
     personaIndex: 4,
   },
   RECEPTION: {
     id: 'actor_rec_01',
     name: 'Marcus Vance',
     phone: '+966500000009',
-    role: 'RECEPTION',
+    role: 'RECEPTION' as ActorRole,
     personaIndex: 5,
   },
-} as const satisfies Record<string, Omit<CanonicalActor, 'personaIndex'> & { personaIndex: number }>;
+} as const;
 
 export const ALL_ACTORS: ReadonlyArray<CanonicalActor> = Object.values(ACTORS);
 
-// --------------------------------------------------------------------------
-// 4. DESIGN SYSTEM TOKENS (Pinterest-Teal Palette + Cairo Typography)
-// --------------------------------------------------------------------------
-
-export const PALETTE = {
-  primary: '#007B6E',
-  secondary: '#00C6AE',
-  background: '#E6FAF7',
-  whatsapp: '#25D366',
-  textDark: '#1A3C38',
-  textLight: '#FFFFFF',
-  border: '#B2EBE2',
-} as const;
-
-export const TYPOGRAPHY = {
-  fontFamilyAr: "'Cairo', sans-serif",
-  fontFamilyEn: "'Cairo', sans-serif",
-  directionAr: 'rtl' as CSSProperties['direction'],
-  directionEn: 'ltr' as CSSProperties['direction'],
-} as const;
-
-export interface LayoutDirectionConfig {
-  dir: 'rtl' | 'ltr';
-  fontFamily: string;
-  textAlign: 'right' | 'left';
+// ─── Types ───────────────────────────────────────────────────────────────────
+export interface UserSession {
+  isAuthenticated: boolean;
+  phone: string;
+  personaId: string | null;
+  roleCode?: RoleCode;
+  hospitalId?: string;
+  fullName?: string;
+  isGuest: boolean;
+  expiresAt: number;
+  lang: 'ar' | 'en';
 }
 
-export const getLayoutConfig = (lang: string): LayoutDirectionConfig => {
-  const isArabic = lang.startsWith('ar');
-  return {
-    dir: isArabic ? 'rtl' : 'ltr',
-    fontFamily: isArabic ? TYPOGRAPHY.fontFamilyAr : TYPOGRAPHY.fontFamilyEn,
-    textAlign: isArabic ? 'right' : 'left',
-  };
+export const DEFAULT_PARTNER_ORDERS = {
+  lab: { test: 'None', status: 'pending' as const },
+  pharmacy: { meds: [] as string[], substituteAllowed: true, status: 'pending' as const },
+  homeNurse: { area: '', visits: 0, status: 'scheduled' as const },
+  physio: { sessions: 0, status: 'planned' as const },
 };
 
-// --------------------------------------------------------------------------
-// 5. CLEAN ACCESSIBLE STATE HELPERS (Zero Artificial Gates)
-// --------------------------------------------------------------------------
-
-export type DraftIntakePayload = {
-  patientId?: string;
-  chiefComplaint?: string;
-  timestamp: number;
+export const DEFAULT_CONSULTANT = {
+  name: 'Dr. V. Prasanth',
+  center: 'Apollo Cancer & Heart Institute',
+  city: 'Hyderabad, India',
+  specialty: 'Interventional Cardiology & Oncology',
+  subspecialty: 'Complex CAD & TAVR',
+  experienceYears: 18,
+  rating: 4.9,
+  casesReviewed: 340,
 };
 
-export const readDraftIntake = (): DraftIntakePayload | null => {
-  try {
-    const raw = localStorage.getItem(DRAFT_INTAKE_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw) as DraftIntakePayload;
-  } catch {
-    return null;
-  }
+export const DEFAULT_TREATING_DOCTOR = {
+  id: 'doc-001',
+  name: 'د. فهد الحربي',
+  nameEn: 'Dr. Fahad Al-Harbi',
+  hospital: 'مستشفى رعاية الرياض المعتمد',
+  hospitalEn: 'Riyadh Care Medical Center',
+  city: 'الرياض',
+  cityEn: 'Riyadh',
+  specialty: 'استشاري جراحة القلب والصدر',
+  scfhsNumber: 'SCFHS-2024-KSA-8821',
+  focusQuestions: [
+    'هل مؤشرات تضيق الصمام الأبهري تستوجب التدخل عبر القسطرة (TAVR)؟',
+    'ما هو بروتوكول مضادات التخثر الموصى به بعد العملية؟',
+    'ما هو الجدول الزمني الأمثل لمتابعة كفاءة الصمام بالإيكو؟',
+  ] as [string, string, string],
+  focusQuestionsEn: [
+    'Is TAVR indicated based on aortic stenosis severity and CTA?',
+    'What is the recommended post-procedure antithrombotic protocol?',
+    'What is the optimal echocardiographic follow-up schedule?',
+  ] as [string, string, string],
 };
 
-export const writeDraftIntake = (payload: DraftIntakePayload): void => {
-  try {
-    localStorage.setItem(DRAFT_INTAKE_KEY, JSON.stringify(payload));
-  } catch {
-    // Fail silently in strict production environments without blocking UI
-  }
+// ─── Clean-Slate Initial Case (Zero Pre-Filled Data) ─────────────────────────
+export const FRESH_PRIMARY_CASE: ClinicalCase = {
+  id: 'case-initial-01',
+  caseNumber: '',
+  patientName: '',
+  patientNameAr: '',
+  patientNameEn: '',
+  nationalIdMasked: '',
+  age: 0,
+  gender: 'M',
+  city: '',
+  cityAr: '',
+  cityEn: '',
+  specialty: '',
+  specialtyAr: '',
+  specialtyEn: '',
+  diagnosis: '',
+  diagnosisAr: '',
+  diagnosisEn: '',
+  symptoms: '',
+  symptomsAr: '',
+  symptomsEn: '',
+  redFlags: [],
+  currentMedications: [],
+  allergies: [],
+  noKnownAllergies: false,
+  noCurrentMedications: false,
+  consultationType: 'written',
+  currentStage: 'INTAKE_RECEIVED',
+  stage: 1,
+  doctorSelectionPreference: 'need_assistance',
+  treatingDoctor: undefined,
+  consultant: undefined,
+  pricing: {
+    tier: 1,
+    tierName: 'Written',
+    baseSar: 0,
+    vatPercent: 15,
+    vatSar: 0,
+    totalSar: 0,
+    paid: false,
+  },
+  files: [],
+  invoiceIssued: false,
+  allowedPaymentMethods: [],
+  paymentVerified: false,
+  partnerOrders: DEFAULT_PARTNER_ORDERS,
+  metadata: { isFreshTest: true },
 };
 
-export const clearVolatileCaches = (): void => {
-  try {
-    localStorage.removeItem(STORAGE_KEY);
-    localStorage.removeItem(ACTIVE_CASE_KEY);
-    localStorage.removeItem(USER_SESSION_KEY);
-  } catch {
-    // Zero artificial gates: do not throw on storage quota/clear failures
-  }
-};
+// ─── Stage order helper ──────────────────────────────────────────────────────
+export const STAGE_ORDER: ClinicalStage[] = [
+  'INTAKE_RECEIVED',
+  'NURSE_CHECK',
+  'DOCTOR_REVIEW',
+  'AWAITING_PAYMENT',
+  'WITH_CONSULTANT',
+  'OPINION_READY',
+  'PARTNER_SERVICES',
+  'FOLLOW_UP_21_DAYS',
+  'CLOSED',
+];
 
-export const clearAllLocalState = (): void => {
-  try {
-    localStorage.removeItem(USER_SESSION_KEY);
-    localStorage.removeItem(LANG_KEY);
-    localStorage.removeItem(THEME_KEY);
-    localStorage.removeItem(VIEW_MODE_KEY);
-    localStorage.removeItem(DRAFT_INTAKE_KEY);
-    localStorage.removeItem(STORAGE_KEY);
-    localStorage.removeItem(ACTIVE_CASE_KEY);
-  } catch {
-    // Clean slate enforcement
-  }
-};
+export const isCasePaid = (c: ClinicalCase) => !!c.pricing?.paid || c.paymentDetails?.status === 'completed';
+export const isCaseVerified = (c: ClinicalCase) => !!c.paymentVerified || !!c.metadata?.paymentVerified;

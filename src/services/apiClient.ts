@@ -1,150 +1,330 @@
-import { User, CaseRecord, AuthSession } from '../types';
+import { TenantHospital, StaffAccountRecord, ClinicalCase, AuditLogEntry } from '../types';
+import { TENANTS_KEY, PLATFORM_USERS_KEY, STORAGE_KEY, ACTIVE_CASE_KEY } from '../hooks/workflowConstants';
+import { purgeAllCaseStorage } from '../utils/storagePurge';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
-const RETRY_DELAY_MS = 500;
-const MAX_RETRIES = 1;
+function normalizeTenant(raw: any): TenantHospital {
+  const nameEn = (raw.nameEn || raw.name_en || '').trim();
+  const normalizedNameEn = (nameEn === 'Alo Care Specialist Medical Center' || !nameEn)
+    ? 'Riyadh Care Medical Center'
+    : nameEn;
+  const nameAr = (raw.nameAr || raw.name_ar || '').trim();
+  const normalizedNameAr = (nameAr === 'مركز ألو كير الطبي التخصصي' || nameAr === 'مركز الرعاية التخصصية الطبي (الرياض)' || !nameAr)
+    ? 'مستشفى رعاية الرياض المعتمد'
+    : nameAr;
 
-interface ApiErrorDetail {
-  endpoint: string;
-  status: number;
-  message: string;
+  return {
+    id: raw.id || 'hosp-alo-riyadh-01',
+    nameEn: normalizedNameEn,
+    nameAr: normalizedNameAr,
+    city: raw.city || 'الرياض',
+    cityAr: raw.cityAr || raw.city_ar || raw.city || 'الرياض',
+    mciLicenseNumber: raw.mciLicenseNumber || raw.mci_license_number || 'MCI-SA-2024-8891',
+    status: (raw.status as any) || 'active',
+    hospitalAdminName: raw.hospitalAdminName || raw.hospital_admin_name || 'David Nunez',
+    hospitalAdminPhone: raw.hospitalAdminPhone || raw.hospital_admin_phone || '+966504444444',
+    doctorCount: typeof raw.doctorCount === 'number' ? raw.doctorCount : (typeof raw.doctor_count === 'number' ? raw.doctor_count : 8),
+    createdAt: raw.createdAt || raw.created_at || '2026-01-01T08:00:00.000Z',
+  };
 }
 
-class ApiFatalError extends Error {
-  public readonly endpoint: string;
-  public readonly status: number;
+function normalizeCase(c: ClinicalCase): ClinicalCase {
+  if (!c) return c;
+  const rawHospital = c.treatingDoctor?.hospital;
+  if (
+    rawHospital === 'Alo Care Specialist Medical Center' ||
+    rawHospital === 'مركز ألو كير الطبي التخصصي' ||
+    rawHospital === 'مركز الرعاية التخصصية الطبي (الرياض)' ||
+    rawHospital === 'المجمع الطبي الشريك'
+  ) {
+    return {
+      ...c,
+      treatingDoctor: {
+        ...c.treatingDoctor,
+        hospital: 'Riyadh Care Medical Center',
+      },
+    };
+  }
+  return c;
+}
 
-  constructor(endpoint: string, status: number, message: string) {
-    super(message);
-    this.name = 'ApiFatalError';
-    this.endpoint = endpoint;
-    this.status = status;
+function getApiBase(): string {
+  if (typeof window === 'undefined') return '';
+  const parts = window.location.pathname.split('/').filter(Boolean);
+  if (parts.length > 0 && !parts[0].includes('.')) {
+    return `${window.location.origin}/${parts[0]}`;
+  }
+  return window.location.origin;
+}
+
+function getAuthHeaders(): Record<string, string> {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = localStorage.getItem('alo_user_session_v4.0_clean') || localStorage.getItem('alo_user_session_v3.0');
+    if (!raw) return {};
+    const session = JSON.parse(raw);
+    return {
+      'x-user-role': session.roleCode || 'P',
+      'x-user-phone': session.phone || '',
+      'x-user-id': session.userId || session.id || '',
+      'x-tenant-id': session.hospitalId || session.tenantId || '',
+    };
+  } catch {
+    return {};
   }
 }
 
-function emitGlobalApiError(detail: ApiErrorDetail): void {
-  window.dispatchEvent(
-    new CustomEvent<ApiErrorDetail>('alo:api-error', { detail })
-  );
-}
-
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function unwrapResponse<T>(payload: unknown): T {
-  if (payload === null || payload === undefined) {
-    return [] as unknown as T;
+function emitApiError(endpoint: string, status: number | string, message: string) {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(
+      new CustomEvent('alo:api-error', {
+        detail: { endpoint, status, message },
+      })
+    );
   }
+}
 
-  if (typeof payload === 'object' && payload !== null && !Array.isArray(payload)) {
-    const record = payload as Record<string, unknown>;
-    if ('success' in record && record.success === true && 'data' in record) {
-      return record.data as T;
+async function executeFetch(endpoint: string, options?: RequestInit): Promise<Response> {
+  const authHeaders = getAuthHeaders();
+  const mergedOptions: RequestInit = {
+    ...options,
+    headers: {
+      ...authHeaders,
+      ...(options?.headers || {}),
+    },
+  };
+  const primaryUrl = `${getApiBase()}${endpoint}`;
+  try {
+    const res = await fetch(primaryUrl, mergedOptions);
+    if (res.ok) return res;
+  } catch (err) {
+    if (getApiBase() !== window.location.origin) {
+      return await fetch(`${window.location.origin}${endpoint}`, mergedOptions);
     }
+    throw err;
   }
-
-  return payload as T;
+  if (getApiBase() !== window.location.origin) {
+    return await fetch(`${window.location.origin}${endpoint}`, mergedOptions);
+  }
+  return await fetch(primaryUrl, mergedOptions);
 }
 
-async function executeWithRetry<T>(
-  endpoint: string,
-  options: RequestInit
-): Promise<T> {
-  const url = `${API_BASE_URL}${endpoint}`;
-  let lastError: ApiFatalError | null = null;
-
-  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-    if (attempt > 0) {
-      await delay(RETRY_DELAY_MS);
-    }
-
+/**
+ * Safe fetch with 1-shot automatic retry (500ms delay).
+ * If retry fails, emits 'alo:api-error' event and throws fatal error (Zero Silent Fallback).
+ */
+async function safeFetchWithRetry(endpoint: string, options?: RequestInit): Promise<Response> {
+  try {
+    const res = await executeFetch(endpoint, options);
+    if (res.ok) return res;
+    throw new Error(`HTTP ${res.status}`);
+  } catch (firstErr: any) {
+    // 1-Shot automatic retry after 500ms backoff
+    await new Promise((r) => setTimeout(r, 500));
     try {
-      const response = await fetch(url, {
-        ...options,
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept-Language': document.documentElement.dir === 'rtl' ? 'ar-SA' : 'en-US',
-          ...options.headers,
-        },
-      });
-
-      if (!response.ok) {
-        const errorBody = await response.text().catch(() => 'Unknown error');
-        throw new ApiFatalError(endpoint, response.status, errorBody);
-      }
-
-      const rawPayload = await response.json();
-      return unwrapResponse<T>(rawPayload);
-    } catch (error) {
-      if (error instanceof ApiFatalError) {
-        lastError = error;
-      } else {
-        lastError = new ApiFatalError(
-          endpoint,
-          0,
-          error instanceof Error ? error.message : 'Network request failed'
-        );
-      }
+      const retryRes = await executeFetch(endpoint, options);
+      if (retryRes.ok) return retryRes;
+      throw new Error(`Retry HTTP ${retryRes.status}`);
+    } catch (fatalErr: any) {
+      emitApiError(endpoint, fatalErr.status || 500, fatalErr.message || 'API connection failed after retry');
+      throw fatalErr;
     }
   }
-
-  const fatal = lastError!;
-  
-  emitGlobalApiError({
-    endpoint: fatal.endpoint,
-    status: fatal.status,
-    message: fatal.message,
-  });
-
-  throw fatal;
 }
 
 export const apiClient = {
-  async get<T>(endpoint: string): Promise<T> {
-    return executeWithRetry<T>(endpoint, {
-      method: 'GET',
-    });
-  },
-
-  async post<T>(endpoint: string, body?: unknown): Promise<T> {
-    return executeWithRetry<T>(endpoint, {
+  // ── Authentication ────────────────────────────────────────────────────────
+  async login(phone: string, pin: string): Promise<StaffAccountRecord> {
+    const res = await safeFetchWithRetry('/api/users/login', {
       method: 'POST',
-      body: body ? JSON.stringify(body) : undefined,
-    });
-  },
-
-  async put<T>(endpoint: string, body?: unknown): Promise<T> {
-    return executeWithRetry<T>(endpoint, {
-      method: 'PUT',
-      body: body ? JSON.stringify(body) : undefined,
-    });
-  },
-
-  async delete<T>(endpoint: string): Promise<T> {
-    return executeWithRetry<T>(endpoint, {
-      method: 'DELETE',
-    });
-  },
-
-  async login(phone: string, pin: string): Promise<AuthSession> {
-    return executeWithRetry<AuthSession>('/users/login', {
-      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ phone, pin }),
     });
+    const json = await res.json();
+    if (!json.success || !json.data) {
+      throw new Error(json.error || 'Login failed');
+    }
+    return json.data;
   },
 
-  async getCases(): Promise<CaseRecord[]> {
-    return executeWithRetry<CaseRecord[]>('/cases', {
-      method: 'GET',
+  // ── Tenants ───────────────────────────────────────────────────────────────
+  async fetchTenants(): Promise<TenantHospital[]> {
+    const res = await safeFetchWithRetry('/api/tenants', { headers: { 'Content-Type': 'application/json' } });
+    const json = await res.json();
+    const rawList = Array.isArray(json) ? json : (Array.isArray(json?.data) ? json.data : []);
+    const mapped = rawList.map(normalizeTenant);
+    try { localStorage.setItem(TENANTS_KEY, JSON.stringify(mapped)); } catch {}
+    return mapped;
+  },
+
+  async createTenant(data: Omit<TenantHospital, 'id' | 'createdAt'>): Promise<TenantHospital> {
+    const res = await safeFetchWithRetry('/api/tenants', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    const created = json?.data || json;
+    return normalizeTenant(created);
+  },
+
+  // ── Staff Users ───────────────────────────────────────────────────────────
+  async fetchUsers(): Promise<StaffAccountRecord[]> {
+    const res = await safeFetchWithRetry('/api/users', { headers: { 'Content-Type': 'application/json' } });
+    const json = await res.json();
+    const rawList = Array.isArray(json) ? json : (Array.isArray(json?.data) ? json.data : []);
+    const mapped: StaffAccountRecord[] = rawList.map((u: any) => ({
+      id: u.id,
+      staffCode: u.staffCode || u.staff_code || u.id,
+      fullName: u.fullName || u.full_name || '',
+      fullNameAr: u.fullNameAr || u.full_name_ar || u.fullName,
+      roleCode: u.roleCode || u.role_code || 'P',
+      hospitalId: u.hospitalId || u.hospital_id,
+      phone: u.phone,
+      pin: u.pin || '1234',
+      hasCustomPin: Boolean(u.hasCustomPin || u.has_custom_pin),
+      department: u.department,
+      status: u.status || 'active',
+      createdAt: u.createdAt || u.created_at || new Date().toISOString(),
+    }));
+    try { localStorage.setItem(PLATFORM_USERS_KEY, JSON.stringify(mapped)); } catch {}
+    return mapped;
+  },
+
+  async cleanSlateDatabase(): Promise<boolean> {
+    const res = await safeFetchWithRetry('/api/admin/clean-slate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    return res.ok;
+  },
+
+  async updateUserPin(phone: string, pin: string): Promise<boolean> {
+    const res = await safeFetchWithRetry('/api/users/pin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, pin }),
+    });
+    return res.ok;
+  },
+
+  async createUser(data: Omit<StaffAccountRecord, 'id' | 'createdAt'>): Promise<StaffAccountRecord> {
+    const res = await safeFetchWithRetry('/api/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    return json?.data || json;
+  },
+
+  // ── Cases ─────────────────────────────────────────────────────────────────
+  async fetchCases(): Promise<ClinicalCase[]> {
+    const res = await safeFetchWithRetry('/api/cases', { headers: { 'Content-Type': 'application/json' } });
+    const json = await res.json();
+    const rawList = Array.isArray(json) ? json : (Array.isArray(json?.data) ? json.data : []);
+    const normalized = rawList.map(normalizeCase);
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized)); } catch {}
+    return normalized;
+  },
+
+  async saveCase(c: ClinicalCase): Promise<void> {
+    await safeFetchWithRetry('/api/cases', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(c),
     });
   },
 
-  async getStaffDirectory(): Promise<User[]> {
-    return executeWithRetry<User[]>('/users/staff', {
-      method: 'GET',
+  async purgeAllCases(): Promise<void> {
+    await safeFetchWithRetry('/api/cases', { method: 'DELETE' });
+    purgeAllCaseStorage();
+  },
+
+  async deleteSingleCase(caseId: string): Promise<void> {
+    await safeFetchWithRetry(`/api/cases/${encodeURIComponent(caseId)}`, { method: 'DELETE' });
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const arr = JSON.parse(stored) as ClinicalCase[];
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(arr.filter((x) => x.id !== caseId)));
+      }
+    } catch {}
+  },
+
+  // ── Dedicated Transition Endpoints ────────────────────────────────────────
+  async payCase(caseId: string, payload: any): Promise<void> {
+    await safeFetchWithRetry(`/api/cases/${encodeURIComponent(caseId)}/pay`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
     });
+  },
+
+  async verifyPayment(caseId: string): Promise<void> {
+    await safeFetchWithRetry(`/api/cases/${encodeURIComponent(caseId)}/verify-payment`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+  },
+
+  async submitOpinion(caseId: string, payload: any): Promise<void> {
+    await safeFetchWithRetry(`/api/cases/${encodeURIComponent(caseId)}/opinion`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async closeCase(caseId: string): Promise<void> {
+    await safeFetchWithRetry(`/api/cases/${encodeURIComponent(caseId)}/close`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+  },
+
+  // ── Audit Logs ────────────────────────────────────────────────────────────
+  async fetchAuditLogs(): Promise<AuditLogEntry[]> {
+    const res = await safeFetchWithRetry('/api/audit', { headers: { 'Content-Type': 'application/json' } });
+    const json = await res.json();
+    return Array.isArray(json?.data) ? json.data : (Array.isArray(json) ? json : []);
+  },
+
+  async appendAuditLog(entry: AuditLogEntry): Promise<void> {
+    await safeFetchWithRetry('/api/audit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(entry),
+    });
+  },
+
+  // ── File Upload ───────────────────────────────────────────────────────────
+  async uploadFile(file: File): Promise<{ url: string; size: string; storage: string } | null> {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await safeFetchWithRetry('/api/upload', {
+      method: 'POST',
+      body: formData,
+    });
+    const json = await res.json();
+    return json.success ? json.data : null;
+  },
+
+  // ── LiveKit Consultation Tokens ───────────────────────────────────────────
+  async createLiveKitToken(params: {
+    roomName: string;
+    participantName: string;
+    participantRole?: string;
+    role?: string;
+    identity?: string;
+    participantIdentity?: string;
+    caseId?: string;
+  }): Promise<{ token: string; roomName: string; wsUrl: string }> {
+    const res = await safeFetchWithRetry('/api/livekit/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+    const json = await res.json();
+    return json.data || json;
   },
 };
-
-export type { ApiErrorDetail, ApiFatalError };

@@ -21,6 +21,7 @@ import { StageProgressBar }        from '../components/StageProgressBar';
 import { FiveDeviceCockpitView }   from '../components/FiveDeviceCockpitView';
 import { NewCaseModal }            from '../components/NewCaseModal';
 import UnifiedAuthGate             from '../components/auth/UnifiedAuthGate';
+import ApiErrorModal               from '../components/common/ApiErrorModal';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 interface AppLayoutProps {
@@ -240,6 +241,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
           </div>
         </div>
       )}
+
+      {/* 11. Global API Error Boundary Modal */}
+      <ApiErrorModal />
     </div>
   );
 };
