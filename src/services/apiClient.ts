@@ -94,18 +94,17 @@ async function executeFetch(endpoint: string, options?: RequestInit): Promise<Re
   };
   const primaryUrl = `${getApiBase()}${endpoint}`;
   try {
-    const res = await fetch(primaryUrl, mergedOptions);
-    if (res.ok) return res;
+    return await fetch(primaryUrl, mergedOptions);
   } catch (err) {
     if (getApiBase() !== window.location.origin) {
-      return await fetch(`${window.location.origin}${endpoint}`, mergedOptions);
+      try {
+        return await fetch(`${window.location.origin}${endpoint}`, mergedOptions);
+      } catch (fallbackErr) {
+        throw err;
+      }
     }
     throw err;
   }
-  if (getApiBase() !== window.location.origin) {
-    return await fetch(`${window.location.origin}${endpoint}`, mergedOptions);
-  }
-  return await fetch(primaryUrl, mergedOptions);
 }
 
 /**
@@ -115,14 +114,15 @@ async function executeFetch(endpoint: string, options?: RequestInit): Promise<Re
 async function safeFetchWithRetry(endpoint: string, options?: RequestInit): Promise<Response> {
   try {
     const res = await executeFetch(endpoint, options);
-    if (res.ok) return res;
+    // 4xx client responses (e.g. 401 Invalid PIN, 404 not found, 400 bad request) are valid clinical/auth answers, not server outages!
+    if (res.ok || (res.status >= 400 && res.status < 500)) return res;
     throw new Error(`HTTP ${res.status}`);
   } catch (firstErr: any) {
     // 1-Shot automatic retry after 500ms backoff
     await new Promise((r) => setTimeout(r, 500));
     try {
       const retryRes = await executeFetch(endpoint, options);
-      if (retryRes.ok) return retryRes;
+      if (retryRes.ok || (retryRes.status >= 400 && retryRes.status < 500)) return retryRes;
       throw new Error(`Retry HTTP ${retryRes.status}`);
     } catch (fatalErr: any) {
       emitApiError(endpoint, fatalErr.status || 500, fatalErr.message || 'API connection failed after retry');
@@ -151,6 +151,11 @@ export const apiClient = {
       body: JSON.stringify({ phone, pin }),
     });
     const json = await res.json();
+    if (!res.ok) {
+      const err: any = new Error(json.error || 'Login failed');
+      err.response = { status: res.status };
+      throw err;
+    }
     const user = json.data || (json.id ? json : null);
     if (!user) {
       throw new Error(json.error || 'Login failed');

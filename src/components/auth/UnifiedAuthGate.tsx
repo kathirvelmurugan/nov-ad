@@ -133,7 +133,7 @@ const UnifiedAuthGate: React.FC<UnifiedAuthGateProps> = ({ onComplete, onAuthent
       const displayName = isRTL ? (user.fullNameAr || user.fullName) : user.fullName;
       completeAuth(false, user.roleCode, user.hospitalId, displayName);
     } catch (err: any) {
-      if (err?.response?.status === 401) {
+      if (err?.response?.status === 401 || err?.message?.includes('401') || err?.message?.includes('Invalid') || err?.message?.includes('غير صحيح')) {
         setError(t.errorInvalid);
       } else {
         setError(t.errorNetwork);
