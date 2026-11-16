@@ -27,6 +27,7 @@ interface Props {
   onReleaseReportToPatient?: () => void;
   onUpdateCase: (updated: Partial<ClinicalCase>) => void;
   lang: 'ar' | 'en';
+  onLogout?: () => void;
 }
 
 export const CoordinatorPortalView: React.FC<Props> = ({
@@ -39,6 +40,7 @@ export const CoordinatorPortalView: React.FC<Props> = ({
   onReleaseReportToPatient,
   onUpdateCase,
   lang,
+  onLogout,
 }) => {
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
 

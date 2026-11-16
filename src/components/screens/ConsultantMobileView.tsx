@@ -25,6 +25,7 @@ interface Props {
   onSelectCase?: (caseId: string) => void;
   onAdvanceStage: () => void;
   onUpdateCase: (updated: Partial<ClinicalCase>) => void;
+  onLogout?: () => void;
 }
 
 export const ConsultantMobileView: React.FC<Props> = ({
@@ -33,6 +34,7 @@ export const ConsultantMobileView: React.FC<Props> = ({
   onSelectCase,
   onAdvanceStage,
   onUpdateCase,
+  onLogout: _onLogout,
 }) => {
   const hasMagicToken = typeof window !== 'undefined' && Boolean(
     new URLSearchParams(window.location.search).get('token') ||

@@ -21,6 +21,7 @@ interface Props {
   lang?: 'ar' | 'en';
   userSession?: UserSession | null;
   activePersona?: Persona;
+  onLogout?: () => void;
 }
 
 export const NurseTriageView: React.FC<Props> = ({ 
@@ -31,7 +32,8 @@ export const NurseTriageView: React.FC<Props> = ({
   onUpdateCase, 
   lang = 'ar',
   userSession,
-  activePersona
+  activePersona,
+  onLogout,
 }) => {
   const [urgencyLevel, setUrgencyLevel] = useState<'routine' | 'urgent' | 'stat'>('urgent');
   const [forwardedBanner, setForwardedBanner] = useState<{ caseId: string; caseNumber: string; patientName: string } | null>(null);
@@ -198,7 +200,7 @@ export const NurseTriageView: React.FC<Props> = ({
           {/* Universal Milestone HUD & Audit Ledger */}
           <CaseMilestoneHUD activeCase={currentCase} lang={lang} isRTL={isAr} />
 
-          <NurseCaseHeader activeCase={activeCaseObj} nurseName={nurseName} referenceHospital={referenceHospital} isAr={isAr} />
+          <NurseCaseHeader activeCase={activeCaseObj} nurseName={nurseName} referenceHospital={referenceHospital} isAr={isAr} onLogout={onLogout} />
           <NurseAuditDeidSection activeCase={activeCaseObj} nurseName={nurseName} isAr={isAr} />
           <NurseDoctorAssignmentSection activeCase={activeCaseObj} availableDoctors={availableDoctors} isCurrentStageTriage={isCurrentStageTriage} isAr={isAr} onUpdateCase={onUpdateCase} />
           <NurseTriageFormSection

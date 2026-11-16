@@ -14,7 +14,7 @@ function getApiBase(): string {
 function getAuthHeaders(): Record<string, string> {
   if (typeof window === 'undefined') return {};
   try {
-    const raw = localStorage.getItem('alo_user_session_v3.0');
+    const raw = localStorage.getItem('alo_user_session_v4.0_clean') || localStorage.getItem('alo_user_session_v3.0');
     if (!raw) return {};
     const session = JSON.parse(raw);
     return {

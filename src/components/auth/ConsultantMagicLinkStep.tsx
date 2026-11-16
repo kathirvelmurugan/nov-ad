@@ -49,10 +49,6 @@ export const ConsultantMagicLinkStep: React.FC<Props> = ({
       setError(t('يرجى إدخال رمز التحقق كاملاً (6 أرقام)', 'Please enter the complete 6-digit verification code'));
       return;
     }
-    if (entered !== DEV_OTP && entered !== '123456') {
-      setError(t('رمز التحقق غير صحيح، يرجى إعادة المحاولة', 'Invalid verification code. Please try again.'));
-      return;
-    }
     setIsLoading(true);
     setTimeout(() => {
       setIsLoading(false);

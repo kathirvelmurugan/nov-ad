@@ -190,6 +190,7 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
         onReleaseReportToPatient={handleReleaseReportToPatient}
         onUpdateCase={handleUpdateCase}
         lang={lang}
+        onLogout={handleLogout}
       />
     );
   }
@@ -250,6 +251,7 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
         onSelectCase={onSelectCase}
         onAdvanceStage={handleAdvanceStage}
         onUpdateCase={handleUpdateCase}
+        onLogout={handleLogout}
       />
     );
   }
@@ -267,6 +269,7 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
         lang={lang}
         userSession={userSession}
         activePersona={personaToUse}
+        onLogout={handleLogout}
       />
     );
   }
@@ -284,6 +287,7 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
         lang={lang}
         userSession={userSession}
         activePersona={personaToUse}
+        onLogout={handleLogout}
       />
     );
   }
@@ -352,6 +356,8 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
           hasExistingCases={cases && cases.length > 0 && cases.some((c) => c.stage && c.stage > 1)}
           onStartNewCase={handleStartNewCase}
           userSession={userSession}
+          onOpenLogin={onOpenLogin}
+          onLogout={handleLogout}
         />
       );
     }

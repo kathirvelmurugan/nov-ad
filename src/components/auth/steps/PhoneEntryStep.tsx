@@ -1,13 +1,10 @@
 import React from 'react';
 import {
   PALETTE,
-  PERSONA_PRESETS,
-  PersonaPreset,
   validateSaudiMobile,
   inputFocusHandlers,
   getInputStyle,
   getPrimaryButtonStyle,
-  getGuestButtonStyle,
   getErrorStyle,
   labelStyle,
   AuthPortalTab,
@@ -18,13 +15,13 @@ interface Props {
   phone: string;
   error: string;
   isLoading: boolean;
-  isDemoMode: boolean;
+  isDemoMode?: boolean;
   activePortal?: AuthPortalTab;
   phoneRef: React.RefObject<HTMLInputElement>;
   onPhoneChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onPhoneSubmit: (e: React.FormEvent) => void;
-  onPersonaQuickLogin: (persona: PersonaPreset) => void;
-  onGuestBypass: () => void;
+  onPersonaQuickLogin?: (persona: any) => void;
+  onGuestBypass?: () => void;
   t: (ar: string, en: string) => string;
 }
 
@@ -33,29 +30,11 @@ export const PhoneEntryStep: React.FC<Props> = ({
   phone,
   error,
   isLoading,
-  isDemoMode,
-  activePortal = 'patient',
   phoneRef,
   onPhoneChange,
   onPhoneSubmit,
-  onPersonaQuickLogin,
-  onGuestBypass,
   t,
 }) => {
-  const isStaffMode = activePortal === 'clinical' || activePortal === 'hospital';
-
-  const personaCardStyle: React.CSSProperties = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    padding: '12px 14px',
-    border: `1.5px solid ${PALETTE.border}`,
-    borderRadius: '12px',
-    cursor: 'pointer',
-    transition: 'all 0.2s ease',
-    backgroundColor: PALETTE.white,
-    marginBottom: '8px',
-  };
 
   return (
     <div>
@@ -107,78 +86,6 @@ export const PhoneEntryStep: React.FC<Props> = ({
           )}
         </button>
       </form>
-
-      {isDemoMode && (
-        <>
-          <div style={{ marginTop: '32px', borderTop: `1px solid ${PALETTE.border}`, paddingTop: '24px' }}>
-            <p style={{ fontSize: '13px', fontWeight: 700, color: PALETTE.textMuted, margin: '0 0 12px 0', textAlign: 'center' }}>
-              {t('⚡ دخول سريع للاختبار (QA Presets)', '⚡ Quick Login for Testing (QA Presets)')}
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
-              {PERSONA_PRESETS.map(persona => (
-                <div
-                  key={persona.id}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => onPersonaQuickLogin(persona)}
-                  onKeyDown={e => e.key === 'Enter' && onPersonaQuickLogin(persona)}
-                  style={personaCardStyle}
-                  onMouseEnter={e => {
-                    (e.currentTarget as HTMLDivElement).style.borderColor = PALETTE.secondary;
-                    (e.currentTarget as HTMLDivElement).style.backgroundColor = PALETTE.background;
-                  }}
-                  onMouseLeave={e => {
-                    (e.currentTarget as HTMLDivElement).style.borderColor = PALETTE.border;
-                    (e.currentTarget as HTMLDivElement).style.backgroundColor = PALETTE.white;
-                  }}
-                  aria-label={`${t('تسجيل دخول كـ', 'Login as')} ${isRTL ? persona.nameAr : persona.nameEn}`}
-                >
-                  <div style={{
-                    width: '40px',
-                    height: '40px',
-                    borderRadius: '10px',
-                    backgroundColor: PALETTE.background,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '18px',
-                    flexShrink: 0
-                  }}>
-                    {persona.id === 'patient' ? '👤' : persona.id === 'doctor' ? '🩺' : persona.id === 'nurse' ? '💉' : persona.id === 'admin' ? '🏥' : '🌍'}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '14px', fontWeight: 700, color: PALETTE.textDark, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {isRTL ? persona.nameAr : persona.nameEn}
-                    </div>
-                    <div style={{ fontSize: '11px', color: PALETTE.textMuted, fontWeight: 500 }}>
-                      {persona.role}
-                    </div>
-                  </div>
-                  <div style={{ fontSize: '11px', color: PALETTE.secondary, fontWeight: 700, direction: 'ltr', flexShrink: 0 }}>
-                    {persona.phone.replace('+966', '0').replace(/(\d{2})(\d{3})(\d{4})/, '$1 $2 $3')}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={onGuestBypass}
-            style={getGuestButtonStyle()}
-            onMouseEnter={e => {
-              (e.target as HTMLButtonElement).style.borderColor = PALETTE.secondary;
-              (e.target as HTMLButtonElement).style.color = PALETTE.primary;
-            }}
-            onMouseLeave={e => {
-              (e.target as HTMLButtonElement).style.borderColor = PALETTE.border;
-              (e.target as HTMLButtonElement).style.color = PALETTE.textMuted;
-            }}
-          >
-            {t('استكشاف كزائر تجريبي', 'Explore in Demo Mode')}
-          </button>
-        </>
-      )}
     </div>
   );
 };

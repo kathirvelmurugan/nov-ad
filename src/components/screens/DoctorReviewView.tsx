@@ -21,6 +21,7 @@ interface Props {
   lang?: 'ar' | 'en';
   userSession?: UserSession | null;
   activePersona?: Persona;
+  onLogout?: () => void;
 }
 
 export const DoctorReviewView: React.FC<Props> = ({
@@ -32,6 +33,7 @@ export const DoctorReviewView: React.FC<Props> = ({
   lang = 'ar',
   userSession,
   activePersona,
+  onLogout,
 }) => {
   const [selectedCaseId, setSelectedCaseId] = React.useState<string | null>(null);
   const [isTelehealthOpen, setIsTelehealthOpen] = React.useState(false);
@@ -254,6 +256,7 @@ export const DoctorReviewView: React.FC<Props> = ({
             partnerHospital={partnerHospital}
             slaFormatted={slaFormatted}
             isAr={isAr}
+            onLogout={onLogout}
           />
 
           {(hasConsultantOpinion || activeCase?.consultationType === 'video') && (

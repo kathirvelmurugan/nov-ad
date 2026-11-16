@@ -221,6 +221,7 @@ export const TopProfileSwitcher: React.FC<Props> = ({
           {/* Sign Out to Mobile OTP Login Gate */}
           {onLogout && (
             <button
+              id="staff-nav-logout-btn"
               onClick={onLogout}
               className="flex items-center gap-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 dark:hover:bg-rose-900/50 px-2.5 py-1 rounded-lg border border-rose-200 dark:border-rose-800 font-bold text-xs transition-all shadow-sm active:scale-95 cursor-pointer"
               title={isAr ? 'تسجيل الخروج والعودة لشاشة الدخول والتحقق برقم الجوال' : 'Sign out'}

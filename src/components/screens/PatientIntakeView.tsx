@@ -36,6 +36,8 @@ interface Props {
   hasExistingCases?: boolean;
   onStartNewCase?: () => void;
   userSession?: UserSession | null;
+  onOpenLogin?: () => void;
+  onLogout?: () => void;
 }
 
 const INTAKE_SERVICES = [
@@ -59,6 +61,8 @@ export const PatientIntakeView: React.FC<Props> = ({
   hasExistingCases = false,
   onStartNewCase,
   userSession,
+  onOpenLogin,
+  onLogout: _onLogout,
 }) => {
   const [, setSelectedFileForPreview] = useState<string | null>(null);
   const [privacyAgreed, setPrivacyAgreed] = useState<boolean>(false);
@@ -156,6 +160,40 @@ export const PatientIntakeView: React.FC<Props> = ({
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
+      {/* Returning Patient Login Prompt (Progressive Intake) */}
+      {!userSession && (
+        <div
+          id="returning-patient-banner"
+          className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-start shadow-xs"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 flex items-center justify-center shrink-0">
+              <UserCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100">
+                {isAr
+                  ? 'هل لديك ملف سابق أو تود متابعة حالة مسجلة؟'
+                  : 'Already registered or tracking an existing case?'}
+              </p>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                {isAr
+                  ? 'سجّل دخولك برقم الجوال للوصول السريع إلى تاريخك الطبي ومتابعة مسار استشارتك.'
+                  : 'Log in with your Saudi mobile number to link medical records and track your case.'}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            id="returning-patient-login-btn"
+            onClick={onOpenLogin}
+            className="px-4 py-2 rounded-xl bg-[#007B6E] hover:bg-[#00655A] text-white font-extrabold text-xs transition-all shadow-sm active:scale-95 cursor-pointer whitespace-nowrap"
+          >
+            {isAr ? 'تسجيل الدخول برقم الجوال ←' : 'Log In with Mobile Number →'}
+          </button>
+        </div>
+      )}
+
       {Object.keys(validationErrors).length > 0 && (
         <FormErrorSummary errors={validationErrors} lang={lang} />
       )}
@@ -353,6 +391,15 @@ export const PatientIntakeView: React.FC<Props> = ({
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
               });
+
+              // Progressive Intake: Prompt unauthenticated patient for Saudi Mobile Number + OTP verification
+              if (!userSession) {
+                if (onOpenLogin) {
+                  onOpenLogin();
+                }
+                return;
+              }
+
               setSubmittedCase({ id: freshId, caseNumber: freshCaseNum });
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}

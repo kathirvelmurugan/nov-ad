@@ -1,11 +1,12 @@
 import React from 'react';
-import { MessageSquare } from 'lucide-react';
+import { MessageSquare, LogOut } from 'lucide-react';
 
 export interface NurseCaseHeaderProps {
   activeCase: any;
   nurseName: string;
   referenceHospital: string;
   isAr: boolean;
+  onLogout?: () => void;
 }
 
 const NurseCaseHeader: React.FC<NurseCaseHeaderProps> = ({
@@ -13,6 +14,7 @@ const NurseCaseHeader: React.FC<NurseCaseHeaderProps> = ({
   nurseName,
   referenceHospital,
   isAr,
+  onLogout,
 }) => {
   const dir = isAr ? 'rtl' : 'ltr';
   const fontClass = isAr ? 'font-cairo' : 'font-sans';
@@ -73,20 +75,35 @@ const NurseCaseHeader: React.FC<NurseCaseHeaderProps> = ({
         </div>
       </div>
 
-      <button
-        type="button"
-        onClick={handleWhatsAppW03}
-        disabled={!activeCase?.patientPhone}
-        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-white text-xs font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#007B6E] focus-visible:ring-offset-2 ${
-          activeCase?.patientPhone
-            ? 'bg-[#25D366] hover:bg-[#1EBE5D] cursor-pointer'
-            : 'bg-gray-400 cursor-not-allowed opacity-60'
-        }`}
-        aria-label={isAr ? 'طلب فحوصات ناقصة عبر واتساب W03' : 'Request missing scans via WhatsApp W03'}
-      >
-        <MessageSquare size={16} aria-hidden="true" />
-        <span>{isAr ? 'طلب فحوصات W03' : 'Request Scans W03'}</span>
-      </button>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={handleWhatsAppW03}
+          disabled={!activeCase?.patientPhone}
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-white text-xs font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#007B6E] focus-visible:ring-offset-2 ${
+            activeCase?.patientPhone
+              ? 'bg-[#25D366] hover:bg-[#1EBE5D] cursor-pointer'
+              : 'bg-gray-400 cursor-not-allowed opacity-60'
+          }`}
+          aria-label={isAr ? 'طلب فحوصات ناقصة عبر واتساب W03' : 'Request missing scans via WhatsApp W03'}
+        >
+          <MessageSquare size={16} aria-hidden="true" />
+          <span>{isAr ? 'طلب فحوصات W03' : 'Request Scans W03'}</span>
+        </button>
+
+        {onLogout && (
+          <button
+            id="staff-nav-logout-btn"
+            type="button"
+            onClick={onLogout}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
+            title={isAr ? 'تسجيل الخروج' : 'Log Out'}
+          >
+            <LogOut size={14} />
+            <span>{isAr ? 'خروج' : 'Logout'}</span>
+          </button>
+        )}
+      </div>
     </header>
   );
 };

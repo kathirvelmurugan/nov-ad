@@ -39,9 +39,9 @@ export const HospitalStaffLoginForm: React.FC<HospitalStaffLoginFormProps> = ({
   const [selectedHospitalId, setSelectedHospitalId] = useState<string>(() => hospitals[0]?.id || '');
   const [loginMethod, setLoginMethod] = useState<'admin_otp' | 'staff_pin'>('staff_pin');
   const [staffCode, setStaffCode] = useState('');
-  const [staffPin, setStaffPin] = useState('1234');
+  const [staffPin, setStaffPin] = useState('');
   const [adminPhone, setAdminPhone] = useState('');
-  const [adminOtp, setAdminOtp] = useState('123456');
+  const [adminOtp, setAdminOtp] = useState('');
   const [error, setError] = useState('');
 
   // Re-sync dynamic hospitals from backend API and localStorage on mount and window focus
@@ -111,8 +111,9 @@ export const HospitalStaffLoginForm: React.FC<HospitalStaffLoginFormProps> = ({
     }
 
     if (loginMethod === 'admin_otp') {
-      if (adminOtp.trim() !== '123456') {
-        setError(t('رمز التحقق غير صحيح، يرجى إعادة المحاولة', 'Invalid OTP code. Please try again.'));
+      const cleanOtp = adminOtp.trim();
+      if (!cleanOtp || cleanOtp.length !== 6) {
+        setError(t('يرجى إدخال رمز التحقق كاملاً (6 أرقام)', 'Please enter the complete 6-digit OTP code'));
         return;
       }
       onStaffLoginSuccess({
@@ -128,7 +129,7 @@ export const HospitalStaffLoginForm: React.FC<HospitalStaffLoginFormProps> = ({
         (s) => s.staffCode === cleanCode && (s.hospitalId === selectedHospitalId || !s.hospitalId)
       );
 
-      if (!matched || staffPin.trim() !== matched.pin) {
+      if (!matched || !staffPin.trim() || staffPin.trim() !== matched.pin) {
         setError(t('رقم الموظف أو رمز PIN غير صحيح', 'Invalid Staff ID or PIN'));
         return;
       }

@@ -87,28 +87,57 @@ export function useWorkflowUIState({
 
   const handleLogout = () => {
     try {
-      localStorage.removeItem(USER_SESSION_KEY);
-      localStorage.removeItem(VIEW_MODE_KEY);
-      localStorage.removeItem(STORAGE_KEY);
-      localStorage.removeItem(ACTIVE_CASE_KEY);
-      localStorage.removeItem('alo_patient_subview_v3.0');
-      // Wipe any residual draft keys on shared workstations
+      const explicitKeys = [
+        USER_SESSION_KEY,
+        'alo_user_session_v3.0',
+        'alo_user_session_v2.4',
+        'alo_doctor_user_session_v2',
+        'alo_consultant_session_v4.0_clean',
+        'alo_patient_subview_v3.0',
+        'alo_patient_subview',
+        'alo_session_token_v1',
+        'alo_session_token',
+        'alo_token_v1',
+        'alo_token',
+        VIEW_MODE_KEY,
+        STORAGE_KEY,
+        ACTIVE_CASE_KEY,
+        'alo_active_case_id',
+      ];
+      explicitKeys.forEach((k) => {
+        try { localStorage.removeItem(k); } catch (e) {}
+      });
+
+      // Safely collect all snapshot keys to prevent index shifting bugs during removal
+      const allKeys: string[] = [];
       for (let i = 0; i < localStorage.length; i++) {
         const k = localStorage.key(i);
-        if (k && (k.includes('draft') || k.includes('case'))) {
-          localStorage.removeItem(k);
-        }
+        if (k) allKeys.push(k);
       }
+      allKeys.forEach((k) => {
+        if (
+          k.includes('draft') ||
+          k.includes('case') ||
+          k.includes('session') ||
+          k.includes('token') ||
+          k.includes('subview') ||
+          k.includes('alo_active')
+        ) {
+          try { localStorage.removeItem(k); } catch (e) {}
+        }
+      });
     } catch (e) {}
+
     setUserSession(null);
     setActivePersona(PERSONAS[0]);
     setPatientSubView('landing');
     setViewMode('workstation');
     setIsAuthModalOpen(false);
+
     if (typeof window !== 'undefined') {
       try {
-        const cleanUrl = window.location.pathname;
-        window.history.replaceState({ subView: 'landing', viewMode: 'workstation' }, '', cleanUrl);
+        const cleanPath = window.location.pathname;
+        window.history.replaceState({}, '', cleanPath);
       } catch (e) {}
     }
   };

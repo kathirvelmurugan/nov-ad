@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShieldCheck, Timer } from 'lucide-react';
+import { ShieldCheck, Timer, LogOut } from 'lucide-react';
 
 export interface DoctorHeaderBarProps {
   activeCase: any;
@@ -7,6 +7,7 @@ export interface DoctorHeaderBarProps {
   partnerHospital: string;
   slaFormatted: string;
   isAr: boolean;
+  onLogout?: () => void;
 }
 
 const DoctorHeaderBar: React.FC<DoctorHeaderBarProps> = ({
@@ -15,6 +16,7 @@ const DoctorHeaderBar: React.FC<DoctorHeaderBarProps> = ({
   partnerHospital,
   slaFormatted,
   isAr,
+  onLogout,
 }) => {
   const dir = isAr ? 'rtl' : 'ltr';
   const fontClass = isAr ? 'font-cairo' : 'font-sans';
@@ -67,12 +69,27 @@ const DoctorHeaderBar: React.FC<DoctorHeaderBarProps> = ({
         )}
       </div>
 
-      <div
-        data-testid="doctor-sla-timer"
-        className="inline-flex items-center gap-2 rounded-lg bg-[#007B6E] px-4 py-2 text-sm font-bold text-white shadow-md"
-      >
-        <Timer size={16} className="text-[#00C6AE]" />
-        <span>{slaFormatted}</span>
+      <div className="flex items-center gap-2">
+        <div
+          data-testid="doctor-sla-timer"
+          className="inline-flex items-center gap-2 rounded-lg bg-[#007B6E] px-4 py-2 text-sm font-bold text-white shadow-md"
+        >
+          <Timer size={16} className="text-[#00C6AE]" />
+          <span>{slaFormatted}</span>
+        </div>
+
+        {onLogout && (
+          <button
+            id="staff-nav-logout-btn"
+            type="button"
+            onClick={onLogout}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
+            title={isAr ? 'تسجيل الخروج' : 'Log Out'}
+          >
+            <LogOut size={14} />
+            <span>{isAr ? 'تسجيل الخروج' : 'Log Out'}</span>
+          </button>
+        )}
       </div>
     </header>
   );

@@ -167,15 +167,6 @@ export const OtpVerificationStep: React.FC<Props> = ({
           </div>
         )}
 
-        {isDemoMode && (
-          <div style={{ textAlign: 'center', margin: '16px 0' }}>
-            <p style={{ fontSize: '13px', color: PALETTE.textMuted, margin: 0 }}>
-              {t('للتجربة، استخدم الرمز:', 'For testing, use code:')}{' '}
-              <span style={{ fontWeight: 800, color: PALETTE.primary, letterSpacing: '2px', fontFamily: 'monospace' }}>{DEV_OTP}</span>
-            </p>
-          </div>
-        )}
-
         <button
           id="auth-otp-submit-btn"
           type="submit"

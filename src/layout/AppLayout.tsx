@@ -16,8 +16,8 @@ import { Persona, ClinicalCase, ClinicalStage } from '../types';
 import { PERSONAS }                from '../data/personas';
 import { UserSession }             from '../hooks/useClinicalWorkflowState';
 import { TopProfileSwitcher }      from '../components/TopProfileSwitcher';
+import { UniversalHeader }         from './UniversalHeader';
 import { StageProgressBar }        from '../components/StageProgressBar';
-import { StageHandoffModal }       from '../components/StageHandoffModal';
 import { FiveDeviceCockpitView }   from '../components/FiveDeviceCockpitView';
 import { NewCaseModal }            from '../components/NewCaseModal';
 import UnifiedAuthGate             from '../components/auth/UnifiedAuthGate';
@@ -40,16 +40,11 @@ interface AppLayoutProps {
   patientSubView: 'landing' | 'intake' | 'timeline' | 'telehealth' | 'checkout';
   theme: 'light' | 'dark';
   // UI flags
-  isAuthModalOpen?: boolean;
-  setIsAuthModalOpen?: (v: boolean) => void;
-  isGuideOpen: boolean;
-  setIsGuideOpen: (v: boolean) => void;
-  isPipelineBoardOpen: boolean;
-  setIsPipelineBoardOpen: (v: boolean) => void;
-  isNewCaseModalOpen: boolean;
-  setIsNewCaseModalOpen: (v: boolean) => void;
-  isAutoDemoActive: boolean;
-  setIsAutoDemoActive: (v: boolean) => void;
+  isAuthModalOpen?: boolean; setIsAuthModalOpen?: (v: boolean) => void;
+  isGuideOpen: boolean; setIsGuideOpen: (v: boolean) => void;
+  isPipelineBoardOpen: boolean; setIsPipelineBoardOpen: (v: boolean) => void;
+  isNewCaseModalOpen: boolean; setIsNewCaseModalOpen: (v: boolean) => void;
+  isAutoDemoActive: boolean; setIsAutoDemoActive: (v: boolean) => void;
   pendingHandoff: { fromStage: ClinicalStage; toStage: ClinicalStage; nextPersona: Persona } | null;
   setPendingHandoff: (v: null) => void;
   // Handlers
@@ -148,8 +143,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
       dir={isAr ? 'rtl' : 'ltr'}
       lang={lang}
     >
-      {/* 1. Top Utility Ribbon & Persona Switcher (Production Guard: Super Admin or explicit ?demo=true) */}
-      {!isPureLandingPage && (userSession?.roleCode === 'AD' || (typeof window !== 'undefined' && window.location.search.includes('demo=true'))) && (
+      {/* 1. Universal Top Navigation Header across all portals */}
+      {!isPureLandingPage && (userSession?.roleCode === 'AD' || (typeof window !== 'undefined' && window.location.search.includes('demo=true'))) ? (
         <TopProfileSwitcher
           activePersona={activePersona}
           onSelectPersona={handleSelectPersona}
@@ -174,7 +169,19 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
           onSelectPatientSubView={handleSelectPatientSubView}
           onLogout={handleLogout}
         />
-      )}
+      ) : userSession ? (
+        <UniversalHeader
+          userSession={userSession}
+          activePersona={activePersona}
+          activeCase={activeCase}
+          lang={lang}
+          onToggleLang={handleToggleLang}
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
+          patientSubView={patientSubView}
+          onLogout={handleLogout}
+        />
+      ) : null}
 
       {/* 2. Main Area: Studio Cockpit OR Workstation */}
       {viewMode === 'studio' ? (
