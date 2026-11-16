@@ -1,555 +1,350 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { ClinicalCase, PaymentMethodId } from '../../types';
+import { MousePointerClick } from 'lucide-react';
+import { TEAL_PRIMARY, TEAL_ACCENT, TEAL_BG } from '../coordinator/coordinatorStyles';
+import { CoordinatorPaymentGateTab } from '../coordinator/CoordinatorPaymentGateTab';
+import { CoordinatorTelehealthTab } from '../coordinator/CoordinatorTelehealthTab';
+import { CoordinatorReportReleaseTab } from '../coordinator/CoordinatorReportReleaseTab';
+import { CoordinatorFollowUpTab } from '../coordinator/CoordinatorFollowUpTab';
+import { CoordinatorCaseClosureTab } from '../coordinator/CoordinatorCaseClosureTab';
+import CoordinatorCaseHeader from '../coordinator/CoordinatorCaseHeader';
+import CoordinatorNavTabs from '../coordinator/CoordinatorNavTabs';
+import { BilingualReportModal } from '../cockpit/BilingualReportModal';
+import { PortalCaseTrackerPanel, getStageBadgeMeta } from '../common/PortalCaseTrackerPanel';
+import { CaseMilestoneHUD } from '../common/CaseMilestoneHUD';
+import { isActionableForCoordinator, getTierData, getDefaultProposedSlots, getDefaultIncomingQuestions } from '../coordinator/coordinatorLogic';
 
-interface PaymentDetail {
-  transactionId: string;
-  method: 'MADA' | 'APPLE_PAY';
-  amount: number;
-  currency: string;
-  timestamp: string;
+interface Props {
+  activeCase?: ClinicalCase;
+  cases?: ClinicalCase[];
+  onSelectCase?: (caseId: string) => void;
+  onAdvanceStage: () => void;
+  onAssignPaymentToPatient?: (
+    methods: PaymentMethodId[],
+    tierData: { tier: number; tierName: string; baseSar: number; vatSar: number; totalSar: number },
+  ) => void;
+  onVerifyPaymentAndDispatch?: () => void;
+  onReleaseReportToPatient?: () => void;
+  onUpdateCase: (updated: Partial<ClinicalCase>) => void;
+  lang: 'ar' | 'en';
+  onLogout?: () => void;
 }
 
-interface Pricing {
-  paid: boolean;
-  amount: number;
-}
-
-interface ConsultationCase {
-  caseId: string;
-  patientName: string;
-  pricing: Pricing;
-  paymentVerified: boolean;
-  paymentDetails: PaymentDetail;
-  stage: string;
-  createdAt: string;
-}
-
-interface CoordinatorProfile {
-  name: string;
-  phone: string;
-  role: string;
-}
-
-interface CoordinatorPortalViewProps {
-  personaId?: string;
-  lang?: 'ar' | 'en';
-  apiClient: any;
-}
-
-const TEAL_PRIMARY = '#007B6E';
-const TEAL_SECONDARY = '#00C6AE';
-const TEAL_BACKGROUND = '#E6FAF7';
-const WHATSAPP_GREEN = '#25D366';
-
-const COORDINATOR_PROFILE: CoordinatorProfile = {
-  name: 'Emmanuel Arcon Gonzalez',
-  phone: '+966500000003',
-  role: 'Telehealth Operations Specialist'
-};
-
-const I18N = {
-  ar: {
-    portalTitle: 'بوابة المنسق الطبي',
-    awaitingReconciliation: 'الحالات بانتظار التسوية المالية (C04)',
-    noCases: 'لا توجد حالات بانتظار التحقق من الدفع.',
-    transactionId: 'رقم العملية',
-    paymentMethod: 'طريقة الدفع',
-    amount: 'المبلغ',
-    patient: 'المرضى',
-    date: 'التاريخ',
-    verifyAndDispatch: 'التحقق والتحويل للاستشاري (C04 / التحقق والتحويل للاستشاري)',
-    verifying: 'جاري التحقق...',
-    success: 'تم التحقق وتوليد رابط الاستشاري (72 ساعة) - المرحلة M04',
-    error: 'حدث خطأ أثناء التحقق. يرجى المحاولة مرة أخرى.',
-    mada: 'مدى',
-    applePay: 'آبل باي',
-    consultantLink: 'رابط الاستشاري السحري',
-    copied: 'تم النسخ',
-    copyLink: 'نسخ الرابط',
-    profile: 'الملف الشخصي',
-    stage: 'المرحلة الحالية'
-  },
-  en: {
-    portalTitle: 'Coordinator Portal',
-    awaitingReconciliation: 'Cases Awaiting Reconciliation (C04)',
-    noCases: 'No cases awaiting payment verification.',
-    transactionId: 'Transaction ID',
-    paymentMethod: 'Payment Method',
-    amount: 'Amount',
-    patient: 'Patient',
-    date: 'Date',
-    verifyAndDispatch: 'Verify Payment & Dispatch to Consultant (C04)',
-    verifying: 'Verifying...',
-    success: 'Payment verified. 72h magic link generated. Advanced to M04.',
-    error: 'Error during verification. Please try again.',
-    mada: 'Mada',
-    applePay: 'Apple Pay',
-    consultantLink: 'Magic Consultant Link',
-    copied: 'Copied',
-    copyLink: 'Copy Link',
-    profile: 'Profile',
-    stage: 'Current Stage'
-  }
-};
-
-const CoordinatorPortalView: React.FC<CoordinatorPortalViewProps> = ({
-  personaId = 'coordinator-01',
-  lang = 'ar',
-  apiClient
+export const CoordinatorPortalView: React.FC<Props> = ({
+  activeCase: propsActiveCase,
+  cases = [],
+  onSelectCase,
+  onAdvanceStage,
+  onAssignPaymentToPatient,
+  onVerifyPaymentAndDispatch,
+  onReleaseReportToPatient,
+  onUpdateCase,
+  lang,
+  onLogout,
 }) => {
-  const [cases, setCases] = useState<ConsultationCase[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [processingId, setProcessingId] = useState<string | null>(null);
-  const [generatedLinks, setGeneratedLinks] = useState<Record<string, string>>({});
-  const [copiedState, setCopiedState] = useState<Record<string, boolean>>({});
-  const [errorState, setErrorState] = useState<Record<string, string>>({});
+  const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
 
-  const isRTL = lang === 'ar';
-  const t = I18N[lang];
+  const pendingCoordinatorCases = useMemo(() => {
+    return cases.filter(isActionableForCoordinator);
+  }, [cases]);
 
-  const fetchPendingCases = useCallback(async () => {
-    setLoading(true);
-    try {
-      const response = await apiClient.getCasesByStage('AWAITING_PAYMENT_VERIFICATION');
-      const filtered = response.filter(
-        (c: ConsultationCase) => c.pricing.paid === true && c.paymentVerified === false
-      );
-      setCases(filtered);
-    } catch (err) {
-      console.error('Failed to fetch C04 cases:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [apiClient]);
+  // Intelligent Caseload Auto-Selection: Auto-default to the first actionable coordinator case
+  const defaultCoordCase = pendingCoordinatorCases[0] || (propsActiveCase?.id ? propsActiveCase : cases[0]);
+  const effectiveCaseId = selectedCaseId !== null ? selectedCaseId : defaultCoordCase?.id || null;
+  const currentCase = effectiveCaseId ? (cases.find((c) => c.id === effectiveCaseId) || null) : null;
+  const activeCase = (currentCase || propsActiveCase) as ClinicalCase;
 
+  const isPaid = !!activeCase?.pricing?.paid || activeCase?.paymentDetails?.status === 'completed';
+  const isPaymentVerified = !!activeCase?.paymentVerified || !!activeCase?.metadata?.paymentVerified;
+  const isInvoiceIssued = !!activeCase?.invoiceIssued;
+  const isSaudiDoctorApproved = activeCase?.saudiEndorsement?.status === 'endorsed' || !!activeCase?.metadata?.saudiDoctorApprovedOpinion;
+
+  const getInitialTab = (): 'C01' | 'C07' | 'C08' | 'C09' | 'C10' => {
+    if (activeCase?.currentStage === 'AWAITING_PAYMENT' || (isPaid && !isPaymentVerified)) return 'C01';
+    if (activeCase?.currentStage === 'PARTNER_SERVICES' || (Boolean(activeCase?.secondOpinionSubmitted || activeCase?.currentStage === 'OPINION_READY') && !activeCase?.reportReleased) || (isSaudiDoctorApproved && !activeCase?.reportReleased)) return 'C08';
+    if (activeCase?.currentStage === 'CLOSED') return 'C10';
+    if (activeCase?.currentStage === 'FOLLOW_UP_21_DAYS') return 'C09';
+    if (activeCase?.consultationType === 'video' && isPaid && isPaymentVerified) return 'C07';
+    return 'C01';
+  };
+
+  const [activeTab, setActiveTab] = useState<'C01' | 'C07' | 'C08' | 'C09' | 'C10'>(getInitialTab);
+  const [isReportPreviewOpen, setIsReportPreviewOpen] = useState(false);
+  const [isPDF2ModalOpen, setIsPDF2ModalOpen] = useState(false);
+  const [coordinatorReportType, setCoordinatorReportType] = useState<'pdf1' | 'pdf2'>('pdf2');
+  const [selectedConsultationType, setSelectedConsultationType] = useState<'written' | 'video'>(activeCase?.consultationType === 'written' ? 'written' : 'video');
+  const [selectedMethods, setSelectedMethods] = useState<PaymentMethodId[]>(activeCase?.allowedPaymentMethods && activeCase.allowedPaymentMethods.length > 0 ? activeCase.allowedPaymentMethods : ['mada', 'applepay', 'visa', 'tabby']);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [relayMessage, setRelayMessage] = useState('');
+
+  const isAr = lang === 'ar';
+  const dir = isAr ? 'rtl' : 'ltr';
+  const fontFamily = isAr ? "'Cairo', sans-serif" : "'Inter', sans-serif";
+
+  useEffect(() => { setActiveTab(getInitialTab()); }, [activeCase?.currentStage, activeCase?.id, isPaid, isPaymentVerified]);
   useEffect(() => {
-    fetchPendingCases();
-  }, [fetchPendingCases]);
-
-  const handleVerifyAndDispatch = async (caseId: string) => {
-    setProcessingId(caseId);
-    setErrorState((prev) => ({ ...prev, [caseId]: '' }));
-
-    try {
-      // Calls apiClient.verifyPayment(caseId)
-      // Authoritatively updates PostgreSQL with paymentVerified = true
-      const verificationResult = await apiClient.verifyPayment(caseId);
-
-      // Generates 72h magic consultant link
-      const magicLink = verificationResult.consultantLink || `https://alo.doctor/c/${caseId}?token=${verificationResult.token}&exp=72h`;
-
-      // Advances stage to WITH_CONSULTANT (M04 milestone)
-      setCases((prev) =>
-        prev.map((c) =>
-          c.caseId === caseId
-            ? { ...c, paymentVerified: true, stage: 'WITH_CONSULTANT' }
-            : c
-        )
-      );
-
-      setGeneratedLinks((prev) => ({ ...prev, [caseId]: magicLink }));
-    } catch (err: any) {
-      setErrorState((prev) => ({
-        ...prev,
-        [caseId]: err?.message || t.error
-      }));
-    } finally {
-      setProcessingId(null);
+    setSelectedConsultationType(activeCase?.consultationType === 'written' ? 'written' : 'video');
+    if (activeCase?.allowedPaymentMethods && activeCase.allowedPaymentMethods.length > 0) {
+      setSelectedMethods(activeCase.allowedPaymentMethods);
+    } else {
+      setSelectedMethods(['mada', 'applepay', 'visa', 'tabby']);
     }
+  }, [activeCase?.id, activeCase?.consultationType]);
+
+  const handleSelectCase = (caseId: string) => { setSelectedCaseId(caseId); onSelectCase?.(caseId); };
+
+  const handleConfirmSlot = (slotId: string) => {
+    if (!isPaid) { alert(isAr ? 'لا يمكن تأكيد موعد المكالمة قبل تأكيد السداد.' : 'Call time can be confirmed only after payment.'); return; }
+    if (activeCase?.consultationType === 'written') { alert(isAr ? 'رأي مكتوب فقط — لا توجد مكالمة.' : 'Written opinion only — no call.'); return; }
+    onUpdateCase({ metadata: { ...(activeCase?.metadata || {}), confirmedSlotId: slotId, stage: 'C08' } });
+    setActiveTab('C08');
+    onAdvanceStage();
   };
 
-  const handleCopyLink = async (caseId: string, link: string) => {
+  const handleReleasePDF1 = async () => {
+    setIsProcessing(true);
     try {
-      await navigator.clipboard.writeText(link);
-      setCopiedState((prev) => ({ ...prev, [caseId]: true }));
-      setTimeout(() => {
-        setCopiedState((prev) => ({ ...prev, [caseId]: false }));
-      }, 3000);
-    } catch (err) {
-      console.error('Failed to copy link:', err);
-    }
+      await new Promise(r => setTimeout(r, 600));
+      onUpdateCase({
+        reportReleased: true, doctorReleasedToPatient: true, coordinatorForwardedToDoctor: true,
+        metadata: {
+          ...(activeCase?.metadata || {}), coordinatorVerifiedOpinion: true, coordinatorDispatched: true,
+          coordinatorDispatchedAt: new Date().toISOString(), dispatchedToDoctor: true, dispatchedToPatient: true,
+          pdf1Released: true, pdf1Timestamp: new Date().toISOString(), stage: 'C09'
+        }
+      });
+      setActiveTab('C09');
+      onAdvanceStage();
+    } finally { setIsProcessing(false); }
   };
 
-  const formatCurrency = (amount: number, currency: string) => {
-    return new Intl.NumberFormat(lang === 'ar' ? 'ar-SA' : 'en-US', {
-      style: 'currency',
-      currency: currency || 'SAR'
-    }).format(amount);
+  const toggleMethod = (id: PaymentMethodId) => {
+    if (isPaid) return;
+    setSelectedMethods((prev) => prev.includes(id) ? prev.filter((m) => m !== id) : [...prev, id]);
   };
 
-  const containerStyle: React.CSSProperties = {
-    direction: isRTL ? 'rtl' : 'ltr',
-    fontFamily: 'Cairo, sans-serif',
-    backgroundColor: TEAL_BACKGROUND,
-    minHeight: '100vh',
-    padding: '24px',
-    color: '#1A1A1A'
+  const handleIssuePaymentLink = () => {
+    if (selectedMethods.length === 0) return;
+    const tierData = getTierData(selectedConsultationType, isAr);
+    if (onAssignPaymentToPatient) { onAssignPaymentToPatient(selectedMethods, tierData); return; }
+    const invoiceNumber = activeCase?.pricing?.invoiceNumber || `INV-2026-${Math.floor(100000 + Math.random() * 900000)}`;
+    onUpdateCase({
+      invoiceIssued: true, allowedPaymentMethods: selectedMethods, paymentAssignedAt: new Date().toISOString(),
+      consultationType: selectedConsultationType, tier: tierData.tier,
+      pricing: { ...activeCase?.pricing, ...tierData, vatPercent: 15, tabbyInstallmentSar: Number((tierData.totalSar / 4).toFixed(2)), invoiceNumber, paid: false },
+      metadata: { ...(activeCase?.metadata || {}), paymentLinkIssued: true, paymentLinkIssuedAt: new Date().toISOString(), assignedPaymentMethods: selectedMethods },
+    });
   };
 
-  const headerStyle: React.CSSProperties = {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '32px',
-    flexWrap: 'wrap',
-    gap: '16px'
+  const handleConfirmPaymentAndPush = () => {
+    if (!isPaid) return;
+    if (onVerifyPaymentAndDispatch) { onVerifyPaymentAndDispatch(); return; }
+    onUpdateCase({
+      paymentVerified: true, isCrossBorderDeidentified: true, dualTokenGenerated: true,
+      egressToken: activeCase?.egressToken || 'ALO-KSA-9482',
+      metadata: { ...(activeCase?.metadata || {}), paymentVerified: true, consultantLinkSent: true },
+    });
+    onAdvanceStage();
   };
 
-  const titleStyle: React.CSSProperties = {
-    fontSize: '28px',
-    fontWeight: 700,
-    color: TEAL_PRIMARY,
-    margin: 0
+  const incomingQuestions = (activeCase?.metadata?.patientQuestions as string[]) || getDefaultIncomingQuestions(isAr);
+  const followUpAnswers = (activeCase?.metadata?.coordinatorReplies as string[]) || (activeCase?.metadata?.followUpAnswers as string[]) || [];
+
+  const handleSendCoordinatorReply = async (questionIdx?: number, customText?: string) => {
+    const text = (customText !== undefined ? customText : (relayMessage.trim() || incomingQuestions[incomingQuestions.length - 1] || '')).trim();
+    if (!text) return;
+    setIsProcessing(true);
+    try {
+      await new Promise(r => setTimeout(r, 600));
+      const existingReplies = [...(((activeCase?.metadata?.coordinatorReplies as string[]) || (activeCase?.metadata?.followUpAnswers as string[]) || []))];
+      if (typeof questionIdx === 'number' && questionIdx >= 0) existingReplies[questionIdx] = text;
+      else existingReplies.push(text);
+      onUpdateCase({ metadata: { ...(activeCase?.metadata || {}), coordinatorReplies: existingReplies, followUpAnswers: existingReplies } });
+      if (customText === undefined) setRelayMessage('');
+    } finally { setIsProcessing(false); }
   };
 
-  const profileBadgeStyle: React.CSSProperties = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    backgroundColor: '#FFFFFF',
-    padding: '12px 20px',
-    borderRadius: '12px',
-    boxShadow: '0 2px 8px rgba(0, 123, 110, 0.08)',
-    border: `1px solid ${TEAL_SECONDARY}`
+  const handleEndFollowUp = () => {
+    onUpdateCase({ metadata: { ...(activeCase?.metadata || {}), coordinatorEndedFollowUp: true, coordinatorEndedFollowUpAt: new Date().toISOString() } });
+    setActiveTab('C10');
   };
 
-  const cardStyle: React.CSSProperties = {
-    backgroundColor: '#FFFFFF',
-    borderRadius: '16px',
-    padding: '24px',
-    marginBottom: '20px',
-    boxShadow: '0 4px 16px rgba(0, 123, 110, 0.06)',
-    border: `1px solid ${TEAL_BACKGROUND}`,
-    transition: 'all 0.2s ease-in-out'
+  const handleReleasePDF2 = async () => {
+    setIsProcessing(true);
+    try {
+      await new Promise(r => setTimeout(r, 800));
+      onUpdateCase({ metadata: { ...(activeCase?.metadata || {}), pdf2Released: true, pdf2Timestamp: new Date().toISOString() } });
+    } finally { setIsProcessing(false); }
   };
 
-  const buttonStyle: React.CSSProperties = {
-    backgroundColor: TEAL_PRIMARY,
-    color: '#FFFFFF',
-    border: 'none',
-    padding: '14px 24px',
-    borderRadius: '10px',
-    fontFamily: 'Cairo, sans-serif',
-    fontSize: '15px',
-    fontWeight: 600,
-    cursor: 'pointer',
-    width: '100%',
-    marginTop: '16px',
-    transition: 'background-color 0.2s ease',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '8px'
+  const handleCloseCaseCompletely = async () => {
+    setIsProcessing(true);
+    try {
+      await new Promise(r => setTimeout(r, 1000));
+      onUpdateCase({
+        status: 'closed', currentStage: 'CLOSED', stage: 9,
+        metadata: { ...(activeCase?.metadata || {}), pdf2Released: true, archived: true, closedAt: new Date().toISOString(), stage: 'CLOSED' },
+      });
+      onAdvanceStage();
+    } finally { setIsProcessing(false); }
   };
 
-  const disabledButtonStyle: React.CSSProperties = {
-    ...buttonStyle,
-    backgroundColor: '#B0BEC5',
-    cursor: 'not-allowed'
-  };
+  const proposedSlots = (activeCase?.metadata?.proposedSlots as Array<{ id: string; time: string }>) || getDefaultProposedSlots(isAr);
+  const confirmedSlotId = activeCase?.metadata?.confirmedSlotId as string | undefined;
+  const pdf1Released = activeCase?.metadata?.pdf1Released as boolean | undefined;
+  const isArchived = Boolean(activeCase?.metadata?.archived || activeCase?.currentStage === 'CLOSED' || activeCase?.status === 'closed');
+  const stageMeta = currentCase ? getStageBadgeMeta(currentCase.currentStage, isAr) : null;
 
-  const whatsappButtonStyle: React.CSSProperties = {
-    ...buttonStyle,
-    backgroundColor: WHATSAPP_GREEN,
-    marginTop: '10px'
-  };
-
-  const gridStyle: React.CSSProperties = {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-    gap: '16px',
-    marginBottom: '16px'
-  };
-
-  const labelStyle: React.CSSProperties = {
-    fontSize: '13px',
-    color: '#666666',
-    fontWeight: 500,
-    marginBottom: '4px'
-  };
-
-  const valueStyle: React.CSSProperties = {
-    fontSize: '15px',
-    color: '#1A1A1A',
-    fontWeight: 600
-  };
-
-  const linkBoxStyle: React.CSSProperties = {
-    backgroundColor: TEAL_BACKGROUND,
-    padding: '16px',
-    borderRadius: '10px',
-    marginTop: '16px',
-    border: `1px solid ${TEAL_SECONDARY}`,
-    wordBreak: 'break-all'
-  };
-
-  const errorMessageStyle: React.CSSProperties = {
-    color: '#D32F2F',
-    fontSize: '14px',
-    marginTop: '12px',
-    fontWeight: 500
-  };
+  if (cases.length === 0) {
+    return (
+      <div data-testid="coordinator-empty" className="max-w-2xl mx-auto my-12 text-center p-10 card-clinical space-y-4">
+        <h3 className="text-xl font-black text-alo-navy dark:text-slate-100">{isAr ? 'لا توجد حالات سريرية قيد التنسيق الطبي' : 'No Cases Pending Coordination'}</h3>
+        <p className="text-sm text-slate-500 max-w-md mx-auto">{isAr ? 'صندوق منسق رعاية ألو محدّث بالكامل.' : 'ALO Care Coordinator queue is up to date.'}</p>
+      </div>
+    );
+  }
 
   return (
-    <div style={containerStyle} data-persona={personaId} role="main" aria-label={t.portalTitle}>
-      <header style={headerStyle}>
-        <div>
-          <h1 style={titleStyle}>{t.portalTitle}</h1>
-          <p style={{ margin: '8px 0 0 0', color: TEAL_PRIMARY, fontSize: '16px', fontWeight: 500 }}>
-            {t.awaitingReconciliation}
+    <div
+      data-testid="coordinator-portal-view"
+      className="coordinator-portal-container"
+      style={{ direction: dir, fontFamily, backgroundColor: '#F4F7F6', minHeight: '100vh', padding: '24px 32px', color: '#1A202C' }}
+    >
+      <div style={{ maxWidth: '900px', margin: '0 auto 20px', width: '100%' }}>
+        <PortalCaseTrackerPanel
+          cases={cases}
+          activeCaseId={selectedCaseId || ''}
+          onSelectCase={handleSelectCase}
+          lang={lang}
+          portalTitleAr="قائمة حالات التنسيق الطبي والتتبع"
+          portalTitleEn="ALO Coordinator Queue & Case Tracking"
+          actionablePredicate={isActionableForCoordinator}
+        />
+      </div>
+
+      {!currentCase ? (
+        <div
+          className="card-clinical text-center space-y-3 bg-white dark:bg-slate-900 border border-dashed border-slate-300 rounded-2xl"
+          style={{ maxWidth: '900px', margin: '20px auto', padding: '36px 24px', textAlign: 'center', backgroundColor: '#FFFFFF', borderRadius: '16px' }}
+        >
+          <div style={{ width: '48px', height: '48px', margin: '0 auto 12px', borderRadius: '50%', backgroundColor: '#E6FAF7', display: 'flex', alignItems: 'center', justifyContent: 'center', color: TEAL_PRIMARY, border: `1px solid ${TEAL_ACCENT}50` }}>
+            <MousePointerClick size={24} />
+          </div>
+          <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#1A202C', margin: '0 0 8px', fontFamily }}>
+            {isAr ? 'يرجى اختيار حالة من قائمة التنسيق الطبي والتتبع أعلاه' : 'Select a Case from the Coordination Queue Above'}
+          </h3>
+          <p style={{ fontSize: '13px', color: '#718096', margin: '0 auto', maxWidth: '480px', lineHeight: '1.6', fontFamily }}>
+            {isAr ? 'انقر على أي حالة في قائمة التنسيق أعلاه لعرض التفاصيل وتحديد باقة السداد.' : 'Click on any case card in the queue above to review details.'}
           </p>
         </div>
-        
-        <div style={profileBadgeStyle} aria-label={t.profile}>
-          <div style={{
-            width: '40px',
-            height: '40px',
-            borderRadius: '50%',
-            backgroundColor: TEAL_PRIMARY,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#FFFFFF',
-            fontWeight: 700,
-            fontSize: '16px'
-          }}>
-            {COORDINATOR_PROFILE.name.charAt(0)}
-          </div>
-          <div>
-            <div style={{ fontWeight: 700, fontSize: '14px', color: TEAL_PRIMARY }}>
-              {COORDINATOR_PROFILE.name}
-            </div>
-            <div style={{ fontSize: '12px', color: '#666' }}>
-              {COORDINATOR_PROFILE.phone} • {COORDINATOR_PROFILE.role}
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: '40px', color: TEAL_PRIMARY }}>
-          <div style={{
-            width: '40px',
-            height: '40px',
-            border: `4px solid ${TEAL_BACKGROUND}`,
-            borderTop: `4px solid ${TEAL_PRIMARY}`,
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite',
-            margin: '0 auto 16px auto'
-          }} />
-          <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
-          <p style={{ fontWeight: 600 }}>{isRTL ? 'جاري التحميل...' : 'Loading...'}</p>
-        </div>
-      ) : cases.length === 0 ? (
-        <div style={{
-          ...cardStyle,
-          textAlign: 'center',
-          padding: '60px 24px',
-          color: '#666'
-        }}>
-          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke={TEAL_SECONDARY} strokeWidth="1.5" style={{ margin: '0 auto 16px auto', display: 'block' }}>
-            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <p style={{ fontSize: '18px', fontWeight: 600 }}>{t.noCases}</p>
-        </div>
       ) : (
-        <div role="list" aria-label={t.awaitingReconciliation}>
-          {cases.map((consultationCase) => {
-            const isProcessing = processingId === consultationCase.caseId;
-            const hasLink = !!generatedLinks[consultationCase.caseId];
-            const errorMsg = errorState[consultationCase.caseId];
+        <div style={{ maxWidth: '900px', margin: '0 auto', width: '100%' }}>
+          {/* Universal Milestone HUD & Audit Ledger */}
+          <CaseMilestoneHUD activeCase={currentCase} lang={lang} isRTL={isAr} />
 
-            return (
-              <article
-                key={consultationCase.caseId}
-                style={{
-                  ...cardStyle,
-                  opacity: hasLink ? 0.7 : 1,
-                  borderColor: hasLink ? TEAL_SECONDARY : `${TEAL_BACKGROUND}`
+          <CoordinatorCaseHeader
+            currentCase={currentCase}
+            stageMeta={stageMeta}
+            isArchived={isArchived}
+            activeTab={activeTab}
+            isAr={isAr}
+            fontFamily={fontFamily}
+            onClose={() => setSelectedCaseId(null)}
+          />
+
+          <div style={{ marginTop: '16px', marginBottom: '24px' }}>
+            <CoordinatorNavTabs
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+              consultationType={activeCase?.consultationType}
+              isPaid={isPaid}
+              isAr={isAr}
+              fontFamily={fontFamily}
+            />
+          </div>
+
+          <main style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', padding: '32px', boxShadow: '0 4px 24px rgba(0, 123, 110, 0.06)', border: `1px solid ${TEAL_BG}` }} role="tabpanel">
+            {activeTab === 'C01' && (
+              <CoordinatorPaymentGateTab
+                activeCase={activeCase}
+                lang={lang}
+                isPaid={isPaid}
+                isPaymentVerified={isPaymentVerified}
+                isInvoiceIssued={isInvoiceIssued}
+                selectedConsultationType={selectedConsultationType}
+                setSelectedConsultationType={setSelectedConsultationType}
+                selectedMethods={selectedMethods}
+                toggleMethod={toggleMethod}
+                onIssuePaymentLink={handleIssuePaymentLink}
+                onConfirmPaymentAndPush={handleConfirmPaymentAndPush}
+              />
+            )}
+
+            {activeTab === 'C07' && (
+              <CoordinatorTelehealthTab
+                lang={lang}
+                proposedSlots={proposedSlots}
+                confirmedSlotId={confirmedSlotId}
+                isProcessing={isProcessing}
+                onConfirmSlot={handleConfirmSlot}
+              />
+            )}
+
+            {activeTab === 'C08' && (
+              <CoordinatorReportReleaseTab
+                lang={lang}
+                activeCase={activeCase}
+                isSaudiDoctorApproved={isSaudiDoctorApproved}
+                isProcessing={isProcessing}
+                pdf1Released={pdf1Released}
+                onReleasePDF1={handleReleasePDF1}
+                isReportPreviewOpen={isReportPreviewOpen}
+                setIsReportPreviewOpen={setIsReportPreviewOpen}
+              />
+            )}
+
+            {activeTab === 'C09' && (
+              <CoordinatorFollowUpTab
+                lang={lang}
+                activeCase={activeCase}
+                incomingQuestions={incomingQuestions}
+                followUpAnswers={followUpAnswers}
+                relayMessage={relayMessage}
+                setRelayMessage={setRelayMessage}
+                isProcessing={isProcessing}
+                onSendReplyToPatient={handleSendCoordinatorReply}
+                onEndFollowUp={handleEndFollowUp}
+                onRelayQuestion={() => handleSendCoordinatorReply()}
+                onEndFollowUpForDoctor={handleEndFollowUp}
+              />
+            )}
+
+            {activeTab === 'C10' && (
+              <CoordinatorCaseClosureTab
+                lang={lang}
+                activeCase={activeCase || currentCase!}
+                isArchived={isArchived}
+                isProcessing={isProcessing}
+                onReleasePDF2={handleReleasePDF2}
+                onCloseCaseCompletely={handleCloseCaseCompletely}
+                onIssuePDF2AndClose={handleCloseCaseCompletely}
+                onOpenPDFModal={(type) => {
+                  setCoordinatorReportType(type);
+                  setIsPDF2ModalOpen(true);
                 }}
-                role="listitem"
-                aria-label={`${t.patient}: ${consultationCase.patientName}`}
-              >
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'flex-start',
-                  marginBottom: '20px',
-                  flexWrap: 'wrap',
-                  gap: '12px'
-                }}>
-                  <div>
-                    <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 700, color: TEAL_PRIMARY }}>
-                      {consultationCase.patientName}
-                    </h2>
-                    <span style={{
-                      display: 'inline-block',
-                      marginTop: '8px',
-                      padding: '4px 12px',
-                      backgroundColor: hasLink ? TEAL_SECONDARY : '#FFF3E0',
-                      color: hasLink ? '#FFFFFF' : '#E65100',
-                      borderRadius: '20px',
-                      fontSize: '12px',
-                      fontWeight: 700
-                    }}>
-                      {hasLink ? 'WITH_CONSULTANT (M04)' : consultationCase.stage}
-                    </span>
-                  </div>
-                  <div style={{ textAlign: isRTL ? 'left' : 'right' }}>
-                    <div style={{ fontSize: '13px', color: '#888' }}>{t.date}</div>
-                    <div style={{ fontSize: '14px', fontWeight: 600 }}>
-                      {new Date(consultationCase.createdAt).toLocaleDateString(lang === 'ar' ? 'ar-SA' : 'en-US')}
-                    </div>
-                  </div>
-                </div>
-
-                <div style={gridStyle}>
-                  <div>
-                    <div style={labelStyle}>{t.transactionId}</div>
-                    <div style={{ ...valueStyle, fontFamily: 'monospace', letterSpacing: '0.5px' }}>
-                      {consultationCase.paymentDetails.transactionId}
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <div style={labelStyle}>{t.paymentMethod}</div>
-                    <div style={{
-                      ...valueStyle,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px'
-                    }}>
-                      <span style={{
-                        width: '8px',
-                        height: '8px',
-                        borderRadius: '50%',
-                        backgroundColor: consultationCase.paymentDetails.method === 'MADA' ? TEAL_PRIMARY : '#000000',
-                        display: 'inline-block'
-                      }} />
-                      {consultationCase.paymentDetails.method === 'MADA' ? t.mada : t.applePay}
-                    </div>
-                  </div>
-
-                  <div>
-                    <div style={labelStyle}>{t.amount}</div>
-                    <div style={{ ...valueStyle, color: TEAL_PRIMARY }}>
-                      {formatCurrency(
-                        consultationCase.paymentDetails.amount,
-                        consultationCase.paymentDetails.currency
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {!hasLink && (
-                  <button
-                    type="button"
-                    style={isProcessing ? disabledButtonStyle : buttonStyle}
-                    onClick={() => handleVerifyAndDispatch(consultationCase.caseId)}
-                    disabled={isProcessing}
-                    aria-busy={isProcessing}
-                    aria-label={t.verifyAndDispatch}
-                  >
-                    {isProcessing ? (
-                      <>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ animation: 'spin 1s linear infinite' }}>
-                          <circle cx="12" cy="12" r="10" strokeOpacity="0.25" />
-                          <path d="M12 2a10 10 0 0 1 10 10" strokeOpacity="1" />
-                        </svg>
-                        {t.verifying}
-                      </>
-                    ) : (
-                      <>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        {t.verifyAndDispatch}
-                      </>
-                    )}
-                  </button>
-                )}
-
-                {errorMsg && (
-                  <div style={errorMessageStyle} role="alert">
-                    {errorMsg}
-                  </div>
-                )}
-
-                {hasLink && (
-                  <div style={linkBoxStyle} role="status" aria-live="polite">
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      marginBottom: '12px'
-                    }}>
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={TEAL_PRIMARY} strokeWidth="2">
-                        <path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                      </svg>
-                      <span style={{ fontWeight: 700, color: TEAL_PRIMARY, fontSize: '15px' }}>
-                        {t.consultantLink} (72h)
-                      </span>
-                    </div>
-                    
-                    <div style={{
-                      backgroundColor: '#FFFFFF',
-                      padding: '12px',
-                      borderRadius: '8px',
-                      fontSize: '13px',
-                      fontFamily: 'monospace',
-                      color: '#333',
-                      border: `1px solid ${TEAL_SECONDARY}`,
-                      marginBottom: '12px',
-                      wordBreak: 'break-all'
-                    }}>
-                      {generatedLinks[consultationCase.caseId]}
-                    </div>
-
-                    <p style={{
-                      margin: '0 0 12px 0',
-                      fontSize: '13px',
-                      color: TEAL_PRIMARY,
-                      fontWeight: 600
-                    }}>
-                      {t.success}
-                    </p>
-
-                    <button
-                      type="button"
-                      style={{
-                        ...(copiedState[consultationCase.caseId] ? { ...whatsappButtonStyle, backgroundColor: TEAL_PRIMARY } : whatsappButtonStyle),
-                        padding: '10px 16px',
-                        fontSize: '14px'
-                      }}
-                      onClick={() => handleCopyLink(
-                        consultationCase.caseId,
-                        generatedLinks[consultationCase.caseId]
-                      )}
-                      aria-label={t.copyLink}
-                    >
-                      {copiedState[consultationCase.caseId] ? (
-                        <>
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M5 13l4 4L19 7" />
-                          </svg>
-                          {t.copied}
-                        </>
-                      ) : (
-                        <>
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                            <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
-                          </svg>
-                          {t.copyLink}
-                        </>
-                      )}
-                    </button>
-                  </div>
-                )}
-              </article>
-            );
-          })}
+              />
+            )}
+          </main>
         </div>
       )}
+
+      <BilingualReportModal
+        isOpen={isPDF2ModalOpen}
+        onClose={() => setIsPDF2ModalOpen(false)}
+        activeCase={activeCase}
+        lang={lang}
+        reportType={coordinatorReportType}
+      />
     </div>
   );
 };

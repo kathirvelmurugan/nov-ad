@@ -1,391 +1,335 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState } from 'react';
+import { ClinicalCase } from '../../../types';
+import { BilingualReportModal } from '../../cockpit/BilingualReportModal';
+import { Check, Eye, Globe2, HelpCircle, MessageSquareWarning, ShieldCheck, CalendarClock, Send, CheckCircle2 } from 'lucide-react';
 
-interface DoctorOpinionEndorsementPanelProps {
-  caseId: string;
-  specialistOpinion: string;
-  onUpdateCase: (caseId: string, payload: CaseUpdatePayload) => Promise<void>;
-  currentPersonaId: string;
+interface Props {
+  activeCase: ClinicalCase;
+  onAdvanceStage: () => void;
+  onUpdateCase: (updated: Partial<ClinicalCase>) => void;
+  onEndorseSuccess?: () => void;
+  lang: 'ar' | 'en';
 }
 
-interface CaseUpdatePayload {
-  status: string;
-  endorsement?: EndorsementRecord;
-  nextRole: string;
-}
-
-interface EndorsementRecord {
-  scfhsLicense: string;
-  timestamp: string;
-  qrVerificationHash: string;
-  concurrence: boolean;
-  stampCode: string;
-}
-
-const PALETTE = {
-  primary: '#007B6E',
-  secondary: '#00C6AE',
-  background: '#E6FAF7',
-  whatsapp: '#25D366',
-  white: '#FFFFFF',
-  textDark: '#1A1A1A',
-  textMuted: '#4A5568',
-  border: '#B2DFDB'
-};
-
-const SCFHS_LICENSE = 'SCFHS-2024-KSA-8821';
-const STAMP_CODE = 'D12';
-const ENDORSING_DOCTOR_NAME_AR = 'د. فهد الحربي';
-const ENDORSING_DOCTOR_NAME_EN = 'Dr. Fahad Al-Harbi';
-const SPECIALIST_NAME_AR = 'د. في. براسانث';
-const SPECIALIST_NAME_EN = 'Dr. V. Prasanth';
-
-const generateQrVerificationHash = (caseId: string, license: string, timestamp: string): string => {
-  const raw = `${caseId}:${license}:${timestamp}:${STAMP_CODE}:ALO_DOCTOR_V2.4`;
-  let hash = 0;
-  for (let i = 0; i < raw.length; i++) {
-    const char = raw.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash |= 0;
-  }
-  const hexHash = Math.abs(hash).toString(16).padStart(8, '0').toUpperCase();
-  return `QR-KSA-${hexHash}-${Date.now().toString(36).toUpperCase()}`;
-};
-
-const DoctorOpinionEndorsementPanel: React.FC<DoctorOpinionEndorsementPanelProps> = ({
-  caseId,
-  specialistOpinion,
+export const DoctorOpinionEndorsementPanel: React.FC<Props> = ({
+  activeCase,
+  onAdvanceStage,
   onUpdateCase,
-  currentPersonaId
+  onEndorseSuccess,
+  lang,
 }) => {
-  const [isConcurred, setIsConcurred] = useState<boolean>(false);
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [isStamped, setIsStamped] = useState<boolean>(false);
-  const [stampRecord, setStampRecord] = useState<EndorsementRecord | null>(null);
+  const isAr = lang === 'ar';
+  const [localDirectives, setLocalDirectives] = useState<string>(
+    activeCase.saudiEndorsement?.localClinicalNotes || ''
+  );
+  const [showRevisionBox, setShowRevisionBox] = useState(false);
+  const [revisionText, setRevisionText] = useState('');
+  const [isReportPreviewOpen, setIsReportPreviewOpen] = useState(false);
 
-  const isRtl = useMemo(() => {
-    const rtlPersonas = ['doctor_ar', 'coordinator_ar', 'patient_ar', 'admin_ar'];
-    return rtlPersonas.some(p => currentPersonaId.includes(p)) || currentPersonaId.startsWith('ar-');
-  }, [currentPersonaId]);
+  const isEndorsed = activeCase.saudiEndorsement?.status === 'endorsed';
+  const isRevisionRequested = activeCase.saudiEndorsement?.status === 'revision_requested';
 
-  const handleConcurrenceChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setIsConcurred(e.target.checked);
-  }, []);
+  const consultantAnswers =
+    (activeCase.consultantAnswers && activeCase.consultantAnswers.length > 0
+      ? activeCase.consultantAnswers
+      : (activeCase.metadata?.consultantAnswers as string[] | undefined) ||
+        (activeCase.metadata?.focusAnswers as string[] | undefined)) || [];
 
-  const handleStampEndorsement = useCallback(async () => {
-    if (!isConcurred || isSubmitting || isStamped) return;
+  const baseAr = activeCase.treatingDoctor?.focusQuestions || ['', '', ''];
+  const focusQuestions = isAr
+    ? baseAr
+    : activeCase.treatingDoctor?.focusQuestionsEn || baseAr;
 
-    setIsSubmitting(true);
+  const opinionSummary =
+    activeCase.consultantOpinion ||
+    activeCase.consultant?.opinionEnglish ||
+    '';
 
-    try {
-      const timestamp = new Date().toISOString();
-      const qrVerificationHash = generateQrVerificationHash(caseId, SCFHS_LICENSE, timestamp);
+  const effectiveDoctorName = activeCase.treatingDoctor?.name || (isAr ? 'د. عبدالله الشمري' : 'Dr. Abdullah Al-Shammari');
+  const effectiveLicense = (activeCase.treatingDoctor as any)?.scfhsLicense || activeCase.saudiEndorsement?.scfhsLicense || 'SCFHS-2024-KSA-8821';
 
-      const endorsement: EndorsementRecord = {
-        scfhsLicense: SCFHS_LICENSE,
-        timestamp,
-        qrVerificationHash,
-        concurrence: true,
-        stampCode: STAMP_CODE
-      };
-
-      const payload: CaseUpdatePayload = {
-        status: 'ENDORSED_BY_SCFHS_SPECIALIST',
-        endorsement,
-        nextRole: 'COORDINATOR_FINAL_CLOSURE'
-      };
-
-      await onUpdateCase(caseId, payload);
-
-      setStampRecord(endorsement);
-      setIsStamped(true);
-    } catch (error) {
-      console.error('[ALO DOCTOR v2.4] Stamp endorsement failed:', error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [isConcurred, isSubmitting, isStamped, caseId, onUpdateCase]);
-
-  const containerStyle: React.CSSProperties = {
-    direction: isRtl ? 'rtl' : 'ltr',
-    fontFamily: '"Cairo", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif',
-    backgroundColor: PALETTE.background,
-    borderRadius: '16px',
-    padding: '32px',
-    maxWidth: '800px',
-    margin: '0 auto',
-    border: `1px solid ${PALETTE.border}`,
-    boxShadow: '0 4px 24px rgba(0, 123, 110, 0.08)'
+  const handleApproveToCoordinator = () => {
+    onUpdateCase({
+      doctorReleasedToPatient: true,
+      saudiEndorsement: {
+        status: 'endorsed',
+        doctorName: effectiveDoctorName,
+        scfHSLicense: effectiveLicense,
+        scfhsLicense: effectiveLicense,
+        endorsementDate: new Date().toISOString(),
+        localClinicalNotes: localDirectives.trim() || undefined,
+        requiresLocalLab: !!activeCase.internalOrders?.lab?.ordered,
+        prescriptionIssued: !!activeCase.internalOrders?.pharmacy?.ordered,
+        releasedToPatient: true,
+      } as any,
+      metadata: {
+        ...(activeCase.metadata || {}),
+        saudiDoctorApprovedOpinion: true,
+        saudiApprovedAt: new Date().toISOString(),
+      },
+    });
+    onEndorseSuccess?.();
   };
 
-  const headerStyle: React.CSSProperties = {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderBottom: `2px solid ${PALETTE.secondary}`,
-    paddingBottom: '16px',
-    marginBottom: '24px'
+  const handleRequestRevision = () => {
+    const query = revisionText.trim() || (isAr ? 'يرجى مراجعة التوصية السريرية وتوضيح الجرعات.' : 'Please clarify clinical recommendations and dosing details.');
+    onUpdateCase({
+      saudiEndorsement: {
+        status: 'revision_requested',
+        doctorName: activeCase.treatingDoctor?.name || 'د. عبدالله الشمري',
+        scfhsLicense: 'SCFHS-2024-KSA-8821',
+        revisionQuery: query,
+        requiresLocalLab: false,
+        prescriptionIssued: false,
+        releasedToPatient: false,
+      },
+    });
+    setShowRevisionBox(false);
   };
-
-  const titleStyle: React.CSSProperties = {
-    fontSize: '22px',
-    fontWeight: 700,
-    color: PALETTE.primary,
-    margin: 0
-  };
-
-  const badgeStyle: React.CSSProperties = {
-    backgroundColor: PALETTE.primary,
-    color: PALETTE.white,
-    padding: '6px 16px',
-    borderRadius: '20px',
-    fontSize: '13px',
-    fontWeight: 600,
-    letterSpacing: '0.5px'
-  };
-
-  const opinionBoxStyle: React.CSSProperties = {
-    backgroundColor: PALETTE.white,
-    borderRight: isRtl ? `4px solid ${PALETTE.secondary}` : 'none',
-    borderLeft: !isRtl ? `4px solid ${PALETTE.secondary}` : 'none',
-    padding: '20px',
-    borderRadius: '8px',
-    marginBottom: '24px',
-    fontSize: '15px',
-    lineHeight: 1.8,
-    color: PALETTE.textDark
-  };
-
-  const checkboxContainerStyle: React.CSSProperties = {
-    display: 'flex',
-    alignItems: 'flex-start',
-    gap: '12px',
-    backgroundColor: PALETTE.white,
-    padding: '20px',
-    borderRadius: '12px',
-    border: `1px solid ${PALETTE.border}`,
-    marginBottom: '24px',
-    cursor: isStamped ? 'default' : 'pointer'
-  };
-
-  const checkboxStyle: React.CSSProperties = {
-    width: '22px',
-    height: '22px',
-    accentColor: PALETTE.primary,
-    marginTop: '2px',
-    cursor: isStamped ? 'default' : 'pointer',
-    flexShrink: 0
-  };
-
-  const labelStyle: React.CSSProperties = {
-    fontSize: '15px',
-    fontWeight: 600,
-    color: PALETTE.textDark,
-    lineHeight: 1.7,
-    cursor: isStamped ? 'default' : 'pointer'
-  };
-
-  const stampButtonStyle: React.CSSProperties = {
-    width: '100%',
-    padding: '16px 24px',
-    backgroundColor: isStamped ? PALETTE.whatsapp : (isConcurred ? PALETTE.primary : PALETTE.border),
-    color: PALETTE.white,
-    border: 'none',
-    borderRadius: '12px',
-    fontSize: '17px',
-    fontWeight: 700,
-    fontFamily: '"Cairo", sans-serif',
-    cursor: isConcurred && !isSubmitting && !isStamped ? 'pointer' : 'not-allowed',
-    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '10px',
-    opacity: isSubmitting ? 0.7 : 1,
-    boxShadow: isConcurred && !isStamped ? '0 4px 16px rgba(0, 123, 110, 0.3)' : 'none'
-  };
-
-  const stampReceiptStyle: React.CSSProperties = {
-    marginTop: '24px',
-    backgroundColor: PALETTE.white,
-    border: `2px dashed ${PALETTE.whatsapp}`,
-    borderRadius: '12px',
-    padding: '24px',
-    textAlign: 'center'
-  };
-
-  const receiptRowStyle: React.CSSProperties = {
-    display: 'flex',
-    justifyContent: 'space-between',
-    padding: '8px 0',
-    borderBottom: `1px solid ${PALETTE.background}`,
-    fontSize: '14px',
-    color: PALETTE.textMuted
-  };
-
-  const receiptValueStyle: React.CSSProperties = {
-    fontWeight: 700,
-    color: PALETTE.primary,
-    fontFamily: 'monospace, "Cairo"',
-    direction: 'ltr'
-  };
-
-  const concurrenceTextAr = 'أوافق على التوصيات السريرية المقدمة من الاستشاري الدولي وأعتمدها ضمن الخطة العلاجية';
-  const concurrenceTextEn = 'I agree with the clinical recommendations provided by the international consultant and endorse them within the treatment plan';
-  const stampButtonTextAr = 'اعتماد وتوقيع الاستشارة الطبية';
-  const stampButtonTextEn = 'Endorse & Sign Medical Consultation';
-  const opinionHeaderAr = `الرأي التخصصي المقدم من ${SPECIALIST_NAME_AR}`;
-  const opinionHeaderEn = `Specialist Opinion Formulated by ${SPECIALIST_NAME_EN}`;
 
   return (
-    <div style={containerStyle} role="region" aria-label="Doctor Opinion Endorsement Panel">
-      <header style={headerStyle}>
-        <h2 style={titleStyle}>
-          {isRtl ? 'لوحة اعتماد رأي الاستشاري' : 'Specialist Opinion Endorsement Panel'}
-        </h2>
-        <div style={badgeStyle}>
-          {isRtl ? `ترخيص الهيئة: ${SCFHS_LICENSE}` : `SCFHS License: ${SCFHS_LICENSE}`}
-        </div>
-      </header>
+    <div className="space-y-6">
+      {/* Banner: Indian Consultant Opinion Ready for Saudi Doctor Review */}
+      <div className="card-clinical p-6 border-l-4 border-l-emerald-600 bg-gradient-to-r from-emerald-50/70 to-teal-50/40 dark:from-emerald-950/30 dark:to-slate-900 space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200 font-mono text-[11px] px-2.5 py-1 rounded-md font-extrabold border border-emerald-300 dark:border-emerald-700">
+              D11–D12 · {isAr ? 'تم التدقيق والتوزيع من منسق الرعاية — مراجعة واعتماد الطبيب السعودي' : 'Verified & Dispatched by Coordinator — Saudi Doctor Endorsement'}
+            </span>
+            {isEndorsed && (
+              <span className="bg-emerald-600 text-white text-[11px] font-bold px-2.5 py-1 rounded-full">
+                ✓ {isAr ? 'تم الاعتماد السريري المحلي بنجاح' : 'Local Clinical Endorsement Completed'}
+              </span>
+            )}
+            {isRevisionRequested && (
+              <span className="bg-amber-100 text-amber-800 text-[11px] font-bold px-2.5 py-1 rounded-full border border-amber-300">
+                🔄 {isAr ? 'بانتظار مراجعة الاستشاري' : 'Revision Requested'}
+              </span>
+            )}
+          </div>
 
-      <section aria-label={isRtl ? 'الرأي التخصصي' : 'Specialist Opinion'}>
-        <h3 style={{ fontSize: '16px', fontWeight: 600, color: PALETTE.textMuted, marginBottom: '12px' }}>
-          {isRtl ? opinionHeaderAr : opinionHeaderEn}
-        </h3>
-        <div style={opinionBoxStyle}>
-          {specialistOpinion}
+          <button
+            type="button"
+            onClick={() => setIsReportPreviewOpen(true)}
+            className="inline-flex items-center gap-1.5 text-xs font-extrabold text-alo-teal bg-white dark:bg-slate-900 hover:bg-teal-50 px-3 py-1.5 rounded-lg border border-teal-300 dark:border-teal-700 shadow-2xs cursor-pointer"
+          >
+            <Eye className="w-3.5 h-3.5" />
+            <span>{isAr ? 'معاينة مسودة التقرير (PDF)' : 'Preview Draft Report (PDF)'}</span>
+          </button>
         </div>
-      </section>
 
-      <section aria-label={isRtl ? 'الموافقة السريرية' : 'Clinical Concurrence'}>
-        <label style={checkboxContainerStyle}>
-          <input
-            type="checkbox"
-            checked={isConcurred}
-            onChange={handleConcurrenceChange}
-            disabled={isStamped || isSubmitting}
-            style={checkboxStyle}
-            aria-required="true"
-          />
-          <span style={labelStyle}>
-            {isRtl ? concurrenceTextAr : concurrenceTextEn}
+        {/* Indian Specialist Header Info */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+          <div className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800">
+            <span className="text-slate-500 font-bold block mb-1 flex items-center gap-1.5">
+              <Globe2 className="w-3.5 h-3.5 text-alo-teal" />
+              {isAr ? 'الاستشاري الدولي (الهند):' : 'International Consultant (India):'}
+            </span>
+            <strong className="text-sm text-alo-navy dark:text-white">
+              {activeCase.consultant?.name || 'Dr. Arjun Mehta'}
+            </strong>
+            <div className="text-slate-500 mt-0.5">
+              {activeCase.consultant?.center || 'KIMS Heart Institute'} · {activeCase.consultant?.city || 'India'}
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800">
+            <span className="text-slate-500 font-bold block mb-1 flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-alo-teal" />
+              {isAr ? 'ملف المريض والاختصاص:' : 'Patient & Specialty:'}
+            </span>
+            <strong className="text-sm text-alo-navy dark:text-white">
+              {isAr ? (activeCase.patientNameAr || activeCase.patientName) : (activeCase.patientNameEn || activeCase.patientName)}
+            </strong>
+            <div className="text-slate-500 mt-0.5">
+              {activeCase.caseNumber} · {isAr ? (activeCase.specialtyAr || activeCase.specialty) : (activeCase.specialtyEn || activeCase.specialty)}
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800">
+            <span className="text-slate-500 font-bold block mb-1 flex items-center gap-1.5">
+              <CalendarClock className="w-3.5 h-3.5 text-alo-teal" />
+              {isAr ? 'نمط الاستشارة والموعد المقترح:' : 'Consultation Type & Slot:'}
+            </span>
+            <strong className="text-sm text-alo-teal">
+              {activeCase.consultationType === 'written'
+                ? (isAr ? 'رأي طبي مكتوب فقط' : 'Written Second Opinion')
+                : (isAr ? 'استشارة مرئية + رأي مكتوب' : 'Video + Written Opinion')}
+            </strong>
+            <div className="text-slate-500 mt-0.5">
+              {activeCase.proposedCallSlot || activeCase.consultant?.proposedSlot || (activeCase.consultationType === 'written' ? (isAr ? 'لا يتطلب مكالمة' : 'No video call needed') : (isAr ? 'بانتظار جدولة المكالمة' : 'Slot proposed'))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Indian Consultant Written Opinion */}
+      <div className="card-clinical p-6 space-y-3">
+        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
+          <h3 className="text-sm font-extrabold text-alo-navy dark:text-slate-100">
+            {isAr ? 'التقييم السريري والرأي الطبي الثاني من الاستشاري الدولي:' : 'Indian Consultant Clinical Assessment & Second Opinion:'}
+          </h3>
+          <span className="text-[10px] font-mono font-bold bg-teal-50 text-alo-teal px-2 py-0.5 rounded border border-teal-200">
+            English Source Verdict
           </span>
-        </label>
-      </section>
+        </div>
 
-      <section aria-label={isRtl ? 'ختم الاعتماد' : 'Endorsement Stamp'}>
-        <button
-          type="button"
-          onClick={handleStampEndorsement}
-          disabled={!isConcurred || isSubmitting || isStamped}
-          style={stampButtonStyle}
-          aria-busy={isSubmitting}
-          aria-label={`${STAMP_CODE}: ${isRtl ? stampButtonTextAr : stampButtonTextEn}`}
+        <div
+          dir="ltr"
+          className="bg-slate-50 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 rounded-xl p-4 text-sm text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-line font-medium text-left"
         >
-          {isSubmitting ? (
-            <>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'spin 1s linear infinite' }}>
-                <path d="M21 12a9 9 0 11-6.219-8.56" />
-              </svg>
-              {isRtl ? 'جاري المعالجة...' : 'Processing...'}
-            </>
-          ) : isStamped ? (
-            <>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-              {isRtl ? 'تم الاعتماد بنجاح' : 'Successfully Endorsed'}
-            </>
-          ) : (
-            <>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-              </svg>
-              <span>{`[${STAMP_CODE}] ${isRtl ? stampButtonTextAr : stampButtonTextEn}`}</span>
-            </>
+          {opinionSummary || (isAr ? 'لم يتم إدخال نص الرأي الطبي بعد.' : 'No written opinion text provided yet.')}
+        </div>
+      </div>
+
+      {/* 3 Focus Questions & Indian Consultant Answers */}
+      <div className="card-clinical p-6 space-y-4">
+        <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2">
+          <HelpCircle className="w-4 h-4 text-alo-teal" />
+          <h3 className="text-sm font-extrabold text-alo-navy dark:text-slate-100">
+            {isAr ? 'إجابات الاستشاري الدولي على أسئلتك السريرية الثلاثة:' : 'Indian Consultant Answers to Your 3 Focus Questions:'}
+          </h3>
+        </div>
+
+        <div className="space-y-3">
+          {[0, 1, 2].map((idx) => (
+            <div
+              key={idx}
+              className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-2"
+            >
+              <div className="text-xs font-extrabold text-alo-teal">
+                Q{idx + 1}: {focusQuestions[idx] || (isAr ? `السؤال السريري ${idx + 1}` : `Focus Question ${idx + 1}`)}
+              </div>
+              <div
+                dir="ltr"
+                className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900 p-3 rounded-lg border border-slate-200/80 dark:border-slate-800 leading-relaxed text-left font-medium"
+              >
+                {consultantAnswers[idx]?.trim() || (isAr ? 'لا توجد إجابة مسجلة لهذا السؤال.' : 'No specific answer recorded for this question.')}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Saudi Doctor Endorsement Directives & Approval to Coordinator */}
+      <div className="card-clinical p-6 space-y-4 border-t-4 border-t-alo-teal">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="text-sm font-extrabold text-alo-navy dark:text-slate-100">
+            {isAr ? 'توجيهات ومصادقة الطبيب السعودي المعالج (SCFHS):' : 'Saudi Treating Doctor Endorsement & Clinical Directives:'}
+          </h3>
+          <span className="text-[11px] font-mono font-bold text-emerald-700 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-1 rounded border border-emerald-200 dark:border-emerald-800">
+            SCFHS-2024-KSA-8821 ✓
+          </span>
+        </div>
+
+        {/* In-Card Endorsement Feedback Banner */}
+        {isEndorsed && (
+          <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-700 flex items-center gap-3 text-emerald-800 dark:text-emerald-200 shadow-2xs">
+            <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <div className="text-xs font-bold leading-relaxed">
+              {isAr
+                ? 'تم اعتماد رأي الاستشاري بنجاح وإرساله لمنسق رعاية ألو (C08) لإصدار التقرير الطبي المعتمد للمريض.'
+                : 'Consultant Opinion approved successfully and forwarded to ALO Coordinator (C08) for report release.'}
+            </div>
+          </div>
+        )}
+
+        <div>
+          <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5">
+            {isAr ? 'ملاحظات أو توجيهات محلية إضافية للمنسق والمريض (اختياري):' : 'Local Clinical Directives / Notes for Coordinator & Patient (Optional):'}
+          </label>
+          <textarea
+            rows={3}
+            disabled={isEndorsed}
+            value={localDirectives}
+            onChange={(e) => setLocalDirectives(e.target.value)}
+            placeholder={
+              isAr
+                ? 'أدخل أي تعليمات محلية تخص المتابعة، التحاليل، أو صرف الأدوية قبل إرسال التقرير للمنسق...'
+                : 'Enter local follow-up instructions, medication notes, or hospital scheduling directives before sending to Coordinator...'
+            }
+            className={`w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl p-3 text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-alo-teal outline-none shadow-sm font-medium ${
+              isEndorsed ? 'opacity-70 cursor-not-allowed bg-slate-50 dark:bg-slate-800' : ''
+            }`}
+          />
+        </div>
+
+        {showRevisionBox && (
+          <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 space-y-2.5">
+            <label className="block text-xs font-bold text-rose-800 dark:text-rose-200">
+              {isAr ? 'سبب طلب المراجعة السريرية من الاستشاري الدولي:' : 'Revision Request Note for Indian Consultant:'}
+            </label>
+            <textarea
+              rows={2}
+              value={revisionText}
+              onChange={(e) => setRevisionText(e.target.value)}
+              placeholder={isAr ? 'وضح التعديلات أو الاستفسارات المطلوبة...' : 'Specify what needs clarification or clinical revision...'}
+              className="w-full bg-white dark:bg-slate-900 border border-rose-300 rounded-lg p-2.5 text-xs outline-none"
+            />
+            <div className="flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={() => setShowRevisionBox(false)}
+                className="px-3 py-1.5 rounded-lg text-xs font-bold bg-white text-slate-600 border border-slate-300 cursor-pointer"
+              >
+                {isAr ? 'إلغاء' : 'Cancel'}
+              </button>
+              <button
+                type="button"
+                onClick={handleRequestRevision}
+                className="px-4 py-1.5 rounded-lg text-xs font-extrabold bg-rose-600 text-white cursor-pointer"
+              >
+                {isAr ? 'إرسال طلب المراجعة' : 'Submit Revision Request'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className="pt-2 flex flex-wrap items-center justify-between gap-3">
+          {!isEndorsed && (
+            <button
+              type="button"
+              onClick={() => setShowRevisionBox((v) => !v)}
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 cursor-pointer"
+            >
+              <MessageSquareWarning className="w-4 h-4" />
+              <span>{isAr ? 'طلب تعديل من الاستشاري' : 'Request Revision'}</span>
+            </button>
           )}
-        </button>
-      </section>
 
-      {isStamped && stampRecord && (
-        <section style={stampReceiptStyle} aria-label={isRtl ? 'إيصال الاعتماد الرقمي' : 'Digital Endorsement Receipt'}>
-          <div style={{ marginBottom: '16px' }}>
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke={PALETTE.whatsapp} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ margin: '0 auto' }}>
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-              <polyline points="22 4 12 14.01 9 11.01" />
-            </svg>
-          </div>
-          <h4 style={{ color: PALETTE.primary, fontSize: '18px', fontWeight: 700, marginBottom: '16px' }}>
-            {isRtl ? 'تم إصدار الختم الرقمي D12' : 'Digital Stamp D12 Issued'}
-          </h4>
-          
-          <div style={receiptRowStyle}>
-            <span>{isRtl ? 'الطبيب المعتمد' : 'Endorsing Doctor'}</span>
-            <span style={{ fontWeight: 700, color: PALETTE.textDark }}>
-              {isRtl ? ENDORSING_DOCTOR_NAME_AR : ENDORSING_DOCTOR_NAME_EN}
+          <button
+            type="button"
+            disabled={isEndorsed}
+            onClick={handleApproveToCoordinator}
+            className={`ms-auto w-full sm:w-auto font-extrabold py-3 px-8 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-sm ${
+              isEndorsed
+                ? 'bg-emerald-700 text-white cursor-not-allowed opacity-90 shadow-sm'
+                : 'bg-gradient-to-r from-emerald-600 to-alo-teal hover:from-emerald-700 hover:to-teal-800 text-white active:scale-95 cursor-pointer'
+            }`}
+          >
+            <CheckCircle2 className="w-4 h-4" />
+            <span>
+              {isEndorsed
+                ? (isAr
+                    ? '✓ تم اعتماد الرأي وإرساله لمنسق ألو (C08)'
+                    : '✓ Endorsed & Sent to ALO Coordinator (C08)')
+                : (isAr
+                    ? 'D12 · اعتماد رأي الاستشاري وإرساله لمنسق ألو (C08) لإصدار التقرير للمريض'
+                    : 'D12 · Approve Consultant Opinion & Send to ALO Coordinator (C08)')}
             </span>
-          </div>
-          
-          <div style={receiptRowStyle}>
-            <span>{isRtl ? 'رقم ترخيص الهيئة السعودية' : 'SCFHS License Number'}</span>
-            <span style={receiptValueStyle}>{stampRecord.scfhsLicense}</span>
-          </div>
-          
-          <div style={receiptRowStyle}>
-            <span>{isRtl ? 'رمز الختم' : 'Stamp Code'}</span>
-            <span style={receiptValueStyle}>{stampRecord.stampCode}</span>
-          </div>
-          
-          <div style={receiptRowStyle}>
-            <span>{isRtl ? 'التوقيت الزمني' : 'Timestamp'}</span>
-            <span style={receiptValueStyle}>{new Date(stampRecord.timestamp).toLocaleString(isRtl ? 'ar-SA' : 'en-US')}</span>
-          </div>
-          
-          <div style={{ ...receiptRowStyle, borderBottom: 'none' }}>
-            <span>{isRtl ? 'رمز التحقق QR' : 'QR Verification Hash'}</span>
-            <span style={{ ...receiptValueStyle, fontSize: '12px', wordBreak: 'break-all' }}>
-              {stampRecord.qrVerificationHash}
-            </span>
-          </div>
+            {!isEndorsed && <span>{isAr ? '←' : '→'}</span>}
+          </button>
+        </div>
+      </div>
 
-          <div style={{ 
-            marginTop: '20px', 
-            padding: '12px', 
-            backgroundColor: PALETTE.background, 
-            borderRadius: '8px',
-            fontSize: '13px',
-            color: PALETTE.textMuted,
-            fontWeight: 600
-          }}>
-            {isRtl 
-              ? 'تم تحويل الحالة إلى المنسق لإتمام الإغلاق النهائي' 
-              : 'Case advanced to Coordinator for final closure'}
-          </div>
-        </section>
-      )}
-
-      <style>{`
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        button:hover:not(:disabled) {
-          filter: brightness(1.08);
-          transform: translateY(-1px);
-        }
-        button:active:not(:disabled) {
-          transform: translateY(0);
-        }
-        input[type="checkbox"]:focus-visible {
-          outline: 2px solid ${PALETTE.secondary};
-          outline-offset: 2px;
-        }
-        button:focus-visible {
-          outline: 3px solid ${PALETTE.secondary};
-          outline-offset: 2px;
-        }
-      `}</style>
+      <BilingualReportModal
+        isOpen={isReportPreviewOpen}
+        onClose={() => setIsReportPreviewOpen(false)}
+        activeCase={activeCase}
+        lang={lang}
+        reportType="pdf1"
+      />
     </div>
   );
 };
 
-export default DoctorOpinionEndorsementPanel;
