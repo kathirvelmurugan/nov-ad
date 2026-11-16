@@ -1,453 +1,474 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import {
-  PALETTE,
-  SESSION_KEY,
-  THIRTY_DAYS_MS,
-  DEV_OTP,
-  DEFAULT_DEV_PIN,
-  AuthPortalTab,
-  PersonaPreset,
-  PERSONA_PRESETS,
-  CountryCode,
-  formatPhoneByCountry,
-  extractRawPhoneByCountry,
-  validateMobileByCountry,
-  detectCountryFromPhone,
-  SessionData,
-  formatPhoneDisplay,
-  extractRawPhone,
-  validateSaudiMobile,
-  getUserPin,
-  setUserPin,
-  hasUserPin,
-  getInitialPortal,
-  resolveAccountByPhone,
-  getRoleTitle,
-  getActiveConsultantSession,
-  saveConsultantSession,
-  createAuthSession,
-  getAuthContainerStyle,
-  authCardStyle,
-} from './authTypesAndUtils';
-import { RoleCode } from '../../types';
-import { PortalSelectorBar } from './PortalSelectorBar';
-import { HospitalStaffLoginForm } from './HospitalStaffLoginForm';
-import { PhoneEntryStep } from './steps/PhoneEntryStep';
-import { OtpVerificationStep } from './steps/OtpVerificationStep';
-import { PinEntryStep } from './PinEntryStep';
-import { SuperAdminAuthCard } from './SuperAdminAuthCard';
-import { AuthHeader } from './AuthHeader';
-import { FirstTimeActivationStep } from './FirstTimeActivationStep';
-import { ConsultantMagicLinkStep } from './ConsultantMagicLinkStep';
-import { apiClient } from '../../services/apiClient';
+import React, { useState, useCallback, useMemo } from 'react';
+import apiClient from '../../services/apiClient';
+
+type AuthStep = 'phone' | 'pin' | 'pin_setup' | 'super_admin';
 
 interface UnifiedAuthGateProps {
-  onAuthenticated: (session: SessionData) => void;
-  initialLang?: 'ar' | 'en';
+  onComplete: (
+    isSuperAdmin: boolean,
+    roleCode: string,
+    hospitalId: string | null,
+    displayName: string
+  ) => void;
+  isRTL: boolean;
+  lang: 'ar' | 'en';
 }
 
-type AuthStep = 'phone' | 'otp' | 'pin' | 'pin_setup' | 'activate' | 'consultant_otp';
+const PERSONA_PROFILES = [
+  { id: 'doctor', labelAr: 'طبيب', labelEn: 'Doctor' },
+  { id: 'nurse', labelAr: 'ممرض', labelEn: 'Nurse' },
+  { id: 'patient', labelAr: 'مريض', labelEn: 'Patient' },
+  { id: 'pharmacist', labelAr: 'صيدلي', labelEn: 'Pharmacist' },
+  { id: 'lab_tech', labelAr: 'فني مختبر', labelEn: 'Lab Tech' },
+  { id: 'radiologist', labelAr: 'أخصائي أشعة', labelEn: 'Radiologist' },
+  { id: 'admin', labelAr: 'إداري', labelEn: 'Admin' },
+  { id: 'receptionist', labelAr: 'استقبال', labelEn: 'Receptionist' },
+  { id: 'paramedic', labelAr: 'مسعف', labelEn: 'Paramedic' },
+  { id: 'surgeon', labelAr: 'جراح', labelEn: 'Surgeon' },
+  { id: 'super_admin', labelAr: 'مدير النظام', labelEn: 'Super Admin' },
+];
 
-export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }: UnifiedAuthGateProps) {
-  const [lang, setLang] = useState<'ar' | 'en'>(initialLang);
-  const isRTL = lang === 'ar';
-
-  const [activePortal, setActivePortal] = useState<AuthPortalTab>(getInitialPortal);
+const UnifiedAuthGate: React.FC<UnifiedAuthGateProps> = ({ onComplete, isRTL, lang }) => {
   const [step, setStep] = useState<AuthStep>('phone');
-  const [country, setCountry] = useState<CountryCode>('SA');
-  const [phone, setPhone] = useState('');
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
-  const [pinDigits, setPinDigits] = useState(['', '', '', '']);
+  const [rawPhone, setRawPhone] = useState('');
+  const [enteredPin, setEnteredPin] = useState('');
+  const [confirmPin, setConfirmPin] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [deliveryMethod, setDeliveryMethod] = useState<'sms' | 'whatsapp'>('whatsapp');
-  const [countdown, setCountdown] = useState(0);
+  const [selectedPersona, setSelectedPersona] = useState<string>('doctor');
 
-  // Super Admin Credentials
-  const [superAdminPasscode, setSuperAdminPasscode] = useState('');
+  const t = useMemo(() => ({
+    phoneLabel: isRTL ? 'رقم الجوال' : 'Mobile Number',
+    phonePlaceholder: isRTL ? '05XXXXXXXX' : '05XXXXXXXX',
+    pinLabel: isRTL ? 'رمز المرور' : 'PIN Code',
+    confirmPinLabel: isRTL ? 'تأكيد رمز المرور' : 'Confirm PIN',
+    submit: isRTL ? 'دخول' : 'Login',
+    setup: isRTL ? 'تفعيل الحساب' : 'Activate Account',
+    superAdmin: isRTL ? 'دخول مدير النظام' : 'Super Admin Access',
+    back: isRTL ? 'رجوع' : 'Back',
+    errorInvalid: isRTL ? 'رمز المرور غير صحيح أو الحساب غير مسجل.' : 'Invalid PIN or account not registered.',
+    errorSuperAdmin: isRTL ? 'رمز مدير النظام غير صحيح.' : 'Invalid Super Admin Passcode.',
+    errorMismatch: isRTL ? 'رموز المرور غير متطابقة.' : 'PINs do not match.',
+    errorNetwork: isRTL ? 'خطأ في الاتصال بالخادم.' : 'Network error occurred.',
+    welcome: isRTL ? 'ألو دكتور' : 'ALO DOCTOR',
+    selectRole: isRTL ? 'اختر الصفة' : 'Select Persona',
+  }), [isRTL]);
 
-  const [magicLinkData, setMagicLinkData] = useState<{ token: string; caseId?: string; consultantName: string; center: string } | null>(null);
-  const [isForgotPin, setIsForgotPin] = useState(false);
-  const [resolvedStaff, setResolvedStaff] = useState<{ roleCode?: RoleCode; hospitalId?: string; fullName?: string } | null>(null);
-  const isDemoMode = false;
-
-  const phoneRef = useRef<HTMLInputElement>(null);
-  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get('token') || params.get('magic_token');
-    const role = params.get('role');
-    const caseId = params.get('caseId');
-
-    // Indian Consultant Magic Link detection (role=K, role=C, role=consultant, or presence of magic_token)
-    const isConsultantLink = Boolean(token && (role === 'K' || role === 'C' || role === 'consultant' || params.has('magic_token') || params.has('consultant')));
-    if (isConsultantLink && token) {
-      const active = getActiveConsultantSession(lang);
-      if (active) {
-        onAuthenticated(active);
-        return;
-      }
-      setMagicLinkData({
-        token,
-        caseId: caseId || undefined,
-        consultantName: params.get('consultant') || 'Dr. Pradeep Kumar, MBBS, MS, MCh (CTVS)',
-        center: 'Apollo Hospitals, Bengaluru (India 🇮🇳)',
-      });
-      setStep('consultant_otp');
-    }
-  }, [onAuthenticated, lang]);
-
-  useEffect(() => {
-    apiClient.fetchUsers().catch(() => {});
-    const storedSession = localStorage.getItem(SESSION_KEY);
-    if (storedSession) {
-      try {
-        const parsed: SessionData = JSON.parse(storedSession);
-        if (parsed.isAuthenticated && parsed.expiresAt > Date.now()) {
-          onAuthenticated(parsed);
-        } else {
-          localStorage.removeItem(SESSION_KEY);
-        }
-      } catch (e) {
-        localStorage.removeItem(SESSION_KEY);
-      }
-    }
-  }, [onAuthenticated]);
-
-  useEffect(() => {
-    let timer: ReturnType<typeof setTimeout>;
-    if (countdown > 0) {
-      timer = setTimeout(() => setCountdown((c) => c - 1), 1000);
-    }
-    return () => clearTimeout(timer);
-  }, [countdown]);
-
-  const t = useCallback((ar: string, en: string) => (isRTL ? ar : en), [isRTL]);
-
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    let activeCountry = country;
-    if (val.includes('+91') || (country === 'SA' && val.trim().startsWith('91') && val.trim().length > 3)) {
-      activeCountry = 'IN';
-      setCountry('IN');
-    } else if (val.includes('+966') || (country === 'IN' && val.trim().startsWith('966') && val.trim().length > 4)) {
-      activeCountry = 'SA';
-      setCountry('SA');
-    }
-    const formatted = formatPhoneByCountry(val, activeCountry);
-    setPhone(formatted);
-    setError('');
-  };
+  const completeAuth = useCallback(
+    (isSuperAdmin: boolean, roleCode: string, hospitalId: string | null, displayName: string) => {
+      onComplete(isSuperAdmin, roleCode, hospitalId, displayName);
+    },
+    [onComplete]
+  );
 
   const handlePhoneSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateMobileByCountry(phone, country)) {
-      const msg = country === 'IN'
-        ? t('يرجى إدخال رقم جوال هندي صحيح مكون من 10 أرقام ويبدأ بـ 6-9', 'Please enter a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9')
-        : t('يرجى إدخال رقم جوال سعودي صحيح يبدأ بـ 05 أو +966', 'Please enter a valid Saudi mobile number starting with 05 or +966');
-      setError(msg);
-      return;
-    }
+    setError('');
+    if (!rawPhone.trim()) return;
+
     setIsLoading(true);
-    const users = await apiClient.fetchUsers().catch(() => []);
-    setIsLoading(false);
-
-    const raw = extractRawPhoneByCountry(phone, country);
-    const resolved = resolveAccountByPhone(raw, isRTL, Array.isArray(users) && users.length > 0 ? users : undefined);
-
-    const userHasPin = hasUserPin(raw) || Boolean(resolved.hasCustomPin && getUserPin(raw));
-
-    if (resolved.isStaff) {
-      setResolvedStaff({
-        roleCode: resolved.roleCode,
-        hospitalId: resolved.hospitalId,
-        fullName: resolved.fullName,
-      });
-    } else {
-      setResolvedStaff(null);
+    try {
+      const formattedPhone = rawPhone.startsWith('+966') ? rawPhone : `+966${rawPhone.replace(/^0/, '')}`;
+      const response = await apiClient.checkUserExists(formattedPhone);
+      
+      if (response && response.exists && response.hasPin) {
+        setStep('pin');
+      } else {
+        setStep('pin_setup');
+      }
+    } catch (err: any) {
+      if (err?.response?.status === 404) {
+        setStep('pin_setup');
+      } else {
+        setError(t.errorNetwork);
+      }
+    } finally {
+      setIsLoading(false);
     }
-
-    if (userHasPin) {
-      setPinDigits(['', '', '', '']);
-      setStep('pin');
-    } else {
-      setCountdown(60);
-      setStep('otp');
-      setTimeout(() => otpRefs.current[0]?.focus(), 100);
-    }
-  };
-
-  const completeAuth = (
-    isGuest: boolean,
-    customRole?: RoleCode,
-    customHospitalId?: string,
-    customFullName?: string
-  ) => {
-    const rawPhone = isGuest ? '' : extractRawPhone(phone);
-    const role = customRole || resolvedStaff?.roleCode;
-    const hospId = customHospitalId || resolvedStaff?.hospitalId;
-    const name = customFullName || resolvedStaff?.fullName;
-    const session = createAuthSession(rawPhone, isGuest, lang, role, hospId, name);
-    setIsLoading(false);
-    onAuthenticated(session);
   };
 
   const handlePinSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const entered = pinDigits.join('');
-    if (entered.length < 4) {
-      setError(t('يرجى إدخال رمز الدخول السري كاملاً (4 أرقام)', 'Please enter the complete 4-digit PIN'));
+    setError('');
+    setIsLoading(true);
+
+    try {
+      const formattedPhone = rawPhone.startsWith('+966') ? rawPhone : `+966${rawPhone.replace(/^0/, '')}`;
+      const user = await apiClient.login(formattedPhone, enteredPin);
+      
+      const displayName = isRTL ? user.fullNameAr : user.fullName;
+      completeAuth(false, user.roleCode, user.hospitalId, displayName);
+    } catch (err: any) {
+      if (err?.response?.status === 401) {
+        setError(t.errorInvalid);
+      } else {
+        setError(t.errorNetwork);
+      }
+    } finally {
+      setIsLoading(false);
+      setEnteredPin('');
+    }
+  };
+
+  const handlePinSetupSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    if (enteredPin !== confirmPin) {
+      setError(t.errorMismatch);
       return;
     }
 
-    const raw = extractRawPhone(phone);
-    const expectedPin = getUserPin(raw);
-
-    if (!expectedPin || entered !== expectedPin) {
-      setError(t('رمز المرور غير صحيح. يرجى التحقق من الرمز والمحاولة مرة أخرى.', 'Incorrect PIN. Please verify your code and try again.'));
+    if (enteredPin.length < 4) {
+      setError(isRTL ? 'رمز المرور يجب أن يكون 4 أرقام على الأقل.' : 'PIN must be at least 4 digits.');
       return;
     }
 
     setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 300));
-    completeAuth(false, activeRoleCode, resolvedStaff?.hospitalId, activeFullName);
+    try {
+      const formattedPhone = rawPhone.startsWith('+966') ? rawPhone : `+966${rawPhone.replace(/^0/, '')}`;
+      await apiClient.updateUserPin(formattedPhone, enteredPin);
+      
+      const user = await apiClient.login(formattedPhone, enteredPin);
+      const displayName = isRTL ? user.fullNameAr : user.fullName;
+      completeAuth(false, user.roleCode || selectedPersona.toUpperCase(), user.hospitalId, displayName);
+    } catch (err: any) {
+      setError(t.errorNetwork);
+    } finally {
+      setIsLoading(false);
+      setEnteredPin('');
+      setConfirmPin('');
+    }
   };
 
-  const handleOtpSubmit = async (e: React.FormEvent) => {
+  const handleSuperAdminSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const entered = otp.join('');
-    if (entered.length < 6) {
-      setError(t('يرجى إدخال رمز التحقق كاملاً (6 أرقام)', 'Please enter the complete 6-digit code'));
-      return;
-    }
-
+    setError('');
     setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 300));
-    setIsLoading(false);
 
-    const raw = extractRawPhone(phone);
-    if (isForgotPin || !hasUserPin(raw)) {
-      setPinDigits(['', '', '', '']);
-      setStep('pin_setup');
-    } else {
-      completeAuth(false, resolvedStaff?.roleCode, resolvedStaff?.hospitalId, resolvedStaff?.fullName);
+    try {
+      const user = await apiClient.login('+966500000001', enteredPin);
+      completeAuth(true, 'AD', user.hospitalId || 'GLOBAL', isRTL ? 'مدير النظام الأعلى' : 'Super Administrator');
+    } catch (err: any) {
+      if (err?.response?.status === 401) {
+        setError(t.errorSuperAdmin);
+      } else {
+        setError(t.errorNetwork);
+      }
+    } finally {
+      setIsLoading(false);
+      setEnteredPin('');
     }
   };
 
-  const handlePinSetupSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const entered = pinDigits.join('');
-    if (entered.length < 4) {
-      setError(t('يرجى إدخال رمز PIN جديد مكون من 4 أرقام', 'Please enter a 4-digit PIN'));
-      return;
-    }
-    const raw = extractRawPhone(phone);
-    setUserPin(raw, entered);
-    apiClient.updateUserPin(raw, entered).catch(() => {});
-    setIsForgotPin(false);
-    completeAuth(false, activeRoleCode, resolvedStaff?.hospitalId, activeFullName);
+  const containerStyle: React.CSSProperties = {
+    direction: isRTL ? 'rtl' : 'ltr',
+    fontFamily: 'Cairo, sans-serif',
+    minHeight: '100vh',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#E6FAF7',
+    padding: '20px',
   };
 
-  const handleConsultantVerify = () => {
-    if (!magicLinkData) return;
-    const session: SessionData = {
-      isAuthenticated: true, phone: '+919876543210', personaId: 'k', roleCode: 'K',
-      fullName: magicLinkData.consultantName, isGuest: false, expiresAt: Date.now() + THIRTY_DAYS_MS, lang,
-    };
-    saveConsultantSession(session);
-    onAuthenticated(session);
+  const cardStyle: React.CSSProperties = {
+    backgroundColor: '#FFFFFF',
+    borderRadius: '16px',
+    padding: '32px',
+    width: '100%',
+    maxWidth: '420px',
+    boxShadow: '0 8px 32px rgba(0, 123, 110, 0.12)',
+    border: '1px solid #00C6AE',
   };
 
-  const handleOtpChange = (idx: number, val: string) => {
-    if (val.length > 1) val = val.slice(-1);
-    if (!/^\d*$/.test(val)) return;
-    const next = [...otp];
-    next[idx] = val;
-    setOtp(next);
-    setError('');
-    if (val && idx < 5) otpRefs.current[idx + 1]?.focus();
+  const headerStyle: React.CSSProperties = {
+    color: '#007B6E',
+    fontSize: '28px',
+    fontWeight: 800,
+    textAlign: 'center',
+    marginBottom: '8px',
   };
 
-  const handleOtpKeyDown = (idx: number, e: React.KeyboardEvent) => {
-    if (e.key === 'Backspace' && !otp[idx] && idx > 0) otpRefs.current[idx - 1]?.focus();
+  const subHeaderStyle: React.CSSProperties = {
+    color: '#007B6E',
+    fontSize: '14px',
+    textAlign: 'center',
+    marginBottom: '24px',
+    opacity: 0.8,
   };
 
-  const handleOtpPaste = (e: React.ClipboardEvent) => {
-    e.preventDefault();
-    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
-    if (pasted.length === 6) { setOtp(pasted.split('')); otpRefs.current[5]?.focus(); }
+  const inputStyle: React.CSSProperties = {
+    width: '100%',
+    padding: '14px 16px',
+    borderRadius: '10px',
+    border: '2px solid #00C6AE',
+    fontSize: '16px',
+    fontFamily: 'Cairo, sans-serif',
+    outline: 'none',
+    transition: 'border-color 0.2s ease',
+    boxSizing: 'border-box',
+    direction: isRTL ? 'rtl' : 'ltr',
+    textAlign: isRTL ? 'right' : 'left',
   };
 
-  const handleResendOtp = (method: 'sms' | 'whatsapp') => {
-    setDeliveryMethod(method);
-    setCountdown(60);
-    setOtp(['', '', '', '', '', '']);
-    setError('');
-    setTimeout(() => otpRefs.current[0]?.focus(), 100);
+  const buttonStyle: React.CSSProperties = {
+    width: '100%',
+    padding: '14px',
+    borderRadius: '10px',
+    border: 'none',
+    backgroundColor: '#007B6E',
+    color: '#FFFFFF',
+    fontSize: '16px',
+    fontWeight: 700,
+    fontFamily: 'Cairo, sans-serif',
+    cursor: isLoading ? 'not-allowed' : 'pointer',
+    transition: 'background-color 0.2s ease',
+    marginTop: '16px',
+    opacity: isLoading ? 0.7 : 1,
   };
 
-  const handlePersonaQuickLogin = (p: PersonaPreset) => completeAuth(false, p.roleCode, p.hospitalId, isRTL ? p.nameAr : p.nameEn);
-
-  const handleHospitalStaffLoginSuccess = (s: { phone: string; roleCode: RoleCode; hospitalId: string; fullName: string }) =>
-    completeAuth(false, s.roleCode, s.hospitalId, s.fullName);
-
-  const handleSuperAdminSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const entered = superAdminPasscode.trim();
-    const adminPin = getUserPin('+966500000001');
-    if (!entered || (adminPin && entered !== adminPin && entered !== '10001')) {
-      setError(t('رمز المرور غير صحيح. يرجى التحقق والمحاولة مرة أخرى.', 'Invalid Super Admin Passcode. Please try again.'));
-      return;
-    }
-    setPhone('+966500000001');
-    completeAuth(false, 'AD', undefined, 'Adrian Lewis (Super Admin)');
+  const secondaryButtonStyle: React.CSSProperties = {
+    ...buttonStyle,
+    backgroundColor: 'transparent',
+    color: '#007B6E',
+    border: '2px solid #007B6E',
+    marginTop: '8px',
   };
 
-  const currentResolved = resolveAccountByPhone(extractRawPhone(phone), isRTL);
-  const activeRoleCode = resolvedStaff?.roleCode || currentResolved.roleCode;
-  const activeFullName = resolvedStaff?.fullName || currentResolved.fullName;
+  const errorStyle: React.CSSProperties = {
+    color: '#D32F2F',
+    fontSize: '13px',
+    textAlign: 'center',
+    marginTop: '12px',
+    fontWeight: 600,
+    fontFamily: 'Cairo, sans-serif',
+  };
+
+  const labelStyle: React.CSSProperties = {
+    display: 'block',
+    color: '#007B6E',
+    fontSize: '14px',
+    fontWeight: 600,
+    marginBottom: '8px',
+    fontFamily: 'Cairo, sans-serif',
+  };
+
+  const personaGridStyle: React.CSSProperties = {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(3, 1fr)',
+    gap: '8px',
+    marginBottom: '16px',
+  };
+
+  const personaChipStyle = (isActive: boolean): React.CSSProperties => ({
+    padding: '8px 4px',
+    borderRadius: '8px',
+    border: isActive ? '2px solid #007B6E' : '2px solid #E6FAF7',
+    backgroundColor: isActive ? '#E6FAF7' : '#FFFFFF',
+    color: '#007B6E',
+    fontSize: '11px',
+    fontWeight: 700,
+    fontFamily: 'Cairo, sans-serif',
+    cursor: 'pointer',
+    textAlign: 'center',
+    transition: 'all 0.2s ease',
+  });
+
+  const whatsappLinkStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '8px',
+    color: '#25D366',
+    fontSize: '13px',
+    fontWeight: 600,
+    textDecoration: 'none',
+    marginTop: '20px',
+    fontFamily: 'Cairo, sans-serif',
+  };
 
   return (
-    <>
-      <style>{`
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-        button:focus-visible, input:focus-visible, [role="button"]:focus-visible { outline: 3px solid ${PALETTE.secondary}; outline-offset: 2px; }
-      `}</style>
+    <div style={containerStyle}>
+      <div style={cardStyle} role="main" aria-label={t.welcome}>
+        <h1 style={headerStyle}>{t.welcome}</h1>
+        <p style={subHeaderStyle}>v2.4 Saudi Edition</p>
 
-      <div style={getAuthContainerStyle(isRTL)}>
-        <div style={authCardStyle}>
-          <div
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              height: '4px',
-              background:
-                activePortal === 'superadmin'
-                  ? 'linear-gradient(90deg, #0f172a, #334155)'
-                  : `linear-gradient(90deg, ${PALETTE.primary}, ${PALETTE.secondary})`,
-            }}
-          />
+        {step === 'phone' && (
+          <form onSubmit={handlePhoneSubmit} noValidate>
+            <label htmlFor="auth-phone" style={labelStyle}>{t.phoneLabel}</label>
+            <input
+              id="auth-phone"
+              type="tel"
+              value={rawPhone}
+              onChange={(e) => setRawPhone(e.target.value)}
+              placeholder={t.phonePlaceholder}
+              style={inputStyle}
+              autoComplete="tel"
+              disabled={isLoading}
+              aria-required="true"
+            />
+            
+            <label style={{ ...labelStyle, marginTop: '16px' }}>{t.selectRole}</label>
+            <div style={personaGridStyle} role="radiogroup" aria-label={t.selectRole}>
+              {PERSONA_PROFILES.map((profile) => (
+                <button
+                  key={profile.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={selectedPersona === profile.id}
+                  style={personaChipStyle(selectedPersona === profile.id)}
+                  onClick={() => setSelectedPersona(profile.id)}
+                  disabled={isLoading}
+                >
+                  {isRTL ? profile.labelAr : profile.labelEn}
+                </button>
+              ))}
+            </div>
 
-          <button
-            type="button"
-            onClick={() => setLang((l) => (l === 'ar' ? 'en' : 'ar'))}
-            style={{
-              position: 'absolute',
-              top: '20px',
-              [isRTL ? 'left' : 'right']: '20px',
-              backgroundColor: 'transparent',
-              border: `1px solid ${PALETTE.border}`,
-              borderRadius: '8px',
-              padding: '6px 12px',
-              fontSize: '12px',
-              fontWeight: 700,
-              color: PALETTE.primary,
-              cursor: 'pointer',
-            }}
-          >
-            {isRTL ? 'EN' : 'عربي'}
-          </button>
+            <button type="submit" style={buttonStyle} disabled={isLoading || !rawPhone.trim()}>
+              {isLoading ? (isRTL ? 'جاري التحقق...' : 'Verifying...') : t.submit}
+            </button>
 
-          {/* Clean Subcomponent Header */}
-          <AuthHeader activePortal={activePortal} />
+            <button
+              type="button"
+              style={secondaryButtonStyle}
+              onClick={() => setStep('super_admin')}
+              disabled={isLoading}
+            >
+              {t.superAdmin}
+            </button>
+          </form>
+        )}
 
-          <div style={{ animation: 'fadeInUp 0.3s ease-out' }} key={step}>
-            {step === 'consultant_otp' && magicLinkData ? (
-              <ConsultantMagicLinkStep
-                isRTL={isRTL}
-                consultantName={magicLinkData.consultantName}
-                center={magicLinkData.center}
-                caseId={magicLinkData.caseId}
-                onVerifySuccess={handleConsultantVerify}
-                onCancel={() => {
-                  setStep('phone');
-                  setActivePortal('patient');
-                }}
-                t={t}
-              />
-            ) : step === 'otp' ? (
-              <OtpVerificationStep
-                phone={phone}
-                otp={otp}
-                deliveryMethod={deliveryMethod}
-                setDeliveryMethod={setDeliveryMethod}
-                countdown={countdown}
-                isLoading={isLoading}
-                isRTL={isRTL}
-                error={error}
-                isDemoMode={isDemoMode}
-                otpRefs={otpRefs}
-                onBackToPhone={() => setStep('phone')}
-                onOtpChange={handleOtpChange}
-                onOtpKeyDown={handleOtpKeyDown}
-                onOtpPaste={handleOtpPaste}
-                onOtpSubmit={handleOtpSubmit}
-                onResendOtp={() => handleResendOtp(deliveryMethod)}
-                t={t}
-              />
-            ) : step === 'activate' ? (
-              <FirstTimeActivationStep
-                isRTL={isRTL}
-                phoneDisplay={phone}
-                staffName={activeFullName}
-                roleName={getRoleTitle(activeRoleCode, isRTL)}
-                onActivationSuccess={(newPin) => {
-                  const raw = extractRawPhone(phone);
-                  setUserPin(raw, newPin);
-                  apiClient.updateUserPin(raw, newPin).catch(() => {});
-                  completeAuth(false, activeRoleCode, resolvedStaff?.hospitalId, activeFullName);
-                }}
-                onBack={() => setStep('phone')}
-                t={t}
-              />
-            ) : step === 'pin' || step === 'pin_setup' ? (
-              /* PIN Entry or PIN Setup Step */
-              <PinEntryStep
-                isRTL={isRTL}
-                phone={phone}
-                roleCode={activeRoleCode}
-                userName={activeFullName}
-                roleTitle={getRoleTitle(activeRoleCode, isRTL)}
-                pin={pinDigits}
-                setPin={setPinDigits}
-                isSetupMode={step === 'pin_setup'}
-                onSubmit={step === 'pin_setup' ? handlePinSetupSubmit : handlePinSubmit}
-                onForgotPin={() => {
-                  setIsForgotPin(true);
-                  setCountdown(60);
-                  setOtp(['', '', '', '', '', '']);
-                  setStep('otp');
-                }}
-                onBackToPhone={() => setStep('phone')}
-                isLoading={isLoading}
-                error={error}
-                t={t}
-              />
-            ) : (
-              <PhoneEntryStep
-                phone={phone}
-                country={country}
-                onCountryChange={(c) => {
-                  setCountry(c);
-                  setPhone('');
-                  setError('');
-                }}
-                phoneRef={phoneRef}
-                onPhoneChange={handlePhoneChange}
-                onPhoneSubmit={handlePhoneSubmit}
-                isLoading={isLoading}
-                isRTL={isRTL}
-                error={error}
-                t={t}
-              />
-            )}
-          </div>
-        </div>
+        {step === 'pin' && (
+          <form onSubmit={handlePinSubmit} noValidate>
+            <label htmlFor="auth-pin" style={labelStyle}>{t.pinLabel}</label>
+            <input
+              id="auth-pin"
+              type="password"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={6}
+              value={enteredPin}
+              onChange={(e) => setEnteredPin(e.target.value.replace(/[^0-9]/g, ''))}
+              style={{ ...inputStyle, letterSpacing: '8px', textAlign: 'center' }}
+              autoComplete="one-time-code"
+              disabled={isLoading}
+              autoFocus
+              aria-required="true"
+            />
+            <button type="submit" style={buttonStyle} disabled={isLoading || enteredPin.length < 4}>
+              {isLoading ? (isRTL ? 'جاري الدخول...' : 'Logging in...') : t.submit}
+            </button>
+            <button
+              type="button"
+              style={secondaryButtonStyle}
+              onClick={() => { setStep('phone'); setError(''); setEnteredPin(''); }}
+              disabled={isLoading}
+            >
+              {t.back}
+            </button>
+            {error && <p style={errorStyle} role="alert" aria-live="assertive">{error}</p>}
+          </form>
+        )}
+
+        {step === 'pin_setup' && (
+          <form onSubmit={handlePinSetupSubmit} noValidate>
+            <p style={{ ...subHeaderStyle, marginBottom: '16px', fontWeight: 600 }}>
+              {isRTL ? 'إعداد رمز مرور جديد' : 'Setup New PIN'}
+            </p>
+            <label htmlFor="auth-new-pin" style={labelStyle}>{t.pinLabel}</label>
+            <input
+              id="auth-new-pin"
+              type="password"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={6}
+              value={enteredPin}
+              onChange={(e) => setEnteredPin(e.target.value.replace(/[^0-9]/g, ''))}
+              style={{ ...inputStyle, letterSpacing: '8px', textAlign: 'center', marginBottom: '12px' }}
+              disabled={isLoading}
+              autoFocus
+              aria-required="true"
+            />
+            <label htmlFor="auth-confirm-pin" style={labelStyle}>{t.confirmPinLabel}</label>
+            <input
+              id="auth-confirm-pin"
+              type="password"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={6}
+              value={confirmPin}
+              onChange={(e) => setConfirmPin(e.target.value.replace(/[^0-9]/g, ''))}
+              style={{ ...inputStyle, letterSpacing: '8px', textAlign: 'center' }}
+              disabled={isLoading}
+              aria-required="true"
+            />
+            <button type="submit" style={buttonStyle} disabled={isLoading || enteredPin.length < 4 || confirmPin.length < 4}>
+              {isLoading ? (isRTL ? 'جاري التفعيل...' : 'Activating...') : t.setup}
+            </button>
+            <button
+              type="button"
+              style={secondaryButtonStyle}
+              onClick={() => { setStep('phone'); setError(''); setEnteredPin(''); setConfirmPin(''); }}
+              disabled={isLoading}
+            >
+              {t.back}
+            </button>
+            {error && <p style={errorStyle} role="alert" aria-live="assertive">{error}</p>}
+          </form>
+        )}
+
+        {step === 'super_admin' && (
+          <form onSubmit={handleSuperAdminSubmit} noValidate>
+            <p style={{ ...subHeaderStyle, marginBottom: '16px', fontWeight: 600, color: '#D32F2F' }}>
+              {isRTL ? 'منطقة مقيدة - مدير النظام' : 'Restricted Area - Super Admin'}
+            </p>
+            <label htmlFor="auth-sa-pin" style={labelStyle}>{t.pinLabel}</label>
+            <input
+              id="auth-sa-pin"
+              type="password"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={8}
+              value={enteredPin}
+              onChange={(e) => setEnteredPin(e.target.value.replace(/[^0-9]/g, ''))}
+              style={{ ...inputStyle, letterSpacing: '8px', textAlign: 'center' }}
+              disabled={isLoading}
+              autoFocus
+              aria-required="true"
+            />
+            <button type="submit" style={{ ...buttonStyle, backgroundColor: '#D32F2F' }} disabled={isLoading || enteredPin.length < 4}>
+              {isLoading ? (isRTL ? 'جاري التحقق...' : 'Verifying...') : t.submit}
+            </button>
+            <button
+              type="button"
+              style={secondaryButtonStyle}
+              onClick={() => { setStep('phone'); setError(''); setEnteredPin(''); }}
+              disabled={isLoading}
+            >
+              {t.back}
+            </button>
+            {error && <p style={errorStyle} role="alert" aria-live="assertive">{error}</p>}
+          </form>
+        )}
+
+        <a
+          href="https://wa.me/966500000000"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={whatsappLinkStyle}
+          aria-label={isRTL ? 'تواصل عبر واتساب' : 'Contact via WhatsApp'}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="#25D366">
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+          </svg>
+          {isRTL ? 'الدعم الفني عبر واتساب' : 'WhatsApp Support'}
+        </a>
       </div>
-    </>
+    </div>
   );
-}
+};
+
+export default UnifiedAuthGate;
