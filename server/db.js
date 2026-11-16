@@ -55,6 +55,7 @@ export async function initDatabase() {
         );
 
         ALTER TABLE platform_users ADD COLUMN IF NOT EXISTS has_custom_pin BOOLEAN DEFAULT FALSE;
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_platform_users_phone ON platform_users(phone);
 
         CREATE TABLE IF NOT EXISTS clinical_cases (
           id VARCHAR(100) PRIMARY KEY,

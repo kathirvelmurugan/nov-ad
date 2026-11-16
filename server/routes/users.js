@@ -49,6 +49,15 @@ router.post('/login', async (req, res) => {
         }
       });
     }
+
+    // Check if user exists in DB with a different PIN
+    const userExists = await pool.query(
+      `SELECT id FROM platform_users WHERE (phone = $1 OR phone = $2) LIMIT 1`,
+      [normalizedPhone, phone]
+    );
+    if (userExists.rows.length > 0) {
+      return res.status(401).json({ success: false, error: 'Invalid phone or PIN' });
+    }
   } catch (err) {
     console.error('[users/login] DB check error:', err.message);
   }
@@ -66,7 +75,6 @@ router.post('/login', async (req, res) => {
       const insertRes = await pool.query(
         `INSERT INTO platform_users (id, full_name, full_name_ar, phone, role_code, pin, has_custom_pin, status)
          VALUES ($1, $2, $3, $4, 'P', $5, TRUE, 'active')
-         ON CONFLICT (phone) DO UPDATE SET pin = EXCLUDED.pin, has_custom_pin = TRUE
          RETURNING id, full_name AS "fullName", full_name_ar AS "fullNameAr", phone, role_code AS "roleCode", status`,
         [newPatientId, 'New Patient', 'مريض جديد', normalizedPhone, String(pin)]
       );
@@ -110,16 +118,21 @@ router.post('/pin', async (req, res) => {
   const normalizedPhone = normalizePhone(phone);
 
   try {
-    const updateRes = await pool.query(
-      'UPDATE platform_users SET pin = $1, has_custom_pin = TRUE WHERE phone = $2 RETURNING id',
-      [String(pin), normalizedPhone]
+    const existing = await pool.query(
+      'SELECT id FROM platform_users WHERE phone = $1 OR phone = $2 LIMIT 1',
+      [normalizedPhone, phone]
     );
-    if (updateRes.rowCount === 0) {
+    if (existing.rows.length > 0) {
       await pool.query(
-        `INSERT INTO platform_users (full_name, phone, role_code, pin, has_custom_pin)
-         VALUES ($1, $2, 'P', $3, TRUE)
-         ON CONFLICT (phone) DO UPDATE SET pin = EXCLUDED.pin, has_custom_pin = TRUE`,
-        ['Patient', normalizedPhone, String(pin)]
+        'UPDATE platform_users SET pin = $1, has_custom_pin = TRUE WHERE id = $2',
+        [String(pin), existing.rows[0].id]
+      );
+    } else {
+      const newId = `pat-${Date.now()}`;
+      await pool.query(
+        `INSERT INTO platform_users (id, full_name, full_name_ar, phone, role_code, pin, has_custom_pin, status)
+         VALUES ($1, $2, $3, $4, 'P', $5, TRUE, 'active')`,
+        [newId, 'Patient', 'مريض جديد', normalizedPhone, String(pin)]
       );
     }
   } catch (err) {
@@ -135,6 +148,7 @@ router.post('/pin', async (req, res) => {
     memoryUsers.push({
       id: `patient-${Date.now()}`,
       fullName: 'Patient',
+      fullNameAr: 'مريض جديد',
       phone: normalizedPhone,
       roleCode: 'P',
       pin: String(pin),
