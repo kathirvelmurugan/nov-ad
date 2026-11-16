@@ -58,6 +58,26 @@ router.post('/login', async (req, res) => {
   if (memUser) {
     return res.json({ success: true, data: memUser });
   }
+
+  // JIT Patient Auto-Registration: If a non-staff mobile number logs in with a 4-digit PIN, provision them as a Patient
+  if (pin && String(pin).length >= 4 && (normalizedPhone.startsWith('+9665') || normalizedPhone.startsWith('+966') || normalizedPhone.startsWith('+'))) {
+    try {
+      const newPatientId = `pat-${Date.now()}`;
+      const insertRes = await pool.query(
+        `INSERT INTO platform_users (id, full_name, full_name_ar, phone, role_code, pin, has_custom_pin, status)
+         VALUES ($1, $2, $3, $4, 'P', $5, TRUE, 'active')
+         ON CONFLICT (phone) DO UPDATE SET pin = EXCLUDED.pin, has_custom_pin = TRUE
+         RETURNING id, full_name AS "fullName", full_name_ar AS "fullNameAr", phone, role_code AS "roleCode", status`,
+        [newPatientId, 'New Patient', 'مريض جديد', normalizedPhone, String(pin)]
+      );
+      if (insertRes.rows.length > 0) {
+        return res.json({ success: true, data: insertRes.rows[0] });
+      }
+    } catch (regErr) {
+      console.error('[users/login] JIT patient registration error:', regErr.message);
+    }
+  }
+
   return res.status(401).json({ success: false, error: 'Invalid phone or PIN' });
 });
 

@@ -105,10 +105,10 @@ const UnifiedAuthGate: React.FC<UnifiedAuthGateProps> = ({ onComplete, onAuthent
       if (response && response.exists && response.hasPin) {
         setStep('pin');
       } else {
-        setStep('pin'); // Default to PIN entry for registered staff and returning patients
+        setStep('pin_setup'); // Guide new patients to set a PIN for their medical record
       }
     } catch (err: any) {
-      setStep('pin');
+      setStep('pin_setup');
     } finally {
       setIsLoading(false);
     }
@@ -160,12 +160,19 @@ const UnifiedAuthGate: React.FC<UnifiedAuthGateProps> = ({ onComplete, onAuthent
 
     setIsLoading(true);
     try {
-      const formattedPhone = rawPhone.startsWith('+966') ? rawPhone : `+966${rawPhone.replace(/^0/, '')}`;
+      let formattedPhone = rawPhone.trim();
+      if (formattedPhone.startsWith('05')) {
+        formattedPhone = `+966${formattedPhone.slice(1)}`;
+      } else if (formattedPhone.startsWith('5') && formattedPhone.length === 9) {
+        formattedPhone = `+966${formattedPhone}`;
+      } else if (!formattedPhone.startsWith('+')) {
+        formattedPhone = `+${formattedPhone}`;
+      }
       await apiClient.updateUserPin(formattedPhone, enteredPin);
       
       const user = await apiClient.login(formattedPhone, enteredPin);
-      const displayName = isRTL ? user.fullNameAr : user.fullName;
-      completeAuth(false, user.roleCode || selectedPersona.toUpperCase(), user.hospitalId, displayName);
+      const displayName = isRTL ? (user.fullNameAr || 'مريض جديد') : (user.fullName || 'New Patient');
+      completeAuth(false, user.roleCode || 'P', user.hospitalId, displayName);
     } catch (err: any) {
       setError(t.errorNetwork);
     } finally {
