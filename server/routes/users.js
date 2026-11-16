@@ -16,13 +16,16 @@ const normalizePhone = (raw) => {
   if (digits.startsWith('5') && digits.length === 9) {
     return `+966${digits}`;
   }
+  if (digits.startsWith('91')) {
+    return `+${digits}`;
+  }
   return raw;
 };
 
 router.post('/login', async (req, res) => {
   const { phone, pin } = req.body || {};
   if (!phone || !pin) {
-    return res.status(400).json({ error: 'phone and pin are required' });
+    return res.status(400).json({ success: false, error: 'phone and pin are required' });
   }
   const normalizedPhone = normalizePhone(phone);
   try {
@@ -33,14 +36,17 @@ router.post('/login', async (req, res) => {
     if (rows.length > 0) {
       const user = rows[0];
       return res.json({
-        id: user.id,
-        fullName: user.full_name,
-        fullNameAr: user.full_name_ar,
-        phone: user.phone,
-        roleCode: user.role_code,
-        hospitalId: user.hospital_id,
-        department: user.department,
-        status: user.status || 'active'
+        success: true,
+        data: {
+          id: user.id,
+          fullName: user.full_name,
+          fullNameAr: user.full_name_ar,
+          phone: user.phone,
+          roleCode: user.role_code,
+          hospitalId: user.hospital_id,
+          department: user.department,
+          status: user.status || 'active'
+        }
       });
     }
   } catch (err) {
@@ -50,9 +56,9 @@ router.post('/login', async (req, res) => {
     (u) => (u.phone === normalizedPhone || u.phone === phone) && String(u.pin) === String(pin)
   );
   if (memUser) {
-    return res.json(memUser);
+    return res.json({ success: true, data: memUser });
   }
-  return res.status(401).json({ error: 'Invalid phone or PIN' });
+  return res.status(401).json({ success: false, error: 'Invalid phone or PIN' });
 });
 
 router.get('/', async (_req, res) => {

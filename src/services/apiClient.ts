@@ -151,10 +151,11 @@ export const apiClient = {
       body: JSON.stringify({ phone, pin }),
     });
     const json = await res.json();
-    if (!json.success || !json.data) {
+    const user = json.data || (json.id ? json : null);
+    if (!user) {
       throw new Error(json.error || 'Login failed');
     }
-    return json.data;
+    return user;
   },
 
   // ── Tenants ───────────────────────────────────────────────────────────────

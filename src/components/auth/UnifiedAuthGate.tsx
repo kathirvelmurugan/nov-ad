@@ -117,10 +117,17 @@ const UnifiedAuthGate: React.FC<UnifiedAuthGateProps> = ({ onComplete, onAuthent
     setIsLoading(true);
 
     try {
-      const formattedPhone = rawPhone.startsWith('+966') ? rawPhone : `+966${rawPhone.replace(/^0/, '')}`;
+      let formattedPhone = rawPhone.trim();
+      if (formattedPhone.startsWith('05')) {
+        formattedPhone = `+966${formattedPhone.slice(1)}`;
+      } else if (formattedPhone.startsWith('5') && formattedPhone.length === 9) {
+        formattedPhone = `+966${formattedPhone}`;
+      } else if (!formattedPhone.startsWith('+')) {
+        formattedPhone = `+${formattedPhone}`;
+      }
       const user = await apiClient.login(formattedPhone, enteredPin);
       
-      const displayName = isRTL ? user.fullNameAr : user.fullName;
+      const displayName = isRTL ? (user.fullNameAr || user.fullName) : user.fullName;
       completeAuth(false, user.roleCode, user.hospitalId, displayName);
     } catch (err: any) {
       if (err?.response?.status === 401) {
