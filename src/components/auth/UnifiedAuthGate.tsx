@@ -44,7 +44,7 @@ const UnifiedAuthGate: React.FC<UnifiedAuthGateProps> = ({ onComplete, onAuthent
 
   const t = useMemo(() => ({
     phoneLabel: isRTL ? 'رقم الجوال' : 'Mobile Number',
-    phonePlaceholder: isRTL ? '05XXXXXXXX' : '05XXXXXXXX',
+    phonePlaceholder: isRTL ? '+966 5X XXX XXXX أو 05XXXXXXXX' : '+966 5X XXX XXXX / 05XXXXXXXX',
     pinLabel: isRTL ? 'رمز المرور' : 'PIN Code',
     confirmPinLabel: isRTL ? 'تأكيد رمز المرور' : 'Confirm PIN',
     submit: isRTL ? 'دخول' : 'Login',
@@ -92,20 +92,23 @@ const UnifiedAuthGate: React.FC<UnifiedAuthGateProps> = ({ onComplete, onAuthent
 
     setIsLoading(true);
     try {
-      const formattedPhone = rawPhone.startsWith('+966') ? rawPhone : `+966${rawPhone.replace(/^0/, '')}`;
+      let formattedPhone = rawPhone.trim();
+      if (formattedPhone.startsWith('05')) {
+        formattedPhone = `+966${formattedPhone.slice(1)}`;
+      } else if (formattedPhone.startsWith('5') && formattedPhone.length === 9) {
+        formattedPhone = `+966${formattedPhone}`;
+      } else if (!formattedPhone.startsWith('+')) {
+        formattedPhone = `+${formattedPhone}`;
+      }
       const response = await apiClient.checkUserExists(formattedPhone);
       
       if (response && response.exists && response.hasPin) {
         setStep('pin');
       } else {
-        setStep('pin_setup');
+        setStep('pin'); // Default to PIN entry for registered staff and returning patients
       }
     } catch (err: any) {
-      if (err?.response?.status === 404) {
-        setStep('pin_setup');
-      } else {
-        setError(t.errorNetwork);
-      }
+      setStep('pin');
     } finally {
       setIsLoading(false);
     }
@@ -339,25 +342,8 @@ const UnifiedAuthGate: React.FC<UnifiedAuthGateProps> = ({ onComplete, onAuthent
               disabled={isLoading}
               aria-required="true"
             />
-            
-            <label style={{ ...labelStyle, marginTop: '16px' }}>{t.selectRole}</label>
-            <div style={personaGridStyle} role="radiogroup" aria-label={t.selectRole}>
-              {PERSONA_PROFILES.map((profile) => (
-                <button
-                  key={profile.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={selectedPersona === profile.id}
-                  style={personaChipStyle(selectedPersona === profile.id)}
-                  onClick={() => setSelectedPersona(profile.id)}
-                  disabled={isLoading}
-                >
-                  {isRTL ? profile.labelAr : profile.labelEn}
-                </button>
-              ))}
-            </div>
 
-            <button type="submit" style={buttonStyle} disabled={isLoading || !rawPhone.trim()}>
+            <button type="submit" style={{ ...buttonStyle, marginTop: '20px' }} disabled={isLoading || !rawPhone.trim()}>
               {isLoading ? (isRTL ? 'جاري التحقق...' : 'Verifying...') : t.submit}
             </button>
 

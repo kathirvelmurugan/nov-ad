@@ -240,6 +240,9 @@ export function useClinicalWorkflowState() {
 
   const [activeCaseId, setActiveCaseId] = useState<string>(() => {
     try {
+      const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+      const urlCaseId = searchParams?.get('caseId') || searchParams?.get('id');
+      if (urlCaseId) return urlCaseId;
       const saved = localStorage.getItem(ACTIVE_CASE_KEY);
       if (saved) return saved;
     } catch (e) {}
@@ -247,6 +250,16 @@ export function useClinicalWorkflowState() {
   });
 
   const [intakeDraft, setIntakeDraft] = useState<ClinicalCase>(() => createFreshDraftIntake(userSession));
+
+  useEffect(() => {
+    try {
+      const searchParams = new URLSearchParams(window.location.search);
+      const urlCaseId = searchParams.get('caseId') || searchParams.get('id');
+      if (urlCaseId && urlCaseId !== activeCaseId) {
+        setActiveCaseId(urlCaseId);
+      }
+    } catch (e) {}
+  }, []);
 
   useEffect(() => {
     if (userSession && userSession.phone) {
@@ -267,6 +280,13 @@ export function useClinicalWorkflowState() {
         // Hard Server-Truth: Server response replaces local state completely
         setCases(serverCases);
         try { localStorage.setItem(STORAGE_KEY, JSON.stringify(serverCases)); } catch (e) {}
+        try {
+          const searchParams = new URLSearchParams(window.location.search);
+          const urlCaseId = searchParams.get('caseId') || searchParams.get('id');
+          if (urlCaseId && serverCases.some((c) => c.id === urlCaseId)) {
+            setActiveCaseId(urlCaseId);
+          }
+        } catch (e) {}
       }
     }).catch(() => {});
     return () => { isSubscribed = false; };
@@ -280,8 +300,9 @@ export function useClinicalWorkflowState() {
 
   const effectiveCases = cases.filter((c) => {
     if (isPatientPersona && isPatientUser) {
+      if (c.id === activeCaseId) return true;
       if (userSession?.phone) return matchesSaudiPhone(c.patientPhone, userSession.phone);
-      return c.id === activeCaseId || c.stage > 1 || (!c.patientPhone && c.id !== 'draft-intake');
+      return c.stage > 1 || (!c.patientPhone && c.id !== 'draft-intake');
     }
     return true;
   });

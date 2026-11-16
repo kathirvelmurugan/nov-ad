@@ -5,6 +5,16 @@ const SLEEP_GAP = 5000; // 5-second gap for every persona switch and observation
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+async function safeReload(page, fallbackUrl) {
+  try {
+    await page.reload({ waitUntil: 'networkidle', timeout: 15000 });
+  } catch (err) {
+    if (fallbackUrl) {
+      await page.goto(fallbackUrl, { waitUntil: 'networkidle', timeout: 20000 });
+    }
+  }
+}
+
 async function transitionTo(page, roleName, contextDescription) {
   console.log(`\n========================================================================`);
   console.log(`👁️  SWITCHING TO: [${roleName.toUpperCase()}]`);
@@ -168,7 +178,7 @@ async function runWrittenOpinionFlow() {
     // ════════════════════════════════════════════════════════════════════════
     // STEP 2: SWITCH TO NURSE (Observe Impact & Triage)
     // ════════════════════════════════════════════════════════════════════════
-    await nursePage.reload({ waitUntil: 'networkidle' });
+    await safeReload(nursePage, `${BASE_URL}/?portal=nurse`);
     await loginStaff(nursePage, '0500000004', '1234');
     await transitionTo(nursePage, 'ALO Nurse (Sara Al-Qahtani)', `Verify new case ${registeredCaseId} arrived in Triage Queue`);
 
@@ -204,7 +214,7 @@ async function runWrittenOpinionFlow() {
     // ════════════════════════════════════════════════════════════════════════
     // STEP 3: SWITCH TO SAUDI DOCTOR (Observe Impact & Referral Endorsement)
     // ════════════════════════════════════════════════════════════════════════
-    await doctorPage.reload({ waitUntil: 'networkidle' });
+    await safeReload(doctorPage, `${BASE_URL}/?portal=doctor`);
     await loginStaff(doctorPage, '0500000005', '1234');
     await transitionTo(doctorPage, 'Saudi Doctor (Dr. Fahad Al-Harbi)', `Verify case ${registeredCaseId} arrived in Doctor Review Queue`);
 
@@ -287,7 +297,7 @@ async function runWrittenOpinionFlow() {
     // ════════════════════════════════════════════════════════════════════════
     // STEP 6: SWITCH TO SAUDI DOCTOR (Observe Opinion & License Endorsement)
     // ════════════════════════════════════════════════════════════════════════
-    await doctorPage.reload({ waitUntil: 'networkidle' });
+    await safeReload(doctorPage, `${BASE_URL}/?portal=doctor`);
     await loginStaff(doctorPage, '0500000005', '1234');
     await transitionTo(doctorPage, 'Saudi Doctor (Dr. Fahad Al-Harbi)', `Dr. Fahad reviews Dr. Prasanth's Written Opinion & signs with SCFHS Stamp`);
 
@@ -309,7 +319,7 @@ async function runWrittenOpinionFlow() {
     // ════════════════════════════════════════════════════════════════════════
     // STEP 7: SWITCH TO COORDINATOR (Verify & Release Bilingual Reports)
     // ════════════════════════════════════════════════════════════════════════
-    await coordPage.reload({ waitUntil: 'networkidle' });
+    await safeReload(coordPage, `${BASE_URL}/?portal=coordinator`);
     await loginStaff(coordPage, '0500000003', '1234');
     await transitionTo(coordPage, 'ALO Coordinator (Emmanuel Arcon Gonzalez)', `Verify completed file, release PDF 1 & PDF 2, and seal case closure`);
 
@@ -352,7 +362,7 @@ async function runWrittenOpinionFlow() {
     // ════════════════════════════════════════════════════════════════════════
     // STEP 8: SWITCH TO PATIENT (Observe Final Closed State & Report Downloads)
     // ════════════════════════════════════════════════════════════════════════
-    await patientPage.goto(`${BASE_URL}/?portal=patient&subview=timeline`, { waitUntil: 'networkidle' });
+    await patientPage.goto(`${BASE_URL}/?portal=patient&subview=timeline&caseId=${registeredCaseId}`, { waitUntil: 'networkidle' });
     await transitionTo(patientPage, 'Patient (Sami Al-Harbi)', `Final Observation: Closed Case Timeline with Instant PDF 1 & PDF 2 Downloads`);
 
     console.log('   Verifying PDF download buttons on Patient screen...');
