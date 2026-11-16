@@ -8,6 +8,11 @@ import {
   AuthPortalTab,
   PersonaPreset,
   PERSONA_PRESETS,
+  CountryCode,
+  formatPhoneByCountry,
+  extractRawPhoneByCountry,
+  validateMobileByCountry,
+  detectCountryFromPhone,
   SessionData,
   formatPhoneDisplay,
   extractRawPhone,
@@ -49,6 +54,7 @@ export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }:
 
   const [activePortal, setActivePortal] = useState<AuthPortalTab>(getInitialPortal);
   const [step, setStep] = useState<AuthStep>('phone');
+  const [country, setCountry] = useState<CountryCode>('SA');
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [pinDigits, setPinDigits] = useState(['', '', '', '']);
@@ -121,27 +127,37 @@ export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }:
   const t = useCallback((ar: string, en: string) => (isRTL ? ar : en), [isRTL]);
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formatted = formatPhoneDisplay(e.target.value);
+    const val = e.target.value;
+    let activeCountry = country;
+    if (val.includes('+91') || (country === 'SA' && val.trim().startsWith('91') && val.trim().length > 3)) {
+      activeCountry = 'IN';
+      setCountry('IN');
+    } else if (val.includes('+966') || (country === 'IN' && val.trim().startsWith('966') && val.trim().length > 4)) {
+      activeCountry = 'SA';
+      setCountry('SA');
+    }
+    const formatted = formatPhoneByCountry(val, activeCountry);
     setPhone(formatted);
     setError('');
   };
 
   const handlePhoneSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateSaudiMobile(phone)) {
-      setError(t('يرجى إدخال رقم جوال سعودي صحيح يبدأ بـ 05 أو +966', 'Please enter a valid Saudi mobile number starting with 05 or +966'));
+    if (!validateMobileByCountry(phone, country)) {
+      const msg = country === 'IN'
+        ? t('يرجى إدخال رقم جوال هندي صحيح مكون من 10 أرقام ويبدأ بـ 6-9', 'Please enter a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9')
+        : t('يرجى إدخال رقم جوال سعودي صحيح يبدأ بـ 05 أو +966', 'Please enter a valid Saudi mobile number starting with 05 or +966');
+      setError(msg);
       return;
     }
     setIsLoading(true);
     const users = await apiClient.fetchUsers().catch(() => []);
     setIsLoading(false);
 
-    const raw = extractRawPhone(phone);
+    const raw = extractRawPhoneByCountry(phone, country);
     const resolved = resolveAccountByPhone(raw, isRTL, Array.isArray(users) && users.length > 0 ? users : undefined);
-    if (resolved.hasCustomPin) {
-      setUserPin(raw, resolved.staffRecord?.pin || DEFAULT_DEV_PIN);
-    }
-    const userHasPin = resolved.hasCustomPin || hasUserPin(raw);
+
+    const userHasPin = hasUserPin(raw) || Boolean(resolved.hasCustomPin && getUserPin(raw));
 
     if (resolved.isStaff) {
       setResolvedStaff({
@@ -414,16 +430,18 @@ export default function UnifiedAuthGate({ onAuthenticated, initialLang = 'ar' }:
             ) : (
               <PhoneEntryStep
                 phone={phone}
+                country={country}
+                onCountryChange={(c) => {
+                  setCountry(c);
+                  setPhone('');
+                  setError('');
+                }}
                 phoneRef={phoneRef}
                 onPhoneChange={handlePhoneChange}
                 onPhoneSubmit={handlePhoneSubmit}
                 isLoading={isLoading}
                 isRTL={isRTL}
                 error={error}
-                activePortal={activePortal}
-                isDemoMode={isDemoMode}
-                onPersonaQuickLogin={handlePersonaQuickLogin}
-                onGuestBypass={() => completeAuth(true, 'P', undefined, isRTL ? 'زائر' : 'Guest Patient')}
                 t={t}
               />
             )}

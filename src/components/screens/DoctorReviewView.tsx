@@ -35,7 +35,14 @@ export const DoctorReviewView: React.FC<Props> = ({
   activePersona,
   onLogout,
 }) => {
-  const [selectedCaseId, setSelectedCaseId] = React.useState<string | null>(null);
+  const [selectedCaseId, setSelectedCaseId] = React.useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      const search = new URLSearchParams(window.location.search);
+      const qCase = search.get('caseId') || search.get('case_id');
+      if (qCase) return qCase;
+    }
+    return propsActiveCase?.id || null;
+  });
   const [isTelehealthOpen, setIsTelehealthOpen] = React.useState(false);
 
   const isActionableForDoctor = (c: ClinicalCase) =>
@@ -48,11 +55,16 @@ export const DoctorReviewView: React.FC<Props> = ({
     return cases.filter(isActionableForDoctor);
   }, [cases]);
 
-  // Intelligent Caseload Auto-Selection: Auto-default to the first actionable doctor case
-  const defaultDoctorCase = pendingDoctorCases[0] || (propsActiveCase?.id ? propsActiveCase : cases[0]);
-  const effectiveCaseId = selectedCaseId !== null ? selectedCaseId : defaultDoctorCase?.id || null;
-  const currentCase = effectiveCaseId ? (cases.find((c) => c.id === effectiveCaseId) || null) : null;
+  // Intelligent Caseload Auto-Selection: Sync with URL caseId, active case, or first case
+  const targetCase = selectedCaseId ? (cases.find((c) => c.id === selectedCaseId || c.caseNumber === selectedCaseId) || null) : null;
+  const currentCase = targetCase || pendingDoctorCases[0] || (propsActiveCase && cases.find((c) => c.id === propsActiveCase.id)) || cases[0] || null;
   const activeCase = (currentCase || propsActiveCase) as ClinicalCase;
+
+  React.useEffect(() => {
+    if (propsActiveCase?.id && (!selectedCaseId || !cases.some((c) => c.id === selectedCaseId))) {
+      setSelectedCaseId(propsActiveCase.id);
+    }
+  }, [propsActiveCase?.id, cases, selectedCaseId]);
 
   const isAr = lang === 'ar';
   const doctorName = userSession?.fullName || activePersona?.name || activeCase?.treatingDoctor?.name || (isAr ? 'الطبيب السعودي المعالج' : 'Saudi Treating Doctor');

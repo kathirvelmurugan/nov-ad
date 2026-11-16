@@ -92,12 +92,16 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
     const phone = userSession?.phone;
     const hospital = userSession?.hospitalId;
 
+    const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+    const queryCaseId = searchParams?.get('caseId') || searchParams?.get('case_id');
+
     if (role === 'P' && phone) {
-      return cases.filter((c) => c.patientPhone === phone || c.nationalIdMasked === phone);
+      return cases.filter((c) => (queryCaseId && (c.id === queryCaseId || c.caseNumber === queryCaseId)) || c.patientPhone === phone || c.nationalIdMasked === phone);
     }
     if (role === 'D') {
       const cleanName = (userSession?.fullName || '').replace(/^(د\.|dr\.)\s*/i, '').trim().toLowerCase();
       return cases.filter((c) => {
+        if (queryCaseId && (c.id === queryCaseId || c.caseNumber === queryCaseId)) return true;
         const cDocName = (c.treatingDoctor?.name || '').replace(/^(د\.|dr\.)\s*/i, '').trim().toLowerCase();
         if (cleanName && cDocName && (cDocName.includes(cleanName) || cleanName.includes(cDocName))) return true;
         if (!hospital) return true;
@@ -107,22 +111,25 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
       });
     }
     if (role === 'HA' && hospital) {
-      return cases.filter((c) => (c.treatingDoctor?.hospital || '').toLowerCase().includes(hospital.toLowerCase()));
+      return cases.filter((c) => (queryCaseId && (c.id === queryCaseId || c.caseNumber === queryCaseId)) || (c.treatingDoctor?.hospital || '').toLowerCase().includes(hospital.toLowerCase()));
     }
-    if (role === 'K' && userSession?.fullName) {
-      return cases.filter((c) => (c.consultant?.name || '').toLowerCase().includes(userSession.fullName.toLowerCase()));
+    if (role === 'K') {
+      return cases.filter((c) => {
+        if (queryCaseId && (c.id === queryCaseId || c.caseNumber === queryCaseId)) return true;
+        if (!userSession?.fullName) return true;
+        return (c.consultant?.name || '').toLowerCase().includes(userSession.fullName.toLowerCase());
+      });
     }
     // ALO Coordinator (C) and ALO Nurse (N) maintain platform-wide oversight
     return cases;
   }, [cases, userSession, activePersona.code]);
 
-  // Sync targetCase from magic link if present
+  // Sync targetCase from query params or magic link if present
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const searchParams = new URLSearchParams(window.location.search);
-    const magicToken = searchParams.get('token') || searchParams.get('magic_token');
     const queryCaseId = searchParams.get('caseId') || searchParams.get('case_id');
-    if (magicToken && queryCaseId && onSelectCase && cases.length > 0) {
+    if (queryCaseId && onSelectCase && cases.length > 0) {
       const matchedCase = cases.find((c) => c.id === queryCaseId || c.caseNumber === queryCaseId);
       if (matchedCase && matchedCase.id !== activeCase.id) {
         onSelectCase(matchedCase.id);
@@ -213,35 +220,6 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
 
     const eligibleCases = cases.filter(isCaseUnlocked);
     const consultantCase = targetCase || (isCaseUnlocked(activeCase) ? activeCase : (eligibleCases[0] || activeCase));
-    const isUnlocked = isCaseUnlocked(consultantCase);
-
-    if (!isUnlocked && eligibleCases.length === 0) {
-      const isAr = lang === 'ar';
-      return (
-        <div
-          key="portal-K-locked"
-          dir={isAr ? 'rtl' : 'ltr'}
-          className="max-w-xl mx-auto mt-10 p-6 bg-[#E6FAF7] dark:bg-alo-darkCard rounded-2xl border border-[#00C6AE] dark:border-[#007B6E] shadow-md text-center space-y-4 font-cairo"
-        >
-          <div className="text-4xl">🔒</div>
-          <h2 className="text-lg font-extrabold text-slate-900 dark:text-white">
-            {isAr ? 'شاشة الاستشاري الدولي مقفلة حالياً' : 'International Consultant Portal Locked'}
-          </h2>
-          <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-            {isAr
-              ? 'لا يمكن فتح الحالة للاستشاري قبل إتمام المريض للسداد ثم تحقق منسق رعاية ألو (C05–C06). سيتم فتح الحالة تلقائياً بمجرد اكتمال التحقق.'
-              : 'This case cannot be accessed by the Consultant until the patient completes payment and the ALO Coordinator verifies it (C05–C06). The case will unlock automatically once verification is complete.'}
-          </p>
-          <button
-            type="button"
-            onClick={() => handleLogout()}
-            className="px-5 py-2.5 rounded-xl bg-[#007B6E] text-white text-xs font-extrabold shadow-sm hover:bg-[#00C6AE] transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#00C6AE] focus:ring-offset-2"
-          >
-            {isAr ? 'تسجيل الخروج' : 'Sign Out'}
-          </button>
-        </div>
-      );
-    }
 
     return (
       <ConsultantMobileView

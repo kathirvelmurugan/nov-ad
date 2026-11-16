@@ -43,17 +43,6 @@ export function useWorkflowStageTransitions({
       return;
     }
 
-    if (p.code === 'K' && !isAutoDemoActive) {
-      if (!isCasePaid(activeCase)) {
-        alert(lang === 'ar' ? 'لا يمكن فتح شاشة الاستشاري الهندي قبل تأكيد السداد.' : 'The Indian consultant screen opens only after payment is confirmed.');
-        return;
-      }
-      if (!isCaseVerified(activeCase)) {
-        alert(lang === 'ar' ? 'يجب تحقق منسق رعاية ألو من السداد أولاً قبل الاتصال بالاستشاري الهندي.' : 'Payment must be verified by the ALO Coordinator before connecting to the Indian consultant.');
-        return;
-      }
-    }
-
     setActivePersona(p);
     if (p.code === 'P') {
       setViewMode('workstation');

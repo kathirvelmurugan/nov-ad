@@ -22,13 +22,114 @@ export const DEV_OTP = '123456';
 export const DEFAULT_DEV_PIN = '1234';
 export const DEFAULT_TEST_PASSWORD = '123456';
 
-export const matchesSaudiPhone = (phoneA?: string, phoneB?: string): boolean => {
+export type CountryCode = 'SA' | 'IN';
+
+export const COUNTRY_CONFIGS: Record<CountryCode, {
+  code: CountryCode;
+  dialCode: string;
+  flag: string;
+  labelAr: string;
+  labelEn: string;
+  placeholder: string;
+  digitCount: number;
+}> = {
+  SA: {
+    code: 'SA',
+    dialCode: '+966',
+    flag: '🇸🇦',
+    labelAr: 'المملكة العربية السعودية',
+    labelEn: 'Saudi Arabia',
+    placeholder: '5X XXX XXXX',
+    digitCount: 9,
+  },
+  IN: {
+    code: 'IN',
+    dialCode: '+91',
+    flag: '🇮🇳',
+    labelAr: 'الهند (استشاري دولي)',
+    labelEn: 'India (International Consultant)',
+    placeholder: 'XXXXX XXXXX',
+    digitCount: 10,
+  },
+};
+
+export const matchesPhone = (phoneA?: string, phoneB?: string): boolean => {
   if (!phoneA || !phoneB) return false;
   const a = phoneA.replace(/\D/g, '');
   const b = phoneB.replace(/\D/g, '');
   if (a === b) return true;
+  if (a.length >= 10 && b.length >= 10 && a.slice(-10) === b.slice(-10)) return true;
   if (a.length >= 9 && b.length >= 9 && a.slice(-9) === b.slice(-9)) return true;
   return false;
+};
+
+export const matchesSaudiPhone = matchesPhone;
+
+export const detectCountryFromPhone = (value: string): CountryCode => {
+  const trimmed = value.trim();
+  if (trimmed.startsWith('+91') || trimmed.startsWith('91')) return 'IN';
+  return 'SA';
+};
+
+export const formatPhoneByCountry = (value: string, country: CountryCode = 'SA'): string => {
+  const digits = value.replace(/\D/g, '');
+  if (country === 'IN') {
+    let localDigits = digits;
+    if (localDigits.startsWith('91') && localDigits.length > 10) {
+      localDigits = localDigits.slice(2);
+    }
+    localDigits = localDigits.slice(0, 10);
+    if (localDigits.length === 0) return '+91 ';
+    if (localDigits.length <= 5) return `+91 ${localDigits}`;
+    return `+91 ${localDigits.slice(0, 5)} ${localDigits.slice(5)}`;
+  }
+  let localDigits = digits;
+  if (localDigits.startsWith('966')) {
+    localDigits = localDigits.slice(3);
+  } else if (localDigits.startsWith('0')) {
+    localDigits = localDigits.slice(1);
+  }
+  localDigits = localDigits.slice(0, 9);
+  if (localDigits.length === 0) return '+966 ';
+  if (localDigits.length <= 2) return `+966 ${localDigits}`;
+  if (localDigits.length <= 5) return `+966 ${localDigits.slice(0, 2)} ${localDigits.slice(2)}`;
+  return `+966 ${localDigits.slice(0, 2)} ${localDigits.slice(2, 5)} ${localDigits.slice(5, 9)}`;
+};
+
+export const extractRawPhoneByCountry = (value: string, country: CountryCode = 'SA'): string => {
+  const digits = value.replace(/\D/g, '');
+  if (country === 'IN') {
+    let localDigits = digits;
+    if (localDigits.startsWith('91') && localDigits.length > 10) {
+      localDigits = localDigits.slice(2);
+    }
+    return '+91' + localDigits.slice(0, 10);
+  }
+  let localDigits = digits;
+  if (localDigits.startsWith('966')) {
+    localDigits = localDigits.slice(3);
+  } else if (localDigits.startsWith('0')) {
+    localDigits = localDigits.slice(1);
+  }
+  return '+966' + localDigits.slice(0, 9);
+};
+
+export const validateMobileByCountry = (value: string, country: CountryCode = 'SA'): boolean => {
+  const digits = value.replace(/\D/g, '');
+  if (country === 'IN') {
+    let localDigits = digits;
+    if (localDigits.startsWith('91') && localDigits.length > 10) {
+      localDigits = localDigits.slice(2);
+    }
+    return /^[6-9]\d{9}$/.test(localDigits);
+  }
+  let localDigits = digits;
+  if (localDigits.startsWith('966')) {
+    localDigits = localDigits.slice(3);
+  } else if (localDigits.startsWith('0')) {
+    localDigits = localDigits.slice(1);
+  }
+  return /^5\d{8}$/.test(localDigits);
 };
 
 export const getUserPin = (rawPhone: string): string | null => {
@@ -42,28 +143,32 @@ export const getUserPin = (rawPhone: string): string | null => {
     if (saved) {
       const parsed = JSON.parse(saved);
       for (const k of Object.keys(parsed)) {
-        if (matchesSaudiPhone(k, rawPhone)) return parsed[k];
+        if (matchesPhone(k, rawPhone)) return parsed[k];
       }
     }
     const staffSaved = localStorage.getItem(PLATFORM_USERS_KEY);
     if (staffSaved) {
       const staffList = JSON.parse(staffSaved);
       if (Array.isArray(staffList)) {
-        const found = staffList.find((s: any) => matchesSaudiPhone(s.phone, rawPhone));
-        if (found && (found.hasCustomPin || found.pin)) return found.pin || DEFAULT_DEV_PIN;
+        const found = staffList.find((s: any) => matchesPhone(s.phone, rawPhone));
+        if (found && (found.hasCustomPin || found.pin)) return found.pin || null;
       }
     }
   } catch {}
-  const presetStaff = DEFAULT_STAFF_DIRECTORY.find((s) => matchesSaudiPhone(s.phone, rawPhone));
+  const presetStaff = DEFAULT_STAFF_DIRECTORY.find((s) => matchesPhone(s.phone, rawPhone));
   if (presetStaff && presetStaff.pin) return presetStaff.pin;
-  const presetPersona = PERSONA_PRESETS.find((p) => matchesSaudiPhone(p.phone, rawPhone));
-  if (presetPersona) return DEFAULT_DEV_PIN;
   return null;
 };
 
 export const setUserPin = (rawPhone: string, pin: string): void => {
   const clean = rawPhone.replace(/\D/g, '');
-  const variants = [rawPhone, clean, clean.startsWith('966') ? '+' + clean : '+966' + clean, clean.startsWith('966') ? '0' + clean.slice(3) : '0' + clean];
+  const variants = [
+    rawPhone,
+    clean,
+    clean.startsWith('966') ? '+' + clean : '+966' + clean,
+    clean.startsWith('966') ? '0' + clean.slice(3) : '0' + clean,
+    clean.startsWith('91') ? '+' + clean : '+91' + clean,
+  ];
   try {
     const saved = localStorage.getItem(USER_PINS_KEY);
     const pins = saved ? JSON.parse(saved) : {};
@@ -76,7 +181,7 @@ export const setUserPin = (rawPhone: string, pin: string): void => {
       const staffList = JSON.parse(staffSaved);
       if (Array.isArray(staffList)) {
         const updated = staffList.map((s: any) => {
-          if (matchesSaudiPhone(s.phone, rawPhone)) {
+          if (matchesPhone(s.phone, rawPhone)) {
             return { ...s, pin, hasCustomPin: true };
           }
           return s;
@@ -93,28 +198,23 @@ export const hasUserPin = (rawPhone: string): boolean => {
   if (clean === '966500000001' || clean === '0500000001' || clean === '500000001') {
     return true; // Super Admin has default PIN 1234
   }
-  // Check if accredited staff or persona preset
-  if (DEFAULT_STAFF_DIRECTORY.some((s) => matchesSaudiPhone(s.phone, rawPhone))) {
-    return true;
-  }
-  if (PERSONA_PRESETS.some((p) => matchesSaudiPhone(p.phone, rawPhone))) {
-    return true;
-  }
   try {
     const saved = localStorage.getItem(USER_PINS_KEY);
     if (saved) {
       const parsed = JSON.parse(saved);
-      if (Object.keys(parsed).some((k) => matchesSaudiPhone(k, rawPhone))) return true;
+      if (Object.keys(parsed).some((k) => matchesPhone(k, rawPhone))) return true;
     }
     const staffSaved = localStorage.getItem(PLATFORM_USERS_KEY);
     if (staffSaved) {
       const staffList = JSON.parse(staffSaved);
       if (Array.isArray(staffList)) {
-        const found = staffList.find((s: any) => matchesSaudiPhone(s.phone, rawPhone));
+        const found = staffList.find((s: any) => matchesPhone(s.phone, rawPhone));
         if (found && (found.hasCustomPin || found.pin)) return true;
       }
     }
   } catch {}
+  const presetStaff = DEFAULT_STAFF_DIRECTORY.find((s) => matchesPhone(s.phone, rawPhone));
+  if (presetStaff && presetStaff.pin && presetStaff.hasCustomPin) return true;
   return false;
 };
 
@@ -140,6 +240,7 @@ export const PERSONA_PRESETS: PersonaPreset[] = [
   { id: 'doctor', nameAr: 'الطبيب السعودي المعالج', nameEn: 'Dr. Fahad Al-Harbi', phone: '+966500000005', role: 'Treating Doctor / الطبيب المعالج', roleCode: 'D', hospitalId: 'hosp-alo-riyadh-01' },
   { id: 'doctor_alias', nameAr: 'الطبيب السعودي المعالج', nameEn: 'Dr. Fahad Al-Harbi', phone: '+966502222222', role: 'Treating Doctor / الطبيب المعالج', roleCode: 'D', hospitalId: 'hosp-alo-riyadh-01' },
   { id: 'consultant', nameAr: 'الاستشاري الدولي', nameEn: 'Dr. V. Prasanth', phone: '+966500000006', role: 'Consultant / الاستشاري الدولي', roleCode: 'K' },
+  { id: 'consultant_in', nameAr: 'الاستشاري الدولي (الهند)', nameEn: 'Dr. V. Prasanth (India)', phone: '+919876543210', role: 'Consultant / الاستشاري الدولي', roleCode: 'K' },
   { id: 'lab', nameAr: 'المختبر التشخيصي', nameEn: 'Omar Al-Zahrani', phone: '+966500000007', role: 'Lab / المختبر', roleCode: 'L', hospitalId: 'hosp-alo-riyadh-01' },
   { id: 'pharmacy', nameAr: 'الصيدلية السريرية', nameEn: 'Noura Al-Dosari', phone: '+966500000008', role: 'Pharmacy / الصيدلية', roleCode: 'PH', hospitalId: 'hosp-alo-riyadh-01' },
   { id: 'reception', nameAr: 'الاستقبال والمواعيد', nameEn: 'Marcus Vance', phone: '+966500000009', role: 'Reception / الاستقبال', roleCode: 'REC', hospitalId: 'hosp-alo-riyadh-01' },
@@ -160,29 +261,18 @@ export interface SessionData {
 }
 
 export const formatPhoneDisplay = (value: string): string => {
-  const cleaned = value.replace(/\D/g, '');
-  let normalized = cleaned;
-  if (normalized.startsWith('0')) normalized = '966' + normalized.slice(1);
-  if (!normalized.startsWith('966')) normalized = '966' + normalized;
-  const digits = normalized.slice(3);
-  if (digits.length === 0) return '+966 ';
-  if (digits.length <= 2) return `+966 ${digits}`;
-  if (digits.length <= 5) return `+966 ${digits.slice(0, 2)} ${digits.slice(2)}`;
-  return `+966 ${digits.slice(0, 2)} ${digits.slice(2, 5)} ${digits.slice(5, 9)}`;
+  const country = detectCountryFromPhone(value);
+  return formatPhoneByCountry(value, country);
 };
 
 export const extractRawPhone = (value: string): string => {
-  const cleaned = value.replace(/\D/g, '');
-  if (cleaned.startsWith('966') && cleaned.length === 12) return '+' + cleaned;
-  if (cleaned.startsWith('05') && cleaned.length === 10) return '+966' + cleaned.slice(1);
-  if (cleaned.startsWith('5') && cleaned.length === 9) return '+966' + cleaned;
-  return '+' + cleaned;
+  const country = detectCountryFromPhone(value);
+  return extractRawPhoneByCountry(value, country);
 };
 
 export const validateSaudiMobile = (value: string): boolean => {
-  const raw = value.replace(/\D/g, '');
-  const normalized = raw.startsWith('0') ? '966' + raw.slice(1) : (raw.startsWith('966') ? raw : '966' + raw);
-  return /^9665\d{8}$/.test(normalized);
+  const country = detectCountryFromPhone(value);
+  return validateMobileByCountry(value, country);
 };
 
 export const inputFocusHandlers = {
@@ -295,32 +385,34 @@ export const resolveAccountByPhone = (
   const clean = rawPhone.replace(/\D/g, '');
   const matchedStaff = allStaff.find(
     (s) =>
-      matchesSaudiPhone(s.phone, rawPhone) ||
+      matchesPhone(s.phone, rawPhone) ||
       (s.staffCode && (s.staffCode.trim() === rawPhone.trim() || s.staffCode.trim() === clean)) ||
       (s.fullName && s.fullName.toLowerCase().trim() === rawPhone.toLowerCase().trim())
   );
 
   if (matchedStaff) {
+    const existingPin = getUserPin(matchedStaff.phone) || matchedStaff.pin;
     return {
       roleCode: matchedStaff.roleCode,
       hospitalId: matchedStaff.hospitalId,
       fullName: isRTL && matchedStaff.fullNameAr ? matchedStaff.fullNameAr : matchedStaff.fullName,
       isStaff: true,
-      hasCustomPin: true,
+      hasCustomPin: Boolean(matchedStaff.hasCustomPin && existingPin),
       staffRecord: matchedStaff,
     };
   }
 
   const matchedPersona = PERSONA_PRESETS.find(
-    (p) => matchesSaudiPhone(p.phone, rawPhone) || p.phone === rawPhone
+    (p) => matchesPhone(p.phone, rawPhone) || p.phone === rawPhone
   );
   if (matchedPersona) {
+    const existingPin = getUserPin(rawPhone);
     return {
       roleCode: matchedPersona.roleCode || 'P',
       hospitalId: matchedPersona.hospitalId,
       fullName: isRTL ? matchedPersona.nameAr : matchedPersona.nameEn,
       isStaff: matchedPersona.roleCode !== 'P',
-      hasCustomPin: true,
+      hasCustomPin: Boolean(existingPin),
       staffRecord: undefined,
     };
   }
@@ -328,7 +420,7 @@ export const resolveAccountByPhone = (
   return {
     roleCode: 'P' as RoleCode,
     hospitalId: undefined,
-    fullName: isRTL ? 'سامي الحربي' : 'Sami Al-Harbi',
+    fullName: isRTL ? 'مريض جديد' : 'New Patient',
     isStaff: false,
     hasCustomPin: false,
     staffRecord: undefined,

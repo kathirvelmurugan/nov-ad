@@ -1,33 +1,33 @@
 import React from 'react';
 import {
   PALETTE,
-  validateSaudiMobile,
+  CountryCode,
+  validateMobileByCountry,
   inputFocusHandlers,
   getInputStyle,
   getPrimaryButtonStyle,
   getErrorStyle,
   labelStyle,
-  AuthPortalTab,
 } from '../authTypesAndUtils';
 
 interface Props {
   isRTL: boolean;
   phone: string;
+  country: CountryCode;
+  onCountryChange: (country: CountryCode) => void;
   error: string;
   isLoading: boolean;
-  isDemoMode?: boolean;
-  activePortal?: AuthPortalTab;
   phoneRef: React.RefObject<HTMLInputElement>;
   onPhoneChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onPhoneSubmit: (e: React.FormEvent) => void;
-  onPersonaQuickLogin?: (persona: any) => void;
-  onGuestBypass?: () => void;
   t: (ar: string, en: string) => string;
 }
 
 export const PhoneEntryStep: React.FC<Props> = ({
   isRTL,
   phone,
+  country,
+  onCountryChange,
   error,
   isLoading,
   phoneRef,
@@ -35,19 +35,76 @@ export const PhoneEntryStep: React.FC<Props> = ({
   onPhoneSubmit,
   t,
 }) => {
+  const isKSA = country === 'SA';
+  const isValid = validateMobileByCountry(phone, country);
 
   return (
     <div>
       <h2 style={{ fontSize: '20px', fontWeight: 800, color: PALETTE.textDark, margin: '0 0 4px 0', textAlign: isRTL ? 'right' : 'left' }}>
         {t('تسجيل الدخول الموحد لمنصة ألو', 'Unified ALO Healthcare Login')}
       </h2>
-      <p style={{ fontSize: '14px', color: PALETTE.textMuted, margin: '0 0 24px 0', textAlign: isRTL ? 'right' : 'left', lineHeight: 1.6 }}>
-        {t('أدخل رقم جوالك للدخول التلقائي والمباشر إلى بوابتك المخصصة', 'Enter your mobile number for automatic direct routing to your portal')}
+      <p style={{ fontSize: '14px', color: PALETTE.textMuted, margin: '0 0 20px 0', textAlign: isRTL ? 'right' : 'left', lineHeight: 1.6 }}>
+        {t('أدخل رقم جوالك للدخول المباشر إلى بوابتك الطبية المعتمدة', 'Enter your mobile number for direct access to your verified medical portal')}
       </p>
+
+      {/* Dual Region Country Selector: Saudi Arabia (+966) / India (+91) */}
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '18px' }}>
+        <button
+          type="button"
+          onClick={() => onCountryChange('SA')}
+          style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            padding: '10px 12px',
+            borderRadius: '12px',
+            border: `1.5px solid ${isKSA ? PALETTE.primary : PALETTE.border}`,
+            backgroundColor: isKSA ? PALETTE.background : PALETTE.white,
+            color: isKSA ? PALETTE.primary : PALETTE.textDark,
+            fontWeight: 700,
+            fontSize: '13px',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+          }}
+          aria-pressed={isKSA}
+        >
+          <span style={{ fontSize: '16px' }}>🇸🇦</span>
+          <span>{isRTL ? 'السعودية (+966)' : 'Saudi Arabia (+966)'}</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onCountryChange('IN')}
+          style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            padding: '10px 12px',
+            borderRadius: '12px',
+            border: `1.5px solid ${!isKSA ? PALETTE.primary : PALETTE.border}`,
+            backgroundColor: !isKSA ? PALETTE.background : PALETTE.white,
+            color: !isKSA ? PALETTE.primary : PALETTE.textDark,
+            fontWeight: 700,
+            fontSize: '13px',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+          }}
+          aria-pressed={!isKSA}
+        >
+          <span style={{ fontSize: '16px' }}>🇮🇳</span>
+          <span>{isRTL ? 'الهند (+91 استشاري دولي)' : 'India (+91 Consultant)'}</span>
+        </button>
+      </div>
 
       <form onSubmit={onPhoneSubmit}>
         <label style={labelStyle}>
-          {t('رقم الجوال السعودي', 'Saudi Mobile Number')}
+          {isKSA
+            ? t('رقم الجوال السعودي', 'Saudi Mobile Number')
+            : t('رقم الجوال الهندي (للاستشاري الدولي)', 'Indian Mobile Number (International Consultant)')}
         </label>
         <input
           id="auth-phone-input"
@@ -55,11 +112,11 @@ export const PhoneEntryStep: React.FC<Props> = ({
           type="tel"
           value={phone}
           onChange={onPhoneChange}
-          placeholder="+966 5X XXX XXXX"
+          placeholder={isKSA ? '+966 5X XXX XXXX' : '+91 XXXXX XXXXX'}
           style={getInputStyle(isRTL)}
           autoComplete="tel"
           dir="ltr"
-          aria-label={t('رقم الجوال السعودي', 'Saudi Mobile Number')}
+          aria-label={isKSA ? t('رقم الجوال السعودي', 'Saudi Mobile Number') : t('رقم الجوال الهندي', 'Indian Mobile Number')}
           {...inputFocusHandlers}
         />
         {error && (
@@ -70,13 +127,14 @@ export const PhoneEntryStep: React.FC<Props> = ({
         <button
           id="auth-phone-submit-btn"
           type="submit"
-          disabled={isLoading || !validateSaudiMobile(phone)}
+          disabled={isLoading || !isValid}
           style={{
             ...getPrimaryButtonStyle(),
-            opacity: isLoading || !validateSaudiMobile(phone) ? 0.6 : 1,
-            cursor: isLoading || !validateSaudiMobile(phone) ? 'not-allowed' : 'pointer'
+            marginTop: '16px',
+            opacity: isLoading || !isValid ? 0.6 : 1,
+            cursor: isLoading || !isValid ? 'not-allowed' : 'pointer'
           }}
-          onMouseEnter={e => { if (!isLoading) (e.target as HTMLButtonElement).style.backgroundColor = '#00655A'; }}
+          onMouseEnter={e => { if (!isLoading && isValid) (e.target as HTMLButtonElement).style.backgroundColor = '#00655A'; }}
           onMouseLeave={e => { (e.target as HTMLButtonElement).style.backgroundColor = PALETTE.primary; }}
         >
           {isLoading ? (

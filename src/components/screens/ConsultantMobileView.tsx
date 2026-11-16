@@ -233,11 +233,26 @@ export const ConsultantMobileView: React.FC<Props> = ({
       />
 
       {/* Universal Milestone HUD & Audit Ledger */}
-      <div style={{ maxWidth: '640px', margin: '0 auto 16px auto' }}>
-        <CaseMilestoneHUD activeCase={activeCase} lang="en" isRTL={false} />
-      </div>
+      {validCases.length > 0 && (
+        <div style={{ maxWidth: '640px', margin: '0 auto 16px auto' }}>
+          <CaseMilestoneHUD activeCase={activeCase} lang="en" isRTL={false} />
+        </div>
+      )}
 
-      {!isOtpVerified ? (
+      {validCases.length === 0 ? (
+        <div style={{ maxWidth: '640px', margin: '20px auto', backgroundColor: '#fff', borderRadius: '16px', padding: '36px 24px', textAlign: 'center', border: '1px solid #E2E8F0', boxShadow: '0 4px 14px rgba(0,0,0,0.04)' }}>
+          <div style={{ fontSize: '40px', marginBottom: '12px' }}>📋</div>
+          <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#0F172A', marginBottom: '6px' }}>
+            No Cases Pending Specialist Review
+          </h3>
+          <p style={{ fontSize: '13px', color: '#64748B', maxWidth: '440px', margin: '0 auto 16px auto', lineHeight: 1.5 }}>
+            Your international consultant queue is up to date. You will receive an alert once an accredited Saudi treating physician refers a case for cross-border opinion.
+          </p>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', backgroundColor: '#ECFDF5', border: '1px solid #A7F3D0', padding: '6px 14px', borderRadius: '20px', fontSize: '12px', fontWeight: 700, color: '#059669' }}>
+            <span>●</span> Active Specialist Session · Apollo / KIMS Network
+          </div>
+        </div>
+      ) : !isOtpVerified ? (
         <ConsultantOtpChallenge
           activeCase={activeCase}
           otpCode={otpCode}
