@@ -15,6 +15,7 @@ import { X } from 'lucide-react';
 import { Persona, ClinicalCase, ClinicalStage } from '../types';
 import { PERSONAS }                from '../data/personas';
 import { UserSession }             from '../hooks/useClinicalWorkflowState';
+import { USER_SESSION_KEY }        from '../hooks/workflowConstants';
 import { TopProfileSwitcher }      from '../components/TopProfileSwitcher';
 import { UniversalHeader }         from './UniversalHeader';
 import { StageProgressBar }        from '../components/StageProgressBar';
@@ -98,6 +99,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
 
   // ── Authentication Handler ───────────────────────────────────────────────
   const handleAuthSuccess = (session: UserSession) => {
+    try {
+      localStorage.setItem(USER_SESSION_KEY, JSON.stringify(session));
+    } catch (e) {}
     setUserSession(session);
     if (setIsAuthModalOpen) setIsAuthModalOpen(false);
     const personaCodeMap: Record<string, string> = {

@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { apiClient } from '../../services/apiClient';
+import { USER_SESSION_KEY } from '../../hooks/workflowConstants';
 
 type AuthStep = 'phone' | 'pin' | 'pin_setup' | 'super_admin';
 
@@ -60,18 +61,22 @@ const UnifiedAuthGate: React.FC<UnifiedAuthGateProps> = ({ onComplete, onAuthent
 
   const completeAuth = useCallback(
     (isSuperAdmin: boolean, roleCode: string, hospitalId: string | null, displayName: string) => {
+      const sessionObj = {
+        isAuthenticated: true,
+        phone: rawPhone,
+        personaId: roleCode.toLowerCase(),
+        roleCode: roleCode as any,
+        hospitalId: hospitalId || undefined,
+        fullName: displayName,
+        isGuest: false,
+        expiresAt: Date.now() + 30 * 24 * 3600 * 1000,
+        lang: effectiveLang,
+      };
+      try {
+        localStorage.setItem(USER_SESSION_KEY, JSON.stringify(sessionObj));
+      } catch (e) {}
       if (onAuthenticated) {
-        onAuthenticated({
-          isAuthenticated: true,
-          phone: rawPhone,
-          personaId: roleCode.toLowerCase(),
-          roleCode: roleCode as any,
-          hospitalId: hospitalId || undefined,
-          fullName: displayName,
-          isGuest: false,
-          expiresAt: Date.now() + 30 * 24 * 3600 * 1000,
-          lang: effectiveLang,
-        });
+        onAuthenticated(sessionObj);
       }
       if (onComplete) {
         onComplete(isSuperAdmin, roleCode, hospitalId, displayName);
