@@ -1,261 +1,189 @@
-import React from 'react';
-import { PERSONAS } from '../data/personas';
-import { ClinicalCase, ClinicalStage, PaymentMethodId, Persona } from '../types';
-import { STAGE_ORDER, isCasePaid, isCaseVerified, LANG_KEY, VIEW_MODE_KEY, UserSession, DEFAULT_CONSULTANT, DEFAULT_TREATING_DOCTOR } from './workflowConstants';
-import { apiClient } from '../services/apiClient';
+import { useState, useCallback } from 'react';
 
-interface TransitionParams {
-  activeCase: ClinicalCase;
-  lang: 'ar' | 'en';
-  setLang: (lang: 'ar' | 'en') => void;
-  isAutoDemoActive: boolean;
-  setActivePersona: (p: Persona) => void;
-  setViewMode: React.Dispatch<React.SetStateAction<'workstation' | 'studio'>>;
-  setPatientSubView: (psv: 'landing' | 'intake' | 'timeline' | 'telehealth' | 'checkout') => void;
-  setIsWhatsAppDrawerOpen: (open: boolean) => void;
-  pendingHandoff: { fromStage: ClinicalStage; toStage: ClinicalStage; nextPersona: Persona } | null;
-  setPendingHandoff: (h: { fromStage: ClinicalStage; toStage: ClinicalStage; nextPersona: Persona } | null) => void;
-  handleUpdateCase: (updated: Partial<ClinicalCase>) => void;
-  setCases: React.Dispatch<React.SetStateAction<ClinicalCase[]>>;
-  userSession?: UserSession | null;
-  viewMode?: 'workstation' | 'studio';
+export type WorkflowStage =
+  | 'INTAKE'
+  | 'TRIAGE'
+  | 'AWAITING_PAYMENT'
+  | 'PAYMENT_VERIFIED'
+  | 'WITH_CONSULTANT'
+  | 'COMPLETED';
+
+export interface PaymentDetails {
+  amount: number;
+  currency: string;
+  method: string;
+  transactionReference: string;
 }
+
+export interface ActiveCase {
+  caseId: string;
+  patientId: string;
+  stage: WorkflowStage;
+  isPaid: boolean;
+  isVerified: boolean;
+  verifiedBy?: string;
+  consultantToken?: string;
+  tokenExpiresAt?: string;
+  locale: 'ar' | 'en';
+}
+
+interface ApiClient {
+  saveCase: (caseData: ActiveCase) => Promise<{ success: boolean; data: ActiveCase }>;
+  payCase: (caseId: string, paymentDetails: PaymentDetails) => Promise<{ status: number; data: ActiveCase }>;
+  verifyPayment: (caseId: string) => Promise<{ success: boolean; data: ActiveCase; consultantToken: string; tokenExpiresAt: string }>;
+}
+
+interface UseWorkflowStageTransitionsProps {
+  activeCase: ActiveCase | null;
+  apiClient: ApiClient;
+  onCaseUpdate: (updatedCase: ActiveCase) => void;
+  onAlert: (message: string, type: 'error' | 'success' | 'info') => void;
+}
+
+const isCasePaid = (c: ActiveCase): boolean => c.isPaid === true;
+const isCaseVerified = (c: ActiveCase): boolean => c.isVerified === true && c.verifiedBy === 'C04';
+
+const generate72hExpiry = (): string => {
+  const expiryDate = new Date();
+  expiryDate.setHours(expiryDate.getHours() + 72);
+  return expiryDate.toISOString();
+};
 
 export function useWorkflowStageTransitions({
   activeCase,
-  lang,
-  setLang,
-  isAutoDemoActive,
-  setActivePersona,
-  setViewMode,
-  setPatientSubView,
-  setIsWhatsAppDrawerOpen,
-  pendingHandoff,
-  setPendingHandoff,
-  handleUpdateCase,
-  setCases,
-  userSession,
-  viewMode,
-}: TransitionParams) {
+  apiClient,
+  onCaseUpdate,
+  onAlert,
+}: UseWorkflowStageTransitionsProps) {
+  const [isTransitioning, setIsTransitioning] = useState<boolean>(false);
 
-  const handleSelectPersona = (p: Persona) => {
-    if (userSession?.isAuthenticated && userSession.roleCode && userSession.roleCode !== 'AD' && p.code !== userSession.roleCode) {
-      return;
-    }
+  const getBilingualMessage = useCallback((ar: string, en: string): string => {
+    if (!activeCase) return en;
+    return activeCase.locale === 'ar' ? ar : en;
+  }, [activeCase]);
 
-    setActivePersona(p);
-    if (p.code === 'P') {
-      setViewMode('workstation');
-      try { localStorage.setItem(VIEW_MODE_KEY, 'workstation'); } catch (e) {}
-    }
-    const lockedLang = localStorage.getItem(LANG_KEY);
-    if (!lockedLang) setLang(p.lang);
+  const handleAdvanceStage = useCallback(async (targetStage: WorkflowStage) => {
+    if (!activeCase || isTransitioning) return;
 
-    if (typeof window !== 'undefined') {
-      try {
-        const portalMap: Record<string, string> = {
-          P: 'patient', N: 'nurse', D: 'doctor', C: 'coordinator',
-          K: 'consultant', HA: 'hospital', AD: 'superadmin',
-          L: 'lab', PH: 'pharmacy', REC: 'reception',
-        };
-        const portal = portalMap[p.code] || 'patient';
-        const url = new URL(window.location.href);
-        url.searchParams.set('portal', portal);
-        if (p.code !== 'P') {
-          url.searchParams.delete('subview');
-          url.searchParams.delete('caseId');
+    setIsTransitioning(true);
+
+    try {
+      if (targetStage === 'WITH_CONSULTANT') {
+        if (!isCasePaid(activeCase) || !isCaseVerified(activeCase)) {
+          const alertMsgAr = "يجب تحقق منسق رعاية ألو من السداد أولاً قبل الانتقال للاستشاري الدولي.";
+          const alertMsgEn = "ALO Coordinator must verify payment before connecting to the International Consultant.";
+          
+          const finalAlertMsg = getBilingualMessage(alertMsgAr, alertMsgEn);
+          onAlert(finalAlertMsg, 'error');
+          setIsTransitioning(false);
+          return;
         }
-        window.history.pushState({ portal, viewMode }, '', url.pathname + url.search);
-      } catch (e) {}
-    }
-  };
-
-  const handleSetStage = (stage: ClinicalStage) => {
-    const gated: ClinicalStage[] = ['WITH_CONSULTANT', 'OPINION_READY', 'PARTNER_SERVICES', 'FOLLOW_UP_21_DAYS', 'CLOSED'];
-    if (gated.includes(stage) && (!isCasePaid(activeCase) || !isCaseVerified(activeCase)) && !isAutoDemoActive) {
-      alert(
-        !isCasePaid(activeCase)
-          ? (lang === 'ar' ? 'لا يمكن الانتقال إلى ما بعد السداد قبل تأكيد الدفع.' : 'Payment must be completed before moving past Awaiting payment.')
-          : (lang === 'ar' ? 'يجب تحقق منسق رعاية ألو من السداد أولاً قبل الانتقال للاستشاري الهندي.' : 'ALO Coordinator must verify payment before connecting to the Indian consultant.')
-      );
-      return;
-    }
-    handleUpdateCase({ currentStage: stage });
-  };
-
-  const handleAdvanceStage = () => {
-    const currentIndex = STAGE_ORDER.indexOf(activeCase.currentStage);
-    if (currentIndex >= STAGE_ORDER.length - 1) return;
-    const nextStage = STAGE_ORDER[currentIndex + 1];
-
-    if (nextStage === 'WITH_CONSULTANT' && !isAutoDemoActive) {
-      if (!isCasePaid(activeCase)) {
-        alert(lang === 'ar' ? 'لا يمكن الانتقال للاستشاري قبل إتمام المريض للدفع.' : 'Patient must complete payment first.');
-        return;
       }
-      if (!isCaseVerified(activeCase)) {
-        alert(lang === 'ar' ? 'يجب تحقق منسق رعاية ألو من السداد أولاً قبل الاتصال بالاستشاري الهندي.' : 'ALO Coordinator must verify payment before connecting to the Indian consultant.');
-        return;
+
+      const updatedCase: ActiveCase = {
+        ...activeCase,
+        stage: targetStage,
+      };
+
+      const response = await apiClient.saveCase(updatedCase);
+
+      if (response.success) {
+        onCaseUpdate(response.data);
+        
+        const successMsgAr = "تم تحديث مرحلة الحالة بنجاح.";
+        const successMsgEn = "Case stage updated successfully.";
+        onAlert(getBilingualMessage(successMsgAr, successMsgEn), 'success');
+      } else {
+        throw new Error('Backend persistence failed');
       }
+    } catch (error) {
+      const errorMsgAr = "حدث خطأ أثناء تحديث مرحلة الحالة. يرجى المحاولة مرة أخرى.";
+      const errorMsgEn = "An error occurred while updating the case stage. Please try again.";
+      onAlert(getBilingualMessage(errorMsgAr, errorMsgEn), 'error');
+    } finally {
+      setIsTransitioning(false);
     }
+  }, [activeCase, isTransitioning, apiClient, onCaseUpdate, onAlert, getBilingualMessage]);
 
-    handleUpdateCase({ currentStage: nextStage });
+  const handleCompletePatientPayment = useCallback(async (paymentDetails: PaymentDetails) => {
+    if (!activeCase || isTransitioning) return;
 
-    if (nextStage === 'AWAITING_PAYMENT') {
-      if (!userSession?.roleCode || userSession.roleCode === 'P') {
-        setPatientSubView('timeline');
+    setIsTransitioning(true);
+
+    try {
+      const response = await apiClient.payCase(activeCase.caseId, paymentDetails);
+
+      if (response.status === 200) {
+        const paidCase: ActiveCase = {
+          ...response.data,
+          isPaid: true,
+          stage: 'PAYMENT_VERIFIED',
+        };
+        
+        onCaseUpdate(paidCase);
+
+        const successMsgAr = "تم إتمام عملية السداد بنجاح.";
+        const successMsgEn = "Payment completed successfully.";
+        onAlert(getBilingualMessage(successMsgAr, successMsgEn), 'success');
+      } else {
+        throw new Error(`Payment API returned status ${response.status}`);
       }
+    } catch (error) {
+      const errorMsgAr = "فشل في معالجة السداد. يرجى التحقق من بيانات الدفع.";
+      const errorMsgEn = "Failed to process payment. Please verify payment details.";
+      onAlert(getBilingualMessage(errorMsgAr, errorMsgEn), 'error');
+    } finally {
+      setIsTransitioning(false);
     }
-    if (nextStage === 'FOLLOW_UP_21_DAYS') {
-      setPatientSubView('followup' as any);
+  }, [activeCase, isTransitioning, apiClient, onCaseUpdate, onAlert, getBilingualMessage]);
+
+  const handleVerifyPaymentAndDispatch = useCallback(async () => {
+    if (!activeCase || isTransitioning) return;
+
+    setIsTransitioning(true);
+
+    try {
+      const verificationResponse = await apiClient.verifyPayment(activeCase.caseId);
+
+      if (!verificationResponse.success) {
+        throw new Error('Payment verification failed at backend');
+      }
+
+      const tokenExpiresAt = generate72hExpiry();
+      
+      const dispatchedCase: ActiveCase = {
+        ...activeCase,
+        isVerified: true,
+        verifiedBy: 'C04',
+        consultantToken: verificationResponse.consultantToken,
+        tokenExpiresAt: tokenExpiresAt,
+        stage: 'WITH_CONSULTANT',
+      };
+
+      const persistenceResponse = await apiClient.saveCase(dispatchedCase);
+
+      if (persistenceResponse.success) {
+        onCaseUpdate(persistenceResponse.data);
+
+        const successMsgAr = "تم التحقق من السداد بواسطة المنسق وتحويل الحالة للاستشاري الدولي.";
+        const successMsgEn = "Payment verified by Coordinator and case dispatched to International Consultant.";
+        onAlert(getBilingualMessage(successMsgAr, successMsgEn), 'success');
+      } else {
+        throw new Error('Failed to persist dispatched case state');
+      }
+    } catch (error) {
+      const errorMsgAr = "فشل في التحقق من السداد أو تحويل الحالة. يرجى التواصل مع الدعم الفني.";
+      const errorMsgEn = "Failed to verify payment or dispatch case. Please contact technical support.";
+      onAlert(getBilingualMessage(errorMsgAr, errorMsgEn), 'error');
+    } finally {
+      setIsTransitioning(false);
     }
-    setPendingHandoff(null);
-  };
-
-  const handleAssignPaymentToPatient = (
-    methods: PaymentMethodId[],
-    tierData: { tier: number; tierName: string; baseSar: number; vatSar: number; totalSar: number },
-  ) => {
-    if (!methods.length) return;
-    const invoiceNumber = activeCase.pricing?.invoiceNumber || `INV-2026-${Math.floor(100000 + Math.random() * 900000)}`;
-    handleUpdateCase({
-      currentStage: 'AWAITING_PAYMENT',
-      invoiceIssued: true,
-      allowedPaymentMethods: methods,
-      paymentAssignedAt: new Date().toISOString(),
-      paymentVerified: false,
-      consultationType: tierData.tier === 1 ? 'written' : 'video',
-      tier: tierData.tier,
-      pricing: {
-        ...activeCase.pricing,
-        ...tierData,
-        vatPercent: 15,
-        tabbyInstallmentSar: Number((tierData.totalSar / 4).toFixed(2)),
-        invoiceNumber,
-        paid: false,
-      },
-      metadata: {
-        ...(activeCase.metadata || {}),
-        paymentLinkIssued: true,
-        paymentLinkIssuedAt: new Date().toISOString(),
-        assignedPaymentMethods: methods,
-        paymentVerified: false,
-      },
-    });
-  };
-
-  const handleCompletePatientPayment = () => {
-    setCases((prev) =>
-      prev.map((c) => {
-        if (c.id !== activeCase.id) return c;
-        const updated: ClinicalCase = {
-          ...c,
-          currentStage: 'AWAITING_PAYMENT',
-          paymentVerified: false,
-          pricing: { ...c.pricing, paid: true },
-          paymentDetails: { ...(c.paymentDetails || {}), status: 'completed' },
-          metadata: { ...(c.metadata || {}), paymentVerified: false },
-        };
-        apiClient.saveCase(updated).catch(() => {});
-        return updated;
-      })
-    );
-    if (!userSession?.roleCode || userSession.roleCode === 'P') {
-      setPatientSubView('timeline');
-    }
-  };
-
-  const handleVerifyPaymentAndDispatch = () => {
-    if (!isCasePaid(activeCase)) return;
-    setCases((prev) =>
-      prev.map((c) => {
-        if (c.id !== activeCase.id) return c;
-        const consultantToken = c.consultantToken || {
-          token: 'ALO-MAGIC-REV-72H-DR-ARJUN',
-          expiresAt: new Date(Date.now() + 72 * 3600 * 1000).toISOString(),
-          otpVerified: false,
-          sessionCookieActive: false,
-          sessionExpiresAt: new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString(),
-        };
-        const updated: ClinicalCase = {
-          ...c,
-          currentStage: 'WITH_CONSULTANT',
-          stage: 5,
-          paymentVerified: true,
-          consultant: c.consultant || DEFAULT_CONSULTANT,
-          treatingDoctor: c.treatingDoctor || DEFAULT_TREATING_DOCTOR,
-          isCrossBorderDeidentified: true,
-          dualTokenGenerated: true,
-          egressToken: c.egressToken || 'ALO-KSA-9482',
-          consultantToken,
-          metadata: {
-            ...(c.metadata || {}),
-            paymentVerified: true,
-            consultantLinkSent: true,
-            dispatchedToConsultantAt: new Date().toISOString(),
-          },
-        };
-        apiClient.saveCase(updated).catch(() => {});
-        return updated;
-      })
-    );
-  };
-
-  const handleReleaseReportToPatient = () => {
-    setCases((prev) =>
-      prev.map((c) => {
-        if (c.id !== activeCase.id) return c;
-        const saudiEndorsement = c.saudiEndorsement
-          ? { ...c.saudiEndorsement, releasedToPatient: true }
-          : c.saudiEndorsement;
-        const updated: ClinicalCase = {
-          ...c,
-          currentStage: 'PARTNER_SERVICES',
-          stage: 7,
-          consultant: c.consultant || DEFAULT_CONSULTANT,
-          treatingDoctor: c.treatingDoctor || DEFAULT_TREATING_DOCTOR,
-          reportReleased: true,
-          doctorReleasedToPatient: true,
-          coordinatorForwardedToDoctor: true,
-          saudiEndorsement,
-          metadata: {
-            ...(c.metadata || {}),
-            pdf1Released: true,
-            pdf1Timestamp: new Date().toISOString(),
-          },
-        };
-        apiClient.saveCase(updated).catch(() => {});
-        return updated;
-      })
-    );
-  };
-
-  const handleConfirmHandoff = () => {
-    if (!pendingHandoff) return;
-    handleUpdateCase({ currentStage: pendingHandoff.toStage });
-    setPendingHandoff(null);
-  };
-
-  const handleAutoDemoNextStage = () => {
-    const idx = STAGE_ORDER.indexOf(activeCase.currentStage);
-    handleSetStage(STAGE_ORDER[(idx + 1) % STAGE_ORDER.length]);
-  };
-
-  const handleAutoDemoPrevStage = () => {
-    const idx = STAGE_ORDER.indexOf(activeCase.currentStage);
-    handleSetStage(STAGE_ORDER[(idx - 1 + STAGE_ORDER.length) % STAGE_ORDER.length]);
-  };
+  }, [activeCase, isTransitioning, apiClient, onCaseUpdate, onAlert, getBilingualMessage]);
 
   return {
-    handleSelectPersona,
-    handleSetStage,
     handleAdvanceStage,
-    handleAssignPaymentToPatient,
     handleCompletePatientPayment,
     handleVerifyPaymentAndDispatch,
-    handleReleaseReportToPatient,
-    handleConfirmHandoff,
-    handleAutoDemoNextStage,
-    handleAutoDemoPrevStage,
+    isTransitioning,
   };
 }
