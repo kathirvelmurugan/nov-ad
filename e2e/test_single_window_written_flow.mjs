@@ -24,24 +24,37 @@ async function transitionTo(page, roleName, contextDescription) {
 
 async function loginStaff(page, phone, pin = '1234') {
   try {
-    const phoneInput = await page.$('#auth-phone-input');
-    if (phoneInput && await phoneInput.isVisible()) {
+    const phoneInput = await page.$('#auth-phone, #auth-phone-input, input[type="tel"]');
+    if (phoneInput && (await phoneInput.isVisible())) {
       console.log(`   🔑 Logging in staff: ${phone} (PIN ${pin})...`);
-      await page.fill('#auth-phone-input', phone);
-      await page.click('#auth-phone-submit-btn');
-      await sleep(800);
+      await phoneInput.fill(phone);
+      
+      const submitPhoneBtn = await page.$('button[type="submit"], #auth-phone-submit-btn');
+      if (submitPhoneBtn) await submitPhoneBtn.click();
+      await sleep(1000);
 
-      await page.waitForSelector('#auth-pin-digit-0', { timeout: 8000 });
-      await page.fill('#auth-pin-digit-0', pin[0]);
-      await page.fill('#auth-pin-digit-1', pin[1]);
-      await page.fill('#auth-pin-digit-2', pin[2]);
-      await page.fill('#auth-pin-digit-3', pin[3]);
-      await sleep(400);
-      await page.click('#auth-pin-submit-btn');
-      await sleep(1500);
+      const singlePin = await page.$('#auth-pin, input[type="password"]');
+      if (singlePin && (await singlePin.isVisible())) {
+        await singlePin.fill(pin);
+        const submitPinBtn = await page.$('button[type="submit"], #auth-pin-submit-btn');
+        if (submitPinBtn) await submitPinBtn.click();
+        await sleep(2000);
+      } else {
+        const digit0 = await page.$('#auth-pin-digit-0');
+        if (digit0) {
+          await page.fill('#auth-pin-digit-0', pin[0]);
+          await page.fill('#auth-pin-digit-1', pin[1]);
+          await page.fill('#auth-pin-digit-2', pin[2]);
+          await page.fill('#auth-pin-digit-3', pin[3]);
+          const submitBtn = await page.$('button[type="submit"], #auth-pin-submit-btn');
+          if (submitBtn) await submitBtn.click();
+          await sleep(2000);
+        }
+      }
+      console.log(`   ✅ Staff ${phone} login sequence completed.`);
     }
   } catch (err) {
-    console.log(`   ℹ️ Login card bypass or already authenticated for ${phone}`);
+    console.log(`   ℹ️ Login notice for ${phone}: ${err.message}`);
   }
 }
 
@@ -103,7 +116,7 @@ async function runWrittenOpinionFlow() {
 
     // Authenticate Nurse, Doctor, Coordinator in background
     await loginStaff(nursePage, '0500000004', '1234');
-    await loginStaff(doctorPage, '0502222222', '1234');
+    await loginStaff(doctorPage, '0500000005', '1234');
     await loginStaff(coordPage, '0500000003', '1234');
 
     // ════════════════════════════════════════════════════════════════════════
@@ -192,7 +205,7 @@ async function runWrittenOpinionFlow() {
     // STEP 3: SWITCH TO SAUDI DOCTOR (Observe Impact & Referral Endorsement)
     // ════════════════════════════════════════════════════════════════════════
     await doctorPage.reload({ waitUntil: 'networkidle' });
-    await loginStaff(doctorPage, '0502222222', '1234');
+    await loginStaff(doctorPage, '0500000005', '1234');
     await transitionTo(doctorPage, 'Saudi Doctor (Dr. Fahad Al-Harbi)', `Verify case ${registeredCaseId} arrived in Doctor Review Queue`);
 
     const doctorCase = await doctorPage.$(`button:has-text("${registeredCaseId}"), tr:has-text("${registeredCaseId}"), div:has-text("${registeredCaseId}")`);
@@ -275,7 +288,7 @@ async function runWrittenOpinionFlow() {
     // STEP 6: SWITCH TO SAUDI DOCTOR (Observe Opinion & License Endorsement)
     // ════════════════════════════════════════════════════════════════════════
     await doctorPage.reload({ waitUntil: 'networkidle' });
-    await loginStaff(doctorPage, '0502222222', '1234');
+    await loginStaff(doctorPage, '0500000005', '1234');
     await transitionTo(doctorPage, 'Saudi Doctor (Dr. Fahad Al-Harbi)', `Dr. Fahad reviews Dr. Prasanth's Written Opinion & signs with SCFHS Stamp`);
 
     const doctorCaseReview = await doctorPage.$(`button:has-text("${registeredCaseId}"), tr:has-text("${registeredCaseId}")`);
