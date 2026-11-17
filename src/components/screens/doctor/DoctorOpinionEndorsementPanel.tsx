@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ClinicalCase } from '../../../types';
 import { BilingualReportModal } from '../../reports/BilingualReportModal';
 import { Check, Eye, Globe2, HelpCircle, MessageSquareWarning, ShieldCheck, CalendarClock, Send, CheckCircle2 } from 'lucide-react';
+import { resolveFocusQuestions } from '../../../utils/focusQuestions';
 
 interface Props {
   activeCase: ClinicalCase;
@@ -35,10 +36,9 @@ export const DoctorOpinionEndorsementPanel: React.FC<Props> = ({
       : (activeCase.metadata?.consultantAnswers as string[] | undefined) ||
         (activeCase.metadata?.focusAnswers as string[] | undefined)) || [];
 
-  const baseAr = activeCase.treatingDoctor?.focusQuestions || ['', '', ''];
-  const focusQuestions = isAr
-    ? baseAr
-    : activeCase.treatingDoctor?.focusQuestionsEn || baseAr;
+  // Shared resolver: the same three questions the doctor approved are the ones
+  // endorsed here, in whichever language this screen is running.
+  const focusQuestions = resolveFocusQuestions(activeCase, isAr ? 'ar' : 'en').questions;
 
   const opinionSummary =
     activeCase.consultantOpinion ||

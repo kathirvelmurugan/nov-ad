@@ -17,6 +17,7 @@ export const IntakeUploadZone: React.FC<Props> = ({
   setSelectedFileForPreview,
 }) => {
   const [isUploading, setIsUploading] = React.useState(false);
+  const [uploadError, setUploadError] = React.useState('');
 
   return (
     <div>
@@ -70,31 +71,42 @@ export const IntakeUploadZone: React.FC<Props> = ({
             if (!uploadedFiles || uploadedFiles.length === 0) return;
             const filesArray = Array.from(uploadedFiles);
             setIsUploading(true);
+            setUploadError('');
+            const stored: DiagnosticAsset[] = [];
+            const failed: string[] = [];
             try {
-              const newItems: DiagnosticAsset[] = [];
               for (let idx = 0; idx < filesArray.length; idx++) {
                 const f = filesArray[idx];
-                let remoteUrl = URL.createObjectURL(f);
                 try {
                   const uploaded = await apiClient.uploadFile(f);
-                  if (uploaded?.url) remoteUrl = uploaded.url;
+                  if (!uploaded?.url) throw new Error('NOT_STORED');
+                  stored.push({
+                    id: `f_user_${Date.now()}_${idx}`,
+                    name: f.name,
+                    size: `${(f.size / (1024 * 1024)).toFixed(1)} MB`,
+                    type: f.name.endsWith('.dcm') ? 'dicom' : f.name.endsWith('.mp4') ? 'mp4' : 'pdf',
+                    verified: true,
+                    url: uploaded.url,
+                  });
                 } catch (err) {
-                  console.warn('Storage upload fallback:', err);
+                  // A blob: URL only lives in this tab, so a failed upload must
+                  // never be listed as a verified clinical record.
+                  failed.push(f.name);
                 }
-                newItems.push({
-                  id: `f_user_${Date.now()}_${idx}`,
-                  name: f.name,
-                  size: `${(f.size / (1024 * 1024)).toFixed(1)} MB`,
-                  type: f.name.endsWith('.dcm') ? 'dicom' : f.name.endsWith('.mp4') ? 'mp4' : 'pdf',
-                  verified: true,
-                  url: remoteUrl,
-                });
               }
-              onUpdateCase({
-                files: [...(activeCase.files || []), ...newItems],
-              });
+              if (stored.length) {
+                onUpdateCase({ files: [...(activeCase.files || []), ...stored] });
+              }
+              if (failed.length) {
+                setUploadError(
+                  isAr
+                    ? `تعذر حفظ ${failed.join('، ')}. لم يتم إضافة الملف إلى الحالة.`
+                    : `Could not store ${failed.join(', ')}. Nothing was added to the case.`
+                );
+              }
             } finally {
               setIsUploading(false);
+              e.target.value = '';
             }
           }}
         />
@@ -114,6 +126,11 @@ export const IntakeUploadZone: React.FC<Props> = ({
             <p className="text-[11px] text-slate-500 mt-0.5">
               {isAr ? 'يدعم الملفات حتى 100 ميجابايت مع الحفظ السحابي المشفر' : 'Supports files up to 100 MB with persistent encrypted cloud storage'}
             </p>
+            {uploadError && (
+              <p role="alert" className="text-[11px] font-bold text-rose-600 mt-1">
+                {uploadError}
+              </p>
+            )}
           </div>
         </label>
       </div>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { CockpitDeviceProps, TEAL_PRIMARY, TEAL_SECONDARY, TEAL_BG, VERDICTS_AR, VERDICTS_EN } from './types';
+import { resolveFocusQuestions } from '../../utils/focusQuestions';
 
 const DEFAULT_CONSULTANT_ANSWERS = [
   'Based on 3D DICOM volumetric review, severe asymmetric annular calcification favors Open SAVR with a 23mm valve over TAVR to prevent paravalvular leak.',
@@ -251,16 +252,9 @@ export const IndianConsultantDevice: React.FC<CockpitDeviceProps> = ({
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '6px' }}>
-              {(activeCase.focusQuestions && activeCase.focusQuestions.filter(Boolean).length > 0
-                ? activeCase.focusQuestions
-                : activeCase.treatingDoctor?.focusQuestions && activeCase.treatingDoctor?.focusQuestions.filter(Boolean).length > 0
-                ? (activeCase.treatingDoctor?.focusQuestions || [])
-                : [
-                    isAr ? 'هل استبدال الصمام بالقسطرة (TAVR) أم الجراحة المفتوحة (SAVR) أنسب؟' : 'TAVR vs open SAVR recommendation?',
-                    isAr ? 'ما هو تقييم تكلس الشريان التاجي وهل يستدعي مجازة مرافقة (CABG)؟' : 'Does LAD calcification warrant concurrent CABG?',
-                    isAr ? 'ما هو بروتوكول مضادات التخثر الموصى به؟' : 'Recommended anticoagulation protocol?',
-                  ]
-              ).map((q, idx) => (
+              {resolveFocusQuestions(activeCase, isAr ? 'ar' : 'en')
+                .questions.filter((q) => (q || '').trim().length > 0)
+                .map((q, idx) => (
                 <div
                   key={idx}
                   style={{

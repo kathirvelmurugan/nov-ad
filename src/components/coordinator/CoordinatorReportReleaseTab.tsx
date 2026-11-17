@@ -1,6 +1,7 @@
 import React from 'react';
 import { ClinicalCase } from '../../types';
 import { BilingualReportModal } from '../reports/BilingualReportModal';
+import { resolveFocusQuestions } from '../../utils/focusQuestions';
 import {
   TEAL_PRIMARY,
   TEAL_ACCENT,
@@ -46,10 +47,7 @@ export const CoordinatorReportReleaseTab: React.FC<Props> = ({
       : (activeCase.metadata?.consultantAnswers as string[] | undefined) ||
         (activeCase.metadata?.focusAnswers as string[] | undefined)) || [];
 
-  const focusQuestions =
-    activeCase.treatingDoctor?.focusQuestions ||
-    activeCase.treatingDoctor?.focusQuestionsEn ||
-    [];
+  const focusQuestions = resolveFocusQuestions(activeCase, isAr ? 'ar' : 'en').questions;
 
   const t = {
     c08_heading: isAr

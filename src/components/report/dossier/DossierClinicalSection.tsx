@@ -1,4 +1,5 @@
 import React from 'react';
+import { resolveFocusQuestions } from '../../../utils/focusQuestions';
 
 interface DossierClinicalSectionProps {
   caseItem: any;
@@ -13,7 +14,10 @@ const DossierClinicalSection: React.FC<DossierClinicalSectionProps> = ({ caseIte
 
   const primaryDiagnosis = caseItem?.primaryDiagnosis || {};
   const clinicalHistory = caseItem?.clinicalHistory || {};
-  const focusQuestions = caseItem?.focusQuestions || [];
+  // The dossier is the printed deliverable. Reading only the legacy top-level field
+  // dropped the questions whenever the doctor's write had not mirrored them yet.
+  const focusQuestions = resolveFocusQuestions(caseItem, lang)
+    .questions.filter((q) => (q || '').trim().length > 0);
 
   const t = {
     ar: {

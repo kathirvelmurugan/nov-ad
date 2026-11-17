@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { CockpitDeviceProps, TEAL_PRIMARY, TEAL_SECONDARY } from './types';
 import { DoctorReferralSetupSection } from './doctor/DoctorReferralSetupSection';
 import { DoctorBilingualEndorsementSection } from './doctor/DoctorBilingualEndorsementSection';
+import { replaceFocusQuestions, resolveFocusQuestions } from '../../utils/focusQuestions';
 
 export const SaudiDoctorDevice: React.FC<CockpitDeviceProps> = ({
   activeCase,
@@ -17,27 +18,28 @@ export const SaudiDoctorDevice: React.FC<CockpitDeviceProps> = ({
   // referral gets approved against a name that was never enrolled.
   const selectedConsultantName = activeCase.consultant?.name || '';
 
-  const initialQuestions = activeCase.focusQuestions && activeCase.focusQuestions.length > 0
-    ? activeCase.focusQuestions
-    : (activeCase.treatingDoctor?.focusQuestions ? [...(activeCase.treatingDoctor?.focusQuestions || [])] : ['', '', '']);
-
-  const [focusQs, setFocusQs] = useState<string[]>(initialQuestions);
+  // This cockpit wrote only the top-level `focusQuestions` while the consultant
+  // portal read `treatingDoctor.focusQuestions`, so the referral arrived empty.
+  // Both screens now share one reader and one writer.
+  const [focusQs, setFocusQs] = useState<string[]>(
+    () => resolveFocusQuestions(activeCase, isAr ? 'ar' : 'en').questions
+  );
 
   useEffect(() => {
-    if (activeCase.focusQuestions && activeCase.focusQuestions.length > 0) {
-      setFocusQs(activeCase.focusQuestions);
-    }
-  }, [activeCase.focusQuestions]);
+    setFocusQs(resolveFocusQuestions(activeCase, isAr ? 'ar' : 'en').questions);
+  }, [activeCase.id, isAr]);
 
   const handleUpdateQuestion = (index: number, val: string) => {
     const updated = [...focusQs];
     updated[index] = val;
     setFocusQs(updated);
-    onUpdateCase({ focusQuestions: updated });
+    // The whole visible set is written, so a lagging `activeCase` prop can only
+    // ever affect the other language, never the neighbouring slot being edited.
+    onUpdateCase(replaceFocusQuestions(activeCase, isAr ? 'ar' : 'en', updated as [string, string, string]));
   };
 
   const handleLoadSampleQuestions = () => {
-    const samples = isAr
+    const samples: [string, string, string] = isAr
       ? [
           'هل توصي بإجراء استبدال الصمام بالقسطرة (TAVR) أم الجراحة المفتوحة (SAVR)؟',
           'ما هو التقييم الدقيق لتكلس الشريان التاجي وهل يستدعي جراحة مرافقة؟',
@@ -49,7 +51,7 @@ export const SaudiDoctorDevice: React.FC<CockpitDeviceProps> = ({
           'What antithrombotic and anticoagulant regimen is optimal for longevity?',
         ];
     setFocusQs(samples);
-    onUpdateCase({ focusQuestions: samples });
+    onUpdateCase(replaceFocusQuestions(activeCase, isAr ? 'ar' : 'en', samples));
   };
 
   const cardInnerStyle: React.CSSProperties = {

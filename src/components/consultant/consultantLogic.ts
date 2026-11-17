@@ -40,8 +40,8 @@ export const getInitialConsultantScreen = (
   return 'K05';
 };
 
-export const DEFAULT_FOCUS_ANSWERS: [string, string, string] = [
-  'TAVR is clinically indicated given the high surgical risk and anatomical suitability on aortic root CTA.',
-  'Recommend dual antiplatelet therapy (DAPT) with Aspirin 81mg and Clopidogrel 75mg for 3-6 months post-procedure.',
-  'Perform transthoracic echocardiogram (TTE) at 30 days and 6 months to evaluate prosthetic valve hemodynamics.',
-];
+// The consultant's answers start empty on purpose. This used to hold three ready
+// written answers about TAVR and prosthetic valves: a consultant who only typed
+// an opinion still submitted those canned answers, and they were saved as the
+// clinical reply to the Saudi doctor's questions.
+export const EMPTY_FOCUS_ANSWERS: [string, string, string] = ['', '', ''];

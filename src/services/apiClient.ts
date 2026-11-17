@@ -75,9 +75,14 @@ const AUTH_ENDPOINTS = ['/api/users/login', '/api/users/lookup', '/api/users/pin
 function handleUnauthorized(endpoint: string) {
   if (typeof window === 'undefined') return;
   if (AUTH_ENDPOINTS.some((p) => endpoint.startsWith(p))) return;
+  // With nothing stored there is no session to expire: a public landing page
+  // asking for cases is simply anonymous, not kicked out.
+  let hadSession = false;
   try {
-    localStorage.removeItem(USER_SESSION_KEY);
+    hadSession = Boolean(localStorage.getItem(USER_SESSION_KEY));
+    if (hadSession) localStorage.removeItem(USER_SESSION_KEY);
   } catch {}
+  if (!hadSession) return;
   window.dispatchEvent(new CustomEvent('alo:session-expired'));
 }
 
@@ -460,16 +465,45 @@ export const apiClient = {
     });
   },
 
+  // ── Self-service Profile ──────────────────────────────────────────────────
+  // Patients self-register with a phone number only, so platform_users.full_name
+  // starts as the placeholder 'Patient'. The intake form writes the real name
+  // back here; without it every later case greets the patient as 'Patient'.
+  async updateMyProfile(fullName: string): Promise<boolean> {
+    const name = String(fullName || '').trim();
+    if (!name) return false;
+    const res = await safeFetchWithRetry('/api/users/me', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fullName: name }),
+    });
+    return res.ok;
+  },
+
   // ── File Upload ───────────────────────────────────────────────────────────
-  async uploadFile(file: File): Promise<{ url: string; size: string; storage: string } | null> {
-    const formData = new FormData();
-    formData.append('file', file);
+  // POST /api/upload takes JSON { fileData, fileName, fileType }, where fileData
+  // is a base64 data URL. It used to be called with multipart FormData, which
+  // the server cannot parse, so every clinical PDF failed and the UI quietly
+  // fell back to a blob: URL that died with the tab.
+  async uploadFile(file: File): Promise<{ url: string; key: string; size: number; storage: string } | null> {
+    const fileData = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ''));
+      reader.onerror = () => reject(reader.error || new Error('FILE_READ_FAILED'));
+      reader.readAsDataURL(file);
+    });
     const res = await safeFetchWithRetry('/api/upload', {
       method: 'POST',
-      body: formData,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fileData,
+        fileName: file.name,
+        fileType: file.type || 'application/octet-stream',
+      }),
     });
-    const json = await res.json();
-    return json.success ? json.data : null;
+    const json = await res.json().catch(() => null);
+    if (!res.ok || !json?.success || !json.data?.url) return null;
+    return json.data;
   },
 
   // ── LiveKit Consultation Tokens ───────────────────────────────────────────

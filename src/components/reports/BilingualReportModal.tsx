@@ -5,6 +5,7 @@ import { ReportQuestionsSection, QuestionAndAnswerItem } from '../report/ReportQ
 import { ReportSignaturesFooter } from '../report/ReportSignaturesFooter';
 import { ReportComprehensiveDossier } from '../report/ReportComprehensiveDossier';
 import { TEAL_PRIMARY } from '../../theme/brandColors';
+import { resolveFocusQuestions } from '../../utils/focusQuestions';
 
 interface Props {
   isOpen: boolean;
@@ -53,17 +54,16 @@ export const BilingualReportModal: React.FC<Props> = ({
       : (activeCase.metadata?.consultantAnswers as string[] | undefined) ||
         (activeCase.metadata?.focusAnswers as string[] | undefined)) || [];
 
-  const customQuestions =
-    (activeCase.focusQuestions && activeCase.focusQuestions.length > 0
-      ? activeCase.focusQuestions
-      : activeCase.treatingDoctor?.focusQuestions ||
-        (activeCase.metadata?.focusQuestions as string[] | undefined)) || [];
+  // Arabic and English are resolved separately, so a question the doctor wrote in
+  // one language still prints in the report instead of a canned placeholder.
+  const customQuestionsAr = resolveFocusQuestions(activeCase, 'ar').questions;
+  const customQuestionsEn = resolveFocusQuestions(activeCase, 'en').questions;
 
   const questionsAndAnswers: QuestionAndAnswerItem[] = [
     {
       num: 1,
-      qAr: customQuestions[0] || 'هل توصي بإجراء استبدال الصمام بالقسطرة (TAVR) أم الجراحة المفتوحة (SAVR) بناءً على نتائج الإيكو ومستوى التكلس؟',
-      qEn: 'Do you recommend TAVR vs open surgical SAVR given aortic annular calcification and leaflet geometry?',
+      qAr: customQuestionsAr[0] || 'هل توصي بإجراء استبدال الصمام بالقسطرة (TAVR) أم الجراحة المفتوحة (SAVR) بناءً على نتائج الإيكو ومستوى التكلس؟',
+      qEn: customQuestionsEn[0] || 'Do you recommend TAVR vs open surgical SAVR given aortic annular calcification and leaflet geometry?',
       ansEn:
         customAnswers[0]?.trim() ||
         'Based on 3D DICOM volumetric reconstruction, asymmetric heavy calcification in the non-coronary cusp extends into the LVOT. Open Surgical Aortic Valve Replacement (SAVR) with a 23mm mechanical or bioprosthetic valve is strongly recommended over TAVR to prevent paravalvular leak and acute conduction block.',
@@ -73,8 +73,8 @@ export const BilingualReportModal: React.FC<Props> = ({
     },
     {
       num: 2,
-      qAr: customQuestions[1] || 'ما هو التقييم الدقيق لتكلس الشريان التاجي وهل يستدعي جراحة مرافقة (CABG)؟',
-      qEn: 'Does the coronary calcification and LAD lesion warrant concurrent CABG bypass grafting?',
+      qAr: customQuestionsAr[1] || 'ما هو التقييم الدقيق لتكلس الشريان التاجي وهل يستدعي جراحة مرافقة (CABG)؟',
+      qEn: customQuestionsEn[1] || 'Does the coronary calcification and LAD lesion warrant concurrent CABG bypass grafting?',
       ansEn:
         customAnswers[1]?.trim() ||
         'Moderate 50–60% ostial LAD calcified plaque with FFR preserved (>0.82). Standalone SAVR is advised; concurrent CABG is not indicated at this stage to avoid unnecessary cardiopulmonary bypass extension.',
@@ -84,8 +84,8 @@ export const BilingualReportModal: React.FC<Props> = ({
     },
     {
       num: 3,
-      qAr: customQuestions[2] || 'ما هي خطة مضادات التخثر المقترحة للحفاظ على كفاءة الصمام؟',
-      qEn: 'What antithrombotic and anticoagulant regimen is optimal for long-term valve patency?',
+      qAr: customQuestionsAr[2] || 'ما هي خطة مضادات التخثر المقترحة للحفاظ على كفاءة الصمام؟',
+      qEn: customQuestionsEn[2] || 'What antithrombotic and anticoagulant regimen is optimal for long-term valve patency?',
       ansEn:
         customAnswers[2]?.trim() ||
         'If bioprosthesis is selected: Oral anticoagulation (Warfarin, INR target 2.0–2.5) for initial 3 months, transitioning to Aspirin 81 mg daily. If mechanical: Life-long Warfarin (INR target 2.5–3.0).',

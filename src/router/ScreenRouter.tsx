@@ -95,7 +95,18 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
     const queryCaseId = searchParams?.get('caseId') || searchParams?.get('case_id');
 
     if (role === 'P' && phone) {
-      return cases.filter((c) => (queryCaseId && (c.id === queryCaseId || c.caseNumber === queryCaseId)) || c.patientPhone === phone || c.nationalIdMasked === phone);
+      // Intake stores the number in national format ("500000051") while the auth
+      // record carries the international one ("+966500000051"). Comparing the raw
+      // strings hid a patient's own case from their portal, so ownership is decided
+      // on the subscriber digits only.
+      const tail = (value?: string) => (value || '').replace(/\D/g, '').slice(-9);
+      const owner = tail(phone);
+      return cases.filter(
+        (c) =>
+          (queryCaseId && (c.id === queryCaseId || c.caseNumber === queryCaseId)) ||
+          (owner.length === 9 && tail(c.patientPhone) === owner) ||
+          c.nationalIdMasked === phone
+      );
     }
     if (role === 'D') {
       // A treating doctor sees only the cases assigned to them.

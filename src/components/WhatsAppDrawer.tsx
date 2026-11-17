@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { MessageCircle, X, ExternalLink, CheckCheck, ShieldCheck, Clock } from 'lucide-react';
 import { ClinicalCase } from '../types';
 import { priceTierForType } from '../config/platformConfig';
+import { resolveFocusQuestions } from '../utils/focusQuestions';
 
 interface Props {
   activeCase: ClinicalCase;
@@ -68,10 +69,13 @@ export const WhatsAppDrawer: React.FC<Props> = ({
       });
     }
 
-    // Stage 3 (W05) - Doctor Review & Focus Questions
+    // Stage 3 (W05) - Doctor Review & Focus Questions. The relay must recognise the
+    // questions in either language, so it asks the same resolver the review screens use.
+    const hasFocusQuestions = resolveFocusQuestions(activeCase, 'ar')
+      .questions.some((q) => (q || '').trim().length > 0);
     const doctorApproved =
       activeCase.referralApproved ||
-      (activeCase.focusQuestions && activeCase.focusQuestions.filter(Boolean).length > 0) ||
+      hasFocusQuestions ||
       (activeCase.stage && activeCase.stage >= 4) ||
       ['AWAITING_PAYMENT', 'WITH_CONSULTANT', 'OPINION_READY', 'PARTNER_SERVICES', 'FOLLOW_UP_21_DAYS', 'CLOSED'].includes(activeCase.currentStage);
 

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { UserCheck, Shield, Users, User, CheckCircle2, Phone, AlertCircle } from 'lucide-react';
 import { ClinicalCase } from '../../types';
-import { UserSession } from '../../hooks/workflowConstants';
-import { clampAge, maskNationalId, validateNationalId } from '../../utils/phoneValidation';
+import { USER_SESSION_KEY, UserSession } from '../../hooks/workflowConstants';
+import { clampAge, isPlaceholderPatientName, maskNationalId, validateNationalId } from '../../utils/phoneValidation';
+import { apiClient } from '../../services/apiClient';
 
 interface Props {
   activeCase: ClinicalCase;
@@ -30,26 +31,81 @@ export const IntakePatientBeneficiarySection: React.FC<Props> = ({
   const [beneficiaryGender, setBeneficiaryGender] = useState<'M' | 'F'>(activeCase.gender || 'M');
   const [proxyConsent, setProxyConsent] = useState(activeCase.caregiver?.hasLegalConsent ?? true);
 
+  // Self identity (mode === 'me'). A patient who signed up with a phone number
+  // owns nothing else: the account is stored as full_name 'Patient' with no age
+  // and no national ID, so this is the only place those facts can be captured.
+  const [selfName, setSelfName] = useState(
+    !isPlaceholderPatientName(activeCase.patientName)
+      ? String(activeCase.patientName)
+      : !isPlaceholderPatientName(userSession?.fullName)
+        ? String(userSession?.fullName)
+        : ''
+  );
+  const [selfId, setSelfId] = useState('');
+  const [selfAge, setSelfAge] = useState<number>(activeCase.age || 0);
+  const [selfGender, setSelfGender] = useState<'M' | 'F'>(activeCase.gender || 'M');
+
+  const handleUpdateSelf = (updates: { name?: string; id?: string; age?: number; gender?: 'M' | 'F' }) => {
+    const nextName = updates.name !== undefined ? updates.name : selfName;
+    const nextId = updates.id !== undefined ? updates.id : selfId;
+    const nextAge = updates.age !== undefined ? updates.age : selfAge;
+    const nextGender = updates.gender !== undefined ? updates.gender : selfGender;
+
+    if (updates.name !== undefined) setSelfName(nextName);
+    if (updates.id !== undefined) setSelfId(nextId);
+    if (updates.age !== undefined) setSelfAge(nextAge);
+    if (updates.gender !== undefined) setSelfGender(nextGender);
+
+    onUpdateCase({
+      beneficiaryMode: 'me',
+      patientName: nextName,
+      patientNameAr: isAr ? nextName : activeCase.patientNameAr,
+      patientNameEn: !isAr ? nextName : activeCase.patientNameEn,
+      nationalIdMasked: nextId ? maskNationalId(nextId) : activeCase.nationalIdMasked,
+      age: nextAge,
+      gender: nextGender,
+      caregiver: {
+        isProxy: false,
+        name: '',
+        relationship: '',
+        nationalId: '',
+        phone: '',
+        hasLegalConsent: true,
+      },
+    });
+  };
+
+  // Writing the name back to the account stops the next case from greeting the
+  // patient as the placeholder word 'Patient'. The stored session is updated in
+  // lockstep so the header does not disagree with the database.
+  const persistSelfName = () => {
+    const name = selfName.trim();
+    if (name.length < 2 || name === userSession?.fullName) return;
+    apiClient
+      .updateMyProfile(name)
+      .then((saved) => {
+        if (!saved) return;
+        try {
+          const raw = localStorage.getItem(USER_SESSION_KEY);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            parsed.fullName = name;
+            localStorage.setItem(USER_SESSION_KEY, JSON.stringify(parsed));
+          }
+        } catch (e) {}
+        // Refresh the in-memory session so the header name follows the database.
+        window.dispatchEvent(new CustomEvent('alo:profile-updated', { detail: { fullName: name } }));
+      })
+      .catch(() => {});
+  };
+
   // Sync mode changes
   const handleModeChange = (newMode: 'me' | 'family') => {
     setMode(newMode);
     if (newMode === 'me') {
-      // Identity comes from the verified session/case only — never a fabricated profile.
-      const selfName = userSession?.fullName || activeCase.patientName || '';
-      onUpdateCase({
-        beneficiaryMode: 'me',
-        patientName: selfName,
-        patientNameAr: isAr ? (activeCase.patientNameAr || selfName) : activeCase.patientNameAr,
-        patientNameEn: !isAr ? (activeCase.patientNameEn || selfName) : activeCase.patientNameEn,
-        caregiver: {
-          isProxy: false,
-          name: '',
-          relationship: '',
-          nationalId: '',
-          phone: '',
-          hasLegalConsent: true,
-        },
-      });
+      // Re-apply the facts the patient already typed instead of resetting them
+      // to the session/case defaults: switching tabs must not erase identity.
+      handleUpdateSelf({});
     } else {
       onUpdateCase({
         beneficiaryMode: 'family',
@@ -118,6 +174,7 @@ export const IntakePatientBeneficiarySection: React.FC<Props> = ({
   const accountPhone = userSession?.phone || activeCase.patientPhone || '';
   const accountId = activeCase.nationalIdMasked || '';
   const idCheck = beneficiaryId ? validateNationalId(beneficiaryId) : null;
+  const selfIdCheck = selfId ? validateNationalId(selfId) : null;
 
   return (
     <div className="space-y-4">
@@ -164,40 +221,134 @@ export const IntakePatientBeneficiarySection: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* Mode 1: Self (Me) Banner */}
+        {/* Mode 1: Self (Me) — a phone-only account holds no name, age or
+            national ID, so those facts are captured here and written back to the
+            account and the case. */}
         {mode === 'me' ? (
-          <div className="bg-gradient-to-r from-teal-900 via-slate-900 to-teal-950 p-5 rounded-xl border border-teal-800/60 shadow-md text-white flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2 font-bold mb-1.5 text-xs text-teal-300">
-                <span className="bg-teal-500/20 text-teal-200 px-2 py-0.5 rounded text-[10px] font-mono border border-teal-500/30">
-                  P01 · {isAr ? 'الهوية الوطنية المعتمدة' : 'National ID Verified'}
+          <div className="bg-gradient-to-r from-teal-900 via-slate-900 to-teal-950 p-5 rounded-xl border border-teal-800/60 shadow-md text-white space-y-4">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-2 font-bold text-xs text-teal-300">
+                <span
+                  className={`px-2 py-0.5 rounded text-[10px] font-mono border ${
+                    accountId
+                      ? 'bg-teal-500/20 text-teal-200 border-teal-500/30'
+                      : 'bg-amber-500/15 text-amber-200 border-amber-500/30'
+                  }`}
+                >
+                  P01 ·{' '}
+                  {accountId
+                    ? (isAr ? 'الهوية الوطنية مسجلة' : 'National ID Recorded')
+                    : (isAr ? 'الهوية الوطنية مطلوبة' : 'National ID Required')}
                 </span>
                 <Shield className="w-3.5 h-3.5 text-teal-400" />
-                <span>{isAr ? 'الملف الطبي مرتبط بحسابك الموثق مباشرة' : 'Linked to your verified health record'}</span>
+                <span>{isAr ? 'البيانات تُحفظ في ملفك الطبي' : 'Saved to your medical record'}</span>
               </div>
-              <h2 className="text-xl font-black tracking-tight">{accountName}</h2>
-              <p className="text-slate-300 text-xs mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
-                {accountId && (
-                  <span>
-                    {isAr ? 'الهوية الوطنية / الإقامة:' : 'National ID:'}{' '}
-                    <span className="font-mono text-teal-300 font-bold">{accountId}</span>
-                  </span>
-                )}
-                {activeCase.age > 0 && (
-                  <span>{isAr ? `العمر: ${activeCase.age}` : `Age: ${activeCase.age}`}</span>
-                )}
-                {accountPhone && (
-                  <span>
-                    {isAr ? 'الهاتف:' : 'Phone:'}{' '}
-                    <span className="font-mono text-teal-300 font-bold" dir="ltr">{accountPhone}</span>
-                  </span>
-                )}
-              </p>
+
+              <div className="bg-white/10 dark:bg-black/30 backdrop-blur-md border border-white/10 px-4 py-2.5 rounded-xl text-center shrink-0">
+                <span className="text-[10px] text-teal-200 block font-mono">P02 · {isAr ? 'رقم التتبع' : 'Case Number'}</span>
+                <span className="text-base font-mono font-black text-teal-300">{activeCase.caseNumber}</span>
+              </div>
             </div>
 
-            <div className="bg-white/10 dark:bg-black/30 backdrop-blur-md border border-white/10 px-4 py-2.5 rounded-xl text-center shrink-0">
-              <span className="text-[10px] text-teal-200 block font-mono">P02 · {isAr ? 'رقم التتبع' : 'Case Number'}</span>
-              <span className="text-base font-mono font-black text-teal-300">{activeCase.caseNumber}</span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+              {/* Own Full Name */}
+              <div className="sm:col-span-2 md:col-span-2">
+                <label htmlFor="self-full-name" className="block mb-1 font-bold text-teal-100">
+                  {isAr ? 'اسمك بالكامل (كما في الهوية):' : 'Your Full Name (As in ID):'} *
+                </label>
+                <input
+                  id="self-full-name"
+                  type="text"
+                  value={selfName}
+                  placeholder={isAr ? 'مثال: محمد العتيبي' : 'e.g. Mohammed Al-Otaibi'}
+                  onChange={(e) => handleUpdateSelf({ name: e.target.value })}
+                  onBlur={persistSelfName}
+                  className="w-full bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-white placeholder:text-slate-400 font-bold outline-none focus:border-teal-400 shadow-xs"
+                />
+              </div>
+
+              {/* Own National ID */}
+              <div>
+                <label htmlFor="self-national-id" className="block mb-1 font-bold text-teal-100">
+                  {isAr ? 'رقم الهوية الوطنية / الإقامة:' : 'National ID / Iqama:'}
+                </label>
+                <input
+                  id="self-national-id"
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={10}
+                  value={selfId}
+                  placeholder="10XXXXXXXX"
+                  aria-invalid={!!selfIdCheck && !selfIdCheck.isValid}
+                  onChange={(e) => handleUpdateSelf({ id: e.target.value })}
+                  className={`w-full bg-white/10 border rounded-xl px-3 py-2 font-mono font-bold text-white placeholder:text-slate-400 outline-none shadow-xs ${
+                    selfIdCheck && !selfIdCheck.isValid
+                      ? 'border-rose-400'
+                      : 'border-white/20 focus:border-teal-400'
+                  }`}
+                />
+                {selfIdCheck && !selfIdCheck.isValid && (
+                  <p className="mt-1 text-[10px] font-bold text-rose-300" role="alert">
+                    {isAr ? selfIdCheck.issue?.ar : selfIdCheck.issue?.en}
+                  </p>
+                )}
+              </div>
+
+              {/* Own Age */}
+              <div>
+                <label htmlFor="self-age" className="block mb-1 font-bold text-teal-100">
+                  {isAr ? 'العمر:' : 'Age:'} *
+                </label>
+                <input
+                  id="self-age"
+                  type="number"
+                  min={1}
+                  max={120}
+                  value={selfAge || ''}
+                  onChange={(e) => handleUpdateSelf({ age: clampAge(e.target.value, selfAge) })}
+                  className="w-full bg-white/10 border border-white/20 rounded-xl px-3 py-2 font-mono font-bold text-white outline-none focus:border-teal-400 shadow-xs"
+                />
+              </div>
+
+              {/* Own Gender */}
+              <div>
+                <span className="block mb-1 font-bold text-teal-100">{isAr ? 'الجنس:' : 'Gender:'}</span>
+                <div className="flex items-center gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => handleUpdateSelf({ gender: 'M' })}
+                    className={`flex-1 py-1.5 rounded-lg font-bold text-xs border transition-all ${
+                      selfGender === 'M'
+                        ? 'bg-teal-400 text-slate-900 border-teal-400'
+                        : 'bg-white/10 text-slate-200 border-white/20 hover:border-teal-400'
+                    }`}
+                  >
+                    {isAr ? 'ذكر' : 'Male'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleUpdateSelf({ gender: 'F' })}
+                    className={`flex-1 py-1.5 rounded-lg font-bold text-xs border transition-all ${
+                      selfGender === 'F'
+                        ? 'bg-teal-400 text-slate-900 border-teal-400'
+                        : 'bg-white/10 text-slate-200 border-white/20 hover:border-teal-400'
+                    }`}
+                  >
+                    {isAr ? 'أنثى' : 'Female'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Verified login phone — read only, it is the account identity */}
+              <div className="sm:col-span-2 md:col-span-3 self-end flex flex-wrap items-center gap-x-2 gap-y-1 pb-2 text-[11px] text-slate-300">
+                <span className="inline-flex items-center gap-1.5">
+                  <Phone className="w-3 h-3 text-teal-400" />
+                  {isAr ? 'الهاتف الموثق:' : 'Verified phone:'}{' '}
+                  <span className="font-mono text-teal-300 font-bold" dir="ltr">{accountPhone}</span>
+                </span>
+                <span className="text-slate-500">·</span>
+                <span>{isAr ? 'الاسم يُحفظ في حسابك ويُستخدم في كل حالة جديدة.' : 'Your name is saved to your account and reused on every new case.'}</span>
+              </div>
             </div>
           </div>
         ) : (

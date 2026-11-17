@@ -17,7 +17,7 @@ import { IntakeUploadZone } from '../intake/IntakeUploadZone';
 import { FieldError } from '../common/FieldError';
 import { FormErrorSummary } from '../common/FormErrorSummary';
 import { CaseMilestoneHUD } from '../common/CaseMilestoneHUD';
-import { isMaskedNationalId } from '../../utils/phoneValidation';
+import { isMaskedNationalId, isPlaceholderPatientName } from '../../utils/phoneValidation';
 
 interface Props {
   activeCase: ClinicalCase;
@@ -183,7 +183,18 @@ export const PatientIntakeView: React.FC<Props> = ({
       )}
 
       {Object.keys(validationErrors).length > 0 && (
-        <FormErrorSummary errors={validationErrors} lang={lang} />
+        <FormErrorSummary
+          errors={validationErrors}
+          lang={lang}
+          rulesLabels={{
+            privacyConsent: { ar: 'إقرار الخصوصية', en: 'Privacy consent' },
+            symptoms: { ar: 'الأعراض والشكوى', en: 'Symptoms & complaint' },
+            diagnosis: { ar: 'التشخيص الطبي', en: 'Medical diagnosis' },
+            nationalId: { ar: 'الهوية الوطنية', en: 'National ID' },
+            patientName: { ar: 'اسم المريض', en: 'Patient name' },
+            patientAge: { ar: 'العمر', en: 'Patient age' },
+          }}
+        />
       )}
       {/* Top Breadcrumb & Return to Landing Page / Timeline */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
@@ -325,6 +336,21 @@ export const PatientIntakeView: React.FC<Props> = ({
                 errors.nationalId = isAr
                   ? 'رقم الهوية الوطنية / الإقامة للمستفيد مطلوب (10 أرقام).'
                   : 'Beneficiary National ID / Iqama is required (10 digits).';
+              }
+              // A phone-only account stores the placeholder name 'Patient' and no age.
+              // Filing without them sends the doctor an anonymous record, so the
+              // Me card is where identity must be completed first.
+              if ((activeCase.beneficiaryMode || 'me') === 'me') {
+                if (isPlaceholderPatientName(activeCase.patientName)) {
+                  errors.patientName = isAr
+                    ? 'الاسم الكامل مطلوب في بطاقة (نفسي) قبل الإرسال.'
+                    : 'Your full name is required in the Me card before submitting.';
+                }
+                if (!(activeCase.age > 0)) {
+                  errors.patientAge = isAr
+                    ? 'العمر مطلوب في بطاقة (نفسي) قبل الإرسال.'
+                    : 'Your age is required in the Me card before submitting.';
+                }
               }
 
               if (Object.keys(errors).length > 0) {

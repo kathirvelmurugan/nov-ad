@@ -61,7 +61,10 @@ export const CoordinatorPortalView: React.FC<Props> = ({
   const isSaudiDoctorApproved = activeCase?.saudiEndorsement?.status === 'endorsed' || !!activeCase?.metadata?.saudiDoctorApprovedOpinion;
 
   const getInitialTab = (): 'C01' | 'C07' | 'C08' | 'C09' | 'C10' => {
-    if (activeCase?.currentStage === 'AWAITING_PAYMENT' || (isPaid && !isPaymentVerified)) return 'C01';
+    // The payment tab belongs to the payment phase only. A case that is already past
+    // dispatch is not "awaiting verification" even when that flag lags, and opening
+    // C01 for it hid the release and closure tabs.
+    if (activeCase?.currentStage === 'AWAITING_PAYMENT') return 'C01';
     if (activeCase?.currentStage === 'PARTNER_SERVICES' || (Boolean(activeCase?.secondOpinionSubmitted || activeCase?.currentStage === 'OPINION_READY') && !activeCase?.reportReleased) || (isSaudiDoctorApproved && !activeCase?.reportReleased)) return 'C08';
     if (activeCase?.currentStage === 'CLOSED') return 'C10';
     if (activeCase?.currentStage === 'FOLLOW_UP_21_DAYS') return 'C09';

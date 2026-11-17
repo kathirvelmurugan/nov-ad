@@ -18,14 +18,16 @@ export interface StageGateOptions {
   adminOverride?: boolean;
 }
 
-/** Stages that must not be entered before payment is cleared AND verified. */
-export const PAYMENT_GATED_STAGES: readonly ClinicalStage[] = [
-  'WITH_CONSULTANT',
-  'OPINION_READY',
-  'PARTNER_SERVICES',
-  'FOLLOW_UP_21_DAYS',
-  'CLOSED',
-];
+/**
+ * The single cut-point where money has to be settled: the case leaves the
+ * patient/payment phase and is dispatched to the international consultant.
+ *
+ * Everything after it is downstream of that clearance, so it must not ask again.
+ * Re-checking payment at the 21-day follow-up blocked cases whose money had already
+ * been collected and whose report had already been released - usually because a
+ * stale verification flag was the only thing missing.
+ */
+export const PAYMENT_GATED_STAGES: readonly ClinicalStage[] = ['WITH_CONSULTANT'];
 
 export const STAGE_GATE_MESSAGES: Record<StageGateError, { en: string; ar: string }> = {
   PAYMENT_REQUIRED: {
@@ -63,8 +65,8 @@ export const prevStageOf = (stage: ClinicalStage): ClinicalStage | null => {
 
 /**
  * The only gate decision in the codebase. Returns null when the transition is
- * allowed, or the blocking reason. Payment-gated stages require both
- * `pricing.paid` and the coordinator's verification.
+ * allowed, or the blocking reason. Entering the consultant phase requires both
+ * `pricing.paid` and the coordinator's verification; later stages inherit it.
  */
 export const stageGateError = (
   target: ClinicalStage,

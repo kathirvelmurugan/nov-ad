@@ -156,11 +156,36 @@ export const ConsultantCaseReviewSection: React.FC<Props> = ({
       <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#333', marginBottom: '8px' }}>
         Focus questions from the Saudi treating doctor
       </h3>
-      <ul style={{ margin: '0 0 24px 18px', padding: 0, fontSize: '14px', color: '#333', lineHeight: 1.7 }}>
-        {focusQuestionsEn.map((q, i) => (
-          <li key={i}>{q}</li>
-        ))}
-      </ul>
+      {focusQuestionsEn.some((q) => (q || '').trim().length > 0) ? (
+        <ol style={{ margin: '0 0 24px 18px', padding: 0, fontSize: '14px', color: '#333', lineHeight: 1.7 }}>
+          {focusQuestionsEn.map((q, i) => (
+            <li key={i} data-testid={`consultant-focus-question-${i}`} style={{ marginBottom: '6px' }}>
+              {q}
+            </li>
+          ))}
+        </ol>
+      ) : (
+        // An empty list of bullets used to look like a rendering glitch. A case
+        // with no questions is a real gap and has to say so out loud.
+        <div
+          role="alert"
+          data-testid="consultant-focus-questions-missing"
+          style={{
+            margin: '0 0 24px',
+            padding: '12px 14px',
+            borderRadius: '8px',
+            backgroundColor: '#FEF3C7',
+            border: '1px solid #FCD34D',
+            color: '#92400E',
+            fontSize: '13px',
+            fontWeight: 600,
+            lineHeight: 1.6,
+          }}
+        >
+          No focus questions were submitted with this referral. Ask the ALO coordinator to
+          return it to the Saudi treating doctor before writing an opinion.
+        </div>
+      )}
       <button
         type="button"
         onClick={onContinueToK06}

@@ -51,6 +51,16 @@ function generateSafeKey(fileName) {
 
 router.post('/upload', requireAuth, async (req, res) => {
   try {
+    // express.json leaves req.body undefined when the request is multipart, which
+    // used to throw before the handler could answer. Say what is expected instead.
+    if (!req.body || typeof req.body !== 'object') {
+      return res.status(415).json({
+        success: false,
+        error: 'UNSUPPORTED_BODY',
+        message: 'Send JSON { fileData, fileName, fileType } with fileData as a base64 data URL.',
+      });
+    }
+
     const { fileData, fileName, fileType } = req.body;
 
     if (!fileData) {
@@ -92,18 +102,23 @@ router.post('/upload', requireAuth, async (req, res) => {
 
     const safeKey = generateSafeKey(fileName || 'upload');
 
-    await saveFile(safeKey, buffer, detectedMimeType);
+    const stored = await saveFile(safeKey, buffer, detectedMimeType);
 
     const ext = path.extname(safeKey).toLowerCase();
     const resolvedContentType = MIME_TYPES[ext] || detectedMimeType;
 
+    // One envelope, shaped like every other endpoint: the client reads data.url.
     return res.status(201).json({
       success: true,
-      metadata: {
+      data: {
         key: safeKey,
+        url: '/api/storage/' + safeKey,
         originalName: fileName || null,
         size: buffer.length,
         contentType: resolvedContentType,
+        // 'disk' means MinIO was unavailable and the file sits inside the
+        // container, which is lost on the next redeploy.
+        storage: stored?.storage || 'disk',
         uploadedAt: new Date().toISOString()
       }
     });

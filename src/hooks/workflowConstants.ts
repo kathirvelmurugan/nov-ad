@@ -124,4 +124,18 @@ export const STAGE_ORDER: ClinicalStage[] = [
 ];
 
 export const isCasePaid = (c: ClinicalCase) => !!c.pricing?.paid || c.paymentDetails?.status === 'completed';
-export const isCaseVerified = (c: ClinicalCase) => !!c.paymentVerified || !!c.metadata?.paymentVerified;
+
+/**
+ * Payment verification is an absolute fact about the dispatch act, not a flag the
+ * UI has to keep re-asserting.
+ *
+ * A case that already sits beyond WITH_CONSULTANT cleared the cut-point by
+ * construction, so it must report as verified even when the stored flag is
+ * missing - which is exactly what happened for cases dispatched before
+ * /verify-payment owned the flag. Without this, the coordinator screen kept
+ * offering "verify payment" on cases whose report had already been released.
+ */
+export const isCaseVerified = (c: ClinicalCase) =>
+  !!c.paymentVerified ||
+  !!c.metadata?.paymentVerified ||
+  STAGE_ORDER.indexOf(c.currentStage) > STAGE_ORDER.indexOf('WITH_CONSULTANT');

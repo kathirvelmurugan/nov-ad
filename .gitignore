@@ -22,6 +22,12 @@ pdf_image/
 # E2E / smoke-test screenshots (local evidence, not source)
 e2e-artifacts/
 
+# Playwright walkthrough profile: keeps Chrome's translate prompt switched off
+e2e/.profile/
+
+# Throwaway probe payloads written by the walkthrough
+e2e/.probe-*
+
 # Local temp helper scripts (never commit; may contain credentials)
 .tmp_*
 

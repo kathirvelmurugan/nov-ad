@@ -11,6 +11,11 @@ import DoctorHeaderBar from './doctor/DoctorHeaderBar';
 import { PortalCaseTrackerPanel, getStageBadgeMeta } from '../common/PortalCaseTrackerPanel';
 import { CaseMilestoneHUD } from '../common/CaseMilestoneHUD';
 import { OpinionTelehealthView } from './OpinionTelehealthView';
+import {
+  FocusTriple,
+  replaceFocusQuestions,
+  resolveFocusQuestions,
+} from '../../utils/focusQuestions';
 
 interface Props {
   activeCase?: ClinicalCase;
@@ -92,58 +97,36 @@ export const DoctorReviewView: React.FC<Props> = ({
     city: activeCase?.consultant?.city || '—',
   };
 
-  const DEFAULT_CLINICAL_QUESTIONS_AR: [string, string, string] = [
-    'هل الإجراء الجراحي المقترح هو الخيار الأمثل للحالة السريرية؟',
-    'ما هي البدائل العلاجية والدوائية الموصى بها قبل التدخل؟',
-    'ما هي خطة المتابعة والتأهيل السريري المعتمدة بعد الاستشارة؟',
-  ];
-  const DEFAULT_CLINICAL_QUESTIONS_EN: [string, string, string] = [
-    'Is the proposed surgical intervention optimal for this case?',
-    'What are the recommended medical alternatives prior to surgery?',
-    'What post-consultation rehabilitation follow-up is indicated?',
-  ];
+  // The three questions live on the case, never in a component default. The old
+  // code prefilled them with canned prompts that were never written to the case,
+  // so the doctor could approve a referral while the consultant received nothing.
+  const [localQuestions, setLocalQuestions] = React.useState<FocusTriple>(
+    () => resolveFocusQuestions(activeCase, lang).questions
+  );
 
-  const defaultQs = isAr ? DEFAULT_CLINICAL_QUESTIONS_AR : DEFAULT_CLINICAL_QUESTIONS_EN;
-
-  const [localQuestions, setLocalQuestions] = React.useState<[string, string, string]>(() => {
-    const src = isAr 
-      ? activeCase?.treatingDoctor?.focusQuestions 
-      : (activeCase?.treatingDoctor?.focusQuestionsEn || activeCase?.treatingDoctor?.focusQuestions);
-    return [
-      (src && src[0]) || defaultQs[0],
-      (src && src[1]) || defaultQs[1],
-      (src && src[2]) || defaultQs[2],
-    ];
-  });
+  // Two keystrokes inside one render tick must not drop the first character, so
+  // the committed value also lives in a ref that the handler writes through.
+  const questionsRef = React.useRef<FocusTriple>(localQuestions);
+  const applyQuestions = React.useCallback((next: FocusTriple) => {
+    questionsRef.current = next;
+    setLocalQuestions(next);
+  }, []);
 
   React.useEffect(() => {
-    const src = isAr 
-      ? activeCase?.treatingDoctor?.focusQuestions 
-      : (activeCase?.treatingDoctor?.focusQuestionsEn || activeCase?.treatingDoctor?.focusQuestions);
-    setLocalQuestions([
-      (src && src[0]) || defaultQs[0],
-      (src && src[1]) || defaultQs[1],
-      (src && src[2]) || defaultQs[2],
-    ]);
-  }, [lang, activeCase?.id]);
+    applyQuestions(resolveFocusQuestions(activeCase, lang).questions);
+  }, [lang, activeCase?.id, applyQuestions]);
 
   const isReferralEditable = currentCase?.currentStage === 'DOCTOR_REVIEW';
 
   const handleQuestionChange = (index: 0 | 1 | 2, value: string) => {
     if (!isReferralEditable) return;
-    const updated = [...localQuestions] as [string, string, string];
-    updated[index] = value;
-    setLocalQuestions(updated);
-    const baseAr = activeCase?.treatingDoctor?.focusQuestions || ['', '', ''];
-    const arQs = [...baseAr] as [string, string, string];
-    arQs[index] = value;
-    onUpdateCase({
-      focusQuestions: arQs,
-      treatingDoctor: {
-        ...(activeCase?.treatingDoctor || { name: '', hospital: '', city: '' }),
-        focusQuestions: arQs, focusQuestionsEn: arQs,
-      },
-    });
+    const next = [...questionsRef.current] as FocusTriple;
+    next[index] = value;
+    applyQuestions(next);
+    // Write the whole visible set, not just the edited slot: the `activeCase`
+    // prop can lag one keystroke behind, and a per-slot write built from it would
+    // then save the neighbour back to its previous value.
+    onUpdateCase(replaceFocusQuestions(activeCase, lang, next));
   };
 
   const questions = localQuestions;
@@ -355,6 +338,10 @@ export const DoctorReviewView: React.FC<Props> = ({
                       targetStageEn: 'ALO Coordinator (C01)',
                     });
                     onUpdateCase({
+                      // Flush the exact set the doctor is looking at, in the same
+                      // write that advances the stage: the consultant can never
+                      // receive a case without the questions that were approved.
+                      ...replaceFocusQuestions(activeCase, lang, questionsRef.current),
                       currentStage: 'AWAITING_PAYMENT',
                       referralApproved: true, invoiceIssued: false, allowedPaymentMethods: [], paymentAssignedAt: undefined, paymentVerified: false,
                       pricing: { ...activeCase.pricing, paid: false, invoiceNumber: undefined },

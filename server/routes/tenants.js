@@ -2,6 +2,7 @@ import express from 'express';
 import crypto from 'crypto';
 import pool from '../db.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
+import { DEFAULT_STAFF_PIN } from '../store.js';
 
 const router = express.Router();
 
@@ -21,12 +22,24 @@ const normalizePhone = (raw) => {
 // Legacy rows may hold "+966 50 000 0099"; compare on digits only.
 const digitsOf = (value) => String(value ?? '').replace(/\D/g, '');
 
+// The doctor count is derived on every read, never taken from
+// tenants.doctor_count: that column is written only while a hospital is being
+// onboarded, so any doctor enrolled afterwards left the portal reporting 0 for
+// good. A stored counter that nothing maintains is not a source of truth.
+const TENANT_SELECT = `
+  SELECT t.id, t.name_en, t.name_ar, t.city, t.mci_license_number, t.status,
+         t.hospital_admin_name, t.hospital_admin_phone, t.created_at,
+         (SELECT COUNT(*)::int FROM platform_users u
+           WHERE u.role_code = 'D' AND u.hospital_id = t.id
+             AND (u.status = 'active' OR u.status IS NULL)) AS doctor_count
+    FROM tenants t`;
+
 // Postgres is the single source of truth: no memory mirrors. A database failure
 // is surfaced as a 500 so the client can show an honest error instead of stale
 // or fabricated tenant records.
 router.get('/', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM tenants ORDER BY created_at DESC');
+    const result = await pool.query(`${TENANT_SELECT} ORDER BY t.created_at DESC`);
     return res.status(200).json({ success: true, data: result.rows });
   } catch (error) {
     console.error('[tenants] GET error:', error.message);
@@ -168,7 +181,10 @@ router.post('/', requireAuth, requireRole('AD'), async (req, res) => {
       // carries the old role_code and hospital_id and would keep the old portal.
       await client.query('UPDATE sessions SET revoked_at = NOW() WHERE user_id = $1 AND revoked_at IS NULL', [existing.id]);
     } else {
-      const initialPin = String(crypto.randomInt(1000, 10000));
+      // Pilot default: the tenant administrator is handed the same working PIN as
+      // every other new account. A blank DEFAULT_STAFF_PIN restores a random
+      // 4-digit value (see server/store.js).
+      const initialPin = DEFAULT_STAFF_PIN || String(crypto.randomInt(1000, 10000));
       const inserted = await client.query(
         `INSERT INTO platform_users (id, full_name, phone, role_code, pin, has_custom_pin, hospital_id, status, activated_at)
          VALUES ('staff-' || replace(gen_random_uuid()::text, '-', ''), $1, $2, 'HA', $3, TRUE, $4, 'active', NOW())
@@ -190,7 +206,7 @@ router.post('/', requireAuth, requireRole('AD'), async (req, res) => {
 
     await client.query('COMMIT');
 
-    const refreshed = await pool.query('SELECT * FROM tenants WHERE id = $1', [tenantId]);
+    const refreshed = await pool.query(`${TENANT_SELECT} WHERE t.id = $1`, [tenantId]);
     return res.status(201).json({ success: true, data: refreshed.rows[0], adminAccount });
   } catch (error) {
     await client.query('ROLLBACK').catch(() => {});
@@ -209,11 +225,12 @@ router.patch('/:id/status', requireAuth, requireRole('AD'), async (req, res) => 
   }
 
   try {
-    const result = await pool.query('UPDATE tenants SET status = $1 WHERE id = $2 RETURNING *', [status, id]);
+    const result = await pool.query('UPDATE tenants SET status = $1 WHERE id = $2 RETURNING id', [status, id]);
     if (result.rowCount === 0) {
       return res.status(404).json({ success: false, message: 'Tenant not found.' });
     }
-    return res.status(200).json({ success: true, data: result.rows[0] });
+    const fresh = await pool.query(`${TENANT_SELECT} WHERE t.id = $1`, [id]);
+    return res.status(200).json({ success: true, data: fresh.rows[0] });
   } catch (error) {
     console.error('[tenants] PATCH status error:', error.message);
     return res.status(500).json({ success: false, error: 'TENANT_STATUS_FAILED', message: 'Tenant status could not be persisted. Nothing changed.' });

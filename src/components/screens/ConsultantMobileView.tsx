@@ -12,12 +12,13 @@ import { ConsultantCaseClosedSection } from '../consultant/ConsultantCaseClosedS
 import { BilingualReportModal } from '../reports/BilingualReportModal';
 import { CaseMilestoneHUD } from '../common/CaseMilestoneHUD';
 import { OpinionTelehealthView } from './OpinionTelehealthView';
+import { resolveFocusQuestions } from '../../utils/focusQuestions';
 import {
   checkCaseAccepted,
   checkOpinionSubmitted,
   checkCaseClosed,
   getInitialConsultantScreen,
-  DEFAULT_FOCUS_ANSWERS,
+  EMPTY_FOCUS_ANSWERS,
 } from '../consultant/consultantLogic';
 
 interface Props {
@@ -95,8 +96,10 @@ export const ConsultantMobileView: React.FC<Props> = ({
   const [selectedSlot, setSelectedSlot] = useState('');
   const [finalRemarks, setFinalRemarks] = useState(activeCase.finalClosureNote || '');
 
-  const baseAr = activeCase.treatingDoctor?.focusQuestions || ['', '', ''];
-  const focusQuestionsEn = activeCase.treatingDoctor?.focusQuestionsEn || baseAr;
+  // Same resolver the doctor's screen writes through, so a question present on
+  // the case is always present here — in English, or in the doctor's original
+  // language when no translation exists. Never a silent blank.
+  const focusQuestionsEn = resolveFocusQuestions(activeCase, 'en').questions;
 
   const [focusAnswers, setFocusAnswers] = useState<[string, string, string]>(() => {
     if (activeCase.consultantAnswers && activeCase.consultantAnswers.length === 3) {
@@ -106,7 +109,7 @@ export const ConsultantMobileView: React.FC<Props> = ({
       const fa = activeCase.metadata.focusAnswers as string[];
       return [fa[0] || '', fa[1] || '', fa[2] || ''];
     }
-    return DEFAULT_FOCUS_ANSWERS;
+    return EMPTY_FOCUS_ANSWERS;
   });
 
   useEffect(() => {

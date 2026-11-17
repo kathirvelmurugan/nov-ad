@@ -61,6 +61,8 @@ export const DoctorFocusQuestionsSection: React.FC<Props> = ({
             </div>
             <textarea
               rows={2}
+              id={`focus-question-${index}`}
+              data-testid={`focus-question-${index}`}
               value={val}
               placeholder={placeholder}
               onChange={(e) => onQuestionChange(index, e.target.value)}

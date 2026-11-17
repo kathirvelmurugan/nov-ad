@@ -1,5 +1,6 @@
 import React from 'react';
 import { FileText, Stethoscope, AlertCircle, HelpCircle, Paperclip } from 'lucide-react';
+import { resolveFocusQuestions } from '../../../utils/focusQuestions';
 
 export interface DrillDownClinicalTabProps {
   caseItem: any;
@@ -10,11 +11,11 @@ export interface DrillDownClinicalTabProps {
 const DrillDownClinicalTab: React.FC<DrillDownClinicalTabProps> = ({ caseItem, diagnosis, isRTL }) => {
   const dir = isRTL ? 'rtl' : 'ltr';
   const fontClass = isRTL ? 'font-cairo' : 'font-sans';
-  const focusQuestions = caseItem?.focusQuestions || [
-    isRTL ? 'ما هي الأعراض الرئيسية؟' : 'What are the primary symptoms?',
-    isRTL ? 'ما هو التشخيص التفريقي؟' : 'What is the differential diagnosis?',
-    isRTL ? 'ما هي الخطة العلاجية المقترحة؟' : 'What is the proposed treatment plan?'
-  ];
+  // Same resolver as the doctor's screen and the consultant's review, so this panel
+  // shows exactly the questions the treating doctor wrote. The old hardcoded fallback
+  // invented three generic questions for cases where the doctor had written none.
+  const focusQuestions = resolveFocusQuestions(caseItem, isRTL ? 'ar' : 'en')
+    .questions.filter((q) => (q || '').trim().length > 0);
   const scans = caseItem?.scans || [];
   const symptoms = caseItem?.symptoms || (isRTL ? 'لا توجد أعراض مسجلة' : 'No symptoms recorded');
 
@@ -81,16 +82,22 @@ const DrillDownClinicalTab: React.FC<DrillDownClinicalTabProps> = ({ caseItem, d
             {isRTL ? 'أسئلة التركيز الإلزامية' : 'Mandated Focus Questions'}
           </h4>
         </div>
-        <ul className="space-y-2 list-none">
-          {focusQuestions.map((q: string, i: number) => (
-            <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
-              <span className="flex-shrink-0 w-5 h-5 rounded-full bg-[#00C6AE] text-white flex items-center justify-center text-xs font-bold">
-                {i + 1}
-              </span>
-              <span className="leading-relaxed pt-0.5">{q}</span>
-            </li>
-          ))}
-        </ul>
+        {focusQuestions.length === 0 ? (
+          <p className="text-sm text-gray-500 italic">
+            {isRTL ? 'لم يسجل الطبيب المعالج أسئلة التركيز بعد' : 'The treating doctor has not recorded the focus questions yet'}
+          </p>
+        ) : (
+          <ul className="space-y-2 list-none">
+            {focusQuestions.map((q: string, i: number) => (
+              <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-[#00C6AE] text-white flex items-center justify-center text-xs font-bold">
+                  {i + 1}
+                </span>
+                <span className="leading-relaxed pt-0.5">{q}</span>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       <div className="bg-white rounded-lg shadow-sm p-4">

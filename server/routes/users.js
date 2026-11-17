@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import { Router } from 'express';
 import pool from '../db.js';
 import { issueSession, requireAuth, requireRole } from '../middleware/auth.js';
+import { DEFAULT_STAFF_PIN } from '../store.js';
 
 const router = Router();
 
@@ -262,8 +263,13 @@ router.post('/pin', async (req, res) => {
           message: 'This account already has a PIN. Sign in with it instead.',
         });
       }
+      // Sign-in accepts a PIN only from an activated account, so registering has
+      // to mark the row activated as well as set the PIN. Without this the public
+      // registration wrote a credential that login could never accept.
       await pool.query(
-        'UPDATE platform_users SET pin = $1, has_custom_pin = TRUE WHERE id = $2',
+        `UPDATE platform_users
+            SET pin = $1, has_custom_pin = TRUE, activated_at = COALESCE(activated_at, NOW())
+          WHERE id = $2`,
         [String(pin), row.id]
       );
       return res.json({ success: true, phone: normalizedPhone });
@@ -287,8 +293,8 @@ router.post('/pin', async (req, res) => {
     }
 
     await pool.query(
-      `INSERT INTO platform_users (id, full_name, phone, role_code, pin, has_custom_pin)
-       VALUES ('patient-' || replace(gen_random_uuid()::text, '-', ''), $1, $2, 'P', $3, TRUE)`,
+      `INSERT INTO platform_users (id, full_name, phone, role_code, pin, has_custom_pin, activated_at)
+       VALUES ('patient-' || replace(gen_random_uuid()::text, '-', ''), $1, $2, 'P', $3, TRUE, NOW())`,
       ['Patient', normalizedPhone, String(pin)]
     );
   } catch (err) {
@@ -302,6 +308,34 @@ router.post('/pin', async (req, res) => {
   }
 
   return res.json({ success: true, phone: normalizedPhone });
+});
+
+// PATCH /api/users/me — the account holder renames their own profile. Patients
+// self-register with a phone number alone, so platform_users.full_name starts as
+// the placeholder 'Patient'; the first case they file is the first chance to
+// learn the real name. Role, phone and PIN are untouched, so this cannot be used
+// to escalate or to hijack another account.
+router.patch('/me', requireAuth, async (req, res) => {
+  const fullName = String(req.body?.fullName || '').trim();
+  if (fullName.length < 2) {
+    return res.status(400).json({ error: 'INVALID_NAME', message: 'fullName must be at least 2 characters.' });
+  }
+  if (fullName.length > 120) {
+    return res.status(400).json({ error: 'INVALID_NAME', message: 'fullName must be 120 characters or fewer.' });
+  }
+  try {
+    const { rowCount } = await pool.query(
+      'UPDATE platform_users SET full_name = $1 WHERE id = $2',
+      [fullName, req.auth.userId]
+    );
+    if (rowCount === 0) {
+      return res.status(404).json({ error: 'ACCOUNT_NOT_FOUND', message: 'No account matches this session.' });
+    }
+    return res.json({ success: true, fullName });
+  } catch (err) {
+    console.error('[users] profile update error:', err.message);
+    return res.status(500).json({ error: 'PROFILE_NOT_SAVED', message: 'Name could not be saved.' });
+  }
 });
 
 // Authenticated self-service PIN change. The current PIN is required so a
@@ -396,13 +430,15 @@ router.post('/', requireAuth, requireRole('AD', 'HA'), async (req, res) => {
     return res.status(400).json({ error: 'INVALID_ROLE', message: `Role ${requestedRole} is not a staff role` });
   }
 
-  // A new staff member does not start with a working PIN. They start with a
-  // one-time activation code — the one the administrator typed, or a minted
-  // 6-digit value — and use it exactly once. The PIN they keep afterwards is
-  // chosen by them at that moment, never by whoever created the account.
-  // crypto.randomInt, not Math.random: this is a credential that is never stored
-  // in readable form once it leaves this response.
-  const activationCode = pin ? String(pin) : String(crypto.randomInt(100000, 1000000));
+  // PILOT DEFAULT (server/store.js: DEFAULT_STAFF_PIN): the account is created
+  // already activated and holding that PIN, so one credential can be handed over
+  // and used immediately. An explicit `pin` in the request still wins. With the
+  // constant blanked this falls back to the original behaviour: a random 6-digit
+  // activation code consumed exactly once, and a PIN chosen by its owner.
+  const startsActivated = Boolean(DEFAULT_STAFF_PIN) && !pin;
+  const initialPin = pin
+    ? String(pin)
+    : DEFAULT_STAFF_PIN || String(crypto.randomInt(100000, 1000000));
 
   const actorIsHospitalAdmin = req.auth.role === 'HA';
   if (actorIsHospitalAdmin && !TENANT_ROLE_CODES.includes(requestedRole)) {
@@ -438,8 +474,10 @@ router.post('/', requireAuth, requireRole('AD', 'HA'), async (req, res) => {
           activated_at, activation_code, activation_expires_at)
        VALUES
          ('staff-' || replace(gen_random_uuid()::text, '-', ''), $1, $2, $3, $4, $5,
-          NULL, FALSE, $6, 'active', $7, $8,
-          NULL, $9, NOW() + INTERVAL '14 days')
+          CASE WHEN $9 THEN $10 END, $9, $6, 'active', $7, $8,
+          CASE WHEN $9 THEN NOW() END,
+          CASE WHEN $9 THEN NULL ELSE $10 END,
+          CASE WHEN $9 THEN NULL ELSE NOW() + INTERVAL '14 days' END)
        ON CONFLICT (phone) DO UPDATE SET
          full_name = EXCLUDED.full_name,
          full_name_ar = COALESCE(EXCLUDED.full_name_ar, platform_users.full_name_ar),
@@ -448,24 +486,35 @@ router.post('/', requireAuth, requireRole('AD', 'HA'), async (req, res) => {
          hospital_id = COALESCE(EXCLUDED.hospital_id, platform_users.hospital_id),
          department = COALESCE(EXCLUDED.department, platform_users.department),
          scfhs_license = COALESCE(EXCLUDED.scfhs_license, platform_users.scfhs_license),
-         -- Re-enrolling must never wipe a PIN its owner already chose, and must
-         -- never re-open an activated account to a first-login code.
-         activation_code = CASE WHEN platform_users.activated_at IS NULL THEN EXCLUDED.activation_code ELSE platform_users.activation_code END,
-         activation_expires_at = CASE WHEN platform_users.activated_at IS NULL THEN EXCLUDED.activation_expires_at ELSE platform_users.activation_expires_at END
+         -- Re-enrolling must never wipe a PIN its owner already chose. A row that
+         -- is still pending becomes usable under the pilot default instead of
+         -- being left pending with its activation code cleared.
+         pin = CASE WHEN platform_users.activated_at IS NULL AND $9 THEN $10 ELSE platform_users.pin END,
+         has_custom_pin = CASE WHEN platform_users.activated_at IS NULL AND $9 THEN TRUE ELSE platform_users.has_custom_pin END,
+         activated_at = CASE WHEN platform_users.activated_at IS NULL AND $9 THEN NOW() ELSE platform_users.activated_at END,
+         activation_code = CASE WHEN platform_users.activated_at IS NULL AND $9 THEN NULL
+                                WHEN platform_users.activated_at IS NULL THEN EXCLUDED.activation_code
+                                ELSE platform_users.activation_code END,
+         activation_expires_at = CASE WHEN platform_users.activated_at IS NULL AND $9 THEN NULL
+                                      WHEN platform_users.activated_at IS NULL THEN EXCLUDED.activation_expires_at
+                                      ELSE platform_users.activation_expires_at END
        RETURNING id, staff_code AS "staffCode", full_name AS "fullName", full_name_ar AS "fullNameAr",
                  phone, role_code AS "roleCode", hospital_id AS "hospitalId",
                  has_custom_pin AS "hasCustomPin", (activated_at IS NOT NULL) AS "activated",
+                 (xmax = 0) AS "inserted",
                  created_at AS "createdAt"`,
-      [payload.staffCode, payload.fullName, payload.fullNameAr, payload.phone, payload.roleCode, payload.hospitalId, payload.department, payload.scfhsLicense, activationCode]
+      [payload.staffCode, payload.fullName, payload.fullNameAr, payload.phone, payload.roleCode, payload.hospitalId, payload.department, payload.scfhsLicense, startsActivated, initialPin]
     );
 
     const created = rows[0];
-    // The activation code is returned exactly once, and only while the account is
-    // still pending. A re-enrolled, already-activated account keeps the PIN its
-    // owner chose and never receives a new one here.
+    // The issued credential is returned exactly once, and only for a row this
+    // request actually inserted. A re-enrolled, already-activated account keeps
+    // the PIN its owner chose and is never handed a PIN here.
+    const { inserted, ...account } = created;
     return res.status(201).json({
-      ...created,
-      ...(created.activated ? {} : { initialPin: activationCode, mustSetPin: true }),
+      ...account,
+      ...(inserted ? { initialPin } : {}),
+      ...(inserted && !startsActivated ? { mustSetPin: true } : {}),
     });
   } catch (err) {
     // Staff enrollment must fail loudly: a memory-only account cannot log in after

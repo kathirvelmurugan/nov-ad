@@ -1,6 +1,7 @@
 import { ClinicalCase } from '../types';
 import { generateMockSHA256 } from '../components/followup/followUpConstants';
 import { defaultRailIds } from '../config/platformConfig';
+import { resolveFocusQuestions } from './focusQuestions';
 
 /**
  * Downloads PDF 1 (Certified Second Opinion Dossier)
@@ -35,7 +36,12 @@ export const downloadPDF1 = (activeCase: ClinicalCase, isAr: boolean = false): v
     `Physician: ${treatingDoc} (${hospital})`,
     `Diagnosis: ${activeCase.diagnosis || 'Severe Aortic Stenosis with Annular Calcification'}`,
     `Clinical Questions for Specialist:`,
-    activeCase.treatingDoctor?.focusQuestions?.map((q, i) => `  ${i + 1}. ${q}`).join('\n') || '  1. Surgery vs Intervention\n  2. Calcification risk\n  3. Regimen',
+    // A certified dossier prints only what the doctor actually wrote. The old
+    // hardcoded fallback listed questions nobody had asked.
+    resolveFocusQuestions(activeCase, isAr ? 'ar' : 'en').questions
+      .filter((q) => q.length > 0)
+      .map((q, i) => `  ${i + 1}. ${q}`)
+      .join('\n') || '  - no focus questions recorded on this case -',
     `------------------------------------------------------------------------`,
     `PART 2: INTERNATIONAL SPECIALIST CLINICAL OPINION`,
     `Specialist: ${consultant} (${activeCase.consultant?.center || '—'})`,

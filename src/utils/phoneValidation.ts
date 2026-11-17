@@ -115,6 +115,16 @@ export const maskNationalId = (input: string): string => {
 
 export const isMaskedNationalId = (input: string): boolean => /^[12]\d[\d*]{8}$/.test(String(input ?? ''));
 
+/**
+ * Self-registration only collects a phone number, so the account name is stored
+ * as the literal placeholder 'Patient'. That word is not an identity and must
+ * never be prefilled into a name field or accepted as the patient name.
+ */
+export const isPlaceholderPatientName = (name?: string): boolean => {
+  const trimmed = String(name ?? '').trim();
+  return trimmed.length < 2 || ['patient', 'مريض', 'المريض'].includes(trimmed.toLowerCase());
+};
+
 /** Demo ages stay inside 1..120 instead of silently becoming a fixed default. */
 export const clampAge = (input: string | number, fallback = 1): number => {
   const parsed = parseInt(String(input), 10);

@@ -22,8 +22,10 @@ const PORT = process.env.PORT || 3000;
 
 const CORS_ORIGINS = (process.env.CORS_ORIGINS || 'http://localhost:5173,http://localhost:4173').split(',').map(s => s.trim());
 app.use(cors({ origin: (origin, cb) => { if (!origin || CORS_ORIGINS.includes(origin)) return cb(null, true); cb(null, CORS_ORIGINS[0] || false); }, credentials: true }));
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+// Uploads travel as base64 JSON, which adds roughly a third to the payload size,
+// so the ceiling has to sit above the 50MB file limit enforced in routes/storage.js.
+app.use(express.json({ limit: '75mb' }));
+app.use(express.urlencoded({ extended: true, limit: '75mb' }));
 
 const apiRouter = express.Router();
 

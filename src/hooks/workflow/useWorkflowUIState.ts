@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { PERSONAS } from '../../data/personas';
 import { Persona, ClinicalCase, ClinicalStage } from '../../types';
 import { apiClient } from '../../services/apiClient';
@@ -36,12 +36,34 @@ export function useWorkflowUIState({
   resetIntakeDraft,
 }: UseWorkflowUIStateParams) {
   const [lang, setLang] = useState<'ar' | 'en'>(() => {
+    // ?lang= is an explicit instruction from whoever opened the link, so it wins
+    // over any stored preference. It is written back immediately because
+    // handleSelectPersona only preserves the language while a preference exists.
+    try {
+      if (typeof window !== 'undefined') {
+        const param = new URLSearchParams(window.location.search).get('lang');
+        if (param === 'en' || param === 'ar') {
+          localStorage.setItem(LANG_KEY, param);
+          return param;
+        }
+      }
+    } catch (e) {}
     try {
       const stored = localStorage.getItem(LANG_KEY);
       if (stored === 'en' || stored === 'ar') return stored;
     } catch (e) {}
     return 'en';
   });
+
+  // index.html ships as lang="ar" dir="rtl" and nothing ever moved it, so the
+  // English interface still ran inside an RTL document, and the two places that
+  // read documentElement.dir (case persistence, the error boundary) always
+  // assumed Arabic. Keep the document in step with the chosen language.
+  useEffect(() => {
+    const root = document.documentElement;
+    root.lang = lang;
+    root.dir = lang === 'ar' ? 'rtl' : 'ltr';
+  }, [lang]);
 
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
 

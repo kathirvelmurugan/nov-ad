@@ -28,6 +28,53 @@ import { useWorkflowUIState } from './workflow/useWorkflowUIState';
 export type { UserSession };
 export { ACTIVE_CASE_KEY, USER_SESSION_KEY, FRESH_PRIMARY_CASE };
 
+// ─── Case save queue ────────────────────────────────────────────────────────
+// Every edit posts the WHOLE case, and the doctor's screen posts on each
+// keystroke. Two overlapping requests could therefore land out of order and an
+// older snapshot would overwrite newer clinical content — the reason a filled-in
+// referral intermittently arrived at the consultant empty. Saves for one case are
+// now serialised, and only the freshest pending snapshot is sent.
+interface CaseSaveSlot {
+  inflight: boolean;
+  latest: ClinicalCase | null;
+}
+
+const caseSaveQueue = new Map<string, CaseSaveSlot>();
+
+const dispatchSaveResult = (ok: boolean, c: ClinicalCase, message: string) => {
+  window.dispatchEvent(
+    new CustomEvent(ok ? 'alo:case-save-ok' : 'alo:case-save-failed', {
+      detail: ok ? undefined : { caseNumber: c.caseNumber, message },
+    })
+  );
+};
+
+const queueCaseSave = (clinicalCase: ClinicalCase): void => {
+  const id = clinicalCase.id;
+  const slot = caseSaveQueue.get(id) || { inflight: false, latest: null };
+  slot.latest = clinicalCase;
+  caseSaveQueue.set(id, slot);
+  if (slot.inflight) return;
+  slot.inflight = true;
+
+  const drain = async () => {
+    while (slot.latest) {
+      const next = slot.latest;
+      slot.latest = null;
+      try {
+        await apiClient.saveCase(next);
+        dispatchSaveResult(true, next, '');
+      } catch (err: any) {
+        dispatchSaveResult(false, next, err?.message || '');
+      }
+    }
+    slot.inflight = false;
+    if (!slot.latest) caseSaveQueue.delete(id);
+  };
+
+  void drain();
+};
+
 const generateAstTimestamp = () => {
   const now = new Date();
   const astTime = new Date(now.getTime() + (3 * 3600000) + (now.getTimezoneOffset() * 60000));
@@ -43,8 +90,28 @@ const generateAstTimestamp = () => {
   };
 };
 
-const getMilestoneEventForStage = (stage: string, caseId: string, customActor?: string): any => {
+interface MilestoneContext {
+  /** The account that performed the write. */
+  actorName?: string;
+  /** Treating doctor the case is bound to once the write is applied. */
+  treatingDoctorName?: string;
+  /** Facts the write itself establishes. */
+  referralApproved?: boolean;
+}
+
+/**
+ * A milestone records an act, not the stage the case happens to land in.
+ * The nurse forwarding a triaged case completes M02; the treating doctor's
+ * approval is what moves the case to AWAITING_PAYMENT and earns M03; the
+ * coordinator's financial clearance is what dispatches the case to the
+ * consultant and earns M04. Deriving the event from the target stage alone used
+ * to stamp a doctor endorsement - attributed to the nurse herself - the moment
+ * she forwarded the case, so a case still waiting in triage read "referral
+ * endorsed" in the patient's timeline.
+ */
+const getMilestoneEventForStage = (stage: string, caseId: string, context: MilestoneContext = {}): any => {
   const timeInfo = generateAstTimestamp();
+  const actor = context.actorName || '';
   switch (stage) {
     case 'INTAKE_RECEIVED':
       return {
@@ -56,14 +123,16 @@ const getMilestoneEventForStage = (stage: string, caseId: string, customActor?: 
         actionCode: 'M01',
         stage: 'INTAKE_RECEIVED',
         actorRole: 'P',
-        actorName: customActor || '',
+        actorName: actor,
         actorRoleTitleAr: 'المريض',
         actorRoleTitleEn: 'Patient',
         actionSummaryAr: 'تم تسجيل الحالة وتوثيق موافقة الخصوصية',
         actionSummaryEn: 'Case intake registered with MOH verified consent',
         isMilestone: true,
       };
-    case 'NURSE_CHECK':
+    case 'DOCTOR_REVIEW':
+      // Entering DOCTOR_REVIEW means the nurse finished triage and handed the
+      // case over - that is M02, not an endorsement by the doctor.
       return {
         id: `evt-${Date.now()}-m02`,
         caseId,
@@ -73,14 +142,17 @@ const getMilestoneEventForStage = (stage: string, caseId: string, customActor?: 
         actionCode: 'M02',
         stage: 'NURSE_CHECK',
         actorRole: 'N',
-        actorName: customActor || '',
+        actorName: actor,
         actorRoleTitleAr: 'ممرضة ألو للفرز',
         actorRoleTitleEn: 'ALO Nurse',
         actionSummaryAr: 'تم الفرز السريري ومراجعة المؤشرات الحيوية',
         actionSummaryEn: 'Clinical triage completed and vitals reviewed',
         isMilestone: true,
       };
-    case 'DOCTOR_REVIEW':
+    case 'AWAITING_PAYMENT':
+      // Only a write that actually endorses the referral earns M03. A stage jump
+      // that never approved it must not claim a doctor endorsement.
+      if (!context.referralApproved) return null;
       return {
         id: `evt-${Date.now()}-m03`,
         caseId,
@@ -90,15 +162,15 @@ const getMilestoneEventForStage = (stage: string, caseId: string, customActor?: 
         actionCode: 'M03',
         stage: 'DOCTOR_REVIEW',
         actorRole: 'D',
-        actorName: customActor || '',
+        actorName: context.treatingDoctorName || actor,
         actorRoleTitleAr: 'الطبيب السعودي المعالج',
         actorRoleTitleEn: 'Saudi Treating Doctor',
         actionSummaryAr: 'تمت الموافقة الطبية واعتماد طلب الاستشارة الدولية',
         actionSummaryEn: 'Medical referral endorsed for cross-border consultation',
         isMilestone: true,
       };
-    case 'AWAITING_PAYMENT':
     case 'WITH_CONSULTANT':
+      // Dispatch is gated on financial clearance, so reaching it is M04.
       return {
         id: `evt-${Date.now()}-m04`,
         caseId,
@@ -106,9 +178,9 @@ const getMilestoneEventForStage = (stage: string, caseId: string, customActor?: 
         formattedTimeAr: timeInfo.timeAr,
         formattedTimeEn: timeInfo.timeEn,
         actionCode: 'M04',
-        stage,
+        stage: 'WITH_CONSULTANT',
         actorRole: 'C',
-        actorName: customActor || '',
+        actorName: actor,
         actorRoleTitleAr: 'منسق رعاية ألو',
         actorRoleTitleEn: 'ALO Coordinator',
         actionSummaryAr: 'تم التحقق المالي وتأكيد السداد وإحالة الملف للاستشاري',
@@ -127,7 +199,7 @@ const getMilestoneEventForStage = (stage: string, caseId: string, customActor?: 
         actionCode: 'M05',
         stage,
         actorRole: 'K',
-        actorName: customActor || '',
+        actorName: actor,
         actorRoleTitleAr: 'الاستشاري الدولي',
         actorRoleTitleEn: 'International Consultant',
         actionSummaryAr: 'تم تقديم الرأي الطبي الاستشاري واعتماده',
@@ -264,8 +336,19 @@ export function useClinicalWorkflowState() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const onSessionExpired = () => setUserSession(null);
+    // The intake form renames the account holder. Patching the in-memory session
+    // stops the header from showing the placeholder name 'Patient' until reload.
+    const onProfileUpdated = (event: Event) => {
+      const fullName = (event as CustomEvent<{ fullName?: string }>).detail?.fullName;
+      if (!fullName) return;
+      setUserSession((prev) => (prev ? { ...prev, fullName } : prev));
+    };
     window.addEventListener('alo:session-expired', onSessionExpired);
-    return () => window.removeEventListener('alo:session-expired', onSessionExpired);
+    window.addEventListener('alo:profile-updated', onProfileUpdated);
+    return () => {
+      window.removeEventListener('alo:session-expired', onSessionExpired);
+      window.removeEventListener('alo:profile-updated', onProfileUpdated);
+    };
   }, []);
 
   // Cases start empty and are replaced by the server response; there is no local
@@ -320,8 +403,17 @@ export function useClinicalWorkflowState() {
     }
   }, [userSession, activePersona.code]);
 
+  // The queue is role-scoped on the server and every request needs the bearer
+  // token, so this fetch has to re-run when the signed-in account changes. It used
+  // to run once on mount - i.e. before login - so a fresh sign-in showed an empty
+  // caseload until a manual reload, and that empty drawer read as "no data".
+  const sessionKey = userSession
+    ? `${userSession.id || userSession.phone || ''}|${userSession.roleCode || ''}`
+    : '';
+
   useEffect(() => {
     let isSubscribed = true;
+    if (!sessionKey) return () => { isSubscribed = false; };
     apiClient.fetchCases().then((serverCases) => {
       if (isSubscribed && Array.isArray(serverCases)) {
         // Hard Server-Truth: Server response replaces local state completely
@@ -336,7 +428,7 @@ export function useClinicalWorkflowState() {
       }
     }).catch(() => {});
     return () => { isSubscribed = false; };
-  }, []);
+  }, [sessionKey]);
 
   useEffect(() => { try { localStorage.setItem(ACTIVE_CASE_KEY, activeCaseId); } catch (e) {} }, [activeCaseId]);
 
@@ -381,7 +473,7 @@ export function useClinicalWorkflowState() {
       const nameToSet = syncedUpdate.patientName || intakeDraft.patientName || userSession?.fullName || '';
       const nameArToSet = syncedUpdate.patientNameAr || intakeDraft.patientNameAr || userSession?.fullName || '';
       const nameEnToSet = syncedUpdate.patientNameEn || intakeDraft.patientNameEn || userSession?.fullName || '';
-      const initialEvt = getMilestoneEventForStage('INTAKE_RECEIVED', freshId, nameToSet);
+      const initialEvt = getMilestoneEventForStage('INTAKE_RECEIVED', freshId, { actorName: nameToSet });
       const registeredCase: ClinicalCase = {
         ...intakeDraft,
         ...syncedUpdate,
@@ -404,11 +496,7 @@ export function useClinicalWorkflowState() {
       };
 
       try { localStorage.setItem(ACTIVE_CASE_KEY, freshId); } catch {}
-      apiClient.saveCase(registeredCase)
-        .then(() => window.dispatchEvent(new CustomEvent('alo:case-save-ok')))
-        .catch((err) => window.dispatchEvent(new CustomEvent('alo:case-save-failed', {
-          detail: { caseNumber: registeredCase.caseNumber, message: err?.message || '' },
-        })));
+      queueCaseSave(registeredCase);
       setCases((prev) => [registeredCase, ...prev.filter((c) => c.id !== freshId && c.id !== 'draft-intake')]);
       setActiveCaseId(registeredCase.id);
       setIntakeDraft(createFreshDraftIntake(userSession));
@@ -425,7 +513,13 @@ export function useClinicalWorkflowState() {
       if (!exists) {
         if (!isNurseSubmit) return prev;
         const baseCase = (activeCase && activeCase.id === targetId) ? activeCase : FRESH_PRIMARY_CASE;
-        const newEvt = syncedUpdate.currentStage ? getMilestoneEventForStage(syncedUpdate.currentStage, targetId, userSession?.fullName) : null;
+        const newEvt = syncedUpdate.currentStage
+          ? getMilestoneEventForStage(syncedUpdate.currentStage, targetId, {
+              actorName: userSession?.fullName,
+              treatingDoctorName: syncedUpdate.treatingDoctor?.name || baseCase.treatingDoctor?.name,
+              referralApproved: syncedUpdate.referralApproved === true,
+            })
+          : null;
         const existingTimeline = Array.isArray(baseCase.timeline) ? baseCase.timeline : [];
         const nextTimeline = newEvt ? [...existingTimeline.filter(e => e.actionCode !== newEvt.actionCode), newEvt] : existingTimeline;
         updatedCase = { ...baseCase, ...syncedUpdate, id: targetId, timeline: nextTimeline, updatedAt: new Date().toISOString(), ...(phoneToSet ? { patientPhone: phoneToSet } : {}) };
@@ -436,7 +530,11 @@ export function useClinicalWorkflowState() {
         nextCases = prev.map((c) => {
           if (c.id === targetId) {
             const newEvt = syncedUpdate.currentStage && syncedUpdate.currentStage !== c.currentStage
-              ? getMilestoneEventForStage(syncedUpdate.currentStage, targetId, userSession?.fullName)
+              ? getMilestoneEventForStage(syncedUpdate.currentStage, targetId, {
+                  actorName: userSession?.fullName,
+                  treatingDoctorName: syncedUpdate.treatingDoctor?.name || c.treatingDoctor?.name,
+                  referralApproved: syncedUpdate.referralApproved === true,
+                })
               : null;
             const existingTimeline = Array.isArray(c.timeline) ? c.timeline : [];
             const nextTimeline = newEvt ? [...existingTimeline.filter(e => e.actionCode !== newEvt.actionCode), newEvt] : existingTimeline;
@@ -448,11 +546,7 @@ export function useClinicalWorkflowState() {
         if (!updatedCase!) updatedCase = { ...activeCase, ...syncedUpdate, id: targetId, ...(phoneToSet ? { patientPhone: phoneToSet } : {}) };
       }
       try { localStorage.setItem(ACTIVE_CASE_KEY, targetId); } catch {}
-      apiClient.saveCase(updatedCase)
-        .then(() => window.dispatchEvent(new CustomEvent('alo:case-save-ok')))
-        .catch((err) => window.dispatchEvent(new CustomEvent('alo:case-save-failed', {
-          detail: { caseNumber: updatedCase.caseNumber, message: err?.message || '' },
-        })));
+      queueCaseSave(updatedCase);
       return nextCases;
     });
   };
