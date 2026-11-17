@@ -215,6 +215,17 @@ export const SuperAdminCasesTab: React.FC<SuperAdminCasesTabProps> = ({
       .catch(() => {});
   }, []);
 
+  // Consultants come from Postgres for the same reason doctors do: a reassignment
+  // must never offer a name that was never enrolled.
+  const [assignableConsultants, setAssignableConsultants] = useState<Array<{ id: string; name: string; center: string }>>([]);
+  React.useEffect(() => {
+    apiClient.fetchDoctors(undefined, 'K')
+      .then((rows) => {
+        setAssignableConsultants(rows.map((r) => ({ id: r.id, name: r.fullName, center: r.department || '' })));
+      })
+      .catch(() => setAssignableConsultants([]));
+  }, []);
+
   // Reassignment state
   const [reassignModal, setReassignModal] = useState<{
     open: boolean;
@@ -231,20 +242,29 @@ export const SuperAdminCasesTab: React.FC<SuperAdminCasesTabProps> = ({
   const handleSaveReassignment = async () => {
     if (!reassignModal.caseItem) return;
     const targetCase = reassignModal.caseItem;
+
+    // Both fields hold an account id, and the name is resolved from the directory
+    // that produced the option. Writing a bare name would leave the case with no
+    // owner, because the doctor and consultant queues are keyed on the account id.
+    const nextDoctor = assignableDoctors.find((d) => d.id === reassignModal.selectedDoctor);
+    const nextConsultant = assignableConsultants.find((c) => c.id === reassignModal.selectedConsultant);
+
     const updatedCase: ClinicalCase = {
       ...targetCase,
       treatingDoctor: {
-        hospital: targetCase.treatingDoctor?.hospital || 'مستشفى الشريك المعتمد',
-        city: targetCase.treatingDoctor?.city || 'الرياض',
-        focusQuestions: targetCase.treatingDoctor?.focusQuestions || ['سؤال سريري 1', 'سؤال سريري 2', 'سؤال سريري 3'],
+        hospital: targetCase.treatingDoctor?.hospital || '',
+        city: targetCase.treatingDoctor?.city || '',
+        focusQuestions: targetCase.treatingDoctor?.focusQuestions || ['', '', ''],
         ...(targetCase.treatingDoctor || {}),
-        name: reassignModal.selectedDoctor || targetCase.treatingDoctor?.name || '',
+        id: nextDoctor ? nextDoctor.id : (reassignModal.selectedDoctor === '' ? undefined : targetCase.treatingDoctor?.id),
+        name: nextDoctor ? nextDoctor.name : (reassignModal.selectedDoctor === '' ? '' : (targetCase.treatingDoctor?.name || '')),
       },
       consultant: {
-        center: targetCase.consultant?.center || '',
         city: targetCase.consultant?.city || '',
         ...(targetCase.consultant || {}),
-        name: reassignModal.selectedConsultant || targetCase.consultant?.name || '',
+        id: nextConsultant ? nextConsultant.id : (reassignModal.selectedConsultant === '' ? undefined : targetCase.consultant?.id),
+        name: nextConsultant ? nextConsultant.name : (reassignModal.selectedConsultant === '' ? '' : (targetCase.consultant?.name || '')),
+        center: nextConsultant && nextConsultant.center ? nextConsultant.center : (targetCase.consultant?.center || ''),
       },
     };
 
@@ -702,8 +722,8 @@ export const SuperAdminCasesTab: React.FC<SuperAdminCasesTabProps> = ({
                             setReassignModal({
                               open: true,
                               caseItem: c,
-                              selectedDoctor: c.treatingDoctor?.name || 'د. سارة العتيبي (استشاري أمراض القلب)',
-                              selectedConsultant: c.consultant?.name || 'Dr. Pradeep Kumar, MBBS, MS, MCh (CTVS)',
+                              selectedDoctor: c.treatingDoctor?.id || '',
+                              selectedConsultant: c.consultant?.id || '',
                             });
                           }}
                           className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-teal-50 hover:bg-[#007B6E] hover:text-white text-[#007B6E] border border-teal-200 text-xs font-bold transition-all shadow-2xs"
@@ -790,8 +810,8 @@ export const SuperAdminCasesTab: React.FC<SuperAdminCasesTabProps> = ({
                     {isRTL ? '— بانتظار تعيين طبيب —' : '— Awaiting doctor assignment —'}
                   </option>
                   {assignableDoctors.map((doc) => (
-                    <option key={doc.id} value={doc.name}>
-                      {doc.name}{doc.hospital ? ` · ${doc.hospital}` : ''}
+                    <option key={doc.id} value={doc.id}>
+                      {doc.name}
                     </option>
                   ))}
                 </select>
@@ -806,9 +826,14 @@ export const SuperAdminCasesTab: React.FC<SuperAdminCasesTabProps> = ({
                   onChange={(e) => setReassignModal((prev) => ({ ...prev, selectedConsultant: e.target.value }))}
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-[#007B6E] outline-none text-xs font-medium"
                 >
-                  <option value="Dr. Pradeep Kumar, MBBS, MS, MCh (Apollo Hospitals, Bengaluru)">Dr. Pradeep Kumar, MBBS, MS, MCh (Apollo Hospitals, Bengaluru)</option>
-                  <option value="Dr. Arjun Mehta, MS, MCh (KIMS Heart Institute, Hyderabad)">Dr. Arjun Mehta, MS, MCh (KIMS Heart Institute, Hyderabad)</option>
-                  <option value="Dr. Rajesh Sharma, MD, DM (Fortis Escorts Heart Institute, New Delhi)">Dr. Rajesh Sharma, MD, DM (Fortis Escorts Heart Institute, New Delhi)</option>
+                  <option value="">
+                    {isRTL ? '— بانتظار تعيين استشاري —' : '— Awaiting consultant assignment —'}
+                  </option>
+                  {assignableConsultants.map((con) => (
+                    <option key={con.id} value={con.id}>
+                      {con.name}{con.center ? ` · ${con.center}` : ''}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>

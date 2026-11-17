@@ -10,7 +10,7 @@ export const downloadPDF1 = (activeCase: ClinicalCase, isAr: boolean = false): v
   const caseNum = activeCase.caseNumber || activeCase.id;
   const patName = activeCase.patientName || activeCase.patientNameAr || (isAr ? 'المريض' : 'Patient');
   const treatingDoc = activeCase.treatingDoctor?.name || (isAr ? 'غير مُعيَّن' : 'Unassigned');
-  const consultant = activeCase.consultant?.name || 'International Consultant';
+  const consultant = activeCase.consultant?.name || '—';
   const rawHosp = activeCase.treatingDoctor?.hospital;
   const isLegacy = !rawHosp || rawHosp === 'Alo Care Specialist Medical Center' || rawHosp === 'مركز ألو كير الطبي التخصصي' || rawHosp === 'المجمع الطبي الشريك' || rawHosp === 'Partner Medical Center';
   // A certified PDF must never print a facility that does not exist in the tenant
@@ -38,7 +38,7 @@ export const downloadPDF1 = (activeCase: ClinicalCase, isAr: boolean = false): v
     activeCase.treatingDoctor?.focusQuestions?.map((q, i) => `  ${i + 1}. ${q}`).join('\n') || '  1. Surgery vs Intervention\n  2. Calcification risk\n  3. Regimen',
     `------------------------------------------------------------------------`,
     `PART 2: INTERNATIONAL SPECIALIST CLINICAL OPINION`,
-    `Specialist: ${consultant} (${activeCase.consultant?.center || 'KIMS Hospitals'})`,
+    `Specialist: ${consultant} (${activeCase.consultant?.center || '—'})`,
     `Evaluation:`,
     activeCase.consultantOpinion || 'Open Surgical Aortic Valve Replacement (SAVR) with bioprosthetic valve recommended over TAVR.',
     `Specialist Answers:`,
@@ -71,7 +71,7 @@ export const downloadPDF2 = (activeCase: ClinicalCase, isAr: boolean = false): v
   const caseNum = activeCase.caseNumber || activeCase.id;
   const patName = activeCase.patientName || activeCase.patientNameAr || (isAr ? 'المريض' : 'Patient');
   const treatingDoc = activeCase.treatingDoctor?.name || (isAr ? 'غير مُعيَّن' : 'Unassigned');
-  const consultant = activeCase.consultant?.name || 'International Consultant';
+  const consultant = activeCase.consultant?.name || '—';
   const invoiceNum = activeCase.pricing?.invoiceNumber || 'INV-2026-001';
 
   const followUpQ = (activeCase.metadata?.patientQuestions as string[]) || [];

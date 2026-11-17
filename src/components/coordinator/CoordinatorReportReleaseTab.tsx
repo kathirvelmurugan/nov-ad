@@ -121,7 +121,7 @@ export const CoordinatorReportReleaseTab: React.FC<Props> = ({
             📋 {isAr ? 'تقرير الرأي الطبي المستلم من الاستشاري الدولي:' : 'Clinical Opinion Received from International Consultant:'}
           </span>
           <span style={getBadgeStyle('success', fontFamily)}>
-            {activeCase.consultant?.name || 'Dr. Pradeep Kumar (Apollo Hospitals)'} · {isAr ? 'تم الاستلام' : 'Received'}
+            {activeCase.consultant?.name || '—'} · {isAr ? 'تم الاستلام' : 'Received'}
           </span>
         </div>
 

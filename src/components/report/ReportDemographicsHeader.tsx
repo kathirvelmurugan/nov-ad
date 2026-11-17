@@ -124,7 +124,7 @@ export const ReportDemographicsHeader: React.FC<ReportDemographicsHeaderProps> =
         <div>
           <span style={{ color: '#64748b', display: 'block' }}>{isAr ? 'الاستشاري الدولي المعين (الهند):' : 'Assigned Senior Consultant (India):'}</span>
           <strong style={{ color: TEAL_PRIMARY, fontSize: '12px' }}>{consultantName}</strong>
-          <div style={{ color: '#94a3b8', fontSize: '10px' }}>{activeCase.consultant?.center || 'Apollo Hospitals'} · {activeCase.consultant?.city || 'India'}</div>
+          <div style={{ color: '#94a3b8', fontSize: '10px' }}>{activeCase.consultant?.center || '—'} · {activeCase.consultant?.city || '—'}</div>
         </div>
 
         <div>
@@ -152,8 +152,8 @@ export const ReportDemographicsHeader: React.FC<ReportDemographicsHeaderProps> =
         </div>
         <div style={{ fontSize: '11px', color: '#334155', lineHeight: 1.5 }}>
           {isAr
-            ? 'تمت معاينة ومطابقة مقاطع الأشعة المقطعية متعددة الشرائح ورنين القلب المغناطيسي (سلسلة ٤: تكلسات الشرفة وحلقة الصمام الأبهري) من قبل د. براديب كومار في مستشفى أبولو بالهند.'
-            : 'Multi-slice CT cardiac volumetric imaging and transesophageal echocardiography (Series #4: Annular and leaflet calcification) thoroughly reviewed by Dr. Pradeep Kumar at Apollo Hospitals.'}
+            ? `تمت معاينة ومطابقة مقاطع الأشعة المقطعية متعددة الشرائح ورنين القلب المغناطيسي (سلسلة ٤: تكلسات الشرفة وحلقة الصمام الأبهري) من قبل ${activeCase.consultant?.name || '—'} في ${activeCase.consultant?.center || '—'}.`
+            : `Multi-slice CT cardiac volumetric imaging and transesophageal echocardiography (Series #4: Annular and leaflet calcification) thoroughly reviewed by ${activeCase.consultant?.name || '—'} at ${activeCase.consultant?.center || '—'}.`}
         </div>
       </div>
     </>

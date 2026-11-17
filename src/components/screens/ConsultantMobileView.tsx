@@ -206,7 +206,7 @@ export const ConsultantMobileView: React.FC<Props> = ({
         onUpdateCase={onUpdateCase}
         onBackToTimeline={() => setIsTelehealthActive(false)}
         participantRole="consultant"
-        participantName="Dr. Pradeep Kumar, MBBS, MS, MCh (CTVS)"
+        participantName={activeCase.consultant?.name || '—'}
       />
     );
   }

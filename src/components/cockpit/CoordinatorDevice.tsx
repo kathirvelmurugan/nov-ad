@@ -269,7 +269,7 @@ export const CoordinatorDevice: React.FC<CockpitDeviceProps> = ({
 
               {/* English Original Findings */}
               <div style={{ backgroundColor: '#ffffff', borderRadius: '6px', padding: '8px 10px', border: '1px solid #cbd5e1', fontSize: '10px', color: '#0f172a', direction: 'ltr', textAlign: 'left', lineHeight: 1.4 }}>
-                <div style={{ fontWeight: 800, color: '#475569', marginBottom: '2px' }}>🇬🇧 English Clinical Verdict ({activeCase.consultant?.name || 'Dr. Pradeep Kumar'}):</div>
+                <div style={{ fontWeight: 800, color: '#475569', marginBottom: '2px' }}>🇬🇧 English Clinical Verdict ({activeCase.consultant?.name || '—'}):</div>
                 <div>{activeCase.consultantOpinion || 'Surgical Aortic Valve Replacement (SAVR) indicated; no concurrent CABG required based on 3D DICOM.'}</div>
               </div>
 
@@ -414,8 +414,8 @@ export const CoordinatorDevice: React.FC<CockpitDeviceProps> = ({
               <strong>⏳ {isAr ? 'قيد مصادقة الطبيب السعودي المعالج:' : 'Awaiting Treating Physician Approval:'}</strong>
               <div style={{ marginTop: '2px', fontSize: '10px' }}>
                 {isAr
-                  ? `تم إرسال الملف المترجم إلى ${activeCase.treatingDoctor?.name || 'الطبيب السعودي المعالج'}. سيتاح التقرير للمريض فور مصادقة الطبيب في الشاشة 3.`
-                  : `Bilingual dossier sent to ${activeCase.treatingDoctor?.name || 'the treating Saudi physician'}. Patient access unlocks once the doctor gives final sign-off on Slot 3.`}
+                  ? `تم إرسال الملف المترجم إلى ${activeCase.treatingDoctor?.name || '—'}. سيتاح التقرير للمريض فور مصادقة الطبيب في الشاشة 3.`
+                  : `Bilingual dossier sent to ${activeCase.treatingDoctor?.name || '—'}. Patient access unlocks once the doctor gives final sign-off on Slot 3.`}
               </div>
             </div>
           )}

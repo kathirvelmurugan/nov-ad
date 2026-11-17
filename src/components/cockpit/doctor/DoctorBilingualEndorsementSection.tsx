@@ -59,7 +59,7 @@ export const DoctorBilingualEndorsementSection: React.FC<DoctorBilingualEndorsem
           </div>
           <div style={{ fontSize: '11px', color: '#334155', lineHeight: 1.5 }}>
             <strong>{isAr ? 'الاستشاري الدولي (الهند): ' : 'Consultant (India): '}</strong>
-            <span>{activeCase.consultant?.name || 'Dr. Pradeep Kumar'} ({activeCase.consultant?.center || 'Apollo Hospitals'})</span>
+            <span>{activeCase.consultant?.name || '—'} ({activeCase.consultant?.center || '—'})</span>
             <div style={{ marginTop: '6px', fontSize: '10px', color: '#64748b', lineHeight: 1.4 }}>
               {isAr
                 ? 'وصل الرأي الطبي الإنجليزي لمنسق ألو. يقوم المنسق حالياً بالتدقيق اللغوي وإعداد الترجمة العربية المعتمدة. سيصلك الملف ثنائي اللغة فور اعتماده في (C08).'
@@ -101,7 +101,7 @@ export const DoctorBilingualEndorsementSection: React.FC<DoctorBilingualEndorsem
 
           <div style={{ fontSize: '11px', color: '#334155', lineHeight: 1.5, marginBottom: '10px' }}>
             <strong>{isAr ? 'الاستشاري الدولي (الهند): ' : 'Consultant (India): '}</strong>
-            <span>{activeCase.consultant?.name || 'Dr. Pradeep Kumar'} ({activeCase.consultant?.center || 'Apollo Hospitals'})</span>
+            <span>{activeCase.consultant?.name || '—'} ({activeCase.consultant?.center || '—'})</span>
             <div style={{ marginTop: '4px', color: '#166534', fontWeight: 700 }}>
               {activeCase.consultantOpinion || (isAr ? 'تم تأكيد التوصية الجراحية (SAVR) بناءً على تكلس الصمام ثلاثي الأبعاد.' : 'SAVR indicated based on 3D DICOM volumetric reconstruction.')}
             </div>

@@ -44,10 +44,18 @@ export interface StaffAccountRecord {
   roleCode: RoleCode;
   hospitalId?: string;
   phone: string;
-  pin: string;
+  // Only the one-time value returned by enrollment or reset-pin ever lands here.
+  // The staff directory never returns a stored credential.
+  pin?: string | null;
   token?: string;
   expiresAt?: string;
   hasCustomPin?: boolean;
+  // True until the owner completes their first login. While pending, the account
+  // holds an activation code instead of a PIN, and no read endpoint exposes it.
+  pendingActivation?: boolean;
+  // Returned by /login only when the value just accepted was an activation code.
+  // The gate must then force the set-PIN step before handing over any portal.
+  mustSetPin?: boolean;
   scfhsLicense?: string;
   department?: string;
   status: 'active' | 'pending_approval' | 'inactive';
@@ -262,6 +270,10 @@ export interface ClinicalCase {
   consultationType: 'written' | 'video' | 'voice';
   currentStage: ClinicalStage;
   treatingDoctor: {
+    // Account id of the assigned doctor. This is the only durable link between a
+    // case and a doctor: scoping by hospital-name text matched nothing and fell
+    // back to showing every case in the city.
+    id?: string;
     name: string;
     hospital: string;
     city: string;
@@ -269,6 +281,10 @@ export interface ClinicalCase {
     focusQuestionsEn?: [string, string, string];
   };
   consultant: {
+    // Account id of the assigned international consultant. Same rule as
+    // treatingDoctor.id: the name is display text only, the id is what scopes a
+    // case to a consultant's own queue.
+    id?: string;
     name: string;
     center: string;
     city: string;

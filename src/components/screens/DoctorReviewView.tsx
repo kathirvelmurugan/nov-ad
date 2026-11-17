@@ -87,9 +87,9 @@ export const DoctorReviewView: React.FC<Props> = ({
   });
 
   const assignedConsultant = {
-    name: activeCase?.consultant?.name || 'Dr. V. Prasanth',
-    center: activeCase?.consultant?.center || 'Apollo Hospitals / Specialist Center',
-    city: activeCase?.consultant?.city || 'Chennai, India',
+    name: activeCase?.consultant?.name || '—',
+    center: activeCase?.consultant?.center || '—',
+    city: activeCase?.consultant?.city || '—',
   };
 
   const DEFAULT_CLINICAL_QUESTIONS_AR: [string, string, string] = [

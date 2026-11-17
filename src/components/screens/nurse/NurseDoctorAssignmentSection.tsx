@@ -39,6 +39,9 @@ const NurseDoctorAssignmentSection: React.FC<NurseDoctorAssignmentSectionProps> 
       tier: doctor.tier,
       treatingDoctor: {
         ...activeCase?.treatingDoctor,
+        // The account id is what scopes the case to this doctor's portal; the
+        // name alone cannot be joined against anything.
+        id: doctor.id,
         name: doctor.name,
         hospital: doctor.hospital,
         city: doctor.city,

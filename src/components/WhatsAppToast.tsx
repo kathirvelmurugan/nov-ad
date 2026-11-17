@@ -63,8 +63,8 @@ export const WhatsAppToast: React.FC<Props> = ({
           code: 'W05',
           titleAr: 'مراجعة الطبيب السعودي وصياغة الأسئلة',
           titleEn: 'Doctor Review & Referral',
-          bodyAr: `اعتمد ${activeCase.treatingDoctor?.name || 'الطبيب المعالج'} الإحالة وصاغ الأسئلة السريرية. الفاتورة جاهزة.`,
-          bodyEn: `${activeCase.treatingDoctor?.name || 'The treating physician'} reviewed case and formulated clinical focus questions.`,
+          bodyAr: `اعتمد ${activeCase.treatingDoctor?.name || '—'} الإحالة وصاغ الأسئلة السريرية. الفاتورة جاهزة.`,
+          bodyEn: `${activeCase.treatingDoctor?.name || '—'} reviewed case and formulated clinical focus questions.`,
         };
         break;
       case 'AWAITING_PAYMENT': {
@@ -101,8 +101,8 @@ export const WhatsAppToast: React.FC<Props> = ({
           code: 'W08',
           titleAr: 'إحالة الملف للاستشاري الدولي',
           titleEn: 'Consultant Assigned',
-          bodyAr: `تم تفعيل الرمز ${activeCase.egressToken || 'ALO-KSA-9482'} وإحالة الملف إلى ${activeCase.consultant?.name || (isAr ? 'د. أرجون ميهتا' : 'Dr. Arjun Mehta')} في ${activeCase.consultant?.center || (isAr ? 'معهد كيمز للقلب' : 'KIMS Heart Institute')}.`,
-          bodyEn: `Dossier token ${activeCase.egressToken || 'ALO-KSA-9482'} dispatched to ${activeCase.consultant?.name || 'Dr. Arjun Mehta'} at ${activeCase.consultant?.center || 'KIMS Heart Institute'}.`,
+          bodyAr: `تم تفعيل الرمز ${activeCase.egressToken || 'ALO-KSA-9482'} وإحالة الملف إلى ${activeCase.consultant?.name || '—'} في ${activeCase.consultant?.center || '—'}.`,
+          bodyEn: `Dossier token ${activeCase.egressToken || 'ALO-KSA-9482'} dispatched to ${activeCase.consultant?.name || '—'} at ${activeCase.consultant?.center || '—'}.`,
         };
         break;
       case 'OPINION_READY':
@@ -110,8 +110,8 @@ export const WhatsAppToast: React.FC<Props> = ({
           code: 'W12',
           titleAr: 'وصول رأي الاستشاري للطبيب السعودي',
           titleEn: 'Opinion Ready for Saudi Doctor Review',
-          bodyAr: `أرسل الاستشاري الدولي رأيه الطبي. يراجع ${activeCase.treatingDoctor?.name || 'الطبيب المعالج'} الرأي لاعتماده.`,
-          bodyEn: `Indian Consultant submitted opinion. Routed to ${activeCase.treatingDoctor?.name || 'Saudi Treating Doctor'} for review & approval.`,
+          bodyAr: `أرسل الاستشاري الدولي رأيه الطبي. يراجع ${activeCase.treatingDoctor?.name || '—'} الرأي لاعتماده.`,
+          bodyEn: `Indian Consultant submitted opinion. Routed to ${activeCase.treatingDoctor?.name || '—'} for review & approval.`,
         };
         break;
       case 'PARTNER_SERVICES':

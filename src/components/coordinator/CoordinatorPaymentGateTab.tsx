@@ -44,7 +44,7 @@ export const CoordinatorPaymentGateTab: React.FC<Props> = ({
   const isPreCoordinatorStage = ['INTAKE_RECEIVED', 'NURSE_CHECK', 'DOCTOR_REVIEW'].includes(activeCase.currentStage);
   const totalSar = priceTierForType(selectedConsultationType || 'written').totalSar;
   const invoiceNumber = activeCase.pricing?.invoiceNumber || activeCase.paymentDetails?.invoiceNumber || 'ZATCA-PENDING';
-  const consultantName = activeCase.consultant?.name || 'Dr. Arjun Mehta';
+  const consultantName = activeCase.consultant?.name || '—';
   const egressToken = activeCase.egressToken || 'ALO-KSA-9482';
 
   return (
@@ -109,7 +109,7 @@ export const CoordinatorPaymentGateTab: React.FC<Props> = ({
             {consultantName}
           </span>
           <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#64748B', fontFamily }}>
-            {activeCase.consultant?.center || 'KIMS Heart Institute'} · {activeCase.consultant?.city || 'India'}
+            {activeCase.consultant?.center || '—'} · {activeCase.consultant?.city || '—'}
           </p>
         </div>
       </div>

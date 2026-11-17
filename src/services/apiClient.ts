@@ -2,6 +2,16 @@ import { TenantHospital, StaffAccountRecord, ClinicalCase, AuditLogEntry } from 
 import { ACTIVE_CASE_KEY, USER_SESSION_KEY } from '../hooks/workflowConstants';
 import { purgeAllCaseStorage } from '../utils/storagePurge';
 
+// Returned when a hospital is onboarded: the administrator account is created in
+// the same transaction as the tenant, and a generated PIN is shown exactly once.
+export interface TenantAdminAccount {
+  id: string;
+  phone: string;
+  created: boolean;
+  promotedFromPatient: boolean;
+  initialPin: string | null;
+}
+
 // Field mapping only: snake_case → camelCase. No fallback names, ids, cities or
 // statuses — an empty field means the row genuinely has no value.
 function normalizeTenant(raw: any): TenantHospital {
@@ -55,7 +65,7 @@ function emitApiError(endpoint: string, status: number | string, message: string
 }
 
 // A 401 from these endpoints is a normal credential answer, not an expired session.
-const AUTH_ENDPOINTS = ['/api/users/login', '/api/users/lookup', '/api/users/pin', '/api/users/access-code'];
+const AUTH_ENDPOINTS = ['/api/users/login', '/api/users/lookup', '/api/users/pin', '/api/users/access-code', '/api/users/activate'];
 
 /**
  * A 401 on an authenticated endpoint means the Bearer token is no longer valid
@@ -123,7 +133,12 @@ async function safeFetchWithRetry(endpoint: string, options?: RequestInit): Prom
 
 export const apiClient = {
   // ── Authentication ────────────────────────────────────────────────────────
-  async checkUserExists(phone: string): Promise<{ exists: boolean; hasPin: boolean }> {
+  async checkUserExists(phone: string): Promise<{
+    exists: boolean;
+    hasPin: boolean;
+    accountType: 'staff' | 'patient' | 'unknown';
+    roleCode: string;
+  }> {
     const res = await safeFetchWithRetry('/api/users/lookup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -136,7 +151,16 @@ export const apiClient = {
       throw error;
     }
     // A backend that cannot answer must never be read as "this person is new".
-    return { exists: Boolean(json.exists), hasPin: Boolean(json.requiresPin) };
+    const accountType =
+      json?.accountType === 'staff' || json?.accountType === 'patient'
+        ? json.accountType
+        : 'unknown';
+    return {
+      exists: Boolean(json.exists),
+      hasPin: Boolean(json.requiresPin),
+      accountType,
+      roleCode: String(json.roleCode || ''),
+    };
   },
 
   async login(phone: string, pin: string): Promise<StaffAccountRecord> {
@@ -166,15 +190,21 @@ export const apiClient = {
     return rawList.map(normalizeTenant);
   },
 
-  async createTenant(data: Omit<TenantHospital, 'id' | 'createdAt'>): Promise<TenantHospital> {
+  async createTenant(data: Omit<TenantHospital, 'id' | 'createdAt'>): Promise<TenantHospital & { adminAccount?: TenantAdminAccount }> {
     const res = await safeFetchWithRetry('/api/tenants', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
     const json = await res.json();
+    // The administrator account is created with the tenant, so a refusal here
+    // means no hospital exists either. Surface it instead of rendering a
+    // half-built tenant card.
+    if (!res.ok || json?.success === false) {
+      throw new Error(json?.message || json?.error || 'Tenant could not be created.');
+    }
     const created = json?.data || json;
-    return normalizeTenant(created);
+    return { ...normalizeTenant(created), adminAccount: json?.adminAccount || undefined };
   },
 
   async updateTenantStatus(id: string, status: 'active' | 'pending' | 'suspended'): Promise<void> {
@@ -204,7 +234,6 @@ export const apiClient = {
       roleCode: u.roleCode || u.role_code || '',
       hospitalId: u.hospitalId || u.hospital_id,
       phone: u.phone,
-      pin: u.pin || null,
       hasCustomPin: Boolean(u.hasCustomPin || u.has_custom_pin),
       department: u.department,
       status: u.status || 'active',
@@ -213,22 +242,28 @@ export const apiClient = {
     return mapped;
   },
 
-  // Sanitized public directory for the patient intake picker: active treating
-  // doctors only. /api/users stays admin-only because it exposes pins.
-  async fetchDoctors(hospitalId?: string): Promise<Array<{
+  // Sanitized public directory. role defaults to D so existing callers keep their
+  // behaviour; K is the international consultant directory. /api/users stays
+  // admin-only because it exposes pins.
+  async fetchDoctors(hospitalId?: string, role: 'D' | 'K' = 'D'): Promise<Array<{
     id: string;
+    roleCode?: string;
     fullName: string;
     fullNameAr?: string | null;
     hospitalId?: string | null;
     department?: string | null;
     scfhsLicense?: string | null;
   }>> {
-    const qs = hospitalId ? `?hospitalId=${encodeURIComponent(hospitalId)}` : '';
+    const params = new URLSearchParams();
+    if (hospitalId) params.set('hospitalId', hospitalId);
+    if (role !== 'D') params.set('role', role);
+    const qs = params.toString() ? `?${params.toString()}` : '';
     const res = await safeFetchWithRetry(`/api/users/doctors${qs}`, { headers: { 'Content-Type': 'application/json' } });
     const json = await res.json();
     const rawList = Array.isArray(json) ? json : (Array.isArray(json?.data) ? json.data : []);
     return rawList.map((d: any) => ({
       id: d.id,
+      roleCode: d.roleCode ?? undefined,
       fullName: d.fullName || d.full_name || '',
       fullNameAr: d.fullNameAr ?? d.full_name_ar ?? null,
       hospitalId: d.hospitalId ?? d.hospital_id ?? null,
@@ -260,6 +295,28 @@ export const apiClient = {
     return true;
   },
 
+  // Completes a first login: swaps the activation code used at sign-in for a PIN
+  // only the owner knows. The server re-verifies the code from the database; the
+  // session token proves who is asking, it does not stand in for the code.
+  //
+  // The token is passed in explicitly on purpose. This call happens *before* the
+  // session is written to storage, so getAuthHeaders() has nothing to read yet and
+  // the request would leave without an Authorization header.
+  async activateAccount(code: string, newPin: string, token: string): Promise<boolean> {
+    const res = await safeFetchWithRetry('/api/users/activate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ code, newPin }),
+    });
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({} as any));
+      const error: any = new Error(json?.message || `ACTIVATION_FAILED (${res.status})`);
+      error.response = { status: res.status, data: json };
+      throw error;
+    }
+    return true;
+  },
+
   async createUser(data: Omit<StaffAccountRecord, 'id' | 'createdAt'>): Promise<StaffAccountRecord> {
     const res = await safeFetchWithRetry('/api/users', {
       method: 'POST',
@@ -268,6 +325,22 @@ export const apiClient = {
     });
     const json = await res.json();
     return json?.data || json;
+  },
+
+  // Issues a brand-new PIN for a staff account and returns it once. There is no
+  // read endpoint for a PIN: if it is lost, this is the only recovery path.
+  async resetUserPin(id: string): Promise<{ id: string; pin: string; fullName?: string; roleCode?: string }> {
+    const res = await safeFetchWithRetry(`/api/users/${encodeURIComponent(id)}/reset-pin`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      const error: any = new Error(json?.message || `PIN_RESET_FAILED (${res.status})`);
+      error.response = { status: res.status, data: json };
+      throw error;
+    }
+    return json;
   },
 
   async updateUserStatus(id: string, status: 'active' | 'inactive'): Promise<void> {

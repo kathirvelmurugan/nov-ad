@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { Router } from 'express';
 import pool from '../db.js';
 import { issueSession, requireAuth, requireRole } from '../middleware/auth.js';
@@ -43,6 +44,45 @@ const invalidPin = (res) =>
     message: 'PIN must be 4 to 6 digits.',
   });
 
+// The shared first-login code is data, not a constant. It lives in the single
+// platform_auth row so it can be rotated or removed with one UPDATE and no
+// redeploy. A missing row, a blank value or a malformed value disables it
+// entirely — deliberately no hardcoded fallback, because a fallback would be a
+// permanent universal password sitting in the source tree.
+const readBootstrapCode = async () => {
+  try {
+    const { rows } = await pool.query('SELECT bootstrap_access_code FROM platform_auth WHERE id = 1');
+    const code = rows.length ? String(rows[0].bootstrap_access_code || '').trim() : '';
+    return PIN_RE.test(code) ? code : null;
+  } catch (err) {
+    // Fail closed: an unreadable switch must never become an open door.
+    console.error('[users] bootstrap code unavailable:', err.message);
+    return null;
+  }
+};
+
+// One response shape for both login paths, so a caller never has to guess which
+// fields exist. Everything here is read from the row, not assembled from config.
+const buildSessionPayload = async (user, extra = {}) => {
+  const session = await issueSession(user);
+  return {
+    success: true,
+    data: {
+      id: user.id,
+      fullName: user.full_name,
+      fullNameAr: user.full_name_ar,
+      phone: user.phone,
+      roleCode: user.role_code,
+      hospitalId: user.hospital_id,
+      department: user.department,
+      status: user.status || 'active',
+      token: session.token,
+      expiresAt: session.expiresAt,
+      ...extra,
+    },
+  };
+};
+
 router.post('/login', async (req, res) => {
   const { phone, pin } = req.body || {};
   if (!phone || !pin) {
@@ -52,31 +92,44 @@ router.post('/login', async (req, res) => {
   if (!PHONE_RE.test(normalizedPhone)) return invalidPhone(res);
   const normalizedDigits = digitsOf(normalizedPhone);
   try {
+    // 1. A normal credential. Only an activated account authenticates with a PIN:
+    //    a pending account holds no PIN at all, so this branch can never be a way
+    //    into an account that has not completed its first login.
     const { rows } = await pool.query(
       `SELECT * FROM platform_users
         WHERE (phone = $1 OR phone = $2 OR regexp_replace(phone, '\\D', '', 'g') = $3)
-          AND pin = $4 AND (status = 'active' OR status IS NULL) LIMIT 1`,
+          AND pin = $4 AND activated_at IS NOT NULL
+          AND (status = 'active' OR status IS NULL) LIMIT 1`,
       [normalizedPhone, phone, normalizedDigits, String(pin)]
     );
     if (rows.length > 0) {
-      const user = rows[0];
-      const session = await issueSession(user);
-      return res.json({
-        success: true,
-        data: {
-          id: user.id,
-          fullName: user.full_name,
-          fullNameAr: user.full_name_ar,
-          phone: user.phone,
-          roleCode: user.role_code,
-          hospitalId: user.hospital_id,
-          department: user.department,
-          status: user.status || 'active',
-          token: session.token,
-          expiresAt: session.expiresAt,
-        }
-      });
+      return res.json(await buildSessionPayload(rows[0]));
     }
+
+    // 2. First login. The submitted value is an activation code, not a PIN: the
+    //    account's own code (issued once at enrolment) or the shared switch row.
+    //    Either way the session it issues exists only to set a real PIN.
+    const pending = await pool.query(
+      `SELECT * FROM platform_users
+        WHERE (phone = $1 OR phone = $2 OR regexp_replace(phone, '\\D', '', 'g') = $3)
+          AND activated_at IS NULL
+          AND (pin IS NULL OR pin = '')
+          AND (status = 'active' OR status IS NULL) LIMIT 1`,
+      [normalizedPhone, phone, normalizedDigits]
+    );
+    if (pending.rows.length > 0) {
+      const row = pending.rows[0];
+      const submitted = String(pin);
+      const ownValid =
+        Boolean(row.activation_code) &&
+        (!row.activation_expires_at || new Date(row.activation_expires_at).getTime() > Date.now()) &&
+        submitted === String(row.activation_code);
+      const shared = ownValid ? null : await readBootstrapCode();
+      if (ownValid || (shared && submitted === shared)) {
+        return res.json(await buildSessionPayload(row, { mustSetPin: true }));
+      }
+    }
+
     return res.status(401).json({ success: false, error: 'Invalid phone or PIN' });
   } catch (err) {
     // No in-memory accounts: a database outage must never turn into a second
@@ -99,15 +152,27 @@ router.post('/lookup', async (req, res) => {
   const normalizedPhone = normalizePhone(phone);
   try {
     const { rows } = await pool.query(
-      `SELECT id, role_code, has_custom_pin FROM platform_users
+      `SELECT id, role_code, (pin IS NOT NULL) AS has_pin, activated_at FROM platform_users
         WHERE (phone = $1 OR phone = $2 OR regexp_replace(phone, '\\D', '', 'g') = $3)
           AND (status = 'active' OR status IS NULL) LIMIT 1`,
       [normalizedPhone, phone, digitsOf(normalizedPhone)]
     );
     if (rows.length > 0) {
-      return res.json({ success: true, exists: true, requiresPin: Boolean(rows[0].has_custom_pin), requiresAccessCode: !Boolean(rows[0].has_custom_pin) });
+      // The gate must know WHAT KIND of account this is. Without it, a staff
+      // member was sent to patient self-registration whenever the PIN flag was
+      // false, and the public endpoint then refused them with 403 — a dead end
+      // with no field to type the PIN they were given.
+      const roleCode = String(rows[0].role_code || '').toUpperCase();
+      return res.json({
+        success: true,
+        exists: true,
+        accountType: roleCode === 'P' ? 'patient' : 'staff',
+        roleCode,
+        requiresPin: Boolean(rows[0].has_pin) || !rows[0].activated_at,
+        requiresAccessCode: false,
+      });
     }
-    return res.json({ success: true, exists: false, requiresPin: false, requiresAccessCode: false });
+    return res.json({ success: true, exists: false, accountType: 'unknown', requiresPin: false, requiresAccessCode: false });
   } catch (err) {
     console.error('[users/lookup] DB error:', err.message);
     return res.status(503).json({
@@ -138,8 +203,14 @@ router.get('/', requireAuth, requireRole('AD', 'HA'), async (req, res) => {
       phone: row.phone,
       roleCode: row.role_code,
       hospitalId: row.hospital_id,
-      pin: row.pin || null,
+      // The credential is never serialised. The directory only needs to say whether
+      // a PIN exists; the value is issued once on enrol/reset and is otherwise
+      // unreadable by anyone, including the Super Admin.
       hasCustomPin: Boolean(row.has_custom_pin || row.pin),
+      // Whether the person has ever completed a first login. Read from the row so
+      // the directory reflects the database instead of assuming every account
+      // that exists is usable.
+      pendingActivation: !row.activated_at,
       // The UI must mirror the DB row, not assume 'active': a status that only
       // ever lived in localStorage silently reverted on next load.
       status: row.status || 'active',
@@ -198,6 +269,23 @@ router.post('/pin', async (req, res) => {
       return res.json({ success: true, phone: normalizedPhone });
     }
 
+    // Hard guard against the identity defect this endpoint caused: a hospital
+    // administrator's phone is written to the tenant row before any staff
+    // account exists, so their first sign-in used to create them as a patient.
+    const tenantAdmin = await pool.query(
+      `SELECT 1 FROM tenants
+        WHERE regexp_replace(COALESCE(hospital_admin_phone, ''), '\\D', '', 'g') = $1
+        LIMIT 1`,
+      [normalizedDigits]
+    );
+    if (tenantAdmin.rowCount > 0) {
+      return res.status(409).json({
+        success: false,
+        error: 'TENANT_ADMIN_PHONE',
+        message: 'This number is registered as a hospital administrator. The platform administrator creates that staff account and issues its PIN.',
+      });
+    }
+
     await pool.query(
       `INSERT INTO platform_users (id, full_name, phone, role_code, pin, has_custom_pin)
        VALUES ('patient-' || replace(gen_random_uuid()::text, '-', ''), $1, $2, 'P', $3, TRUE)`,
@@ -239,6 +327,53 @@ router.post('/me/pin', requireAuth, async (req, res) => {
   }
 });
 
+// POST /api/users/activate — completes a first login. The caller already proved
+// an activation code at /login and holds the session that proved it; this swaps
+// that session for a PIN only they know. `activated_at IS NULL` inside the
+// UPDATE is what makes it safe: two parallel attempts cannot both win, and the
+// shared code stops working for this account the instant it is used.
+router.post('/activate', requireAuth, async (req, res) => {
+  const { code, newPin } = req.body || {};
+  if (!code || !newPin) {
+    return res.status(400).json({ error: 'code and newPin are required' });
+  }
+  if (!PIN_RE.test(String(newPin))) return invalidPin(res);
+  try {
+    const { rows } = await pool.query(
+      'SELECT id, activation_code, activation_expires_at, activated_at FROM platform_users WHERE id = $1',
+      [req.auth.userId]
+    );
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'NOT_FOUND', message: 'Account not found' });
+    }
+    const row = rows[0];
+    if (row.activated_at) {
+      return res.status(409).json({ error: 'ALREADY_ACTIVATED', message: 'This account already has a PIN.' });
+    }
+    const expired = row.activation_expires_at && new Date(row.activation_expires_at).getTime() <= Date.now();
+    const ownValid = Boolean(row.activation_code) && !expired && String(code) === String(row.activation_code);
+    const shared = ownValid ? null : await readBootstrapCode();
+    if (!ownValid && !(shared && String(code) === shared)) {
+      return res.status(401).json({ error: 'INVALID_ACTIVATION_CODE', message: 'Activation code is not valid.' });
+    }
+    const updated = await pool.query(
+      `UPDATE platform_users
+          SET pin = $1, has_custom_pin = TRUE, activated_at = NOW(),
+              activation_code = NULL, activation_expires_at = NULL
+        WHERE id = $2 AND activated_at IS NULL
+        RETURNING id`,
+      [String(newPin), req.auth.userId]
+    );
+    if (updated.rowCount === 0) {
+      return res.status(409).json({ error: 'ALREADY_ACTIVATED', message: 'This account already has a PIN.' });
+    }
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('[users] activate postgres error:', err.message);
+    return res.status(500).json({ error: 'ACTIVATION_FAILED', message: 'PIN could not be saved. Nothing changed.' });
+  }
+});
+
 // Staff enrollment is a staff-only operation: free-text role codes are rejected,
 // so a typo can never produce an account that RBAC cannot route. Hospital Admins
 // may enroll clinical staff into their own tenant only.
@@ -261,10 +396,13 @@ router.post('/', requireAuth, requireRole('AD', 'HA'), async (req, res) => {
     return res.status(400).json({ error: 'INVALID_ROLE', message: `Role ${requestedRole} is not a staff role` });
   }
 
-  // No shared/default PIN. When the administrator does not type one, the server
-  // mints a random PIN and returns it exactly once so it can be handed over.
-  const pinWasProvided = Boolean(pin);
-  const initialPin = pin ? String(pin) : String(Math.floor(1000 + Math.random() * 9000));
+  // A new staff member does not start with a working PIN. They start with a
+  // one-time activation code — the one the administrator typed, or a minted
+  // 6-digit value — and use it exactly once. The PIN they keep afterwards is
+  // chosen by them at that moment, never by whoever created the account.
+  // crypto.randomInt, not Math.random: this is a credential that is never stored
+  // in readable form once it leaves this response.
+  const activationCode = pin ? String(pin) : String(crypto.randomInt(100000, 1000000));
 
   const actorIsHospitalAdmin = req.auth.role === 'HA';
   if (actorIsHospitalAdmin && !TENANT_ROLE_CODES.includes(requestedRole)) {
@@ -286,7 +424,6 @@ router.post('/', requireAuth, requireRole('AD', 'HA'), async (req, res) => {
     fullNameAr: fullNameAr ? String(fullNameAr).trim() : null,
     phone: normalizedPhone,
     roleCode: requestedRole,
-    pin: initialPin,
     hospitalId: tenantId,
     staffCode: staffCode ? String(staffCode).trim().slice(0, 50) : null,
     department: department ? String(department).trim().slice(0, 100) : null,
@@ -296,28 +433,40 @@ router.post('/', requireAuth, requireRole('AD', 'HA'), async (req, res) => {
   try {
     const { rows } = await pool.query(
       `INSERT INTO platform_users
-         (id, staff_code, full_name, full_name_ar, phone, role_code, pin, has_custom_pin, hospital_id, status, department, scfhs_license)
+         (id, staff_code, full_name, full_name_ar, phone, role_code, pin, has_custom_pin,
+          hospital_id, status, department, scfhs_license,
+          activated_at, activation_code, activation_expires_at)
        VALUES
-         ('staff-' || replace(gen_random_uuid()::text, '-', ''), $1, $2, $3, $4, $5, $6, $8, $7, 'active', $9, $10)
+         ('staff-' || replace(gen_random_uuid()::text, '-', ''), $1, $2, $3, $4, $5,
+          NULL, FALSE, $6, 'active', $7, $8,
+          NULL, $9, NOW() + INTERVAL '14 days')
        ON CONFLICT (phone) DO UPDATE SET
          full_name = EXCLUDED.full_name,
          full_name_ar = COALESCE(EXCLUDED.full_name_ar, platform_users.full_name_ar),
          role_code = EXCLUDED.role_code,
          staff_code = COALESCE(EXCLUDED.staff_code, platform_users.staff_code),
-         pin = COALESCE(EXCLUDED.pin, platform_users.pin),
-         has_custom_pin = platform_users.has_custom_pin OR EXCLUDED.has_custom_pin,
          hospital_id = COALESCE(EXCLUDED.hospital_id, platform_users.hospital_id),
          department = COALESCE(EXCLUDED.department, platform_users.department),
-         scfhs_license = COALESCE(EXCLUDED.scfhs_license, platform_users.scfhs_license)
+         scfhs_license = COALESCE(EXCLUDED.scfhs_license, platform_users.scfhs_license),
+         -- Re-enrolling must never wipe a PIN its owner already chose, and must
+         -- never re-open an activated account to a first-login code.
+         activation_code = CASE WHEN platform_users.activated_at IS NULL THEN EXCLUDED.activation_code ELSE platform_users.activation_code END,
+         activation_expires_at = CASE WHEN platform_users.activated_at IS NULL THEN EXCLUDED.activation_expires_at ELSE platform_users.activation_expires_at END
        RETURNING id, staff_code AS "staffCode", full_name AS "fullName", full_name_ar AS "fullNameAr",
                  phone, role_code AS "roleCode", hospital_id AS "hospitalId",
-                 has_custom_pin AS "hasCustomPin", created_at AS "createdAt"`,
-      [payload.staffCode, payload.fullName, payload.fullNameAr, payload.phone, payload.roleCode, payload.pin, payload.hospitalId, pinWasProvided, payload.department, payload.scfhsLicense]
+                 has_custom_pin AS "hasCustomPin", (activated_at IS NOT NULL) AS "activated",
+                 created_at AS "createdAt"`,
+      [payload.staffCode, payload.fullName, payload.fullNameAr, payload.phone, payload.roleCode, payload.hospitalId, payload.department, payload.scfhsLicense, activationCode]
     );
 
-    // The PIN is returned exactly once and only when the server generated it;
-    // it is never stored in the response body of any read endpoint.
-    return res.status(201).json({ ...rows[0], ...(pinWasProvided ? {} : { initialPin }) });
+    const created = rows[0];
+    // The activation code is returned exactly once, and only while the account is
+    // still pending. A re-enrolled, already-activated account keeps the PIN its
+    // owner chose and never receives a new one here.
+    return res.status(201).json({
+      ...created,
+      ...(created.activated ? {} : { initialPin: activationCode, mustSetPin: true }),
+    });
   } catch (err) {
     // Staff enrollment must fail loudly: a memory-only account cannot log in after
     // a restart and would hide the real database error from the operator.
@@ -329,23 +478,37 @@ router.post('/', requireAuth, requireRole('AD', 'HA'), async (req, res) => {
   }
 });
 
-// GET /api/users/doctors?hospitalId=... — public, sanitized directory used by the
-// patient intake picker. Deliberately NOT /api/users: a patient must never download
-// the full staff list (phones, pins, other roles). Active treating doctors only.
+// GET /api/users/doctors?hospitalId=...&role=D|K — public, sanitized directory used
+// by the patient intake picker and by the treating doctor's consultant picker.
+// Deliberately NOT /api/users: a caller must never download the full staff list
+// (phones, pins, other roles). Active accounts only.
+//
+// The role is whitelisted because this route is unauthenticated: it must never
+// become a way to enumerate administrators or coordinators.
+const DIRECTORY_ROLES = ['D', 'K'];
 router.get('/doctors', async (req, res) => {
   const hospitalId = req.query.hospitalId ? String(req.query.hospitalId) : null;
+  const requestedRole = String(req.query.role || 'D').toUpperCase();
+  if (!DIRECTORY_ROLES.includes(requestedRole)) {
+    return res.status(400).json({ error: 'INVALID_ROLE', message: 'role must be D or K' });
+  }
   try {
+    const params = [requestedRole];
+    let where = `WHERE role_code = $1 AND (status = 'active' OR status IS NULL)`;
+    if (hospitalId) {
+      params.push(hospitalId);
+      where += ` AND hospital_id = $${params.length}`;
+    }
     const { rows } = await pool.query(
       `SELECT id, full_name, full_name_ar, hospital_id, department, scfhs_license
          FROM platform_users
-        WHERE role_code = 'D'
-          AND (status = 'active' OR status IS NULL)
-          ${hospitalId ? 'AND hospital_id = $1' : ''}
+         ${where}
         ORDER BY full_name ASC`,
-      hospitalId ? [hospitalId] : []
+      params
     );
     return res.json(rows.map((row) => ({
       id: row.id,
+      roleCode: requestedRole,
       fullName: row.full_name,
       fullNameAr: row.full_name_ar,
       hospitalId: row.hospital_id,
@@ -388,6 +551,39 @@ const sendManageError = (res, error) => {
   }
   return res.status(403).json({ error: 'FORBIDDEN', message: 'You are not permitted to manage this staff account' });
 };
+
+// POST /api/users/:id/reset-pin — the only way to recover a PIN nobody can read
+// (enrollment mints one and returns it once). Existing sessions are revoked: the
+// credential they were issued for no longer exists.
+router.post('/:id/reset-pin', requireAuth, requireRole('AD', 'HA'), async (req, res) => {
+  const { id } = req.params;
+  if (String(req.auth.userId) === String(id)) {
+    return res.status(400).json({
+      error: 'CANNOT_RESET_OWN_PIN',
+      message: 'Change your own PIN from your profile, supplying the current one.',
+    });
+  }
+  try {
+    const managed = await loadManageableStaff(id, req.auth);
+    if (managed.error) return sendManageError(res, managed.error);
+    const newPin = String(crypto.randomInt(1000, 10000));
+    const { rows } = await pool.query(
+      `UPDATE platform_users
+          SET pin = $1, has_custom_pin = TRUE,
+              activated_at = COALESCE(activated_at, NOW()),
+              activation_code = NULL, activation_expires_at = NULL
+        WHERE id = $2
+       RETURNING id, full_name AS "fullName", role_code AS "roleCode"`,
+      [newPin, id]
+    );
+    await pool.query('UPDATE sessions SET revoked_at = NOW() WHERE user_id = $1 AND revoked_at IS NULL', [id]);
+    // Returned once. It is never included in any read endpoint.
+    return res.json({ success: true, ...rows[0], pin: newPin });
+  } catch (err) {
+    console.error('[users] reset pin postgres error:', err.message);
+    return res.status(500).json({ error: 'PIN_RESET_FAILED', message: 'PIN could not be reset. Nothing changed.' });
+  }
+});
 
 // PATCH /api/users/:id/status — the ONLY way staff activation changes: still persisted
 // to platform_users.status so login (which filters on it) honours the deactivation.

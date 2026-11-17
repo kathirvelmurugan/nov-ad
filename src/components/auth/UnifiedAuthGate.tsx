@@ -5,7 +5,7 @@ import { PhoneEntryStep } from './steps/PhoneEntryStep';
 import { CountryCode } from './authTypesAndUtils';
 import { normalizePhone, validatePhone, validatePin } from '../../utils/phoneValidation';
 
-type AuthStep = 'phone' | 'pin' | 'pin_setup' | 'super_admin';
+type AuthStep = 'phone' | 'pin' | 'pin_setup' | 'super_admin' | 'activate';
 
 interface UnifiedAuthGateProps {
   onAuthenticated?: (session: any) => void;
@@ -45,6 +45,11 @@ const UnifiedAuthGate: React.FC<UnifiedAuthGateProps> = ({ onComplete, onAuthent
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [selectedPersona, setSelectedPersona] = useState<string>('doctor');
+  // Held while a first-login account chooses its own PIN. The token from the
+  // activation-code login is already in hand; until /activate succeeds it is only
+  // good for exactly that one call and unlocks no portal.
+  const [pendingUser, setPendingUser] = useState<any>(null);
+  const [activationCode, setActivationCode] = useState('');
   const phoneRef = useRef<HTMLInputElement>(null);
 
   const t = useMemo(() => ({
@@ -65,9 +70,10 @@ const UnifiedAuthGate: React.FC<UnifiedAuthGateProps> = ({ onComplete, onAuthent
   }), [isRTL]);
 
   const completeAuth = useCallback(
-    (isSuperAdmin: boolean, roleCode: string, hospitalId: string | null, displayName: string, token?: string, serverExpiresAt?: string) => {
+    (isSuperAdmin: boolean, roleCode: string, hospitalId: string | null, displayName: string, token?: string, serverExpiresAt?: string, accountId?: string) => {
       const sessionObj = {
         isAuthenticated: true,
+        id: accountId,
         phone: rawPhone,
         personaId: roleCode.toLowerCase(),
         roleCode: roleCode as any,
@@ -118,9 +124,16 @@ const UnifiedAuthGate: React.FC<UnifiedAuthGateProps> = ({ onComplete, onAuthent
     try {
       const formattedPhone = validation.e164;
       const response = await apiClient.checkUserExists(formattedPhone);
-      
-      // Registered accounts sign in; an unseen phone self-registers as a patient.
-      setStep(response.exists && response.hasPin ? 'pin' : 'pin_setup');
+
+      // A staff account always holds an administrator-issued PIN, so it belongs
+      // on the PIN entry screen no matter what the flag says. Sending staff to
+      // patient PIN setup produced "this number belongs to a staff account" with
+      // no field to type the PIN into — the public endpoint rightly refuses them.
+      if (response.exists && response.accountType === 'staff') {
+        setStep('pin');
+      } else {
+        setStep(response.exists && response.hasPin ? 'pin' : 'pin_setup');
+      }
     } catch (err: any) {
       // An unreachable backend cannot authenticate or register anyone.
       setError(t.errorNetwork);
@@ -138,8 +151,21 @@ const UnifiedAuthGate: React.FC<UnifiedAuthGateProps> = ({ onComplete, onAuthent
       const formattedPhone = normalizePhone(rawPhone, country);
       const user = await apiClient.login(formattedPhone, enteredPin);
       
+      // A first-login account proved an activation code, not a PIN. Handing it a
+      // portal here would let a one-time code become a permanent session, and
+      // would leave the account with no credential only its owner knows.
+      if (user.mustSetPin) {
+        setPendingUser(user);
+        setActivationCode(enteredPin);
+        setEnteredPin('');
+        setConfirmPin('');
+        setError('');
+        setStep('activate');
+        return;
+      }
+
       const displayName = isRTL ? (user.fullNameAr || user.fullName) : user.fullName;
-      completeAuth(false, user.roleCode, user.hospitalId, displayName, user.token, user.expiresAt);
+      completeAuth(false, user.roleCode, user.hospitalId, displayName, user.token, user.expiresAt, user.id);
     } catch (err: any) {
       if (err?.response?.status === 401) {
         setError(t.errorInvalid);
@@ -149,6 +175,51 @@ const UnifiedAuthGate: React.FC<UnifiedAuthGateProps> = ({ onComplete, onAuthent
     } finally {
       setIsLoading(false);
       setEnteredPin('');
+    }
+  };
+
+  // Completes the first login: the server re-checks the code against the row it
+  // stored at enrolment, then writes the PIN only this person will know.
+  const handleActivateSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    if (!pendingUser) {
+      setStep('phone');
+      return;
+    }
+    if (enteredPin !== confirmPin) {
+      setError(t.errorMismatch);
+      return;
+    }
+    const pinCheck = validatePin(enteredPin, 4, 6);
+    if (!pinCheck.isValid) {
+      setError(isRTL ? pinCheck.issue?.ar || '' : pinCheck.issue?.en || '');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await apiClient.activateAccount(activationCode, enteredPin, pendingUser.token);
+      const displayName = isRTL ? (pendingUser.fullNameAr || pendingUser.fullName) : pendingUser.fullName;
+      completeAuth(false, pendingUser.roleCode, pendingUser.hospitalId, displayName, pendingUser.token, pendingUser.expiresAt, pendingUser.id);
+      setPendingUser(null);
+      setActivationCode('');
+      setEnteredPin('');
+      setConfirmPin('');
+    } catch (err: any) {
+      const status = err?.response?.status;
+      setError(
+        status === 409
+          ? (isRTL ? 'تم تفعيل هذا الحساب بالفعل. سجّل الدخول برمزك.' : 'This account is already activated. Sign in with your PIN.')
+          : status === 401
+            ? (isRTL ? 'رمز الدخول غير صالح.' : 'Activation code is not valid.')
+            : t.errorNetwork
+      );
+    } finally {
+      setIsLoading(false);
+      setEnteredPin('');
+      setConfirmPin('');
     }
   };
 
@@ -175,7 +246,7 @@ const UnifiedAuthGate: React.FC<UnifiedAuthGateProps> = ({ onComplete, onAuthent
       
       const user = await apiClient.login(formattedPhone, enteredPin);
       const displayName = isRTL ? (user.fullNameAr || user.fullName) : (user.fullName || 'Patient');
-      completeAuth(false, user.roleCode || 'P', user.hospitalId, displayName, user.token, user.expiresAt);
+      completeAuth(false, user.roleCode || 'P', user.hospitalId, displayName, user.token, user.expiresAt, user.id);
     } catch (err: any) {
       const status = err?.response?.status;
       setError(
@@ -209,7 +280,7 @@ const UnifiedAuthGate: React.FC<UnifiedAuthGateProps> = ({ onComplete, onAuthent
         setError(t.errorSuperAdmin);
         return;
       }
-      completeAuth(true, 'AD', user.hospitalId || 'GLOBAL', isRTL ? 'مدير النظام الأعلى' : 'Super Administrator', user.token, user.expiresAt);
+      completeAuth(true, 'AD', user.hospitalId || 'GLOBAL', isRTL ? 'مدير النظام الأعلى' : 'Super Administrator', user.token, user.expiresAt, user.id);
     } catch (err: any) {
       if (err?.response?.status === 401) {
         setError(t.errorSuperAdmin);
@@ -455,6 +526,50 @@ const UnifiedAuthGate: React.FC<UnifiedAuthGateProps> = ({ onComplete, onAuthent
               disabled={isLoading}
             >
               {t.back}
+            </button>
+            {error && <p style={errorStyle} role="alert" aria-live="assertive">{error}</p>}
+          </form>
+        )}
+
+        {step === 'activate' && (
+          <form onSubmit={handleActivateSubmit} noValidate>
+            <p style={{ ...subHeaderStyle, marginBottom: '8px', fontWeight: 600 }}>
+              {isRTL ? 'تم قبول رمز الدخول' : 'Access code accepted'}
+            </p>
+            <p style={{ ...subHeaderStyle, marginBottom: '16px' }}>
+              {isRTL
+                ? 'اختر رمز مرور خاصاً بك. الرمز الذي استخدمته يعمل مرة واحدة فقط.'
+                : 'Choose a PIN of your own. The code you just used works only once.'}
+            </p>
+            <label htmlFor="auth-activate-pin" style={labelStyle}>{isRTL ? 'رمز المرور الجديد' : 'New PIN'}</label>
+            <input
+              id="auth-activate-pin"
+              type="password"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={6}
+              value={enteredPin}
+              onChange={(e) => setEnteredPin(e.target.value.replace(/[^0-9]/g, ''))}
+              style={{ ...inputStyle, letterSpacing: '8px', textAlign: 'center', marginBottom: '12px' }}
+              disabled={isLoading}
+              autoFocus
+              aria-required="true"
+            />
+            <label htmlFor="auth-activate-confirm" style={labelStyle}>{t.confirmPinLabel}</label>
+            <input
+              id="auth-activate-confirm"
+              type="password"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={6}
+              value={confirmPin}
+              onChange={(e) => setConfirmPin(e.target.value.replace(/[^0-9]/g, ''))}
+              style={{ ...inputStyle, letterSpacing: '8px', textAlign: 'center' }}
+              disabled={isLoading}
+              aria-required="true"
+            />
+            <button type="submit" style={buttonStyle} disabled={isLoading || enteredPin.length < 4 || confirmPin.length < 4}>
+              {isLoading ? (isRTL ? 'جاري الحفظ...' : 'Saving...') : (isRTL ? 'حفظ ومتابعة' : 'Save & continue')}
             </button>
             {error && <p style={errorStyle} role="alert" aria-live="assertive">{error}</p>}
           </form>

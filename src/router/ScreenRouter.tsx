@@ -98,27 +98,36 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
       return cases.filter((c) => (queryCaseId && (c.id === queryCaseId || c.caseNumber === queryCaseId)) || c.patientPhone === phone || c.nationalIdMasked === phone);
     }
     if (role === 'D') {
+      // A treating doctor sees only the cases assigned to them.
+      //
+      // The previous version compared the case's hospital *name* against the
+      // session's hospital *id* (so it never matched), then let any case through
+      // when that name happened to contain "riyadh", and handed an unbound doctor
+      // the entire platform via `if (!hospital) return true`. Ownership is now an
+      // account-id join, with the name retained only as a legacy fallback.
+      if (!hospital) return [];
+      const doctorId = userSession?.id;
       const cleanName = (userSession?.fullName || '').replace(/^(د\.|dr\.)\s*/i, '').trim().toLowerCase();
       return cases.filter((c) => {
-        if (queryCaseId && (c.id === queryCaseId || c.caseNumber === queryCaseId)) return true;
+        if (doctorId && c.treatingDoctor?.id) return c.treatingDoctor.id === doctorId;
         const cDocName = (c.treatingDoctor?.name || '').replace(/^(د\.|dr\.)\s*/i, '').trim().toLowerCase();
-        if (cleanName && cDocName && (cDocName.includes(cleanName) || cleanName.includes(cDocName))) return true;
-        // Case ownership must come from real data only: matching a hardcoded
-        // physician name here made every case with that name stick to the doctor.
-        if (!hospital) return true;
-        const hospStr = (c.treatingDoctor?.hospital || '').toLowerCase();
-        if (hospStr.includes(hospital.toLowerCase()) || hospStr.includes('riyadh') || hospStr.includes('الرياض')) return true;
-        return c.currentStage === 'DOCTOR_REVIEW' || c.currentStage === 'OPINION_READY';
+        return Boolean(cleanName && cDocName && (cDocName.includes(cleanName) || cleanName.includes(cDocName)));
       });
     }
     if (role === 'HA' && hospital) {
       return cases.filter((c) => (queryCaseId && (c.id === queryCaseId || c.caseNumber === queryCaseId)) || (c.treatingDoctor?.hospital || '').toLowerCase().includes(hospital.toLowerCase()));
     }
     if (role === 'K') {
+      // Same ownership rule as the treating doctor: the account id is the join,
+      // the name is a legacy fallback only. A consultant with no id and no name
+      // must see nothing rather than the whole platform.
+      const consultantId = userSession?.id;
+      const cleanName = (userSession?.fullName || '').trim().toLowerCase();
       return cases.filter((c) => {
         if (queryCaseId && (c.id === queryCaseId || c.caseNumber === queryCaseId)) return true;
-        if (!userSession?.fullName) return true;
-        return (c.consultant?.name || '').toLowerCase().includes(userSession.fullName.toLowerCase());
+        if (consultantId && c.consultant?.id) return c.consultant.id === consultantId;
+        if (!cleanName) return false;
+        return (c.consultant?.name || '').trim().toLowerCase().includes(cleanName);
       });
     }
     // ALO Coordinator (C) and ALO Nurse (N) maintain platform-wide oversight
@@ -435,21 +444,35 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
     );
   }
 
-  // ── Fallback ──────────────────────────────────────────────────────────────
+  // ── Fallback: an unrecognised role is a stop, not a downgrade ──────────────
+  // This used to render PatientStatusTimelineView, which silently showed the
+  // patient portal to whatever role fell through the branches above.
   return (
-    <PatientStatusTimelineView
-      key="patient-fallback"
-      activeCase={activeCase}
-      cases={scopedCases}
-      onSelectCase={onSelectCase}
-      onAdvanceStage={handleAdvanceStage}
-      onUpdateCase={handleUpdateCase}
-      onResetActiveCase={handleResetActiveCase}
-      onOpenTelehealth={() => handleSelectPatientSubView('telehealth')}
-      onRegisterCase={() => handleSelectPatientSubView('intake')}
-      userSession={userSession}
-      lang={lang}
-    />
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+      <div className="max-w-md w-full bg-white border border-slate-200 rounded-2xl p-8 text-center space-y-4 shadow-sm">
+        <div className="w-12 h-12 mx-auto rounded-2xl bg-rose-100 text-rose-700 flex items-center justify-center font-black text-xl">
+          !
+        </div>
+        <h2 className="text-lg font-extrabold text-slate-900">
+          {lang === 'ar' ? 'لا توجد بوابة معرّفة لهذه الصفة' : 'No portal is defined for this role'}
+        </h2>
+        <p className="text-sm text-slate-600">
+          {lang === 'ar'
+            ? `الصفة «${effectiveRole}» غير مرتبطة بأي شاشة. تواصل مع مدير النظام.`
+            : `The role "${effectiveRole}" is not mapped to any screen. Contact the platform administrator.`}
+        </p>
+        <p className="text-[11px] text-slate-400 font-mono break-all" dir="ltr">
+          account={userSession?.id || 'guest'} · role={effectiveRole} · hospital={userSession?.hospitalId || 'none'}
+        </p>
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="w-full px-4 py-2.5 text-sm font-bold text-white bg-slate-800 hover:bg-slate-900 rounded-xl transition-colors"
+        >
+          {lang === 'ar' ? 'تسجيل الخروج' : 'Sign out'}
+        </button>
+      </div>
+    </div>
   );
 };
 

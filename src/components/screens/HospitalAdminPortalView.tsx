@@ -39,12 +39,14 @@ export const HospitalAdminPortalView: React.FC<HospitalAdminPortalViewProps> = (
     staffDirectory,
     createStaffMember,
     toggleStaffActive,
+    resetStaffPin,
   } = useAdminGovernanceState();
 
-  // Find the hospital tenant associated with this hospital admin
+  // Scope strictly to the hospital this session is bound to. Falling back to
+  // tenants[0] handed an unbound administrator somebody else's hospital — the
+  // same "you are not who you think you are" defect this fix removes at the root.
   const hospital =
-    tenants.find((t) => t.id === activePersona.hospitalId) ||
-    tenants[0] || {
+    tenants.find((t) => t.id === activePersona.hospitalId) || {
       id: '',
       nameEn: 'Unassigned Hospital',
       nameAr: 'مستشفى غير مسجل',
@@ -155,6 +157,7 @@ export const HospitalAdminPortalView: React.FC<HospitalAdminPortalViewProps> = (
             staffDirectory={staffDirectory}
             onCreateStaff={createStaffMember}
             onToggleActive={toggleStaffActive}
+            onResetPin={resetStaffPin}
           />
         )}
         {activeTab === 'roles' && (

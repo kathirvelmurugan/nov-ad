@@ -45,8 +45,10 @@ export const DoctorOpinionEndorsementPanel: React.FC<Props> = ({
     activeCase.consultant?.opinionEnglish ||
     '';
 
-  const effectiveDoctorName = activeCase.treatingDoctor?.name || (isAr ? 'د. عبدالله الشمري' : 'Dr. Abdullah Al-Shammari');
-  const effectiveLicense = (activeCase.treatingDoctor as any)?.scfhsLicense || activeCase.saudiEndorsement?.scfhsLicense || 'SCFHS-2024-KSA-8821';
+  const effectiveDoctorName = activeCase.treatingDoctor?.name || '—';
+  // A license number must come from the staff record. Inventing one printed a
+  // credential on a clinical document that no registry could ever confirm.
+  const effectiveLicense = (activeCase.treatingDoctor as any)?.scfhsLicense || activeCase.saudiEndorsement?.scfhsLicense || '—';
 
   const handleApproveToCoordinator = () => {
     onUpdateCase({
@@ -76,7 +78,7 @@ export const DoctorOpinionEndorsementPanel: React.FC<Props> = ({
     onUpdateCase({
       saudiEndorsement: {
         status: 'revision_requested',
-        doctorName: activeCase.treatingDoctor?.name || 'د. عبدالله الشمري',
+        doctorName: activeCase.treatingDoctor?.name || '—',
         scfhsLicense: 'SCFHS-2024-KSA-8821',
         revisionQuery: query,
         requiresLocalLab: false,
@@ -126,10 +128,10 @@ export const DoctorOpinionEndorsementPanel: React.FC<Props> = ({
               {isAr ? 'الاستشاري الدولي (الهند):' : 'International Consultant (India):'}
             </span>
             <strong className="text-sm text-alo-navy dark:text-white">
-              {activeCase.consultant?.name || 'Dr. Arjun Mehta'}
+              {activeCase.consultant?.name || '—'}
             </strong>
             <div className="text-slate-500 mt-0.5">
-              {activeCase.consultant?.center || 'KIMS Heart Institute'} · {activeCase.consultant?.city || 'India'}
+              {activeCase.consultant?.center || '—'} · {activeCase.consultant?.city || '—'}
             </div>
           </div>
 

@@ -44,7 +44,7 @@ export const ReportSignaturesFooter: React.FC<ReportSignaturesFooterProps> = ({
             📝 {isAr ? 'الملاحظات السريرية الإضافية والتوصيات الجراحية (الاستشاري الدولي)' : 'Senior Consultant Additional Clinical Impressions & Notes'}
           </div>
           <span style={{ fontSize: '10px', color: '#166534', fontWeight: 700 }}>
-            {activeCase.consultant?.center || 'Apollo Hospitals'}
+            {activeCase.consultant?.center || '—'}
           </span>
         </div>
 
@@ -112,7 +112,7 @@ export const ReportSignaturesFooter: React.FC<ReportSignaturesFooterProps> = ({
         <div style={{ textAlign: 'center', padding: '10px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
           <div style={{ fontSize: '10px', color: '#64748b' }}>اعتماد ومصادقة الطبيب السعودي المعالج</div>
           <div style={{ fontSize: '12px', fontWeight: 800, color: '#0f172a', marginTop: '4px' }}>{treatingDocName}</div>
-          <div style={{ fontSize: '9px', color: '#94a3b8' }}>{activeCase.treatingDoctor?.hospital || 'شبكة ألو الطبية المعتمدة'}</div>
+          <div style={{ fontSize: '9px', color: '#94a3b8' }}>{activeCase.treatingDoctor?.hospital || '—'}</div>
           <div style={{ marginTop: '6px', fontSize: '10px', color: '#166534', fontWeight: 700 }}>
             {activeCase.doctorReleasedToPatient ? '✓ مصادق عليه وسُلّم للمريض رسمياً' : '✓ اعتمد التحويل والأسئلة السريرية'}
           </div>

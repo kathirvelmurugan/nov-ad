@@ -81,6 +81,7 @@ export const SuperAdminPortalView: React.FC<SuperAdminPortalViewProps> = ({
     staffDirectory,
     createStaffMember,
     toggleStaffActive,
+    resetStaffPin,
     catalogs,
     addSpecialty,
     removeSpecialty,
@@ -236,6 +237,7 @@ export const SuperAdminPortalView: React.FC<SuperAdminPortalViewProps> = ({
             tenants={tenants}
             onCreateStaff={createStaffMember}
             onToggleActive={toggleStaffActive}
+            onResetPin={resetStaffPin}
           />
         )}
         {activeTab === 'catalogs' && (

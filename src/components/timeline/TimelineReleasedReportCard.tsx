@@ -69,7 +69,7 @@ export const TimelineReleasedReportCard: React.FC<TimelineReleasedReportCardProp
       {activeCase.consultantOpinion && (
         <div dir="ltr" className="text-xs text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-emerald-200/80 dark:border-emerald-800 leading-relaxed text-left">
           <strong className="block text-alo-teal mb-1">
-            {activeCase.consultant?.name || 'International Consultant'} ({activeCase.consultant?.center || 'Specialist Center'}):
+            {activeCase.consultant?.name || '—'} ({activeCase.consultant?.center || '—'}):
           </strong>
           {activeCase.consultantOpinion}
         </div>

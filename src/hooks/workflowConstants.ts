@@ -10,6 +10,9 @@ export const USER_SESSION_KEY   = 'alo_user_session_v4.0_clean';
 // ─── Types ───────────────────────────────────────────────────────────────────
 export interface UserSession {
   isAuthenticated: boolean;
+  // Account id from platform_users.id. Case ownership is decided on this value;
+  // name and phone matching is only a legacy fallback.
+  id?: string;
   phone: string;
   personaId: string | null;
   roleCode?: RoleCode;

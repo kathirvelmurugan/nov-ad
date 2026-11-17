@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
 import { Building2, Plus, CheckCircle, XCircle, MapPin, Phone, Users, ShieldCheck } from 'lucide-react';
 import { TenantHospital } from '../../../types';
+import { TenantAdminAccount } from '../../../services/apiClient';
 import { validatePhone } from '../../../utils/phoneValidation';
 import { PhoneField } from '../../common/PhoneField';
 
 interface SuperAdminTenantsTabProps {
   isRTL: boolean;
   tenants: TenantHospital[];
-  onCreateTenant: (tenant: Omit<TenantHospital, 'id' | 'createdAt'>) => void;
+  onCreateTenant: (
+    tenant: Omit<TenantHospital, 'id' | 'createdAt'>
+  ) => Promise<TenantHospital & { adminAccount?: TenantAdminAccount }>;
   onToggleStatus: (hospitalId: string) => void;
 }
 
@@ -25,15 +28,20 @@ export const SuperAdminTenantsTab: React.FC<SuperAdminTenantsTabProps> = ({
   const [adminName, setAdminName] = useState('');
   const [adminPhone, setAdminPhone] = useState('+96650');
   const [phoneError, setPhoneError] = useState('');
+  const [submitError, setSubmitError] = useState('');
+  // The administrator account is created with the hospital; the PIN comes back
+  // exactly once, so it is held here until the operator dismisses it.
+  const [issuedAdmin, setIssuedAdmin] = useState<TenantAdminAccount | null>(null);
 
   const handlePhoneChange = (val: string) => {
     setAdminPhone(val);
     setPhoneError('');
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newNameEn.trim() || !newNameAr.trim()) return;
+    setSubmitError('');
+    if (!newNameEn.trim() || !newNameAr.trim() || !adminName.trim()) return;
 
     const validation = validatePhone(adminPhone, 'SA');
     if (!validation.isValid) {
@@ -41,24 +49,32 @@ export const SuperAdminTenantsTab: React.FC<SuperAdminTenantsTabProps> = ({
       return;
     }
 
-    onCreateTenant({
-      nameEn: newNameEn.trim(),
-      nameAr: newNameAr.trim(),
-      city: newCity.trim(),
-      mciLicenseNumber: newLicense.trim() || `MCI-SA-${Date.now().toString().slice(-6)}`,
-      status: 'active',
-      hospitalAdminName: adminName.trim() || 'Dr. Hospital Admin',
-      hospitalAdminPhone: validation.e164,
-      doctorCount: 1,
-    });
+    try {
+      // No invented values: a blank licence stays blank, and the admin name and
+      // phone are what create the Hospital Admin account, not decorative text.
+      const created = await onCreateTenant({
+        nameEn: newNameEn.trim(),
+        nameAr: newNameAr.trim(),
+        city: newCity.trim(),
+        mciLicenseNumber: newLicense.trim(),
+        status: 'active',
+        hospitalAdminName: adminName.trim(),
+        hospitalAdminPhone: validation.e164,
+        doctorCount: 0,
+      });
 
-    setNewNameEn('');
-    setNewNameAr('');
-    setNewLicense('');
-    setAdminName('');
-    setAdminPhone('+96650');
-    setPhoneError('');
-    setShowAddForm(false);
+      if (created?.adminAccount) setIssuedAdmin(created.adminAccount);
+
+      setNewNameEn('');
+      setNewNameAr('');
+      setNewLicense('');
+      setAdminName('');
+      setAdminPhone('+96650');
+      setPhoneError('');
+      setShowAddForm(false);
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : 'Tenant could not be created.');
+    }
   };
 
   return (
@@ -89,6 +105,38 @@ export const SuperAdminTenantsTab: React.FC<SuperAdminTenantsTabProps> = ({
           <span>{showAddForm ? (isRTL ? 'إلغاء' : 'Close Form') : (isRTL ? 'إضافة مستشفى جديد' : 'Onboard Hospital')}</span>
         </button>
       </div>
+
+      {/* Issued admin access — shown once, never retrievable */}
+      {issuedAdmin && (
+        <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-5" dir="ltr">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-amber-800">
+                {issuedAdmin.promotedFromPatient
+                  ? 'Admin account promoted from a patient record'
+                  : 'Hospital admin access PIN — shown once only'}
+              </p>
+              <p className="text-sm text-amber-900 mt-1">
+                {issuedAdmin.promotedFromPatient
+                  ? `${issuedAdmin.phone} already existed as a patient. It is now the Hospital Admin of this hospital and keeps the PIN it already set.`
+                  : issuedAdmin.initialPin
+                    ? `Give this PIN to ${issuedAdmin.phone}. It cannot be retrieved again — if it is lost, use Reset PIN in the Staff tab.`
+                    : `${issuedAdmin.phone} is already an administrator of this hospital; its existing PIN is unchanged.`}
+              </p>
+              {issuedAdmin.initialPin && (
+                <p className="text-3xl font-mono font-black text-amber-900 tracking-[0.3em] mt-2">{issuedAdmin.initialPin}</p>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => setIssuedAdmin(null)}
+              className="text-xs font-bold text-amber-800 hover:text-amber-950 uppercase shrink-0"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Onboarding Form */}
       {showAddForm && (
@@ -155,6 +203,7 @@ export const SuperAdminTenantsTab: React.FC<SuperAdminTenantsTabProps> = ({
               </label>
               <input
                 type="text"
+                required
                 value={adminName}
                 onChange={(e) => setAdminName(e.target.value)}
                 placeholder="Dr. Admin Name"
@@ -175,6 +224,11 @@ export const SuperAdminTenantsTab: React.FC<SuperAdminTenantsTabProps> = ({
               />
             </div>
           </div>
+          {submitError && (
+            <p className="text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2">
+              {submitError}
+            </p>
+          )}
           <div className="flex justify-end gap-2 pt-2">
             <button
               type="button"

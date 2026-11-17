@@ -27,9 +27,14 @@ router.get('/', requireAuth, async (req, res) => {
       const phoneRef = req.auth.phone || userId;
       params.push(phoneRef);
       query += ` AND (case_data->>'patientPhone' = $${params.length} OR right(regexp_replace(case_data->>'patientPhone', '\\D', '', 'g'), 9) = right(regexp_replace($${params.length}, '\\D', '', 'g'), 9))`;
-    } else if (role === 'D' && tenantId) {
-      params.push(tenantId);
-      query += ` AND (case_data->'treatingDoctor'->>'hospitalId' = $${params.length} OR case_data->'treatingDoctor'->>'hospital' ILIKE '%' || $${params.length} || '%')`;
+    } else if (role === 'D' && userId) {
+      // Ownership is an account-id join, nothing else. The previous filter compared
+      // a tenant UUID against the doctor's hospital *display name*, so a doctor
+      // bound to a tenant matched no case at all and an unbound one matched every
+      // case. treatingDoctor.id is written by the nurse assignment and is the only
+      // durable link between a case and the doctor who owns it.
+      params.push(userId);
+      query += ` AND case_data->'treatingDoctor'->>'id' = $${params.length}`;
     }
 
     query += ' ORDER BY updated_at DESC';

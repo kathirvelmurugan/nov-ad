@@ -19,7 +19,7 @@ export const WHATSAPP_CUES: Record<number, { ar: string; en: string }> = {
     en: '💬 WhatsApp (Coordinator ➔ Patient): Tax invoice 250 SAR paid via Mada. Dossier dispatched to Senior Consultant in India.',
   },
   5: {
-    ar: '💬 واتساب (الاستشاري ➔ المنسق): اعتمد د. براديب كومار الرأي الثاني بناءً على فحص الأشعة 3D DICOM.',
+    ar: '💬 واتساب (الاستشاري ➔ المنسق): اعتمد الاستشاري الدولي الرأي الثاني بناءً على فحص الأشعة 3D DICOM.',
     en: '💬 WhatsApp (Consultant ➔ Coordinator): Second opinion evaluated and signed based on 3D DICOM loop inspection.',
   },
   6: {
@@ -157,12 +157,12 @@ export function getCurrentCue(stageNum: number, activeCase: ClinicalCase): { ar:
   if (stageNum === 5) {
     if (!activeCase.secondOpinionSubmitted) {
       return {
-        ar: '💬 واتساب (منسق ألو ➔ استشاري الهند): تم تسليم الملف الكامل للأشعة 3D والأسئلة الثلاثة لدراسة د. براديب كومار.',
-        en: '💬 WhatsApp (Coordinator ➔ India): Full 3D DICOM dossier and focus questions delivered to Dr. Pradeep Kumar.',
+        ar: '💬 واتساب (منسق ألو ➔ استشاري الهند): تم تسليم الملف الكامل للأشعة 3D والأسئلة الثلاثة لدراسة الاستشاري الدولي.',
+        en: '💬 WhatsApp (Coordinator ➔ India): Full 3D DICOM dossier and focus questions delivered to the international consultant.',
       };
     }
     return {
-      ar: '💬 واتساب (الاستشاري ➔ المنسق): سلّم د. براديب كومار الرأي الإنجليزي لمنسق ألو لتعريبه ومطابقة المصطلحات الطبية.',
+      ar: '💬 واتساب (الاستشاري ➔ المنسق): سلّم الاستشاري الدولي الرأي الإنجليزي لمنسق ألو لتعريبه ومطابقة المصطلحات الطبية.',
       en: '💬 WhatsApp (Consultant ➔ Coordinator): English opinion delivered to Alo Coordinator for certified Arabic localization.',
     };
   }

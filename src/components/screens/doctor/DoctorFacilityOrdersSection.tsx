@@ -56,7 +56,7 @@ export const DoctorFacilityOrdersSection: React.FC<Props> = ({
                   },
                   internalOrders: {
                     medicalCenterId: '',
-                    medicalCenterName: activeCase.treatingDoctor?.hospital || 'شبكة ألو الطبية المعتمدة',
+                    medicalCenterName: activeCase.treatingDoctor?.hospital || '—',
                     lab: {
                       ordered: checked,
                       tests: checked ? ['Troponin-I', 'CBC', 'Renal Function'] : [],
@@ -114,7 +114,7 @@ export const DoctorFacilityOrdersSection: React.FC<Props> = ({
                   },
                   internalOrders: {
                     medicalCenterId: '',
-                    medicalCenterName: activeCase.treatingDoctor?.hospital || 'شبكة ألو الطبية المعتمدة',
+                    medicalCenterName: activeCase.treatingDoctor?.hospital || '—',
                     lab: activeCase.internalOrders?.lab || {
                       ordered: false,
                       tests: [],

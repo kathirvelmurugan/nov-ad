@@ -107,6 +107,9 @@ export const IntakeDoctorSelectionCard: React.FC<Props> = ({
                 doctorSelectionPreference: 'need_assistance',
                 treatingDoctor: {
                   ...activeCase.treatingDoctor,
+                  // Delegating to nurse triage clears the assignment: a leftover
+                  // id would keep the case bound to the previously chosen doctor.
+                  id: undefined,
                   name: isAr ? 'بانتظار فرز التمريض (ألو تختار الأنسب)' : 'Awaiting Nurse Triage Selection',
                   hospital: isAr ? 'شبكة المستشفيات المعتمدة (ALO Accredited Network)' : 'ALO Accredited Network',
                   city: isAr ? 'الرياض / المملكة' : 'Riyadh / KSA',
@@ -122,6 +125,7 @@ export const IntakeDoctorSelectionCard: React.FC<Props> = ({
                 tier: 2,
                 treatingDoctor: {
                   ...activeCase.treatingDoctor,
+                  id: selectedDoc.id,
                   name: selectedDoc.name,
                   hospital: selectedDoc.hospital,
                   city: selectedDoc.city,

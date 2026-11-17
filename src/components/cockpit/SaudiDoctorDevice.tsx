@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { CockpitDeviceProps, TEAL_PRIMARY, TEAL_SECONDARY } from './types';
-import { INDIAN_CONSULTANTS } from './doctor/doctorConstants';
 import { DoctorReferralSetupSection } from './doctor/DoctorReferralSetupSection';
 import { DoctorBilingualEndorsementSection } from './doctor/DoctorBilingualEndorsementSection';
 
@@ -14,7 +13,9 @@ export const SaudiDoctorDevice: React.FC<CockpitDeviceProps> = ({
 }) => {
   const isAr = lang === 'ar';
   const currentModality = activeCase.modality || (activeCase.consultationType === 'video' ? 'Video' : 'Written');
-  const selectedConsultantName = activeCase.consultant?.name || INDIAN_CONSULTANTS[0].name;
+  // No default consultant. An unassigned case must look unassigned, or the
+  // referral gets approved against a name that was never enrolled.
+  const selectedConsultantName = activeCase.consultant?.name || '';
 
   const initialQuestions = activeCase.focusQuestions && activeCase.focusQuestions.length > 0
     ? activeCase.focusQuestions

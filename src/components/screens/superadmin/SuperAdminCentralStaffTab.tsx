@@ -10,6 +10,7 @@ interface SuperAdminCentralStaffTabProps {
   tenants: TenantHospital[];
   onCreateStaff: (staff: Omit<StaffAccountRecord, 'id' | 'createdAt'>) => void | Promise<unknown>;
   onToggleActive: (staffId: string) => void | Promise<unknown>;
+  onResetPin?: (staffId: string) => Promise<{ pin: string; fullName?: string }>;
 }
 
 export const SuperAdminCentralStaffTab: React.FC<SuperAdminCentralStaffTabProps> = ({
@@ -18,6 +19,7 @@ export const SuperAdminCentralStaffTab: React.FC<SuperAdminCentralStaffTabProps>
   tenants,
   onCreateStaff,
   onToggleActive,
+  onResetPin,
 }) => {
   const [showEnrollForm, setShowEnrollForm] = useState(false);
   const [phone, setPhone] = useState('+96650');
@@ -29,6 +31,10 @@ export const SuperAdminCentralStaffTab: React.FC<SuperAdminCentralStaffTabProps>
   const [license, setLicense] = useState('');
   const [submitError, setSubmitError] = useState('');
   const [toggleError, setToggleError] = useState('');
+  // A PIN is displayed exactly once, immediately after it is issued. It is never
+  // part of any directory response, so this panel is the only chance to hand it
+  // over — losing it means resetting it.
+  const [issuedPin, setIssuedPin] = useState<{ name: string; roleCode: string; pin: string } | null>(null);
 
   // Role K is the international (Indian) consultant persona; everyone else is KSA.
   const phoneCountry: Country = roleCode === 'K' ? 'IN' : 'SA';
@@ -62,7 +68,7 @@ export const SuperAdminCentralStaffTab: React.FC<SuperAdminCentralStaffTabProps>
     try {
       // The row must exist in Postgres before the form closes: role_code there is
       // what routes this person to the correct portal at login.
-      await onCreateStaff({
+      const created: any = await onCreateStaff({
         phone: validation.e164,
         fullName: nameEn.trim(),
         fullNameAr: nameAr.trim() || undefined,
@@ -74,6 +80,11 @@ export const SuperAdminCentralStaffTab: React.FC<SuperAdminCentralStaffTabProps>
         scfhsLicense: license.trim() || undefined,
         staffCode: Math.floor(10000 + Math.random() * 90000).toString(),
       });
+      // The server mints the PIN when the administrator does not type one; show
+      // it now or nobody will ever know what was issued.
+      if (created?.initialPin) {
+        setIssuedPin({ name: nameEn.trim(), roleCode, pin: String(created.initialPin) });
+      }
     } catch (err: any) {
       const status = err?.response?.status;
       setSubmitError(
@@ -179,10 +190,10 @@ export const SuperAdminCentralStaffTab: React.FC<SuperAdminCentralStaffTabProps>
                 onChange={(e) => handleRoleChange(e.target.value as RoleCode)}
                 className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
               >
-                <option value="C">C - ALO Care Coordinator (منسق رعاية)</option>
-                <option value="N">N - ALO Triage Nurse (ممرضة فرز)</option>
+                <option value="C">C - ALO Coordinator (منسق رعاية)</option>
+                <option value="N">N - ALO Nurse (ممرضة فرز)</option>
                 <option value="HA">HA - Hospital Admin (مدير مستشفى شريك)</option>
-                <option value="K">K - Specialist Telehealth Consultant (استشاري دولي)</option>
+                <option value="K">K - International Consultant (استشاري دولي)</option>
                 <option value="AD">AD - ALO Platform Super Admin (مدير منصة)</option>
               </select>
             </div>
@@ -238,6 +249,36 @@ export const SuperAdminCentralStaffTab: React.FC<SuperAdminCentralStaffTabProps>
             </button>
           </div>
         </form>
+      )}
+
+      {/* Issued PIN — shown once, never retrievable */}
+      {issuedPin && (
+        <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 flex items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-black text-amber-900 uppercase tracking-wide">
+              {isRTL ? 'رمز المرور الصادر — يُعرض مرة واحدة فقط' : 'Issued PIN — shown once only'}
+            </p>
+            <p className="text-sm font-bold text-amber-800 mt-1">
+              {issuedPin.name} · {issuedPin.roleCode}
+            </p>
+            <p className="text-3xl font-mono font-black text-amber-900 tracking-[0.3em] mt-2" dir="ltr">
+              {issuedPin.pin}
+            </p>
+            <p className="text-xs text-amber-700 mt-2">
+              {isRTL
+                ? 'سلّمه للشخص الآن. لا يمكن قراءته لاحقاً — استخدم «إعادة تعيين الرمز» إذا فُقد.'
+                : 'Hand this to the person now. It cannot be read later — use "Reset PIN" if it is lost.'}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIssuedPin(null)}
+            className="text-amber-900 font-black text-lg leading-none px-2"
+            aria-label={isRTL ? 'إخفاء' : 'Dismiss'}
+          >
+            ×
+          </button>
+        </div>
       )}
 
       {/* Staff Directory Table */}
@@ -296,7 +337,7 @@ export const SuperAdminCentralStaffTab: React.FC<SuperAdminCentralStaffTabProps>
                       </div>
                       {staff.staffCode && (
                         <span className="text-[11px] text-slate-400 font-mono">
-                          PIN/ID: {staff.staffCode}
+                          {isRTL ? 'معرّف الموظف' : 'Staff ID'}: {staff.staffCode}
                         </span>
                       )}
                     </td>
@@ -311,6 +352,33 @@ export const SuperAdminCentralStaffTab: React.FC<SuperAdminCentralStaffTabProps>
                       </span>
                     </td>
                     <td className="py-3.5 px-4 text-right">
+                      <div className="inline-flex items-center gap-2">
+                      {onResetPin && (
+                        <button
+                          type="button"
+                          onClick={async (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setToggleError('');
+                            try {
+                              const issued = await onResetPin(staff.id);
+                              setIssuedPin({ name: staff.fullName, roleCode: staff.roleCode, pin: issued.pin });
+                            } catch (err: any) {
+                              const status = err?.response?.status;
+                              setToggleError(
+                                status === 403
+                                  ? (isRTL ? 'غير مصرح لك بإعادة تعيين رمز هذا الحساب.' : 'Your role is not permitted to reset this account PIN.')
+                                  : status === 400
+                                    ? (isRTL ? 'لا يمكن إعادة تعيين رمزك الخاص من هنا.' : 'You cannot reset your own PIN from here.')
+                                    : (isRTL ? 'فشل إعادة تعيين الرمز. لم يتغير شيء.' : 'Could not reset the PIN. Nothing changed.')
+                              );
+                            }
+                          }}
+                          className="text-xs font-bold px-3 py-1 rounded-lg border border-amber-200 text-amber-800 hover:bg-amber-50 transition-colors"
+                        >
+                          {isRTL ? 'إعادة تعيين الرمز' : 'Reset PIN'}
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={(e) => {
@@ -330,6 +398,7 @@ export const SuperAdminCentralStaffTab: React.FC<SuperAdminCentralStaffTabProps>
                       >
                         {isActive ? (isRTL ? 'تعطيل' : 'Deactivate') : (isRTL ? 'تفعيل' : 'Activate')}
                       </button>
+                      </div>
                     </td>
                   </tr>
                 );

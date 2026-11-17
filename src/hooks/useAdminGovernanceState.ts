@@ -213,6 +213,23 @@ export function useAdminGovernanceState(
     [activePersona, appendAuditLog, staffDirectory]
   );
 
+  // PIN recovery: enrollment mints a PIN and shows it once. If it is lost, this
+  // issues a new one. No endpoint ever reads a PIN back out of the database.
+  const resetStaffPin = useCallback(
+    async (staffId: string) => {
+      const issued = await apiClient.resetUserPin(staffId);
+      appendAuditLog({
+        actorName: activePersona?.name || 'Admin',
+        actorRole: activePersona?.code || 'AD',
+        actionType: 'RESET_STAFF_PIN',
+        target: staffId,
+        details: `Issued a new PIN for staff account ${staffId}`,
+      });
+      return issued;
+    },
+    [activePersona, appendAuditLog]
+  );
+
   // Catalog Actions
   const addSpecialty = useCallback((spec: string) => {
     setCatalogs((prev) => ({
@@ -263,6 +280,7 @@ export function useAdminGovernanceState(
     staffDirectory,
     createStaffMember,
     toggleStaffActive,
+    resetStaffPin,
     catalogs,
     addSpecialty,
     removeSpecialty,

@@ -79,7 +79,7 @@ export const WhatsAppDrawer: React.FC<Props> = ({
       list.push({
         code: 'W05',
         title: 'موافقة الطبيب المعالج وصياغة الأسئلة (Doctor Approved)',
-        body: `اعتمد ${activeCase.treatingDoctor?.name || 'الطبيب المعالج'} في ${activeCase.treatingDoctor?.hospital || 'المستشفى المعتمد'} إحالة حالتك. أُرسل الطلب إلى منسق رعاية ألو لإعداد الفاتورة وطرق الدفع.`,
+        body: `اعتمد ${activeCase.treatingDoctor?.name || '—'} في ${activeCase.treatingDoctor?.hospital || '—'} إحالة حالتك. أُرسل الطلب إلى منسق رعاية ألو لإعداد الفاتورة وطرق الدفع.`,
         button: 'عرض الأسئلة السريرية الموجهة للاستشاري',
         time: '10:20 AM',
       });
@@ -124,7 +124,7 @@ export const WhatsAppDrawer: React.FC<Props> = ({
       list.push({
         code: 'W08',
         title: 'بدء دراسة الملف من الاستشاري الدولي (Consultant Reviewing)',
-        body: `تم تعيين ${activeCase.consultant?.name || 'د. براديب كومار'} في ${activeCase.consultant?.center || 'مركز كيمز هيلث'} لدراسة ملفك وفحص صور الأشعة المقطعية ثلاثية الأبعاد (3D DICOM). الاستشارة قيد الإنجاز (SLA 48h).`,
+        body: `تم تعيين ${activeCase.consultant?.name || '—'} في ${activeCase.consultant?.center || '—'} لدراسة ملفك وفحص صور الأشعة المقطعية ثلاثية الأبعاد (3D DICOM). الاستشارة قيد الإنجاز (SLA 48h).`,
         button: 'متابعة عداد وقت الإنجاز (Consultant SLA)',
         time: '11:45 AM',
       });
@@ -145,7 +145,7 @@ export const WhatsAppDrawer: React.FC<Props> = ({
       list.push({
         code: 'W13',
         title: 'إحالة الملف المعرب للطبيب المعالج (Treating MD Sign-Off)',
-        body: `وصل التقرير الطبي ثنائي اللغة إلى طبيبك السعودي المعالج (${activeCase.treatingDoctor?.name || 'الطبيب المعالج'}) للمصادقة السريرية النهائية قبل إتاحته لك.`,
+        body: `وصل التقرير الطبي ثنائي اللغة إلى طبيبك السعودي المعالج (${activeCase.treatingDoctor?.name || '—'}) للمصادقة السريرية النهائية قبل إتاحته لك.`,
         button: 'بانتظار المصادقة السريرية للطبيب المعالج',
         time: '03:10 PM',
       });
@@ -155,7 +155,7 @@ export const WhatsAppDrawer: React.FC<Props> = ({
       list.push({
         code: 'W14',
         title: 'صدور التقرير الطبي الثاني المعتمد (Bilingual Report Released)',
-        body: `اعتمد ${activeCase.treatingDoctor?.name || 'الطبيب المعالج'} الرأي الطبي الثاني لحالة ${activeCase.caseNumber}. التقرير الطبي ثنائي اللغة متاح الآن للتحميل بختم المستشفى المعتمد.`,
+        body: `اعتمد ${activeCase.treatingDoctor?.name || '—'} الرأي الطبي الثاني لحالة ${activeCase.caseNumber}. التقرير الطبي ثنائي اللغة متاح الآن للتحميل بختم المستشفى المعتمد.`,
         button: 'تحميل التقرير الطبي المعتمد (Download PDF)',
         time: '03:45 PM',
       });

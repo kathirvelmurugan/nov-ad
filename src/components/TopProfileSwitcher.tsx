@@ -242,7 +242,7 @@ export const TopProfileSwitcher: React.FC<Props> = ({
         } else if (activePersona.code === 'K') {
           activeLabel = isAr ? `الاستشاري الدولي (${activeCase.consultant?.name || activePersona.name})` : `Indian Consultant (${activeCase.consultant?.name || activePersona.name})`;
         } else if (activePersona.code === 'D') {
-          activeLabel = isAr ? `الطبيب السعودي المعالج (${activePersona.name || activeCase.treatingDoctor?.name || 'الطبيب المعالج'})` : `Saudi Treating Doctor (${activePersona.name || activeCase.treatingDoctor?.name || 'Treating Doctor'})`;
+          activeLabel = isAr ? `الطبيب السعودي المعالج (${activePersona.name || activeCase.treatingDoctor?.name || '—'})` : `Saudi Treating Doctor (${activePersona.name || activeCase.treatingDoctor?.name || '—'})`;
         } else if (activePersona.code === 'C') {
           activeLabel = isAr ? `منسق رعاية ألو (${activePersona.name})` : `ALO Coordinator (${activePersona.name})`;
         } else if (activePersona.code === 'N') {

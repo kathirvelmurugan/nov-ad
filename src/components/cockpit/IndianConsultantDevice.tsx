@@ -159,10 +159,10 @@ export const IndianConsultantDevice: React.FC<CockpitDeviceProps> = ({
                   {isAr ? 'الاستشاري الدولي المعين من الطبيب السعودي المعالج:' : 'Assigned Consultant by Saudi Treating Doctor:'}
                 </span>
                 <div style={{ fontSize: '13px', fontWeight: 800, color: '#0f172a', marginTop: '3px' }}>
-                  {activeCase.consultant?.name || 'Dr. Pradeep Kumar, MBBS, MS, MCh (CTVS)'}
+                  {activeCase.consultant?.name || '—'}
                 </div>
                 <div style={{ fontSize: '10px', color: '#64748b', marginTop: '1px' }}>
-                  {activeCase.consultant?.center || 'Apollo Hospitals'} · {activeCase.consultant?.city || 'Bengaluru, India'}
+                  {activeCase.consultant?.center || '—'} · {activeCase.consultant?.city || '—'}
                 </div>
               </div>
 

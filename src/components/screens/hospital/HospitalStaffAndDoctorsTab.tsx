@@ -10,6 +10,7 @@ interface HospitalStaffAndDoctorsTabProps {
   staffDirectory: StaffAccountRecord[];
   onCreateStaff: (staff: Omit<StaffAccountRecord, 'id' | 'createdAt'>) => void | Promise<unknown>;
   onToggleActive: (staffId: string) => void | Promise<unknown>;
+  onResetPin?: (staffId: string) => Promise<{ pin: string; fullName?: string }>;
 }
 
 export const HospitalStaffAndDoctorsTab: React.FC<HospitalStaffAndDoctorsTabProps> = ({
@@ -18,6 +19,7 @@ export const HospitalStaffAndDoctorsTab: React.FC<HospitalStaffAndDoctorsTabProp
   staffDirectory,
   onCreateStaff,
   onToggleActive,
+  onResetPin,
 }) => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [nameEn, setNameEn] = useState('');
@@ -28,6 +30,9 @@ export const HospitalStaffAndDoctorsTab: React.FC<HospitalStaffAndDoctorsTabProp
   const [scfhs, setScfhs] = useState('');
   const [submitError, setSubmitError] = useState('');
   const [toggleError, setToggleError] = useState('');
+  // Shown once, right after the server issues a PIN. There is no endpoint that
+  // reads a PIN back, so this is the only hand-over point.
+  const [issuedPin, setIssuedPin] = useState<{ name: string; roleCode: string; pin: string } | null>(null);
 
   const handlePhoneChange = (val: string) => {
     setPhone(val);
@@ -53,7 +58,7 @@ export const HospitalStaffAndDoctorsTab: React.FC<HospitalStaffAndDoctorsTabProp
     try {
       // The row must exist in Postgres before the form closes: role_code there is
       // what routes this person to the correct portal at login.
-      await onCreateStaff({
+      const created: any = await onCreateStaff({
         phone: validation.e164,
         fullName: nameEn.trim(),
         fullNameAr: nameAr.trim() || undefined,
@@ -67,6 +72,9 @@ export const HospitalStaffAndDoctorsTab: React.FC<HospitalStaffAndDoctorsTabProp
         scfhsLicense: scfhs.trim() || undefined,
         staffCode: Math.floor(10000 + Math.random() * 90000).toString(),
       });
+      if (created?.initialPin) {
+        setIssuedPin({ name: nameEn.trim(), roleCode, pin: String(created.initialPin) });
+      }
     } catch (err: any) {
       const status = err?.response?.status;
       setSubmitError(
@@ -214,6 +222,36 @@ export const HospitalStaffAndDoctorsTab: React.FC<HospitalStaffAndDoctorsTabProp
         </form>
       )}
 
+      {/* Issued PIN — shown once, never retrievable */}
+      {issuedPin && (
+        <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 flex items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-black text-amber-900 uppercase tracking-wide">
+              {isRTL ? 'رمز المرور الصادر — يُعرض مرة واحدة فقط' : 'Issued PIN — shown once only'}
+            </p>
+            <p className="text-sm font-bold text-amber-800 mt-1">
+              {issuedPin.name} · {issuedPin.roleCode}
+            </p>
+            <p className="text-3xl font-mono font-black text-amber-900 tracking-[0.3em] mt-2" dir="ltr">
+              {issuedPin.pin}
+            </p>
+            <p className="text-xs text-amber-700 mt-2">
+              {isRTL
+                ? 'سلّمه للشخص الآن. لا يمكن قراءته لاحقاً — استخدم «إعادة تعيين الرمز» إذا فُقد.'
+                : 'Hand this to the person now. It cannot be read later — use "Reset PIN" if it is lost.'}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIssuedPin(null)}
+            className="text-amber-900 font-black text-lg leading-none px-2"
+            aria-label={isRTL ? 'إخفاء' : 'Dismiss'}
+          >
+            ×
+          </button>
+        </div>
+      )}
+
       {/* Staff Table */}
       {toggleError && (
         <p className="text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2">
@@ -279,6 +317,31 @@ export const HospitalStaffAndDoctorsTab: React.FC<HospitalStaffAndDoctorsTabProp
                       </span>
                     </td>
                     <td className="py-3.5 px-4 text-right">
+                      <div className="inline-flex items-center gap-2">
+                      {onResetPin && (
+                        <button
+                          type="button"
+                          onClick={async (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setToggleError('');
+                            try {
+                              const issued = await onResetPin(staff.id);
+                              setIssuedPin({ name: staff.fullName, roleCode: staff.roleCode, pin: issued.pin });
+                            } catch (err: any) {
+                              const status = err?.response?.status;
+                              setToggleError(
+                                status === 403
+                                  ? (isRTL ? 'غير مصرح لك بإعادة تعيين رمز هذا الحساب.' : 'Your role is not permitted to reset this account PIN.')
+                                  : (isRTL ? 'فشل إعادة تعيين الرمز. لم يتغير شيء.' : 'Could not reset the PIN. Nothing changed.')
+                              );
+                            }
+                          }}
+                          className="text-xs font-bold px-3 py-1 rounded-lg border border-amber-200 text-amber-800 hover:bg-amber-50 transition-colors"
+                        >
+                          {isRTL ? 'إعادة تعيين الرمز' : 'Reset PIN'}
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={(e) => {
@@ -298,6 +361,7 @@ export const HospitalStaffAndDoctorsTab: React.FC<HospitalStaffAndDoctorsTabProp
                       >
                         {isActive ? (isRTL ? 'تعطيل' : 'Deactivate') : (isRTL ? 'تفعيل' : 'Activate')}
                       </button>
+                      </div>
                     </td>
                   </tr>
                 );
