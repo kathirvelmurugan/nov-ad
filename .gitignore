@@ -31,6 +31,11 @@ e2e/.probe-*
 # Local temp helper scripts (never commit; may contain credentials)
 .tmp_*
 
+# Throwaway probe/deploy scripts. Credentials belong in the git-ignored .env.local
+# and are read through scripts/vps_ssh.py, never written into a script.
+scripts/_*
+scripts/__pycache__/
+
 # Runtime data
 pids
 *.pid
