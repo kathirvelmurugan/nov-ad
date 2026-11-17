@@ -1,50 +1,23 @@
 import { TenantHospital, StaffAccountRecord, ClinicalCase, AuditLogEntry } from '../types';
-import { TENANTS_KEY, PLATFORM_USERS_KEY, STORAGE_KEY, ACTIVE_CASE_KEY } from '../hooks/workflowConstants';
+import { ACTIVE_CASE_KEY, USER_SESSION_KEY } from '../hooks/workflowConstants';
 import { purgeAllCaseStorage } from '../utils/storagePurge';
 
+// Field mapping only: snake_case → camelCase. No fallback names, ids, cities or
+// statuses — an empty field means the row genuinely has no value.
 function normalizeTenant(raw: any): TenantHospital {
-  const nameEn = (raw.nameEn || raw.name_en || '').trim();
-  const normalizedNameEn = (nameEn === 'Alo Care Specialist Medical Center' || !nameEn)
-    ? 'Riyadh Care Medical Center'
-    : nameEn;
-  const nameAr = (raw.nameAr || raw.name_ar || '').trim();
-  const normalizedNameAr = (nameAr === 'مركز ألو كير الطبي التخصصي' || nameAr === 'مركز الرعاية التخصصية الطبي (الرياض)' || !nameAr)
-    ? 'مستشفى رعاية الرياض المعتمد'
-    : nameAr;
-
   return {
-    id: raw.id || 'hosp-alo-riyadh-01',
-    nameEn: normalizedNameEn,
-    nameAr: normalizedNameAr,
-    city: raw.city || 'الرياض',
-    cityAr: raw.cityAr || raw.city_ar || raw.city || 'الرياض',
-    mciLicenseNumber: raw.mciLicenseNumber || raw.mci_license_number || 'MCI-SA-2024-8891',
-    status: (raw.status as any) || 'active',
-    hospitalAdminName: raw.hospitalAdminName || raw.hospital_admin_name || 'David Nunez',
-    hospitalAdminPhone: raw.hospitalAdminPhone || raw.hospital_admin_phone || '+966504444444',
-    doctorCount: typeof raw.doctorCount === 'number' ? raw.doctorCount : (typeof raw.doctor_count === 'number' ? raw.doctor_count : 8),
-    createdAt: raw.createdAt || raw.created_at || '2026-01-01T08:00:00.000Z',
+    id: raw.id != null ? String(raw.id) : '',
+    nameEn: raw.nameEn || raw.name_en || '',
+    nameAr: raw.nameAr || raw.name_ar || '',
+    city: raw.city || '',
+    cityAr: raw.cityAr || raw.city_ar || raw.city || '',
+    mciLicenseNumber: raw.mciLicenseNumber || raw.mci_license_number || '',
+    status: (raw.status as TenantHospital['status']) || 'active',
+    hospitalAdminName: raw.hospitalAdminName || raw.hospital_admin_name || '',
+    hospitalAdminPhone: raw.hospitalAdminPhone || raw.hospital_admin_phone || '',
+    doctorCount: typeof raw.doctorCount === 'number' ? raw.doctorCount : (typeof raw.doctor_count === 'number' ? raw.doctor_count : 0),
+    createdAt: raw.createdAt || raw.created_at || '',
   };
-}
-
-function normalizeCase(c: ClinicalCase): ClinicalCase {
-  if (!c) return c;
-  const rawHospital = c.treatingDoctor?.hospital;
-  if (
-    rawHospital === 'Alo Care Specialist Medical Center' ||
-    rawHospital === 'مركز ألو كير الطبي التخصصي' ||
-    rawHospital === 'مركز الرعاية التخصصية الطبي (الرياض)' ||
-    rawHospital === 'المجمع الطبي الشريك'
-  ) {
-    return {
-      ...c,
-      treatingDoctor: {
-        ...c.treatingDoctor,
-        hospital: 'Riyadh Care Medical Center',
-      },
-    };
-  }
-  return c;
 }
 
 function getApiBase(): string {
@@ -59,7 +32,7 @@ function getApiBase(): string {
 function getAuthHeaders(): Record<string, string> {
   if (typeof window === 'undefined') return {};
   try {
-    const raw = localStorage.getItem('alo_user_session_v4.0_clean') || localStorage.getItem('alo_user_session_v3.0');
+    const raw = localStorage.getItem(USER_SESSION_KEY);
     if (!raw) return {};
     const session = JSON.parse(raw);
     if (session.token) {
@@ -79,6 +52,23 @@ function emitApiError(endpoint: string, status: number | string, message: string
       })
     );
   }
+}
+
+// A 401 from these endpoints is a normal credential answer, not an expired session.
+const AUTH_ENDPOINTS = ['/api/users/login', '/api/users/lookup', '/api/users/pin', '/api/users/access-code'];
+
+/**
+ * A 401 on an authenticated endpoint means the Bearer token is no longer valid
+ * (12h TTL, server restart, revoked). Clear the stale session and let the auth
+ * gate reopen instead of looping in the retry modal.
+ */
+function handleUnauthorized(endpoint: string) {
+  if (typeof window === 'undefined') return;
+  if (AUTH_ENDPOINTS.some((p) => endpoint.startsWith(p))) return;
+  try {
+    localStorage.removeItem(USER_SESSION_KEY);
+  } catch {}
+  window.dispatchEvent(new CustomEvent('alo:session-expired'));
 }
 
 async function executeFetch(endpoint: string, options?: RequestInit): Promise<Response> {
@@ -112,6 +102,7 @@ async function executeFetch(endpoint: string, options?: RequestInit): Promise<Re
 async function safeFetchWithRetry(endpoint: string, options?: RequestInit): Promise<Response> {
   try {
     const res = await executeFetch(endpoint, options);
+    if (res.status === 401) handleUnauthorized(endpoint);
     // 4xx client responses (e.g. 401 Invalid PIN, 404 not found, 400 bad request) are valid clinical/auth answers, not server outages!
     if (res.ok || (res.status >= 400 && res.status < 500)) return res;
     throw new Error(`HTTP ${res.status}`);
@@ -120,6 +111,7 @@ async function safeFetchWithRetry(endpoint: string, options?: RequestInit): Prom
     await new Promise((r) => setTimeout(r, 500));
     try {
       const retryRes = await executeFetch(endpoint, options);
+      if (retryRes.status === 401) handleUnauthorized(endpoint);
       if (retryRes.ok || (retryRes.status >= 400 && retryRes.status < 500)) return retryRes;
       throw new Error(`Retry HTTP ${retryRes.status}`);
     } catch (fatalErr: any) {
@@ -132,17 +124,19 @@ async function safeFetchWithRetry(endpoint: string, options?: RequestInit): Prom
 export const apiClient = {
   // ── Authentication ────────────────────────────────────────────────────────
   async checkUserExists(phone: string): Promise<{ exists: boolean; hasPin: boolean }> {
-    try {
-      const res = await safeFetchWithRetry('/api/users/lookup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone }),
-      });
-      const json = await res.json();
-      return { exists: json.exists, hasPin: json.requiresPin };
-    } catch {
-      return { exists: false, hasPin: false };
+    const res = await safeFetchWithRetry('/api/users/lookup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone }),
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      const error: any = new Error(json?.message || `LOOKUP_FAILED (${res.status})`);
+      error.response = { status: res.status };
+      throw error;
     }
+    // A backend that cannot answer must never be read as "this person is new".
+    return { exists: Boolean(json.exists), hasPin: Boolean(json.requiresPin) };
   },
 
   async login(phone: string, pin: string): Promise<StaffAccountRecord> {
@@ -169,9 +163,7 @@ export const apiClient = {
     const res = await safeFetchWithRetry('/api/tenants', { headers: { 'Content-Type': 'application/json' } });
     const json = await res.json();
     const rawList = Array.isArray(json) ? json : (Array.isArray(json?.data) ? json.data : []);
-    const mapped = rawList.map(normalizeTenant);
-    try { localStorage.setItem(TENANTS_KEY, JSON.stringify(mapped)); } catch {}
-    return mapped;
+    return rawList.map(normalizeTenant);
   },
 
   async createTenant(data: Omit<TenantHospital, 'id' | 'createdAt'>): Promise<TenantHospital> {
@@ -183,6 +175,20 @@ export const apiClient = {
     const json = await res.json();
     const created = json?.data || json;
     return normalizeTenant(created);
+  },
+
+  async updateTenantStatus(id: string, status: 'active' | 'pending' | 'suspended'): Promise<void> {
+    const res = await safeFetchWithRetry(`/api/tenants/${encodeURIComponent(id)}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    });
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({} as any));
+      const error: any = new Error(json?.message || `TENANT_STATUS_FAILED (${res.status})`);
+      error.response = { status: res.status, data: json };
+      throw error;
+    }
   },
 
   // ── Staff Users ───────────────────────────────────────────────────────────
@@ -202,10 +208,33 @@ export const apiClient = {
       hasCustomPin: Boolean(u.hasCustomPin || u.has_custom_pin),
       department: u.department,
       status: u.status || 'active',
-      createdAt: u.createdAt || u.created_at || new Date().toISOString(),
+      createdAt: u.createdAt || u.created_at || '',
     }));
-    try { localStorage.setItem(PLATFORM_USERS_KEY, JSON.stringify(mapped)); } catch {}
     return mapped;
+  },
+
+  // Sanitized public directory for the patient intake picker: active treating
+  // doctors only. /api/users stays admin-only because it exposes pins.
+  async fetchDoctors(hospitalId?: string): Promise<Array<{
+    id: string;
+    fullName: string;
+    fullNameAr?: string | null;
+    hospitalId?: string | null;
+    department?: string | null;
+    scfhsLicense?: string | null;
+  }>> {
+    const qs = hospitalId ? `?hospitalId=${encodeURIComponent(hospitalId)}` : '';
+    const res = await safeFetchWithRetry(`/api/users/doctors${qs}`, { headers: { 'Content-Type': 'application/json' } });
+    const json = await res.json();
+    const rawList = Array.isArray(json) ? json : (Array.isArray(json?.data) ? json.data : []);
+    return rawList.map((d: any) => ({
+      id: d.id,
+      fullName: d.fullName || d.full_name || '',
+      fullNameAr: d.fullNameAr ?? d.full_name_ar ?? null,
+      hospitalId: d.hospitalId ?? d.hospital_id ?? null,
+      department: d.department ?? null,
+      scfhsLicense: d.scfhsLicense ?? d.scfhs_license ?? null,
+    }));
   },
 
   async cleanSlateDatabase(): Promise<boolean> {
@@ -222,7 +251,13 @@ export const apiClient = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ phone, pin }),
     });
-    return res.ok;
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({} as any));
+      const error: any = new Error(json?.message || `PIN_NOT_SAVED (${res.status})`);
+      error.response = { status: res.status, data: json };
+      throw error;
+    }
+    return true;
   },
 
   async createUser(data: Omit<StaffAccountRecord, 'id' | 'createdAt'>): Promise<StaffAccountRecord> {
@@ -235,23 +270,41 @@ export const apiClient = {
     return json?.data || json;
   },
 
+  async updateUserStatus(id: string, status: 'active' | 'inactive'): Promise<void> {
+    const res = await safeFetchWithRetry(`/api/users/${encodeURIComponent(id)}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    });
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({} as any));
+      const error: any = new Error(json?.message || `STATUS_UPDATE_FAILED (${res.status})`);
+      error.response = { status: res.status, data: json };
+      throw error;
+    }
+  },
+
   // ── Cases ─────────────────────────────────────────────────────────────────
   async fetchCases(): Promise<ClinicalCase[]> {
     const res = await safeFetchWithRetry('/api/cases', { headers: { 'Content-Type': 'application/json' } });
     const json = await res.json();
     const rawList = Array.isArray(json) ? json : (Array.isArray(json?.data) ? json.data : []);
-    const normalized = rawList.map(normalizeCase);
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized)); } catch {}
-    return normalized;
+    return rawList as ClinicalCase[];
   },
 
   async saveCase(c: ClinicalCase): Promise<void> {
     const stamped = { ...c, updatedAt: new Date().toISOString() };
-    await safeFetchWithRetry('/api/cases', {
+    const res = await safeFetchWithRetry('/api/cases', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(stamped),
     });
+    // 4xx answers are returned by safeFetchWithRetry, not thrown: a rejected
+    // write must still surface as a failure instead of looking like a success.
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({} as Record<string, unknown>));
+      throw new Error((body as any).message || (body as any).error || `Case save rejected (HTTP ${res.status})`);
+    }
   },
 
   async purgeAllCases(): Promise<void> {
@@ -261,13 +314,31 @@ export const apiClient = {
 
   async deleteSingleCase(caseId: string): Promise<void> {
     await safeFetchWithRetry(`/api/cases/${encodeURIComponent(caseId)}`, { method: 'DELETE' });
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const arr = JSON.parse(stored) as ClinicalCase[];
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(arr.filter((x) => x.id !== caseId)));
-      }
-    } catch {}
+  },
+
+  // Validates a consultant magic-link token against the stored case and returns a
+  // REAL server session. Without this the consultant portal would run on a
+  // client-invented identity whose API calls could never authenticate.
+  async verifyMagicLink(caseId: string, token: string): Promise<{
+    token: string;
+    expiresAt: string;
+    caseId: string;
+    caseNumber?: string;
+    patientName?: string;
+    currentStage?: string;
+  }> {
+    const res = await safeFetchWithRetry(`/api/cases/${encodeURIComponent(caseId)}/magic-session`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    });
+    const json = await res.json();
+    if (!res.ok || !json?.success) {
+      const error: any = new Error(json?.message || 'Invalid or expired magic link');
+      error.response = { status: res.status, data: json };
+      throw error;
+    }
+    return json.data;
   },
 
   // ── Dedicated Transition Endpoints ────────────────────────────────────────

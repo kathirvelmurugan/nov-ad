@@ -39,7 +39,7 @@ export const PatientIntakeView: React.FC<Props> = ({
   activeCase,
   onAdvanceStage: _onAdvanceStage,
   onUpdateCase,
-  lang = 'ar',
+  lang = 'en',
   selectedService = 'second-opinion',
   onSelectService,
   onBackToLanding,
@@ -337,7 +337,7 @@ export const PatientIntakeView: React.FC<Props> = ({
               const freshId = `case-${Date.now()}`;
               const freshCaseNum = `CASE-2026-${Math.floor(1000 + Math.random() * 9000)}`;
               const patPhone = userSession?.phone || activeCase.patientPhone || '';
-              const patName = activeCase.patientName || (isAr ? activeCase.patientNameAr : activeCase.patientNameEn) || userSession?.fullName || (isAr ? 'سامي الحربي' : 'Sami Al-Harbi');
+              const patName = activeCase.patientName || (isAr ? activeCase.patientNameAr : activeCase.patientNameEn) || userSession?.fullName || (isAr ? 'مريض' : 'Patient');
               onUpdateCase({
                 id: freshId,
                 caseNumber: freshCaseNum,
@@ -359,23 +359,21 @@ export const PatientIntakeView: React.FC<Props> = ({
                 allergies: activeCase.allergies || [],
                 noKnownAllergies: !!activeCase.noKnownAllergies,
                 noCurrentMedications: !!activeCase.noCurrentMedications,
-                nationalIdMasked: activeCase.nationalIdMasked || '10********',
-                age: activeCase.age || 45,
-                gender: activeCase.gender || 'M',
-                city: activeCase.city || 'الرياض',
-                cityAr: activeCase.cityAr || 'الرياض',
-                cityEn: activeCase.cityEn || 'Riyadh',
+                nationalIdMasked: activeCase.nationalIdMasked || '',
+                age: activeCase.age || 0,
+                gender: activeCase.gender,
+                city: activeCase.city || '',
+                cityAr: activeCase.cityAr || '',
+                cityEn: activeCase.cityEn || '',
                 beneficiaryMode: activeCase.beneficiaryMode || 'me',
                 caregiver: activeCase.caregiver,
                 treatingDoctor: activeCase.treatingDoctor || {
-                  name: 'د. فهد الحربي (Dr. Fahad Al-Harbi)',
-                  hospital: 'مستشفى رعاية الرياض المعتمد',
-                  city: 'الرياض (Riyadh)',
-                  focusQuestions: [
-                    'هل التدخل الجراحي التنظيري الدقيق هو الخيار الأمثل للحالة؟',
-                    'ما هي البدائل العلاجية التحفظية الموصى بها قبل الجراحة؟',
-                    'ما هو بروتوكول التأهيل الوظيفي والمتابعة بعد الاستشارة؟',
-                  ],
+                  // No fabricated physician: an unselected case stays unassigned
+                  // until the nurse/doctor flow binds a real staff row.
+                  name: 'Awaiting Nurse Triage Selection',
+                  hospital: 'ALO Accredited Network',
+                  city: '',
+                  focusQuestions: ['', '', ''],
                 },
                 files: activeCase.files || [],
                 consultationType: activeCase.consultationType || 'written',

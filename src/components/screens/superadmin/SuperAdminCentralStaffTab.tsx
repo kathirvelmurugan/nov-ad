@@ -8,8 +8,8 @@ interface SuperAdminCentralStaffTabProps {
   isRTL: boolean;
   staffDirectory: StaffAccountRecord[];
   tenants: TenantHospital[];
-  onCreateStaff: (staff: Omit<StaffAccountRecord, 'id' | 'createdAt'>) => void;
-  onToggleActive: (staffId: string) => void;
+  onCreateStaff: (staff: Omit<StaffAccountRecord, 'id' | 'createdAt'>) => void | Promise<unknown>;
+  onToggleActive: (staffId: string) => void | Promise<unknown>;
 }
 
 export const SuperAdminCentralStaffTab: React.FC<SuperAdminCentralStaffTabProps> = ({
@@ -27,6 +27,8 @@ export const SuperAdminCentralStaffTab: React.FC<SuperAdminCentralStaffTabProps>
   const [roleCode, setRoleCode] = useState<RoleCode>('C');
   const [hospitalId, setHospitalId] = useState<string>('');
   const [license, setLicense] = useState('');
+  const [submitError, setSubmitError] = useState('');
+  const [toggleError, setToggleError] = useState('');
 
   // Role K is the international (Indian) consultant persona; everyone else is KSA.
   const phoneCountry: Country = roleCode === 'K' ? 'IN' : 'SA';
@@ -46,8 +48,9 @@ export const SuperAdminCentralStaffTab: React.FC<SuperAdminCentralStaffTabProps>
     (s) => ['AD', 'HA', 'C', 'N', 'K'].includes(s.roleCode)
   );
 
-  const handleEnroll = (e: React.FormEvent) => {
+  const handleEnroll = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitError('');
     if (!phone.trim() || !nameEn.trim()) return;
 
     const validation = validatePhone(phone, phoneCountry);
@@ -56,19 +59,30 @@ export const SuperAdminCentralStaffTab: React.FC<SuperAdminCentralStaffTabProps>
       return;
     }
 
-    onCreateStaff({
-      phone: validation.e164,
-      fullName: nameEn.trim(),
-      fullNameAr: nameAr.trim() || undefined,
-      roleCode,
-      hospitalId: roleCode === 'HA' ? hospitalId || tenants[0]?.id : undefined,
-      status: 'active',
-      pin: '',
-      hasCustomPin: false,
-      tempPassword: '123456',
-      scfhsLicense: license.trim() || undefined,
-      staffCode: Math.floor(10000 + Math.random() * 90000).toString(),
-    });
+    try {
+      // The row must exist in Postgres before the form closes: role_code there is
+      // what routes this person to the correct portal at login.
+      await onCreateStaff({
+        phone: validation.e164,
+        fullName: nameEn.trim(),
+        fullNameAr: nameAr.trim() || undefined,
+        roleCode,
+        hospitalId: roleCode === 'HA' ? hospitalId || tenants[0]?.id : undefined,
+        status: 'active',
+        pin: '',
+        hasCustomPin: false,
+        scfhsLicense: license.trim() || undefined,
+        staffCode: Math.floor(10000 + Math.random() * 90000).toString(),
+      });
+    } catch (err: any) {
+      const status = err?.response?.status;
+      setSubmitError(
+        status === 403
+          ? (isRTL ? 'غير مصرح لك بتسجيل هذا الدور.' : 'Your role is not permitted to enroll this staff role.')
+          : (isRTL ? 'فشل الحفظ في قاعدة البيانات. لم يتم إنشاء الحساب.' : 'Could not save to the database. The account was NOT created.')
+      );
+      return;
+    }
 
     setPhone(roleCode === 'K' ? '+91' : '+96650');
     setPhoneError('');
@@ -203,6 +217,11 @@ export const SuperAdminCentralStaffTab: React.FC<SuperAdminCentralStaffTabProps>
               />
             </div>
           </div>
+          {submitError && (
+            <p className="text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2">
+              {submitError}
+            </p>
+          )}
           <div className="flex justify-end gap-2 pt-2">
             <button
               type="button"
@@ -222,6 +241,11 @@ export const SuperAdminCentralStaffTab: React.FC<SuperAdminCentralStaffTabProps>
       )}
 
       {/* Staff Directory Table */}
+      {toggleError && (
+        <p className="text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2">
+          {toggleError}
+        </p>
+      )}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
@@ -292,7 +316,15 @@ export const SuperAdminCentralStaffTab: React.FC<SuperAdminCentralStaffTabProps>
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          onToggleActive(staff.id);
+                          setToggleError('');
+                          Promise.resolve(onToggleActive(staff.id)).catch((err: any) => {
+                            const status = err?.response?.status;
+                            setToggleError(
+                              status === 403
+                                ? (isRTL ? 'غير مصرح لك بتعديل حالة هذا الحساب.' : 'Your role is not permitted to change this account status.')
+                                : (isRTL ? 'فشل تحديث الحالة في قاعدة البيانات. لم يتم تغيير الحساب.' : 'Could not update the status in the database. Nothing changed.')
+                            );
+                          });
                         }}
                         className="text-xs font-bold px-3 py-1 rounded-lg border border-slate-200 hover:bg-slate-100 transition-colors"
                       >

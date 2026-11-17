@@ -14,7 +14,6 @@ import { apiClient } from '../services/apiClient';
 import { priceTier, vatPercent } from '../config/platformConfig';
 import { matchesSaudiPhone } from '../components/auth/authTypesAndUtils';
 import {
-  STORAGE_KEY,
   ACTIVE_CASE_KEY,
   USER_SESSION_KEY,
   UserSession,
@@ -27,25 +26,7 @@ import { isKnownStage, stageNumberOf } from './stageLogic';
 import { useWorkflowUIState } from './workflow/useWorkflowUIState';
 
 export type { UserSession };
-export { STORAGE_KEY, ACTIVE_CASE_KEY, USER_SESSION_KEY, FRESH_PRIMARY_CASE };
-
-/**
- * Consultant magic link — the only URL that may open a session without a PIN.
- * Every other persona signs in with their phone + PIN; there is no query-string
- * shortcut for patients or staff, because they all exist in the database.
- */
-const MAGIC_LINK_PHONE = '+919876543210';
-
-const buildConsultantSession = (consultantName?: string): UserSession => ({
-  isAuthenticated: true,
-  phone: MAGIC_LINK_PHONE,
-  roleCode: 'K',
-  fullName: consultantName,
-  personaId: 'consultant',
-  isGuest: true,
-  expiresAt: Date.now() + 30 * 24 * 3600 * 1000,
-  lang: 'ar',
-});
+export { ACTIVE_CASE_KEY, USER_SESSION_KEY, FRESH_PRIMARY_CASE };
 
 const generateAstTimestamp = () => {
   const now = new Date();
@@ -212,13 +193,12 @@ export function useClinicalWorkflowState() {
         const search = new URLSearchParams(window.location.search);
         const role = (search.get('role') || '').toUpperCase();
         const portal = (search.get('portal') || '').toLowerCase();
-        const token = search.get('token') || search.get('magic') || search.get('magic_token');
 
         const portalRoleMap: Record<string, string> = {
           consultant: 'K', doctor: 'D', nurse: 'N', coordinator: 'C',
           hospital: 'HA', superadmin: 'AD', admin: 'AD', lab: 'L', pharmacy: 'PH', reception: 'REC',
         };
-        const targetRole = token ? 'K' : portalRoleMap[portal] || portalRoleMap[role.toLowerCase()] || role;
+        const targetRole = portalRoleMap[portal] || portalRoleMap[role.toLowerCase()] || role;
         if (targetRole) {
           const matched = PERSONAS.find((p) => p.code === targetRole);
           if (matched) return matched;
@@ -231,11 +211,6 @@ export function useClinicalWorkflowState() {
   const [userSession, setUserSession] = useState<UserSession | null>(() => {
     try {
       if (typeof window !== 'undefined') {
-        const search = new URLSearchParams(window.location.search);
-        // Consultant magic link — the only URL that may open a session without a PIN.
-        if (search.get('token') || search.get('magic') || search.get('magic_token')) {
-          return buildConsultantSession(search.get('consultant') || 'International Consultant');
-        }
         const saved = localStorage.getItem(USER_SESSION_KEY);
         if (saved) {
           const parsed = JSON.parse(saved);
@@ -246,16 +221,56 @@ export function useClinicalWorkflowState() {
     return null;
   });
 
-  const [cases, setCases] = useState<ClinicalCase[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
-      }
-    } catch (e) {}
-    return [];
-  });
+  // Consultant magic link: the URL token is validated by the server, which issues
+  // a real session. No identity is ever derived from the query string alone.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const search = new URLSearchParams(window.location.search);
+    const token = search.get('token') || search.get('magic') || search.get('magic_token');
+    const caseId = search.get('caseId') || search.get('id');
+    if (!token || !caseId) return;
+    if (userSession?.isAuthenticated) return;
+
+    let cancelled = false;
+    apiClient.verifyMagicLink(caseId, token)
+      .then((session) => {
+        if (cancelled) return;
+        const consultantSession: UserSession = {
+          isAuthenticated: true,
+          phone: '',
+          roleCode: 'K',
+          personaId: 'consultant',
+          fullName: search.get('consultant') || 'International Consultant',
+          isGuest: true,
+          expiresAt: new Date(session.expiresAt).getTime(),
+          lang: 'ar',
+          token: session.token,
+        };
+        try { localStorage.setItem(USER_SESSION_KEY, JSON.stringify(consultantSession)); } catch {}
+        setUserSession(consultantSession);
+        if (session.caseId) setActiveCaseId(session.caseId);
+        const consultantPersona = PERSONAS.find((p) => p.code === 'K');
+        if (consultantPersona) setActivePersona(consultantPersona);
+      })
+      .catch(() => {
+        // Invalid or expired link: stay signed out and let the auth gate handle it.
+      });
+
+    return () => { cancelled = true; };
+  }, []);
+
+  // apiClient dispatches this when the server rejects a stale Bearer token;
+  // dropping the session re-opens the auth gate instead of looping on retry.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onSessionExpired = () => setUserSession(null);
+    window.addEventListener('alo:session-expired', onSessionExpired);
+    return () => window.removeEventListener('alo:session-expired', onSessionExpired);
+  }, []);
+
+  // Cases start empty and are replaced by the server response; there is no local
+  // cache that could outlive a deleted case.
+  const [cases, setCases] = useState<ClinicalCase[]>([]);
 
   const [activeCaseId, setActiveCaseId] = useState<string>(() => {
     try {
@@ -311,7 +326,6 @@ export function useClinicalWorkflowState() {
       if (isSubscribed && Array.isArray(serverCases)) {
         // Hard Server-Truth: Server response replaces local state completely
         setCases(serverCases);
-        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(serverCases)); } catch (e) {}
         try {
           const searchParams = new URLSearchParams(window.location.search);
           const urlCaseId = searchParams.get('caseId') || searchParams.get('id');
@@ -324,7 +338,6 @@ export function useClinicalWorkflowState() {
     return () => { isSubscribed = false; };
   }, []);
 
-  useEffect(() => { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(cases)); } catch (e) {} }, [cases]);
   useEffect(() => { try { localStorage.setItem(ACTIVE_CASE_KEY, activeCaseId); } catch (e) {} }, [activeCaseId]);
 
   const isPatientPersona = activePersona.code === 'P';
@@ -390,8 +403,12 @@ export function useClinicalWorkflowState() {
         },
       };
 
-      try { localStorage.setItem('alo_active_case_id', freshId); } catch {}
-      apiClient.saveCase(registeredCase).catch(() => {});
+      try { localStorage.setItem(ACTIVE_CASE_KEY, freshId); } catch {}
+      apiClient.saveCase(registeredCase)
+        .then(() => window.dispatchEvent(new CustomEvent('alo:case-save-ok')))
+        .catch((err) => window.dispatchEvent(new CustomEvent('alo:case-save-failed', {
+          detail: { caseNumber: registeredCase.caseNumber, message: err?.message || '' },
+        })));
       setCases((prev) => [registeredCase, ...prev.filter((c) => c.id !== freshId && c.id !== 'draft-intake')]);
       setActiveCaseId(registeredCase.id);
       setIntakeDraft(createFreshDraftIntake(userSession));
@@ -413,7 +430,7 @@ export function useClinicalWorkflowState() {
         const nextTimeline = newEvt ? [...existingTimeline.filter(e => e.actionCode !== newEvt.actionCode), newEvt] : existingTimeline;
         updatedCase = { ...baseCase, ...syncedUpdate, id: targetId, timeline: nextTimeline, updatedAt: new Date().toISOString(), ...(phoneToSet ? { patientPhone: phoneToSet } : {}) };
         setActiveCaseId(updatedCase.id);
-        try { localStorage.setItem('alo_active_case_id', updatedCase.id); } catch {}
+        try { localStorage.setItem(ACTIVE_CASE_KEY, updatedCase.id); } catch {}
         nextCases = [updatedCase, ...prev];
       } else {
         nextCases = prev.map((c) => {
@@ -430,8 +447,12 @@ export function useClinicalWorkflowState() {
         });
         if (!updatedCase!) updatedCase = { ...activeCase, ...syncedUpdate, id: targetId, ...(phoneToSet ? { patientPhone: phoneToSet } : {}) };
       }
-      try { localStorage.setItem('alo_active_case_id', targetId); } catch {}
-      apiClient.saveCase(updatedCase).catch(() => {});
+      try { localStorage.setItem(ACTIVE_CASE_KEY, targetId); } catch {}
+      apiClient.saveCase(updatedCase)
+        .then(() => window.dispatchEvent(new CustomEvent('alo:case-save-ok')))
+        .catch((err) => window.dispatchEvent(new CustomEvent('alo:case-save-failed', {
+          detail: { caseNumber: updatedCase.caseNumber, message: err?.message || '' },
+        })));
       return nextCases;
     });
   };

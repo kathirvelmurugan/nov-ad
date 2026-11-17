@@ -42,12 +42,14 @@ export const CaseDetailsDrillDownModal: React.FC<CaseDetailsDrillDownModalProps>
 
   const rawHospital = caseItem.treatingDoctor?.hospital;
   const isLegacyAloCare = !rawHospital || rawHospital === 'Alo Care Specialist Medical Center' || rawHospital === 'مركز ألو كير الطبي التخصصي' || rawHospital === 'مجمع الرعاية الطبية - الرياض' || rawHospital === 'المجمع الطبي الشريك' || rawHospital === 'Partner Medical Center';
+  // Fall back to the neutral network label. Naming a specific facility here would
+  // attach a real patient's case to a hospital that may never have existed.
   const hospitalName = isLegacyAloCare
-    ? (isRTL ? 'مستشفى رعاية الرياض المعتمد' : 'Riyadh Care Medical Center')
+    ? (isRTL ? 'شبكة ألو الطبية المعتمدة' : 'ALO Accredited Network')
     : rawHospital;
 
-  const doctorName = caseItem.treatingDoctor?.name || (isRTL ? 'د. فهد الحربي' : 'Dr. Fahad Al-Harbi');
-  const consultantName = caseItem.consultant?.name || 'Dr. Pradeep Kumar, MBBS, MS, MCh (CTVS)';
+  const doctorName = caseItem.treatingDoctor?.name || (isRTL ? 'غير مُعيَّن' : 'Unassigned');
+  const consultantName = caseItem.consultant?.name || (isRTL ? 'غير مُعيَّن' : 'Unassigned');
 
   const patientQuestions = (caseItem.metadata?.patientQuestions as string[]) || [];
   const followUpAnswers =

@@ -55,7 +55,7 @@ export const PatientStatusTimelineView: React.FC<Props> = ({
   onStartNewCase,
   onOpenFollowUp,
   userSession,
-  lang = 'ar',
+  lang = 'en',
 }) => {
   const isAr = lang === 'ar';
 

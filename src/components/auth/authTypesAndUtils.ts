@@ -1,7 +1,5 @@
 import React from 'react';
-import { RoleCode, StaffAccountRecord } from '../../types';
-import { DEFAULT_STAFF_DIRECTORY } from '../../data/accreditedStaffAndTenants';
-import { PLATFORM_USERS_KEY } from '../../hooks/workflowConstants';
+import { RoleCode } from '../../types';
 import { formatPhoneDisplay as formatE164Display, normalizePhone, validatePhone } from '../../utils/phoneValidation';
 
 export const PALETTE = {
@@ -15,13 +13,6 @@ export const PALETTE = {
   error: '#D93025',
   border: '#D1E3E1'
 };
-
-export const SESSION_KEY = 'alo_user_session_v4.0_clean';
-export const USER_PINS_KEY = 'alo_user_pins_v4.0_clean';
-export const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
-export const DEV_OTP = '123456';
-export const DEFAULT_DEV_PIN = '1234';
-export const DEFAULT_TEST_PASSWORD = '123456';
 
 export type CountryCode = 'SA' | 'IN';
 
@@ -82,134 +73,7 @@ export const extractRawPhoneByCountry = (value: string, country: CountryCode = '
 export const validateMobileByCountry = (value: string, country: CountryCode = 'SA'): boolean =>
   validatePhone(value, country).isValid;
 
-export const getUserPin = (rawPhone: string): string | null => {
-  if (!rawPhone) return null;
-  const clean = rawPhone.replace(/\D/g, '');
-  if (clean === '966500000001' || clean === '0500000001' || clean === '500000001') {
-    return DEFAULT_DEV_PIN;
-  }
-  try {
-    const saved = localStorage.getItem(USER_PINS_KEY);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      for (const k of Object.keys(parsed)) {
-        if (matchesPhone(k, rawPhone)) return parsed[k];
-      }
-    }
-    const staffSaved = localStorage.getItem(PLATFORM_USERS_KEY);
-    if (staffSaved) {
-      const staffList = JSON.parse(staffSaved);
-      if (Array.isArray(staffList)) {
-        const found = staffList.find((s: any) => matchesPhone(s.phone, rawPhone));
-        if (found && (found.hasCustomPin || found.pin)) return found.pin || null;
-      }
-    }
-  } catch {}
-  const presetStaff = DEFAULT_STAFF_DIRECTORY.find((s) => matchesPhone(s.phone, rawPhone));
-  if (presetStaff && presetStaff.pin) return presetStaff.pin;
-  return null;
-};
-
-export const setUserPin = (rawPhone: string, pin: string): void => {
-  const clean = rawPhone.replace(/\D/g, '');
-  const variants = [
-    rawPhone,
-    clean,
-    clean.startsWith('966') ? '+' + clean : '+966' + clean,
-    clean.startsWith('966') ? '0' + clean.slice(3) : '0' + clean,
-    clean.startsWith('91') ? '+' + clean : '+91' + clean,
-  ];
-  try {
-    const saved = localStorage.getItem(USER_PINS_KEY);
-    const pins = saved ? JSON.parse(saved) : {};
-    variants.forEach((v) => { pins[v] = pin; });
-    localStorage.setItem(USER_PINS_KEY, JSON.stringify(pins));
-
-    // Also update staff directory
-    const staffSaved = localStorage.getItem(PLATFORM_USERS_KEY);
-    if (staffSaved) {
-      const staffList = JSON.parse(staffSaved);
-      if (Array.isArray(staffList)) {
-        const updated = staffList.map((s: any) => {
-          if (matchesPhone(s.phone, rawPhone)) {
-            return { ...s, pin, hasCustomPin: true };
-          }
-          return s;
-        });
-        localStorage.setItem(PLATFORM_USERS_KEY, JSON.stringify(updated));
-      }
-    }
-  } catch {}
-};
-
-export const hasUserPin = (rawPhone: string): boolean => {
-  if (!rawPhone) return false;
-  const clean = rawPhone.replace(/\D/g, '');
-  if (clean === '966500000001' || clean === '0500000001' || clean === '500000001') {
-    return true; // Super Admin has default PIN 1234
-  }
-  try {
-    const saved = localStorage.getItem(USER_PINS_KEY);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (Object.keys(parsed).some((k) => matchesPhone(k, rawPhone))) return true;
-    }
-    const staffSaved = localStorage.getItem(PLATFORM_USERS_KEY);
-    if (staffSaved) {
-      const staffList = JSON.parse(staffSaved);
-      if (Array.isArray(staffList)) {
-        const found = staffList.find((s: any) => matchesPhone(s.phone, rawPhone));
-        if (found && (found.hasCustomPin || found.pin)) return true;
-      }
-    }
-  } catch {}
-  const presetStaff = DEFAULT_STAFF_DIRECTORY.find((s) => matchesPhone(s.phone, rawPhone));
-  if (presetStaff && presetStaff.pin && presetStaff.hasCustomPin) return true;
-  return false;
-};
-
 export type AuthPortalTab = 'patient' | 'clinical' | 'hospital' | 'superadmin';
-
-export interface PersonaPreset {
-  id: string;
-  nameAr: string;
-  nameEn: string;
-  phone: string;
-  role: string;
-  roleCode?: RoleCode;
-  hospitalId?: string;
-}
-
-export const PERSONA_PRESETS: PersonaPreset[] = [
-  { id: 'super_admin', nameAr: 'المشرف العام', nameEn: 'Rehmaan', phone: '+966500000001', role: 'Super Admin / المشرف العام', roleCode: 'AD' },
-  { id: 'hospital_admin', nameAr: 'مدير المجمع الطبي', nameEn: 'David Nunez', phone: '+966500000002', role: 'Hospital Admin / مدير المجمع الطبي', roleCode: 'HA', hospitalId: 'hosp-alo-riyadh-01' },
-  { id: 'hospital_admin_alias', nameAr: 'مدير المجمع الطبي', nameEn: 'David Nunez', phone: '+966504444444', role: 'Hospital Admin / مدير المجمع الطبي', roleCode: 'HA', hospitalId: 'hosp-alo-riyadh-01' },
-  { id: 'coordinator', nameAr: 'منسق رعاية ألو', nameEn: 'Emmanuel Arcon Gonzalez', phone: '+966500000003', role: 'ALO Coordinator / منسق رعاية ألو', roleCode: 'C' },
-  { id: 'coordinator_alias', nameAr: 'منسق رعاية ألو', nameEn: 'Emmanuel Arcon Gonzalez', phone: '+966505555555', role: 'ALO Coordinator / منسق رعاية ألو', roleCode: 'C' },
-  { id: 'nurse', nameAr: 'ممرضة ألو للفرز', nameEn: 'Sara Al-Qahtani', phone: '+966500000004', role: 'ALO Nurse / ممرضة ألو', roleCode: 'N' },
-  { id: 'doctor', nameAr: 'الطبيب السعودي المعالج', nameEn: 'Dr. Fahad Al-Harbi', phone: '+966500000005', role: 'Treating Doctor / الطبيب المعالج', roleCode: 'D', hospitalId: 'hosp-alo-riyadh-01' },
-  { id: 'doctor_alias', nameAr: 'الطبيب السعودي المعالج', nameEn: 'Dr. Fahad Al-Harbi', phone: '+966502222222', role: 'Treating Doctor / الطبيب المعالج', roleCode: 'D', hospitalId: 'hosp-alo-riyadh-01' },
-  { id: 'consultant_cardio', nameAr: 'الاستشاري الدولي (قلب)', nameEn: 'Dr. Rajesh Kumar', phone: '+919876543211', role: 'Consultant / الاستشاري الدولي', roleCode: 'K' },
-  { id: 'consultant_onco', nameAr: 'الاستشارية الدولية (أورام)', nameEn: 'Dr. Ananya Sharma', phone: '+919876543212', role: 'Consultant / الاستشارية الدولية', roleCode: 'K' },
-  { id: 'consultant_ortho', nameAr: 'الاستشاري الدولي (عظام)', nameEn: 'Dr. Sanjay Mehta', phone: '+919876543213', role: 'Consultant / الاستشاري الدولي', roleCode: 'K' },
-  { id: 'lab', nameAr: 'المختبر التشخيصي', nameEn: 'Omar Al-Zahrani', phone: '+966500000007', role: 'Lab / المختبر', roleCode: 'L', hospitalId: 'hosp-alo-riyadh-01' },
-  { id: 'pharmacy', nameAr: 'الصيدلية السريرية', nameEn: 'Noura Al-Dosari', phone: '+966500000008', role: 'Pharmacy / الصيدلية', roleCode: 'PH', hospitalId: 'hosp-alo-riyadh-01' },
-  { id: 'reception', nameAr: 'الاستقبال والمواعيد', nameEn: 'Marcus Vance', phone: '+966500000009', role: 'Reception / الاستقبال', roleCode: 'REC', hospitalId: 'hosp-alo-riyadh-01' },
-  { id: 'patient', nameAr: 'المريض', nameEn: 'Sami Al-Harbi', phone: '+966500000099', role: 'Patient / المريض', roleCode: 'P' },
-  { id: 'patient_alias', nameAr: 'المريض', nameEn: 'Sami Al-Harbi', phone: '+966501111111', role: 'Patient / المريض', roleCode: 'P' },
-];
-
-export interface SessionData {
-  isAuthenticated: boolean;
-  phone: string;
-  personaId: string | null;
-  roleCode?: RoleCode;
-  hospitalId?: string;
-  fullName?: string;
-  isGuest: boolean;
-  expiresAt: number;
-  lang: 'ar' | 'en';
-}
 
 export const formatPhoneDisplay = (value: string): string => {
   const country = detectCountryFromPhone(value);
@@ -318,66 +182,6 @@ export const getInitialPortal = (): AuthPortalTab => {
   return 'patient';
 };
 
-export const resolveAccountByPhone = (
-  rawPhone: string,
-  isRTL: boolean = true,
-  freshStaffList?: StaffAccountRecord[]
-) => {
-  let allStaff: StaffAccountRecord[] = freshStaffList || DEFAULT_STAFF_DIRECTORY;
-  if (!freshStaffList) {
-    try {
-      const stored = localStorage.getItem(PLATFORM_USERS_KEY);
-      if (stored) {
-        allStaff = JSON.parse(stored);
-      }
-    } catch {}
-  }
-
-  const clean = rawPhone.replace(/\D/g, '');
-  const matchedStaff = allStaff.find(
-    (s) =>
-      matchesPhone(s.phone, rawPhone) ||
-      (s.staffCode && (s.staffCode.trim() === rawPhone.trim() || s.staffCode.trim() === clean)) ||
-      (s.fullName && s.fullName.toLowerCase().trim() === rawPhone.toLowerCase().trim())
-  );
-
-  if (matchedStaff) {
-    const existingPin = getUserPin(matchedStaff.phone) || matchedStaff.pin;
-    return {
-      roleCode: matchedStaff.roleCode,
-      hospitalId: matchedStaff.hospitalId,
-      fullName: isRTL && matchedStaff.fullNameAr ? matchedStaff.fullNameAr : matchedStaff.fullName,
-      isStaff: true,
-      hasCustomPin: Boolean(matchedStaff.hasCustomPin && existingPin),
-      staffRecord: matchedStaff,
-    };
-  }
-
-  const matchedPersona = PERSONA_PRESETS.find(
-    (p) => matchesPhone(p.phone, rawPhone) || p.phone === rawPhone
-  );
-  if (matchedPersona) {
-    const existingPin = getUserPin(rawPhone);
-    return {
-      roleCode: matchedPersona.roleCode || 'P',
-      hospitalId: matchedPersona.hospitalId,
-      fullName: isRTL ? matchedPersona.nameAr : matchedPersona.nameEn,
-      isStaff: matchedPersona.roleCode !== 'P',
-      hasCustomPin: Boolean(existingPin),
-      staffRecord: undefined,
-    };
-  }
-
-  return {
-    roleCode: 'P' as RoleCode,
-    hospitalId: undefined,
-    fullName: isRTL ? 'مريض جديد' : 'New Patient',
-    isStaff: false,
-    hasCustomPin: false,
-    staffRecord: undefined,
-  };
-};
-
 export const getRoleTitle = (code: RoleCode, isRTL: boolean = true): string => {
   switch (code) {
     case 'AD': return isRTL ? 'المشرف العام' : 'Super Admin';
@@ -388,35 +192,6 @@ export const getRoleTitle = (code: RoleCode, isRTL: boolean = true): string => {
     case 'K': return isRTL ? 'الاستشاري الدولي' : 'International Consultant';
     default: return isRTL ? 'حساب المريض' : 'Patient Account';
   }
-};
-
-export const getActiveConsultantSession = (lang: 'ar' | 'en' = 'ar'): SessionData | null => {
-  try {
-    const saved = localStorage.getItem('alo_consultant_session_v4.0_clean');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (parsed.isAuthenticated && parsed.expiresAt > Date.now()) {
-        return {
-          isAuthenticated: true,
-          phone: parsed.phone || '+919876543210',
-          personaId: 'k',
-          roleCode: 'K',
-          fullName: parsed.fullName || 'International Consultant',
-          isGuest: false,
-          expiresAt: parsed.expiresAt,
-          lang,
-        };
-      }
-    }
-  } catch {}
-  return null;
-};
-
-export const saveConsultantSession = (session: SessionData) => {
-  try {
-    localStorage.setItem('alo_consultant_session_v4.0_clean', JSON.stringify(session));
-    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-  } catch {}
 };
 
 export const getAuthContainerStyle = (isRTL: boolean): React.CSSProperties => ({
@@ -443,29 +218,3 @@ export const authCardStyle: React.CSSProperties = {
   overflow: 'hidden',
 };
 
-export const createAuthSession = (
-  rawPhone: string,
-  isGuest: boolean,
-  lang: 'ar' | 'en',
-  customRole?: RoleCode,
-  customHospitalId?: string,
-  customFullName?: string
-): SessionData => {
-  const resolved = resolveAccountByPhone(rawPhone);
-  const roleCode = customRole || resolved.roleCode;
-  const session: SessionData = {
-    isAuthenticated: true,
-    phone: isGuest ? '' : rawPhone,
-    personaId: roleCode.toLowerCase(),
-    roleCode,
-    hospitalId: customHospitalId || resolved.hospitalId,
-    fullName: customFullName || resolved.fullName,
-    isGuest,
-    expiresAt: Date.now() + THIRTY_DAYS_MS,
-    lang,
-  };
-  try {
-    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-  } catch {}
-  return session;
-};

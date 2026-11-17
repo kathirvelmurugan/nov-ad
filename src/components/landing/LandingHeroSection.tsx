@@ -103,10 +103,10 @@ export const LandingHeroSection: React.FC<Props> = ({
                     </div>
                     <div>
                       <h2 className="text-sm font-extrabold text-slate-900">
-                        {isAr ? 'د. عبدالله الشمري' : 'Dr. Abdullah Al-Shammari'}
+                        {isAr ? 'طبيب القلب الاستشاري المعتمد' : 'Accredited Consultant Cardiologist'}
                       </h2>
                       <p className="text-[11px] text-slate-500">
-                        {isAr ? 'استشاري أمراض القلب · مستشفى رعاية الرياض' : 'Senior Cardiologist · Riyadh Care'}
+                        {isAr ? 'استشاري أمراض القلب · شبكة ألو الطبية المعتمدة' : 'Senior Cardiologist · ALO Accredited Network'}
                       </p>
                     </div>
                   </div>

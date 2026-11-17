@@ -13,7 +13,7 @@ export type RoleCode =
   | 'H'   // Home Healthcare Partner (Sanad Health)
   | 'T'   // Travel & Medical Visa Partner (Al-Fursan)
   | 'V'   // Insurance Approvals (Tawuniya / Bupa)
-  | 'HA'  // Medical Center Partner Admin (Riyadh Care)
+  | 'HA'  // Medical Center Partner Admin (a real tenant row, never a named facility)
   | 'AD'; // ALO Platform Super Admin
 
 export type TenantTier = 
@@ -46,8 +46,8 @@ export interface StaffAccountRecord {
   phone: string;
   pin: string;
   token?: string;
+  expiresAt?: string;
   hasCustomPin?: boolean;
-  tempPassword?: string;
   scfhsLicense?: string;
   department?: string;
   status: 'active' | 'pending_approval' | 'inactive';

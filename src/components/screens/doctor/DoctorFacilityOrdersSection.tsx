@@ -55,8 +55,8 @@ export const DoctorFacilityOrdersSection: React.FC<Props> = ({
                     }
                   },
                   internalOrders: {
-                    medicalCenterId: 'mc_riyadh_care',
-                    medicalCenterName: activeCase.treatingDoctor?.hospital || 'مستشفى رعاية الرياض',
+                    medicalCenterId: '',
+                    medicalCenterName: activeCase.treatingDoctor?.hospital || 'شبكة ألو الطبية المعتمدة',
                     lab: {
                       ordered: checked,
                       tests: checked ? ['Troponin-I', 'CBC', 'Renal Function'] : [],
@@ -113,8 +113,8 @@ export const DoctorFacilityOrdersSection: React.FC<Props> = ({
                     }
                   },
                   internalOrders: {
-                    medicalCenterId: 'mc_riyadh_care',
-                    medicalCenterName: activeCase.treatingDoctor?.hospital || 'مستشفى رعاية الرياض',
+                    medicalCenterId: '',
+                    medicalCenterName: activeCase.treatingDoctor?.hospital || 'شبكة ألو الطبية المعتمدة',
                     lab: activeCase.internalOrders?.lab || {
                       ordered: false,
                       tests: [],

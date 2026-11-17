@@ -1,9 +1,16 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Stethoscope } from 'lucide-react';
-import { ClinicalCase, StaffAccountRecord, TenantHospital } from '../../types';
-import { INITIAL_MEDICAL_CENTER_DOCTORS } from '../../data/medicalCenterDoctors';
-import { DEFAULT_TENANT_HOSPITALS, DEFAULT_STAFF_DIRECTORY } from '../../data/accreditedStaffAndTenants';
-import { TENANTS_KEY, PLATFORM_USERS_KEY } from '../../hooks/workflowConstants';
+import { ClinicalCase, TenantHospital } from '../../types';
+import { apiClient } from '../../services/apiClient';
+
+interface DirectoryDoctor {
+  id: string;
+  fullName: string;
+  fullNameAr?: string | null;
+  hospitalId?: string | null;
+  department?: string | null;
+  scfhsLicense?: string | null;
+}
 
 interface Props {
   activeCase: ClinicalCase;
@@ -16,61 +23,59 @@ export const IntakeDoctorSelectionCard: React.FC<Props> = ({
   isAr,
   onUpdateCase,
 }) => {
-  // Dynamically retrieve enrolled treating doctors (roleCode === 'D')
+  // The directory is the real staff table (role D, active only). Bundled arrays and
+  // a localStorage copy were removed: they silently hid that no doctor was enrolled.
+  const [doctors, setDoctors] = useState<DirectoryDoctor[]>([]);
+  const [tenants, setTenants] = useState<TenantHospital[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const [doctorList, tenantList] = await Promise.all([
+          apiClient.fetchDoctors(),
+          apiClient.fetchTenants().catch(() => [] as TenantHospital[]),
+        ]);
+        if (cancelled) return;
+        setDoctors(doctorList);
+        setTenants(tenantList);
+      } catch {
+        if (!cancelled) setLoadError(true);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const availableDoctors = useMemo(() => {
-    let allStaff: StaffAccountRecord[] = DEFAULT_STAFF_DIRECTORY;
-    let allHospitals: TenantHospital[] = DEFAULT_TENANT_HOSPITALS;
-
-    try {
-      const storedUsers = localStorage.getItem(PLATFORM_USERS_KEY);
-      if (storedUsers) {
-        const parsed = JSON.parse(storedUsers);
-        if (Array.isArray(parsed)) allStaff = parsed;
-      }
-      const storedHospitals = localStorage.getItem(TENANTS_KEY);
-      if (storedHospitals) {
-        const parsedH = JSON.parse(storedHospitals);
-        if (Array.isArray(parsedH)) allHospitals = parsedH;
-      }
-    } catch {}
-
-    const dynamicDoctors = allStaff
-      .filter((s) => s.roleCode === 'D' && s.status === 'active')
-      .map((s) => {
-        const hospital = allHospitals.find((h) => h.id === s.hospitalId);
-        return {
-          id: s.id,
-          name: isAr && s.fullNameAr ? s.fullNameAr : s.fullName,
-          nameEn: s.fullName,
-          specialty: s.department || 'استشاري أمراض القلب',
-          specialtyEn: s.department || 'Cardiology Consultant',
-          hospital: hospital ? (isAr ? hospital.nameAr : hospital.nameEn) : (isAr ? 'مستشفى رعاية الرياض المعتمد' : 'Riyadh Care Medical Center'),
-          hospitalEn: hospital ? hospital.nameEn : 'Riyadh Care Medical Center',
-          city: hospital ? hospital.city : 'الرياض',
-          license: s.scfhsLicense || 'SCFHS-CERTIFIED',
-          tier: (2 as const),
-          isOnDuty: true,
-        };
-      });
-
-    const combined = [...INITIAL_MEDICAL_CENTER_DOCTORS, ...dynamicDoctors];
-    const uniqueByPerson = new Map<string, typeof combined[0]>();
-    combined.forEach((doc) => {
-      const normalized = (doc.nameEn || doc.name).replace(/^(dr\.?|د\.?)\s*/i, '').trim().toLowerCase();
-      const existing = uniqueByPerson.get(normalized);
-      if (!existing) {
-        uniqueByPerson.set(normalized, doc);
-      } else {
-        // Prefer record with a real hospital & SCFHS license over generic fallback
-        const existingIsGeneric = existing.hospitalEn === 'Partner Medical Center' || existing.license === 'SCFHS-CERTIFIED';
-        const currentIsGeneric = doc.hospitalEn === 'Partner Medical Center' || doc.license === 'SCFHS-CERTIFIED';
-        if (existingIsGeneric && !currentIsGeneric) {
-          uniqueByPerson.set(normalized, doc);
-        }
-      }
+    return doctors.map((d) => {
+      const hospital = tenants.find((h) => h.id === d.hospitalId);
+      return {
+        id: d.id,
+        name: isAr && d.fullNameAr ? d.fullNameAr : d.fullName,
+        nameEn: d.fullName,
+        specialty: d.department || (isAr ? 'استشاري' : 'Consultant'),
+        specialtyEn: d.department || 'Consultant',
+        hospital: hospital ? (isAr ? hospital.nameAr : hospital.nameEn) : (d.hospitalId || '—'),
+        hospitalEn: hospital ? hospital.nameEn : (d.hospitalId || '—'),
+        city: hospital ? (isAr ? (hospital.cityAr || hospital.city) : hospital.city) : '',
+        license: d.scfhsLicense || '—',
+      };
     });
-    return Array.from(uniqueByPerson.values());
-  }, [isAr]);
+  }, [doctors, tenants, isAr]);
+
+  const currentDoctor = availableDoctors.find(
+    (d) => d.name === activeCase.treatingDoctor?.name || d.nameEn === activeCase.treatingDoctor?.name
+  );
+  const selectValue =
+    activeCase.doctorSelectionPreference === 'specific_doctor' && currentDoctor
+      ? currentDoctor.id
+      : 'need_assistance';
 
   return (
     <div className="card-clinical p-5 space-y-3">
@@ -94,7 +99,7 @@ export const IntakeDoctorSelectionCard: React.FC<Props> = ({
           {isAr ? 'تحديد خيار الطبيب المعالج المشرف بالمملكة:' : 'Select Saudi Treating Doctor Assignment:'}
         </label>
         <select
-          value={activeCase.doctorSelectionPreference === 'need_assistance' ? 'need_assistance' : (activeCase.treatingDoctor?.name || 'need_assistance')}
+          value={selectValue}
           onChange={(e) => {
             const val = e.target.value;
             if (val === 'need_assistance') {
@@ -110,11 +115,11 @@ export const IntakeDoctorSelectionCard: React.FC<Props> = ({
               return;
             }
 
-            const selectedDoc = availableDoctors.find((d) => d.name === val || d.nameEn === val);
+            const selectedDoc = availableDoctors.find((d) => d.id === val);
             if (selectedDoc) {
               onUpdateCase({
                 doctorSelectionPreference: 'specific_doctor',
-                tier: selectedDoc.tier,
+                tier: 2,
                 treatingDoctor: {
                   ...activeCase.treatingDoctor,
                   name: selectedDoc.name,
@@ -130,13 +135,33 @@ export const IntakeDoctorSelectionCard: React.FC<Props> = ({
             ✨ {isAr ? 'أحتاج مساعدة ألو في الاختيار (موصى به - مطابقة التمريض السريري)' : 'Need ALO Assistance to Choose (Recommended - Clinical Nurse Match)'}
           </option>
           {availableDoctors.map((doc) => (
-            <option key={doc.id} value={doc.name}>
+            <option key={doc.id} value={doc.id}>
               {isAr
                 ? `${doc.name} — ${doc.hospital} · ${doc.specialty} (${doc.license})`
                 : `${doc.nameEn} — ${doc.hospitalEn} · ${doc.specialtyEn} (${doc.license})`}
             </option>
           ))}
         </select>
+
+        {loading && (
+          <p className="text-[11px] text-slate-500 dark:text-slate-400">
+            {isAr ? 'جارٍ تحميل الأطباء المسجلين...' : 'Loading enrolled doctors…'}
+          </p>
+        )}
+        {!loading && loadError && (
+          <p className="text-[11px] font-bold text-rose-600">
+            {isAr
+              ? 'تعذر تحميل دليل الأطباء. يمكنك المتابعة باختيار مساعدة ألو.'
+              : 'Could not load the doctor directory. You can continue with ALO assistance.'}
+          </p>
+        )}
+        {!loading && !loadError && availableDoctors.length === 0 && (
+          <p className="text-[11px] font-bold text-amber-600">
+            {isAr
+              ? 'لا يوجد أطباء مسجلون بعد — ستقوم ممرضة ألو بالتعيين.'
+              : 'No doctors enrolled yet — the ALO triage nurse will assign one.'}
+          </p>
+        )}
 
         <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-normal">
           {isAr

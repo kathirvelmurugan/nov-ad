@@ -177,7 +177,9 @@ export const IndianConsultantDevice: React.FC<CockpitDeviceProps> = ({
               </span>
             </div>
             <div style={{ fontSize: '12px', fontWeight: 800, color: '#0f172a' }}>
-              {isAr ? `رمز الحالة: ${activeCase.egressToken || 'ALO-KSA-9482'} (٤٨ سنة / ذكر)` : `Subject Token: ${activeCase.egressToken || 'ALO-KSA-9482'} (48Y / Male)`}
+              {isAr
+                ? `رمز الحالة: ${activeCase.egressToken || '—'}${activeCase.age ? ` (${activeCase.age} سنة / ${activeCase.gender === 'F' ? 'أنثى' : 'ذكر'})` : ''}`
+                : `Subject Token: ${activeCase.egressToken || '—'}${activeCase.age ? ` (${activeCase.age}Y / ${activeCase.gender === 'F' ? 'Female' : 'Male'})` : ''}`}
             </div>
             <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px', lineHeight: 1.4 }}>
               {isAr

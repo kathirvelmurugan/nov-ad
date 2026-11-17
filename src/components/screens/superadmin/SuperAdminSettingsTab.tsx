@@ -2,12 +2,13 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Save, RefreshCw, AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, Settings } from 'lucide-react';
 import type { PlatformConfig, TierConfig, PaymentRailConfig } from '../../../config/platformConfig';
 import { DEFAULT_PLATFORM_CONFIG } from '../../../config/platformConfig';
+import { USER_SESSION_KEY } from '../../../hooks/workflowConstants';
 
 /* ── helpers ─────────────────────────────────────────────────────────── */
 
 function getToken(): string {
   try {
-    const raw = localStorage.getItem('alo_user_session_v4.0_clean');
+    const raw = localStorage.getItem(USER_SESSION_KEY);
     if (!raw) return '';
     const s = JSON.parse(raw);
     return s.token || '';

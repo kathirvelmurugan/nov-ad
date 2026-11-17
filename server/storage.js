@@ -10,8 +10,11 @@ if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
 const minioHost = process.env.MINIO_ENDPOINT || (process.env.NODE_ENV === 'production' ? 'alo-minio' : '127.0.0.1');
 const minioPort = process.env.MINIO_PORT || '9000';
-const accessKeyId = process.env.MINIO_ROOT_USER || 'alo_storage_admin';
-const secretAccessKey = process.env.MINIO_ROOT_PASSWORD || 'alo_secure_minio_pass_2026';
+// No built-in storage credentials: a hardcoded key silently talks to the wrong
+// bucket or fails with a misleading auth error. Missing credentials fall back to
+// local disk, which is already the documented degraded path.
+const accessKeyId = process.env.MINIO_ROOT_USER || '';
+const secretAccessKey = process.env.MINIO_ROOT_PASSWORD || '';
 const BUCKET_NAME = process.env.MINIO_BUCKET || 'alodoctor-assets';
 
 export const s3 = new S3Client({
@@ -24,6 +27,11 @@ export const s3 = new S3Client({
 let isMinioAvailable = false;
 
 export async function initStorage() {
+  if (!accessKeyId || !secretAccessKey) {
+    isMinioAvailable = false;
+    console.warn('⚠️ MinIO credentials not configured (MINIO_ROOT_USER / MINIO_ROOT_PASSWORD). Files will be stored on local disk.');
+    return;
+  }
   try {
     await s3.send(new HeadBucketCommand({ Bucket: BUCKET_NAME }));
     isMinioAvailable = true;

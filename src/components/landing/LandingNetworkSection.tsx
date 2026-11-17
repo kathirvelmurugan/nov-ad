@@ -27,7 +27,7 @@ export const LandingNetworkSection: React.FC<Props> = ({ isAr }) => {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
           <div className="bg-slate-800/80 border border-slate-700/70 p-4 rounded-2xl text-center space-y-1.5 hover:border-emerald-500 transition-colors">
             <Building2 className="w-6 h-6 text-emerald-400 mx-auto" />
-            <p className="text-xs font-bold text-slate-100">{isAr ? 'مستشفى رعاية الرياض' : 'Riyadh Care'}</p>
+            <p className="text-xs font-bold text-slate-100">{isAr ? 'شبكة ألو الطبية' : 'ALO Network'}</p>
             <p className="text-[10px] text-slate-400 font-mono">Saudi Partner</p>
           </div>
           <div className="bg-slate-800/80 border border-slate-700/70 p-4 rounded-2xl text-center space-y-1.5 hover:border-emerald-500 transition-colors">

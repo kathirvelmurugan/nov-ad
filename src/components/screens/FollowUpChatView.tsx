@@ -20,7 +20,7 @@ interface Props {
 }
 
 const FollowUpChatView: React.FC<Props> = ({ activeCase, onAdvanceStage, onUpdateCase, onBackToTimeline }) => {
-  const [lang, setLang] = useState<'ar' | 'en'>('ar');
+  const [lang, setLang] = useState<'ar' | 'en'>('en');
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [reportModalType, setReportModalType] = useState<'pdf1' | 'pdf2'>('pdf1');
   const [personaId, setPersonaId] = useState<number>(1);

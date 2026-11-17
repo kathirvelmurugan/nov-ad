@@ -5,15 +5,25 @@ dotenv.config();
 const { Pool } = pg;
 
 const pgUser = process.env.POSTGRES_USER || 'alo_admin';
-const pgPassword = process.env.POSTGRES_PASSWORD || 'alo_secure_postgres_pass_2026';
 const pgDb = process.env.POSTGRES_DB || 'alodoctor';
 const pgHost = process.env.DB_HOST || (process.env.NODE_ENV === 'production' ? 'alo-postgres' : '127.0.0.1');
 const pgPort = process.env.DB_PORT || '5432';
 
+// No built-in credentials: DATABASE_URL or POSTGRES_PASSWORD must be supplied by
+// the environment. A hardcoded password silently connects to the wrong database.
+const pgPassword = process.env.POSTGRES_PASSWORD;
+const connectionString =
+  process.env.DATABASE_URL ||
+  (pgPassword
+    ? `postgresql://${pgUser}:${encodeURIComponent(pgPassword)}@${pgHost}:${pgPort}/${pgDb}?schema=public`
+    : null);
+
+if (!connectionString) {
+  throw new Error('DATABASE_URL or POSTGRES_PASSWORD is required. The server has no built-in database credentials.');
+}
+
 export const pool = new Pool({
-  connectionString:
-    process.env.DATABASE_URL ||
-    `postgresql://${pgUser}:${encodeURIComponent(pgPassword)}@${pgHost}:${pgPort}/${pgDb}?schema=public`,
+  connectionString,
   max: 10,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 3000,
@@ -46,7 +56,7 @@ export async function initDatabase() {
           full_name_ar VARCHAR(255),
           role_code VARCHAR(20) NOT NULL,
           phone VARCHAR(50) NOT NULL,
-          pin VARCHAR(20) DEFAULT '1234',
+          pin VARCHAR(20),
           hospital_id VARCHAR(100) REFERENCES tenants(id) ON DELETE SET NULL,
           department VARCHAR(100),
           status VARCHAR(50) DEFAULT 'active',
@@ -55,6 +65,7 @@ export async function initDatabase() {
         );
 
         ALTER TABLE platform_users ADD COLUMN IF NOT EXISTS has_custom_pin BOOLEAN DEFAULT FALSE;
+        ALTER TABLE platform_users ALTER COLUMN pin DROP DEFAULT;
         CREATE UNIQUE INDEX IF NOT EXISTS idx_platform_users_phone ON platform_users(phone);
 
         CREATE TABLE IF NOT EXISTS clinical_cases (
@@ -93,7 +104,7 @@ export async function initDatabase() {
         );
 
         CREATE TABLE IF NOT EXISTS sessions (
-          token UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          token VARCHAR(128) PRIMARY KEY,
           user_id VARCHAR(100) NOT NULL,
           role_code VARCHAR(20) NOT NULL,
           hospital_id VARCHAR(100),
@@ -101,6 +112,13 @@ export async function initDatabase() {
           expires_at TIMESTAMPTZ NOT NULL,
           revoked_at TIMESTAMPTZ
         );
+
+        -- Migration: older schemas declared token as UUID, but tokens are 64-char hex strings.
+        ALTER TABLE sessions ALTER COLUMN token TYPE VARCHAR(128) USING token::text;
+        ALTER TABLE sessions ADD COLUMN IF NOT EXISTS phone VARCHAR(30);
+
+        -- Migration: platform_users.id had no default, so JIT patient inserts failed with NOT NULL violation.
+        ALTER TABLE platform_users ALTER COLUMN id SET DEFAULT ('patient-' || replace(gen_random_uuid()::text, '-', ''));
 
         CREATE TABLE IF NOT EXISTS platform_settings (
           id INT PRIMARY KEY DEFAULT 1,
@@ -118,44 +136,19 @@ export async function initDatabase() {
           changed_at TIMESTAMPTZ DEFAULT NOW()
         );
 
-        -- Standardize default accredited hospital tenant
-        INSERT INTO tenants (id, name_en, name_ar, city, mci_license_number, status, hospital_admin_name, hospital_admin_phone, doctor_count, created_at)
-        VALUES (
-          'hosp-alo-riyadh-01',
-          'Riyadh Care Medical Center',
-          'مستشفى رعاية الرياض المعتمد',
-          'الرياض',
-          'MCI-SA-2024-8891',
-          'active',
-          'David Nunez',
-          '+966504444444',
-          8,
-          NOW()
-        )
-        ON CONFLICT (id) DO UPDATE SET
-          name_en = 'Riyadh Care Medical Center',
-          name_ar = 'مستشفى رعاية الرياض المعتمد',
-          city = 'الرياض',
-          mci_license_number = 'MCI-SA-2024-8891',
-          hospital_admin_name = 'David Nunez',
-          hospital_admin_phone = '+966504444444',
-          doctor_count = 8;
-
-        -- Update any existing clinical cases referencing legacy hospital name
-        UPDATE clinical_cases
-        SET case_data = jsonb_set(
-          case_data,
-          '{treatingDoctor,hospital}',
-          '"Riyadh Care Medical Center"'::jsonb
-        )
-        WHERE case_data->'treatingDoctor'->>'hospital' = 'Alo Care Specialist Medical Center'
-           OR case_data->'treatingDoctor'->>'hospital' = 'مركز ألو كير الطبي التخصصي';
+        -- Data is managed outside the schema bootstrap: no tenant/user/settings
+        -- seeding here. Rows are inserted once, intentionally, and never re-applied
+        -- on boot. This block previously seeded the demo tenant (and its doctor
+        -- count) on every restart.
       `);
       console.log('✅ PostgreSQL database tables initialized successfully.');
     } finally {
       client.release();
     }
   } catch (err) {
-    console.warn('⚠️ PostgreSQL connection failed, operating with fallback mode:', err.message);
+    // No fallback mode exists: every route reads Postgres directly. Surface the
+    // failure instead of booting as if the database were available.
+    console.error('❌ PostgreSQL initialisation failed:', err.message);
+    throw err;
   }
 }

@@ -29,8 +29,10 @@ export const NewCaseModal: React.FC<Props> = ({
   const [city, setCity] = useState(isAr ? 'الرياض' : 'Riyadh');
   const [specialty, setSpecialty] = useState(isAr ? 'جراحة العمود الفقري والعظام' : 'Spine & Orthopedic Surgery');
   const [complaint, setComplaint] = useState('');
-  const [hospital, setHospital] = useState(isAr ? 'مستشفى رعاية الرياض المعتمد' : 'Riyadh Care Medical Center');
-  const [doctorName, setDoctorName] = useState(isAr ? 'د. فهد الحربي' : 'Dr. Fahad Al-Harbi');
+  // Starts empty on purpose: pre-filling a facility name attributes every case
+  // created here to a hospital that may not exist in the tenant directory.
+  const [hospital, setHospital] = useState('');
+  const [doctorName, setDoctorName] = useState('');
 
   if (!isOpen) return null;
 
@@ -143,7 +145,7 @@ export const NewCaseModal: React.FC<Props> = ({
                 type="text"
                 value={nameAr}
                 onChange={(e) => setNameAr(e.target.value)}
-                placeholder={isAr ? 'مثال: عبدالمحسن الحربي' : 'e.g. Abdulmohsen Al-Harbi'}
+                placeholder={isAr ? 'مثال: محمد العتيبي' : 'e.g. Mohammed Al-Otaibi'}
                 className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-teal-500 font-semibold"
                 required
               />
@@ -156,7 +158,7 @@ export const NewCaseModal: React.FC<Props> = ({
                 type="text"
                 value={nameEn}
                 onChange={(e) => setNameEn(e.target.value)}
-                placeholder="e.g. Abdulmohsen Al-Harbi"
+                placeholder="e.g. Mohammed Al-Otaibi"
                 className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-teal-500 font-semibold"
               />
             </div>

@@ -9,12 +9,14 @@ export const downloadPDF1 = (activeCase: ClinicalCase, isAr: boolean = false): v
   const checksum = generateMockSHA256();
   const caseNum = activeCase.caseNumber || activeCase.id;
   const patName = activeCase.patientName || activeCase.patientNameAr || (isAr ? 'المريض' : 'Patient');
-  const treatingDoc = activeCase.treatingDoctor?.name || (isAr ? 'د. فهد الحربي' : 'Dr. Fahad Al-Harbi');
+  const treatingDoc = activeCase.treatingDoctor?.name || (isAr ? 'غير مُعيَّن' : 'Unassigned');
   const consultant = activeCase.consultant?.name || 'International Consultant';
   const rawHosp = activeCase.treatingDoctor?.hospital;
   const isLegacy = !rawHosp || rawHosp === 'Alo Care Specialist Medical Center' || rawHosp === 'مركز ألو كير الطبي التخصصي' || rawHosp === 'المجمع الطبي الشريك' || rawHosp === 'Partner Medical Center';
+  // A certified PDF must never print a facility that does not exist in the tenant
+  // directory; the neutral network label is the only honest fallback.
   const hospital = isLegacy
-    ? (isAr ? 'مستشفى رعاية الرياض المعتمد' : 'Riyadh Care Medical Center')
+    ? (isAr ? 'شبكة ألو الطبية المعتمدة' : 'ALO Accredited Network')
     : rawHosp;
 
   const content = [
@@ -24,7 +26,7 @@ export const downloadPDF1 = (activeCase: ClinicalCase, isAr: boolean = false): v
     `Case Number: ${caseNum}`,
     `Date Issued: ${new Date().toLocaleDateString(isAr ? 'ar-SA' : 'en-US')}`,
     `Patient Name: ${patName}`,
-    `Specialty: ${activeCase.specialty || 'Cardiothoracic Surgery'}`,
+    `Specialty: ${activeCase.specialty || '—'}`,
     `Status: CERTIFIED & ENDORSED`,
     `Cryptographic Seal (SHA-256): ${checksum}`,
     `MOH & SDAIA Compliance: Verified`,
@@ -68,7 +70,7 @@ export const downloadPDF2 = (activeCase: ClinicalCase, isAr: boolean = false): v
   const checksum = generateMockSHA256();
   const caseNum = activeCase.caseNumber || activeCase.id;
   const patName = activeCase.patientName || activeCase.patientNameAr || (isAr ? 'المريض' : 'Patient');
-  const treatingDoc = activeCase.treatingDoctor?.name || (isAr ? 'د. فهد الحربي' : 'Dr. Fahad Al-Harbi');
+  const treatingDoc = activeCase.treatingDoctor?.name || (isAr ? 'غير مُعيَّن' : 'Unassigned');
   const consultant = activeCase.consultant?.name || 'International Consultant';
   const invoiceNum = activeCase.pricing?.invoiceNumber || 'INV-2026-001';
 
@@ -100,7 +102,7 @@ export const downloadPDF2 = (activeCase: ClinicalCase, isAr: boolean = false): v
     `SECTION 2: 21-DAY POST-OPINIONS FOLLOW-UP & CARE COORDINATION LOG`,
     `Patient Rating: ${(activeCase.metadata?.rating as number) || 5}/5 Stars`,
     `Follow-up Inquiries & Official Responses:`,
-    qnaBlock || 'Patient: Can I start the treatment now?\nCoordinator: Yes, after your confirmed lab results with Dr. Fahad Al-Harbi.',
+    qnaBlock || 'Patient: Can I start the treatment now?\nCoordinator: Follow the treating physician\'s signed plan.',
     activeCase.finalClosureNote ? `Specialist Final Remarks: ${activeCase.finalClosureNote}` : 'All follow-up questions concluded and certified.',
     `------------------------------------------------------------------------`,
     `SECTION 3: PARTNER SERVICE EXECUTION SUMMARY`,

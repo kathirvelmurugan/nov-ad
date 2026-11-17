@@ -129,7 +129,7 @@ export const NurseDevice: React.FC<CockpitDeviceProps> = ({
                   {activeCase.patientName || (isAr ? activeCase.patientNameAr : activeCase.patientNameEn) || (isAr ? 'مريض معتمد' : 'Verified Patient')}
                 </div>
                 <div style={{ fontSize: '10px', color: '#64748b', marginTop: '1px' }}>
-                  {isAr ? 'هوية / إقامة' : 'ID / Iqama'}: {activeCase.nationalIdMasked || '1089345210'} · {isAr ? 'ملف' : 'File'}: RC-{activeCase.caseNumber?.slice(-4) || '8821'}
+                  {isAr ? 'هوية / إقامة' : 'ID / Iqama'}: {activeCase.nationalIdMasked || '—'} · {isAr ? 'ملف' : 'File'}: {activeCase.caseNumber ? `RC-${activeCase.caseNumber.slice(-4)}` : '—'}
                 </div>
                 <div style={{ fontSize: '9px', color: '#166534', fontWeight: 700, marginTop: '3px' }}>
                   {isAr ? '✓ مرئية للطبيب السعودي والمنسق' : '✓ Visual of the Saudi doctor and coordinator'}

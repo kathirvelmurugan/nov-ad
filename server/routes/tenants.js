@@ -1,92 +1,105 @@
 import express from 'express';
 import crypto from 'crypto';
 import pool from '../db.js';
-import { memoryTenants } from '../store.js';
 
 const router = express.Router();
 
+// Postgres is the single source of truth: no memory mirrors. A database failure
+// is surfaced as a 500 so the client can show an honest error instead of stale
+// or fabricated tenant records.
 router.get('/', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM tenants ORDER BY created_at DESC');
     return res.status(200).json({ success: true, data: result.rows });
   } catch (error) {
-    console.error('[ALO DOCTOR] Tenants GET fallback to memory:', error.message);
-    return res.status(200).json({ success: true, data: [...memoryTenants].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)) });
+    console.error('[tenants] GET error:', error.message);
+    return res.status(500).json({ success: false, error: 'TENANTS_UNAVAILABLE', message: 'Tenant directory could not be loaded' });
   }
 });
 
 router.post('/', async (req, res) => {
-  const { nameEn, nameAr, id, licenseNumber, addressEn, addressAr, phone, email, status } = req.body;
+  const { id, nameEn, nameAr, city, mciLicenseNumber, status, hospitalAdminName, hospitalAdminPhone, doctorCount } = req.body || {};
 
-  if (!nameEn || !nameAr) {
+  const clean = (v) => (typeof v === 'string' ? v.trim() : '');
+  const nameEnValue = clean(nameEn);
+  const nameArValue = clean(nameAr);
+  const cityValue = clean(city);
+
+  // tenants.name_en / name_ar / city are NOT NULL: reject instead of inventing values.
+  if (!nameEnValue || !nameArValue || !cityValue) {
     return res.status(400).json({
       success: false,
-      message: 'Both nameEn and nameAr are required fields.'
+      error: 'INVALID_TENANT',
+      message: 'nameEn, nameAr and city are required fields.'
     });
   }
 
-  const tenantId = id || crypto.randomUUID();
-  const license = licenseNumber || `ALO-LIC-${Date.now().toString(36).toUpperCase()}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
-  const now = new Date().toISOString();
-
-  const tenantRecord = {
-    id: tenantId,
-    name_en: nameEn,
-    name_ar: nameAr,
-    license_number: license,
-    address_en: addressEn || null,
-    address_ar: addressAr || null,
-    phone: phone || null,
-    email: email || null,
-    status: status || 'active',
-    created_at: now,
-    updated_at: now
-  };
+  const tenantId = id ? String(id) : crypto.randomUUID();
 
   try {
     const query = `
-      INSERT INTO tenants (id, name_en, name_ar, license_number, address_en, address_ar, phone, email, status, created_at, updated_at)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      INSERT INTO tenants (id, name_en, name_ar, city, mci_license_number, status, hospital_admin_name, hospital_admin_phone, doctor_count, created_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
       ON CONFLICT (id) DO UPDATE SET
         name_en = EXCLUDED.name_en,
         name_ar = EXCLUDED.name_ar,
-        license_number = EXCLUDED.license_number,
-        address_en = EXCLUDED.address_en,
-        address_ar = EXCLUDED.address_ar,
-        phone = EXCLUDED.phone,
-        email = EXCLUDED.email,
+        city = EXCLUDED.city,
+        mci_license_number = EXCLUDED.mci_license_number,
         status = EXCLUDED.status,
-        updated_at = EXCLUDED.updated_at
+        hospital_admin_name = EXCLUDED.hospital_admin_name,
+        hospital_admin_phone = EXCLUDED.hospital_admin_phone,
+        doctor_count = EXCLUDED.doctor_count
       RETURNING *;
     `;
 
     const values = [
-      tenantRecord.id,
-      tenantRecord.name_en,
-      tenantRecord.name_ar,
-      tenantRecord.license_number,
-      tenantRecord.address_en,
-      tenantRecord.address_ar,
-      tenantRecord.phone,
-      tenantRecord.email,
-      tenantRecord.status,
-      tenantRecord.created_at,
-      tenantRecord.updated_at
+      tenantId,
+      nameEnValue,
+      nameArValue,
+      cityValue,
+      clean(mciLicenseNumber) || null,
+      clean(status) || 'active',
+      clean(hospitalAdminName) || null,
+      clean(hospitalAdminPhone) || null,
+      Number.isFinite(Number(doctorCount)) ? Number(doctorCount) : 0
     ];
 
     const result = await pool.query(query, values);
-    return res.status(201).json({ success: true, data: result.rows[0] });
+
+    // Keep the cached doctor count truthful: it is derived from enrolled doctors,
+    // never from a hand-typed number.
+    await pool.query(
+      `UPDATE tenants t SET doctor_count = (
+         SELECT COUNT(*) FROM platform_users u
+          WHERE u.role_code = 'D' AND u.hospital_id = t.id AND (u.status = 'active' OR u.status IS NULL)
+       ) WHERE t.id = $1`,
+      [tenantId]
+    );
+    const refreshed = await pool.query('SELECT * FROM tenants WHERE id = $1', [tenantId]);
+
+    return res.status(201).json({ success: true, data: refreshed.rows[0] || result.rows[0] });
   } catch (error) {
-    console.error('[ALO DOCTOR] Tenants POST fallback to memory:', error.message);
+    console.error('[tenants] POST error:', error.message);
+    return res.status(500).json({ success: false, error: 'TENANT_SAVE_FAILED', message: 'Tenant could not be persisted. Nothing was created.' });
+  }
+});
 
-    const existingIndex = memoryTenants.findIndex(t => t.id === tenantId);
-    if (existingIndex > -1) {
-      memoryTenants[existingIndex] = { ...memoryTenants[existingIndex], ...tenantRecord, updated_at: now };
-    } else {
-      memoryTenants.push(tenantRecord);
+router.patch('/:id/status', async (req, res) => {
+  const { id } = req.params;
+  const status = String((req.body || {}).status || '').toLowerCase();
+  if (!['active', 'pending', 'suspended'].includes(status)) {
+    return res.status(400).json({ success: false, error: 'INVALID_STATUS', message: "status must be 'active', 'pending' or 'suspended'" });
+  }
+
+  try {
+    const result = await pool.query('UPDATE tenants SET status = $1 WHERE id = $2 RETURNING *', [status, id]);
+    if (result.rowCount === 0) {
+      return res.status(404).json({ success: false, message: 'Tenant not found.' });
     }
-
-    return res.status(201).json({ success: true, data: tenantRecord });
+    return res.status(200).json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    console.error('[tenants] PATCH status error:', error.message);
+    return res.status(500).json({ success: false, error: 'TENANT_STATUS_FAILED', message: 'Tenant status could not be persisted. Nothing changed.' });
   }
 });
 
@@ -95,32 +108,13 @@ router.delete('/:id', async (req, res) => {
 
   try {
     const result = await pool.query('DELETE FROM tenants WHERE id = $1 RETURNING id', [id]);
-
     if (result.rowCount === 0) {
-      const memIndex = memoryTenants.findIndex(t => t.id === id);
-      if (memIndex > -1) {
-        memoryTenants.splice(memIndex, 1);
-        return res.status(200).json({ success: true, message: 'Tenant deleted from memory store.' });
-      }
       return res.status(404).json({ success: false, message: 'Tenant not found.' });
     }
-
-    const memIndex = memoryTenants.findIndex(t => t.id === id);
-    if (memIndex > -1) {
-      memoryTenants.splice(memIndex, 1);
-    }
-
     return res.status(200).json({ success: true, message: 'Tenant deleted successfully.' });
   } catch (error) {
-    console.error('[ALO DOCTOR] Tenants DELETE fallback to memory:', error.message);
-
-    const memIndex = memoryTenants.findIndex(t => t.id === id);
-    if (memIndex > -1) {
-      memoryTenants.splice(memIndex, 1);
-      return res.status(200).json({ success: true, message: 'Tenant deleted from memory store.' });
-    }
-
-    return res.status(404).json({ success: false, message: 'Tenant not found in memory store.' });
+    console.error('[tenants] DELETE error:', error.message);
+    return res.status(500).json({ success: false, error: 'TENANT_DELETE_FAILED', message: 'Tenant could not be deleted. Nothing changed.' });
   }
 });
 

@@ -167,7 +167,7 @@ export const CaseMilestoneHUD: React.FC<CaseMilestoneHUDProps> = ({
         actionCode: 'M01',
         stage: 'INTAKE_RECEIVED',
         actorRole: 'P',
-        actorName: activeCase.patientName || (isAr ? 'سامي الحربي' : 'Sami Al-Harbi'),
+        actorName: activeCase.patientName || (isAr ? 'المريض' : 'Patient'),
         actorRoleTitleAr: 'المريض',
         actorRoleTitleEn: 'Patient',
         actionSummaryAr: 'تم تسجيل الحالة وتوثيق موافقة الخصوصية',

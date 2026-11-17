@@ -1,7 +1,7 @@
 import express from 'express';
 import pool from '../db.js';
-import { memoryCases, STAGE_ORDER } from '../store.js';
-import { requireAuth } from '../middleware/auth.js';
+import { STAGE_ORDER } from '../store.js';
+import { issueSession, requireAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -21,9 +21,12 @@ router.get('/', requireAuth, async (req, res) => {
     const params = [];
 
     if (role === 'P' && userId) {
-      // Scoped: patient can only see their own cases (matched by patientPhone in case_data)
-      params.push(userId);
-      query += ` AND (case_data->>'patientPhone' = $${params.length} OR regexp_replace(case_data->>'patientPhone', '\\D', '', 'g') = $${params.length})`;
+      // Scoped: patient can only see their own cases (matched by patientPhone in case_data).
+      // Compare the 9-digit national suffix so "0555987654", "+966555987654" and stored
+      // variants all resolve to the same person.
+      const phoneRef = req.auth.phone || userId;
+      params.push(phoneRef);
+      query += ` AND (case_data->>'patientPhone' = $${params.length} OR right(regexp_replace(case_data->>'patientPhone', '\\D', '', 'g'), 9) = right(regexp_replace($${params.length}, '\\D', '', 'g'), 9))`;
     } else if (role === 'D' && tenantId) {
       params.push(tenantId);
       query += ` AND (case_data->'treatingDoctor'->>'hospitalId' = $${params.length} OR case_data->'treatingDoctor'->>'hospital' ILIKE '%' || $${params.length} || '%')`;
@@ -33,23 +36,8 @@ router.get('/', requireAuth, async (req, res) => {
     const { rows } = await pool.query(query, params);
     return res.json({ success: true, data: rows.map((r) => r.case_data) });
   } catch (err) {
-    let filtered = memoryCases.filter(
-      (c) => (c.stage && Number(c.stage) > 1) || (c.symptoms && String(c.symptoms).trim().length > 0)
-    );
-
-    if (role === 'P' && userId) {
-      filtered = filtered.filter((c) => c.patientPhone === userId || digitsOf(c.patientPhone) === digitsOf(userId));
-    } else if (role === 'D' && tenantId) {
-      filtered = filtered.filter((c) => 
-        !c.treatingDoctor?.hospital ||
-        c.treatingDoctor?.hospitalId === tenantId ||
-        c.treatingDoctor?.hospital?.toLowerCase().includes('riyadh') ||
-        c.treatingDoctor?.hospital?.includes('الرياض') ||
-        c.treatingDoctor?.hospital?.toLowerCase().includes(tenantId.toLowerCase())
-      );
-    }
-
-    return res.json({ success: true, data: filtered, isFallback: true });
+    console.error('[cases] GET error:', err.message);
+    return res.status(500).json({ success: false, error: 'CASES_UNAVAILABLE', message: 'Cases could not be loaded' });
   }
 });
 
@@ -139,11 +127,11 @@ function mapStageToMilestoneInfo(stage, role, customActorName) {
 // P patient write guard: assert patientPhone matches the authenticated user
 function patientOwnsCase(req, caseData) {
   if (req.auth?.role !== 'P') return true;
-  const authPhone = req.auth.userId || '';
+  const authPhone = req.auth.phone || req.auth.userId || '';
   if (!authPhone) return false;
   const casePhone = (caseData.patientPhone || '').replace(/\D/g, '');
   const authDigits = authPhone.replace(/\D/g, '');
-  return casePhone.endsWith(authDigits.slice(-8)) || authDigits.endsWith(casePhone.slice(-8)) || casePhone === authDigits;
+  return casePhone.slice(-9) === authDigits.slice(-9);
 }
 
 // POST /api/cases — auth required; P may only write own cases
@@ -181,16 +169,14 @@ router.post('/', requireAuth, async (req, res) => {
     return res.status(400).json({ error: 'Cannot register empty case before explicit nurse submission' });
   }
 
-  // Regression Guard: prevent backward stage transitions without admin override
+  // Regression Guard: prevent backward stage transitions without admin override.
+  // A guard that cannot read the current stage must not silently allow the write.
   let currentStageInDb = null;
+  let caseExistsInDb = false;
   try {
     const { rows } = await pool.query('SELECT current_stage FROM clinical_cases WHERE id = $1', [c.id]);
-    if (rows && rows.length > 0) {
-      currentStageInDb = rows[0].current_stage;
-    } else {
-      const memCase = memoryCases.find((x) => x.id === c.id);
-      if (memCase) currentStageInDb = memCase.currentStage;
-    }
+    caseExistsInDb = rows.length > 0;
+    if (caseExistsInDb) currentStageInDb = rows[0].current_stage;
 
     if (currentStageInDb && c.currentStage && c.currentStage !== currentStageInDb) {
       const currentOrder = STAGE_ORDER[currentStageInDb] || 0;
@@ -204,7 +190,11 @@ router.post('/', requireAuth, async (req, res) => {
       }
     }
   } catch (guardErr) {
-    // Non-blocking fallback
+    console.error('[cases] stage guard error:', guardErr.message);
+    return res.status(503).json({
+      error: 'CASE_GUARD_UNAVAILABLE',
+      message: 'Case state could not be verified. Nothing was saved.',
+    });
   }
 
   // Payment gate mirror of the client rule: once an invoice has been issued, the
@@ -224,8 +214,7 @@ router.post('/', requireAuth, async (req, res) => {
     c.timeline = [];
   }
 
-  const existingIdx = memoryCases.findIndex((x) => x.id === c.id);
-  const isNewCase = existingIdx < 0;
+  const isNewCase = !caseExistsInDb;
   const stageChanged = currentStageInDb && c.currentStage && c.currentStage !== currentStageInDb;
 
   if (isNewCase && c.timeline.length === 0) {
@@ -287,59 +276,51 @@ router.post('/', requireAuth, async (req, res) => {
       ]
     );
   } catch (err) {
-    // DB fallback
-  }
-
-  // Always update in-memory cache with full case object
-  if (existingIdx >= 0) {
-    memoryCases[existingIdx] = { ...memoryCases[existingIdx], ...c };
-  } else {
-    memoryCases.unshift(c);
+    // A case that only exists in RAM vanishes on restart while the UI reports
+    // success. Surface the failure instead.
+    console.error('[cases] POST save error:', err.message);
+    return res.status(500).json({
+      success: false,
+      error: 'CASE_NOT_SAVED',
+      message: 'Case could not be saved. Nothing was persisted.',
+    });
   }
 
   return res.json({ success: true, data: c });
 });
 
 async function getCaseById(id) {
-  try {
-    const { rows } = await pool.query('SELECT case_data FROM clinical_cases WHERE id = $1', [id]);
-    if (rows && rows.length > 0) return rows[0].case_data;
-  } catch (e) {}
-  return memoryCases.find((c) => c.id === id) || null;
+  const { rows } = await pool.query('SELECT case_data FROM clinical_cases WHERE id = $1', [id]);
+  return rows.length > 0 ? rows[0].case_data : null;
 }
 
 async function saveCaseRecord(c) {
-  try {
-    await pool.query(
-      `INSERT INTO clinical_cases (id, case_number, current_stage, stage, patient_name, patient_name_ar, patient_name_en, national_id_masked, consultation_type, case_data, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
-       ON CONFLICT (id) DO UPDATE SET 
-         current_stage = EXCLUDED.current_stage, 
-         stage = EXCLUDED.stage, 
-         patient_name = EXCLUDED.patient_name,
-         patient_name_ar = EXCLUDED.patient_name_ar,
-         patient_name_en = EXCLUDED.patient_name_en,
-         national_id_masked = EXCLUDED.national_id_masked,
-         consultation_type = EXCLUDED.consultation_type,
-         case_data = EXCLUDED.case_data, 
-         updated_at = NOW()`,
-      [
-        c.id,
-        c.caseNumber || '',
-        c.currentStage || 'INTAKE_RECEIVED',
-        c.stage || 1,
-        c.patientName || '',
-        c.patientNameAr || '',
-        c.patientNameEn || '',
-        c.nationalIdMasked || '',
-        c.consultationType || 'written',
-        JSON.stringify(c),
-      ]
-    );
-  } catch (err) {}
-  const idx = memoryCases.findIndex((x) => x.id === c.id);
-  if (idx >= 0) memoryCases[idx] = { ...memoryCases[idx], ...c };
-  else memoryCases.unshift(c);
+  await pool.query(
+    `INSERT INTO clinical_cases (id, case_number, current_stage, stage, patient_name, patient_name_ar, patient_name_en, national_id_masked, consultation_type, case_data, updated_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
+     ON CONFLICT (id) DO UPDATE SET 
+       current_stage = EXCLUDED.current_stage, 
+       stage = EXCLUDED.stage, 
+       patient_name = EXCLUDED.patient_name,
+       patient_name_ar = EXCLUDED.patient_name_ar,
+       patient_name_en = EXCLUDED.patient_name_en,
+       national_id_masked = EXCLUDED.national_id_masked,
+       consultation_type = EXCLUDED.consultation_type,
+       case_data = EXCLUDED.case_data, 
+       updated_at = NOW()`,
+    [
+      c.id,
+      c.caseNumber || '',
+      c.currentStage || 'INTAKE_RECEIVED',
+      c.stage || 1,
+      c.patientName || '',
+      c.patientNameAr || '',
+      c.patientNameEn || '',
+      c.nationalIdMasked || '',
+      c.consultationType || 'written',
+      JSON.stringify(c),
+    ]
+  );
 }
 
 // Dedicated transition endpoints
@@ -374,7 +355,7 @@ router.post('/:id/verify-payment', async (req, res) => {
     stage: 'WITH_CONSULTANT',
     actionCode: 'M04',
     actorRole: 'C',
-    actorName: 'إيمانويل غونزاليس (Emmanuel Arcon Gonzalez)',
+    actorName: req.auth?.userId || null,
     actionSummaryAr: 'تم التحقق من السداد وتوليد رابط الاستشاري الدولي',
     actionSummaryEn: 'Payment verified and consultant magic link dispatched',
     isMilestone: true,
@@ -431,23 +412,45 @@ router.post('/:id/close', async (req, res) => {
 });
 
 // DELETE /api/cases (Purge all)
-router.delete('/', async (req, res) => {
+// Wiping clinical records is destructive and irreversible. It is reserved for the
+// Super Admin and must never be reachable without a live, verified session.
+const requireSuperAdmin = (req, res, next) => {
+  if (!req.auth || req.auth.role !== 'AD') {
+    return res.status(403).json({ success: false, error: 'FORBIDDEN', message: 'Only the Super Admin may remove clinical cases.' });
+  }
+  next();
+};
+
+// A consultant magic link is a temporary credential: validation and session
+// issuing must honour the same expiry window, or an old link stays valid forever.
+const isMagicLinkExpired = (caseData) => {
+  const linkExpiry = caseData?.consultantToken?.expiresAt;
+  return Boolean(linkExpiry) && new Date(linkExpiry).getTime() < Date.now();
+};
+
+router.delete('/', requireAuth, requireSuperAdmin, async (req, res) => {
   try {
     await pool.query('TRUNCATE TABLE clinical_cases CASCADE');
-    try { await pool.query('TRUNCATE TABLE cases CASCADE'); } catch {}
-  } catch (err) {}
-  memoryCases.length = 0;
+    // Consultant sessions named after a case cannot outlive the case itself.
+    await pool.query("UPDATE sessions SET revoked_at = NOW() WHERE user_id LIKE 'magic-%' AND revoked_at IS NULL");
+  } catch (err) {
+    console.error('[cases] purge error:', err.message);
+    return res.status(500).json({ success: false, error: 'PURGE_FAILED', message: 'Cases could not be purged.' });
+  }
   return res.json({ success: true, message: 'All patient cases successfully purged' });
 });
 
 // DELETE /api/cases/:id
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireAuth, requireSuperAdmin, async (req, res) => {
   const { id } = req.params;
   try {
     await pool.query('DELETE FROM clinical_cases WHERE id = $1', [id]);
-  } catch (err) {}
-  const idx = memoryCases.findIndex((x) => x.id === id);
-  if (idx >= 0) memoryCases.splice(idx, 1);
+    // Deleting the case must also end the consultant's guest session for it.
+    await pool.query('UPDATE sessions SET revoked_at = NOW() WHERE user_id = $1 AND revoked_at IS NULL', [`magic-${id}`]);
+  } catch (err) {
+    console.error('[cases] delete error:', err.message);
+    return res.status(500).json({ success: false, error: 'DELETE_FAILED', message: 'Case could not be deleted.' });
+  }
   return res.json({ success: true, deletedId: id });
 });
 
@@ -460,29 +463,70 @@ router.get('/:id/magic', async (req, res) => {
   }
   try {
     const { rows } = await pool.query(
-      `SELECT case_data FROM clinical_cases WHERE id = $1 AND case_data->>'consultantToken' = $2 LIMIT 1`,
+      `SELECT case_data FROM clinical_cases WHERE id = $1 AND case_data->'consultantToken'->>'token' = $2 LIMIT 1`,
       [id, token]
     );
     if (!rows.length) {
       return res.status(404).json({ success: false, error: 'Invalid or expired magic link' });
     }
     const c = rows[0].case_data;
+    if (isMagicLinkExpired(c)) {
+      return res.status(410).json({ success: false, error: 'MAGIC_LINK_EXPIRED', message: 'This magic link has expired' });
+    }
     return res.json({ success: true, data: { caseId: c.id, caseNumber: c.caseNumber, patientName: c.patientName, currentStage: c.currentStage } });
   } catch (err) {
     console.error('[cases/magic] error:', err.message);
-    // Fallback: check memory
-    const mc = memoryCases.find((x) => x.id === id && x.consultantToken === token);
-    if (mc) {
-      return res.json({ success: true, data: { caseId: mc.id, caseNumber: mc.caseNumber, patientName: mc.patientName, currentStage: mc.currentStage } });
-    }
-    return res.status(404).json({ success: false, error: 'Invalid or expired magic link' });
+    return res.status(500).json({ success: false, error: 'MAGIC_LINK_UNAVAILABLE', message: 'This link could not be verified. Please retry.' });
   }
 });
 
-// Admin forced stage jump / rollback
+// POST /api/cases/:id/magic-session — a valid magic-link token issues a REAL
+// server session, so the consultant portal authenticates like every other role
+// instead of running on an identity the client invented from the URL.
+router.post('/:id/magic-session', async (req, res) => {
+  const { id } = req.params;
+  const token = String((req.body || {}).token || '');
+  if (!token) {
+    return res.status(400).json({ success: false, error: 'TOKEN_REQUIRED', message: 'token is required' });
+  }
+  try {
+    const { rows } = await pool.query(
+      `SELECT case_data FROM clinical_cases WHERE id = $1 AND case_data->'consultantToken'->>'token' = $2 LIMIT 1`,
+      [id, token]
+    );
+    if (!rows.length) {
+      return res.status(401).json({ success: false, error: 'INVALID_MAGIC_LINK', message: 'Invalid or expired magic link' });
+    }
+    const c = rows[0].case_data;
+    if (isMagicLinkExpired(c)) {
+      return res.status(410).json({ success: false, error: 'MAGIC_LINK_EXPIRED', message: 'This magic link has expired' });
+    }
+
+    const session = await issueSession({ id: `magic-${id}`, roleCode: 'K', hospitalId: null, phone: null });
+    return res.json({
+      success: true,
+      data: {
+        ...session,
+        caseId: c.id,
+        caseNumber: c.caseNumber,
+        patientName: c.patientName,
+        currentStage: c.currentStage,
+      },
+    });
+  } catch (err) {
+    console.error('[cases/magic-session] error:', err.message);
+    return res.status(500).json({ success: false, error: 'MAGIC_LINK_UNAVAILABLE', message: 'This link could not be verified. Please retry.' });
+  }
+});
+
+// Admin forced stage jump / rollback. The override secret must be configured:
+// a hardcoded fallback would let anyone holding the bundle force stage changes.
 router.post(['/:id/force-stage', '/admin/cases/:id/force-stage'], async (req, res) => {
+  const expectedAdminToken = process.env.ADMIN_OVERRIDE_TOKEN;
+  if (!expectedAdminToken) {
+    return res.status(503).json({ error: 'ADMIN_OVERRIDE_DISABLED', message: 'Stage override is not configured on this server' });
+  }
   const adminToken = req.headers['x-admin-token'];
-  const expectedAdminToken = process.env.ADMIN_OVERRIDE_TOKEN || 'ALO-ADMIN-OVERRIDE-2026';
   if (!adminToken || adminToken !== expectedAdminToken) {
     return res.status(403).json({ error: 'Admin token required' });
   }
@@ -501,11 +545,8 @@ router.post(['/:id/force-stage', '/admin/cases/:id/force-stage'], async (req, re
       [targetStage, targetStageNum, req.params.id]
     );
   } catch (err) {
-    const memIdx = memoryCases.findIndex((c) => c.id === req.params.id);
-    if (memIdx !== -1) {
-      memoryCases[memIdx].currentStage = targetStage;
-      memoryCases[memIdx].stage = targetStageNum;
-    }
+    console.error('[cases] force-stage error:', err.message);
+    return res.status(500).json({ error: 'FORCE_STAGE_FAILED', message: 'Stage override could not be persisted.' });
   }
   return res.json({ success: true, id: req.params.id, targetStage, stage: targetStageNum });
 });

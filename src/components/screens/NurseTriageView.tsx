@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ClinicalCase, Persona, UserSession, StaffAccountRecord, TenantHospital } from '../../types';
-import { PLATFORM_USERS_KEY, TENANTS_KEY } from '../../hooks/workflowConstants';
+import { ClinicalCase, Persona, UserSession, TenantHospital } from '../../types';
 import { Stethoscope, CheckCircle2, Eye, X, MousePointerClick } from 'lucide-react';
 import { PortalCaseTrackerPanel, getStageBadgeMeta } from '../common/PortalCaseTrackerPanel';
 import { CaseMilestoneHUD } from '../common/CaseMilestoneHUD';
@@ -10,7 +9,7 @@ import NurseCaseHeader from './nurse/NurseCaseHeader';
 import NurseAuditDeidSection from './nurse/NurseAuditDeidSection';
 import NurseDoctorAssignmentSection from './nurse/NurseDoctorAssignmentSection';
 import NurseTriageFormSection from './nurse/NurseTriageFormSection';
-import { generateDefaultNotes, buildAvailableDoctors } from './nurse/nurseHelpers';
+import { generateDefaultNotes, buildAvailableDoctors, DirectoryDoctor } from './nurse/nurseHelpers';
 
 interface Props {
   activeCase?: ClinicalCase;
@@ -59,22 +58,18 @@ export const NurseTriageView: React.FC<Props> = ({
   const referenceHospital = currentCase?.treatingDoctor?.hospital || activeCase?.treatingDoctor?.hospital || (isAr ? 'المستشفى الشريك المعتمد' : 'Partner Accredited Hospital');
 
   const [triageNotes, setTriageNotes] = useState<string>(() => generateDefaultNotes(currentCase || activeCase, isAr));
-  const [liveStaff, setLiveStaff] = useState<StaffAccountRecord[] | null>(null);
+  const [liveStaff, setLiveStaff] = useState<DirectoryDoctor[] | null>(null);
   const [liveHospitals, setLiveHospitals] = useState<TenantHospital[] | null>(null);
 
+  // Nurses (role N) cannot read /api/users (pins + full staff list). The sanitized
+  // /api/users/doctors directory is the only truthful source for this assignment.
   useEffect(() => {
     let cancelled = false;
-    apiClient.fetchUsers().then((users) => {
-      if (!cancelled && Array.isArray(users) && users.length > 0) {
-        setLiveStaff(users);
-        try { localStorage.setItem(PLATFORM_USERS_KEY, JSON.stringify(users)); } catch {}
-      }
+    apiClient.fetchDoctors().then((doctors) => {
+      if (!cancelled && Array.isArray(doctors)) setLiveStaff(doctors);
     }).catch(() => {});
     apiClient.fetchTenants().then((tenants) => {
-      if (!cancelled && Array.isArray(tenants) && tenants.length > 0) {
-        setLiveHospitals(tenants);
-        try { localStorage.setItem(TENANTS_KEY, JSON.stringify(tenants)); } catch {}
-      }
+      if (!cancelled && Array.isArray(tenants)) setLiveHospitals(tenants);
     }).catch(() => {});
     return () => { cancelled = true; };
   }, []);

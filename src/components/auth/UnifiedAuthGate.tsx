@@ -5,7 +5,7 @@ import { PhoneEntryStep } from './steps/PhoneEntryStep';
 import { CountryCode } from './authTypesAndUtils';
 import { normalizePhone, validatePhone, validatePin } from '../../utils/phoneValidation';
 
-type AuthStep = 'phone' | 'access_code' | 'pin' | 'pin_setup' | 'super_admin';
+type AuthStep = 'phone' | 'pin' | 'pin_setup' | 'super_admin';
 
 interface UnifiedAuthGateProps {
   onAuthenticated?: (session: any) => void;
@@ -44,11 +44,8 @@ const UnifiedAuthGate: React.FC<UnifiedAuthGateProps> = ({ onComplete, onAuthent
   const [confirmPin, setConfirmPin] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [accessCode, setAccessCode] = useState('');
   const [selectedPersona, setSelectedPersona] = useState<string>('doctor');
   const phoneRef = useRef<HTMLInputElement>(null);
-
-  const ACCESS_CODE = '123456';
 
   const t = useMemo(() => ({
     phoneLabel: isRTL ? 'رقم الجوال' : 'Mobile Number',
@@ -68,7 +65,7 @@ const UnifiedAuthGate: React.FC<UnifiedAuthGateProps> = ({ onComplete, onAuthent
   }), [isRTL]);
 
   const completeAuth = useCallback(
-    (isSuperAdmin: boolean, roleCode: string, hospitalId: string | null, displayName: string, token?: string) => {
+    (isSuperAdmin: boolean, roleCode: string, hospitalId: string | null, displayName: string, token?: string, serverExpiresAt?: string) => {
       const sessionObj = {
         isAuthenticated: true,
         phone: rawPhone,
@@ -77,7 +74,9 @@ const UnifiedAuthGate: React.FC<UnifiedAuthGateProps> = ({ onComplete, onAuthent
         hospitalId: hospitalId || undefined,
         fullName: displayName,
         isGuest: false,
-        expiresAt: Date.now() + 30 * 24 * 3600 * 1000,
+        // The server owns session lifetime. A longer client expiry would keep a
+        // signed-in shell alive around an already-dead token.
+        expiresAt: serverExpiresAt ? new Date(serverExpiresAt).getTime() : Date.now() + 12 * 3600 * 1000,
         lang: effectiveLang,
         token,
       };
@@ -120,16 +119,11 @@ const UnifiedAuthGate: React.FC<UnifiedAuthGateProps> = ({ onComplete, onAuthent
       const formattedPhone = validation.e164;
       const response = await apiClient.checkUserExists(formattedPhone);
       
-      if (response && response.exists && response.hasPin) {
-        // Existing user with PIN → login directly
-        setStep('pin');
-      } else {
-        // New patient (or user without PIN) → verify access code first
-        setStep('access_code');
-      }
+      // Registered accounts sign in; an unseen phone self-registers as a patient.
+      setStep(response.exists && response.hasPin ? 'pin' : 'pin_setup');
     } catch (err: any) {
-      // On network error, still allow new user signup via access code
-      setStep('access_code');
+      // An unreachable backend cannot authenticate or register anyone.
+      setError(t.errorNetwork);
     } finally {
       setIsLoading(false);
     }
@@ -145,7 +139,7 @@ const UnifiedAuthGate: React.FC<UnifiedAuthGateProps> = ({ onComplete, onAuthent
       const user = await apiClient.login(formattedPhone, enteredPin);
       
       const displayName = isRTL ? (user.fullNameAr || user.fullName) : user.fullName;
-      completeAuth(false, user.roleCode, user.hospitalId, displayName, user.token);
+      completeAuth(false, user.roleCode, user.hospitalId, displayName, user.token, user.expiresAt);
     } catch (err: any) {
       if (err?.response?.status === 401) {
         setError(t.errorInvalid);
@@ -156,20 +150,6 @@ const UnifiedAuthGate: React.FC<UnifiedAuthGateProps> = ({ onComplete, onAuthent
       setIsLoading(false);
       setEnteredPin('');
     }
-  };
-
-  const handleAccessCodeSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-
-    if (accessCode !== ACCESS_CODE) {
-      setError(isRTL ? 'رمز التحقق غير صحيح. الرجاء المحاولة مرة أخرى.' : 'Invalid access code. Please try again.');
-      setAccessCode('');
-      return;
-    }
-
-    // Access code verified → proceed to PIN setup for new user registration
-    setStep('pin_setup');
   };
 
   const handlePinSetupSubmit = async (e: React.FormEvent) => {
@@ -195,9 +175,16 @@ const UnifiedAuthGate: React.FC<UnifiedAuthGateProps> = ({ onComplete, onAuthent
       
       const user = await apiClient.login(formattedPhone, enteredPin);
       const displayName = isRTL ? (user.fullNameAr || user.fullName) : (user.fullName || 'Patient');
-      completeAuth(false, user.roleCode || 'P', user.hospitalId, displayName, user.token);
+      completeAuth(false, user.roleCode || 'P', user.hospitalId, displayName, user.token, user.expiresAt);
     } catch (err: any) {
-      setError(t.errorNetwork);
+      const status = err?.response?.status;
+      setError(
+        status === 403
+          ? (isRTL ? 'هذا الرقم مسجل لحساب موظف. اطلب رمز المرور من الإدارة.' : 'This number belongs to a staff account. Ask your administrator for the PIN.')
+          : status === 409
+            ? (isRTL ? 'هذا الحساب يملك رمز مرور بالفعل. سجّل الدخول به.' : 'This account already has a PIN. Sign in with it instead.')
+            : t.errorNetwork
+      );
     } finally {
       setIsLoading(false);
       setEnteredPin('');
@@ -211,8 +198,18 @@ const UnifiedAuthGate: React.FC<UnifiedAuthGateProps> = ({ onComplete, onAuthent
     setIsLoading(true);
 
     try {
-      const user = await apiClient.login('+966500000001', enteredPin);
-      completeAuth(true, 'AD', user.hospitalId || 'GLOBAL', isRTL ? 'مدير النظام الأعلى' : 'Super Administrator', user.token);
+      const validation = validatePhone(rawPhone, country);
+      if (!validation.isValid) {
+        setStep('phone');
+        setError(isRTL ? 'أدخل رقم جوال مسجل أولاً.' : 'Enter your registered mobile number first.');
+        return;
+      }
+      const user = await apiClient.login(validation.e164, enteredPin);
+      if (user.roleCode !== 'AD') {
+        setError(t.errorSuperAdmin);
+        return;
+      }
+      completeAuth(true, 'AD', user.hospitalId || 'GLOBAL', isRTL ? 'مدير النظام الأعلى' : 'Super Administrator', user.token, user.expiresAt);
     } catch (err: any) {
       if (err?.response?.status === 401) {
         setError(t.errorSuperAdmin);
@@ -381,45 +378,6 @@ const UnifiedAuthGate: React.FC<UnifiedAuthGateProps> = ({ onComplete, onAuthent
             >
               {t.superAdmin}
             </button>
-          </>
-        )}
-
-        {step === 'access_code' && (
-          <>
-            <p style={{ ...subHeaderStyle, marginBottom: '16px', fontWeight: 600 }}>
-              {isRTL
-                ? 'أدخل رمز التحقق للمتابعة'
-                : 'Enter Access Code to continue'}
-            </p>
-            <form onSubmit={handleAccessCodeSubmit} noValidate>
-              <label htmlFor="auth-access-code" style={labelStyle}>
-                {isRTL ? 'رمز التحقق' : 'Access Code'}
-              </label>
-              <input
-                id="auth-access-code"
-                type="password"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                maxLength={6}
-                value={accessCode}
-                onChange={(e) => setAccessCode(e.target.value.replace(/[^0-9]/g, ''))}
-                style={{ ...inputStyle, letterSpacing: '8px', textAlign: 'center' }}
-                autoComplete="one-time-code"
-                autoFocus
-                aria-required="true"
-              />
-              <button type="submit" style={buttonStyle} disabled={accessCode.length < 4}>
-                {isRTL ? 'تحقق' : 'Verify'}
-              </button>
-              <button
-                type="button"
-                style={secondaryButtonStyle}
-                onClick={() => { setStep('phone'); setError(''); setAccessCode(''); }}
-              >
-                {t.back}
-              </button>
-              {error && <p style={errorStyle} role="alert" aria-live="assertive">{error}</p>}
-            </form>
           </>
         )}
 

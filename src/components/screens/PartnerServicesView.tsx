@@ -34,29 +34,16 @@ export const PartnerServicesView: React.FC<Props> = ({
     roleFilter === 'L' ? 'lab' : roleFilter === 'PH' ? 'pharmacy' : roleFilter === 'REC' ? 'reception' : 'all'
   );
 
+  // An honest empty order set. Inventing a lab panel, prescriptions with a
+  // requisition number, and a room appointment for a case that never ordered
+  // anything would hand clinicians orders that do not exist — the same class of
+  // fabrication as a licence number nobody issued.
   const internalOrders: MedicalCenterInternalOrders = activeCase.internalOrders || {
-    medicalCenterId: 'hosp-alo-riyadh-01',
-    medicalCenterName: 'مستشفى رعاية الرياض المعتمد',
-    lab: {
-      ordered: true,
-      tests: ['Troponin-I (Quantitative)', 'Complete Blood Count (CBC)', 'Renal Function Panel (eGFR)'],
-      requisitionNumber: 'L01-REQ-8821',
-      status: 'sample_collected',
-      updatedAt: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }),
-    },
-    pharmacy: {
-      ordered: true,
-      medications: ['Rosuvastatin 20mg Once Daily', 'Aspirin (Cardiprin) 81mg Daily', 'Ramipril 5mg (SFDA Generic Substitute Allowed)'],
-      prescriptionNumber: 'RX-SA-2026-904',
-      status: 'verified',
-      updatedAt: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }),
-    },
-    reception: {
-      checkinCode: 'ALO-CHECKIN-4421',
-      status: 'checked_in',
-      checkedInAt: '10:15 AM',
-      appointmentSlot: 'Today 11:30 AM (Room 204)',
-    },
+    medicalCenterId: '',
+    medicalCenterName: 'ALO Accredited Network',
+    lab: { ordered: false, tests: [], status: 'none' },
+    pharmacy: { ordered: false, medications: [], status: 'none' },
+    reception: { checkinCode: '', status: 'none' },
   };
 
   const handleUpdateLabStatus = (newStatus: 'ordered' | 'sample_collected' | 'results_uploaded') => {
@@ -269,7 +256,7 @@ export const PartnerServicesView: React.FC<Props> = ({
                   </div>
                   <div>
                     <h3 className="text-sm font-bold text-white">المختبر الداخلي (In-House Lab)</h3>
-                    <span className="text-[11px] text-slate-400 font-mono">L01 • {internalOrders.lab.requisitionNumber}</span>
+                    <span className="text-[11px] text-slate-400 font-mono">L01{internalOrders.lab.requisitionNumber ? ` • ${internalOrders.lab.requisitionNumber}` : ''}</span>
                   </div>
                 </div>
                 <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
@@ -279,7 +266,7 @@ export const PartnerServicesView: React.FC<Props> = ({
                     ? 'bg-amber-950 text-amber-400 border border-amber-800'
                     : 'bg-slate-800 text-slate-300'
                 }`}>
-                  {internalOrders.lab.status === 'results_uploaded' ? 'النتائج معتمدة ✓' : internalOrders.lab.status === 'sample_collected' ? 'تم سحب العينة 🧪' : 'طلب جديد'}
+                  {internalOrders.lab.status === 'results_uploaded' ? 'النتائج معتمدة ✓' : internalOrders.lab.status === 'sample_collected' ? 'تم سحب العينة 🧪' : internalOrders.lab.status === 'none' ? 'لا يوجد طلب' : 'طلب جديد'}
                 </span>
               </div>
 
@@ -287,6 +274,9 @@ export const PartnerServicesView: React.FC<Props> = ({
               <div className="bg-slate-950/80 p-3.5 rounded-xl border border-slate-800 space-y-2">
                 <span className="text-[11px] font-bold text-slate-400 block">الفحوصات المطلوبة:</span>
                 <ul className="space-y-1.5 text-xs text-slate-200">
+                  {internalOrders.lab.tests.length === 0 && (
+                    <li className="text-[11px] text-slate-500 py-1">لا توجد فحوصات مطلوبة لهذه الحالة</li>
+                  )}
                   {internalOrders.lab.tests.map((test, idx) => (
                     <li key={idx} className="flex items-center gap-2 bg-slate-900/60 p-2 rounded-lg border border-slate-800/80">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
@@ -297,14 +287,18 @@ export const PartnerServicesView: React.FC<Props> = ({
               </div>
 
               <div className="text-[11px] text-slate-400 flex items-center justify-between px-1">
-                <span>آخر تحديث: {internalOrders.lab.updatedAt || 'قبل دقيقة'}</span>
+                <span>آخر تحديث: {internalOrders.lab.updatedAt || '—'}</span>
                 <span className="text-emerald-400 font-semibold">مختبر المركز المركزي</span>
               </div>
             </div>
 
             {/* Action Buttons */}
             <div className="space-y-2 pt-2 border-t border-slate-800/80">
-              {internalOrders.lab.status !== 'results_uploaded' ? (
+              {internalOrders.lab.status === 'none' ? (
+                <div className="bg-slate-800/60 border border-slate-700 p-2.5 rounded-xl text-center text-xs text-slate-400 font-bold">
+                  لا يوجد طلب تحاليل لهذه الحالة
+                </div>
+              ) : internalOrders.lab.status !== 'results_uploaded' ? (
                 <>
                   {internalOrders.lab.status === 'ordered' && (
                     <button
@@ -342,7 +336,7 @@ export const PartnerServicesView: React.FC<Props> = ({
                   </div>
                   <div>
                     <h3 className="text-sm font-bold text-white">الصيدلية الداخلية (Facility Pharmacy)</h3>
-                    <span className="text-[11px] text-slate-400 font-mono">H01 • {internalOrders.pharmacy.prescriptionNumber}</span>
+                    <span className="text-[11px] text-slate-400 font-mono">H01{internalOrders.pharmacy.prescriptionNumber ? ` • ${internalOrders.pharmacy.prescriptionNumber}` : ''}</span>
                   </div>
                 </div>
                 <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
@@ -350,7 +344,7 @@ export const PartnerServicesView: React.FC<Props> = ({
                     ? 'bg-sky-950 text-sky-400 border border-sky-800'
                     : 'bg-indigo-950 text-indigo-400 border border-indigo-800'
                 }`}>
-                  {internalOrders.pharmacy.status === 'dispensed' ? 'جاهز للتسليم 📦' : 'تم التحقق ✓'}
+                  {internalOrders.pharmacy.status === 'dispensed' ? 'جاهز للتسليم 📦' : internalOrders.pharmacy.status === 'none' ? 'لا يوجد وصفة' : 'تم التحقق ✓'}
                 </span>
               </div>
 
@@ -361,6 +355,9 @@ export const PartnerServicesView: React.FC<Props> = ({
                   <span className="text-teal-400 font-mono text-[10px]">SFDA Verified</span>
                 </div>
                 <ul className="space-y-1.5 text-xs text-slate-200">
+                  {internalOrders.pharmacy.medications.length === 0 && (
+                    <li className="text-[11px] text-slate-500 py-1">لا توجد أدوية مصروفة لهذه الحالة</li>
+                  )}
                   {internalOrders.pharmacy.medications.map((med, idx) => (
                     <li key={idx} className="bg-slate-900/60 p-2 rounded-lg border border-slate-800/80 text-xs font-mono">
                       {med}
@@ -374,14 +371,18 @@ export const PartnerServicesView: React.FC<Props> = ({
               </div>
 
               <div className="text-[11px] text-slate-400 flex items-center justify-between px-1">
-                <span>آخر تحديث: {internalOrders.pharmacy.updatedAt || 'قبل دقيقة'}</span>
+                <span>آخر تحديث: {internalOrders.pharmacy.updatedAt || '—'}</span>
                 <span className="text-sky-400 font-semibold">صيدلية المركز الداخلية</span>
               </div>
             </div>
 
             {/* Action Buttons */}
             <div className="space-y-2 pt-2 border-t border-slate-800/80">
-              {internalOrders.pharmacy.status !== 'dispensed' ? (
+              {internalOrders.pharmacy.status === 'none' ? (
+                <div className="bg-slate-800/60 border border-slate-700 p-2.5 rounded-xl text-center text-xs text-slate-400 font-bold">
+                  لا توجد وصفة طبية لهذه الحالة
+                </div>
+              ) : internalOrders.pharmacy.status !== 'dispensed' ? (
                 <button
                   onClick={() => handleUpdatePharmacyStatus('dispensed')}
                   className="w-full bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold py-2.5 px-3 rounded-xl transition-all shadow flex items-center justify-center gap-1.5"
@@ -409,11 +410,11 @@ export const PartnerServicesView: React.FC<Props> = ({
                   </div>
                   <div>
                     <h3 className="text-sm font-bold text-white">الاستقبال وحجز المواعيد (Reception SLA)</h3>
-                    <span className="text-[11px] text-slate-400 font-mono">{internalOrders.reception.checkinCode}</span>
+                    <span className="text-[11px] text-slate-400 font-mono">{internalOrders.reception.checkinCode || 'Reception'}</span>
                   </div>
                 </div>
                 <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-purple-950 text-purple-400 border border-purple-800">
-                  {internalOrders.reception.status === 'completed' ? 'اكتملت الزيارة' : 'تم التحضير'}
+                  {internalOrders.reception.status === 'completed' ? 'اكتملت الزيارة' : internalOrders.reception.status === 'none' ? 'لا يوجد موعد' : 'تم التحضير'}
                 </span>
               </div>
 
@@ -421,11 +422,11 @@ export const PartnerServicesView: React.FC<Props> = ({
               <div className="bg-slate-950/80 p-3.5 rounded-xl border border-slate-800 space-y-2.5">
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-slate-400">موعد الاستشارة الحضورية:</span>
-                  <span className="font-bold text-slate-200">{internalOrders.reception.appointmentSlot}</span>
+                  <span className="font-bold text-slate-200">{internalOrders.reception.appointmentSlot || '—'}</span>
                 </div>
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-slate-400">زمن وصول المريض:</span>
-                  <span className="font-mono text-purple-300">{internalOrders.reception.checkedInAt}</span>
+                  <span className="font-mono text-purple-300">{internalOrders.reception.checkedInAt || '—'}</span>
                 </div>
                 <div className="p-2.5 bg-slate-900/90 rounded-lg border border-purple-900/40 flex items-center gap-2 text-[11px] text-slate-300">
                   <Clock className="w-4 h-4 text-purple-400 shrink-0" />
@@ -441,7 +442,11 @@ export const PartnerServicesView: React.FC<Props> = ({
 
             {/* Action Buttons */}
             <div className="space-y-2 pt-2 border-t border-slate-800/80">
-              {internalOrders.reception.status !== 'completed' ? (
+              {internalOrders.reception.status === 'none' ? (
+                <div className="bg-slate-800/60 border border-slate-700 p-2.5 rounded-xl text-center text-xs text-slate-400 font-mono">
+                  No appointment scheduled
+                </div>
+              ) : internalOrders.reception.status !== 'completed' ? (
                 <button
                   onClick={() => handleUpdateReceptionStatus('completed')}
                   className="w-full bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold py-2.5 px-3 rounded-xl transition-all shadow flex items-center justify-center gap-1.5"

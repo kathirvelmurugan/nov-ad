@@ -112,13 +112,13 @@ export const ReportDemographicsHeader: React.FC<ReportDemographicsHeaderProps> =
         <div>
           <span style={{ color: '#64748b', display: 'block' }}>{isAr ? 'اسم المريض:' : 'Patient Name:'}</span>
           <strong style={{ color: '#0f172a', fontSize: '13px' }}>{patientName}</strong>
-          <div style={{ color: '#94a3b8', fontSize: '10px' }}>{patientNameEn} · 48Y / Male</div>
+          <div style={{ color: '#94a3b8', fontSize: '10px' }}>{patientNameEn}{activeCase.age ? ` · ${activeCase.age}Y` : ''} · {activeCase.gender === 'F' ? 'Female' : 'Male'}</div>
         </div>
 
         <div>
           <span style={{ color: '#64748b', display: 'block' }}>{isAr ? 'الطبيب السعودي المعالج (المملكة):' : 'Saudi Treating Doctor (KSA):'}</span>
           <strong style={{ color: '#0f172a', fontSize: '12px' }}>{treatingDocName}</strong>
-          <div style={{ color: '#94a3b8', fontSize: '10px' }}>مستشفى رعاية الرياض / KFSHRC</div>
+          <div style={{ color: '#94a3b8', fontSize: '10px' }}>{activeCase.treatingDoctor?.hospital || (isAr ? 'شبكة ألو الطبية المعتمدة' : 'ALO Accredited Network')}</div>
         </div>
 
         <div>

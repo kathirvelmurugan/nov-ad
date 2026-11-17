@@ -92,12 +92,12 @@ export const SaudiDoctorDevice: React.FC<CockpitDeviceProps> = ({
               <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '8px' }}>
                 {/* Domestic identity for doctor */}
                 <div>
-                  <div style={{ fontSize: '10px', color: '#64748b' }}>{isAr ? '🇸🇦 المريض المسجل (مستشفى رعاية الرياض):' : '🇸🇦 Domestic Patient Record:'}</div>
+                  <div style={{ fontSize: '10px', color: '#64748b' }}>{isAr ? '🇸🇦 المريض المسجل (شبكة ألو الطبية المعتمدة):' : '🇸🇦 Domestic Patient Record:'}</div>
                   <div style={{ fontSize: '13px', fontWeight: 800, color: '#0f172a', marginTop: '2px' }}>
                     {activeCase.patientName || (isAr ? activeCase.patientNameAr : activeCase.patientNameEn) || (isAr ? 'مريض معتمد' : 'Verified Patient')}
                   </div>
                   <div style={{ fontSize: '10px', color: '#64748b', marginTop: '1px' }}>
-                    {isAr ? 'هوية / إقامة' : 'ID / Iqama'}: {activeCase.nationalIdMasked || '1089345210'} · {activeCase.age ? `${activeCase.age}${isAr ? ' سنة' : ' years old'}` : (isAr ? '٤٨ سنة' : '48 years old')}
+                    {isAr ? 'هوية / إقامة' : 'ID / Iqama'}: {activeCase.nationalIdMasked || '—'} · {activeCase.age ? `${activeCase.age}${isAr ? ' سنة' : ' years old'}` : '—'}
                   </div>
                 </div>
 

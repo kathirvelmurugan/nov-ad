@@ -3,9 +3,7 @@ import { PERSONAS } from '../../data/personas';
 import { Persona, ClinicalCase, ClinicalStage } from '../../types';
 import { apiClient } from '../../services/apiClient';
 import {
-  STORAGE_KEY,
   ACTIVE_CASE_KEY,
-  THEME_KEY,
   LANG_KEY,
   USER_SESSION_KEY,
   UserSession,
@@ -89,7 +87,6 @@ export function useWorkflowUIState({
         'alo_session_token',
         'alo_token_v1',
         'alo_token',
-        STORAGE_KEY,
         ACTIVE_CASE_KEY,
         'alo_active_case_id',
       ];
@@ -201,7 +198,6 @@ export function useWorkflowUIState({
     const confirmMsg = lang === 'ar' ? 'إعادة ضبط الحالات إلى حالة نظيفة؟' : 'Reset all clinical cases to clean state?';
     if (window.confirm(confirmMsg)) {
       try {
-        localStorage.removeItem(STORAGE_KEY);
         localStorage.removeItem(ACTIVE_CASE_KEY);
         await apiClient.purgeAllCases();
       } catch (e) {}

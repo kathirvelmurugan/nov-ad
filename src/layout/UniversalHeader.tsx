@@ -51,14 +51,16 @@ export const UniversalHeader: React.FC<UniversalHeaderProps> = ({
   const displayName =
     userSession.fullName ||
     (isPatient
-      ? (activeCase?.patientName || activeCase?.patientNameAr || activeCase?.patientNameEn || (isAr ? 'سامي الحربي' : 'Sami Al-Harbi'))
+      ? (activeCase?.patientName || activeCase?.patientNameAr || activeCase?.patientNameEn || (isAr ? 'المريض' : 'Patient'))
       : activePersona.name);
 
   const displayPhone = userSession.phone || (isPatient ? activeCase?.patientPhone : undefined);
+  // Neutral network label only. A named facility here would advertise a hospital
+  // that does not exist in the tenant directory.
   const displayHospital =
     activeCase?.treatingDoctor?.hospital ||
     activePersona.hospitalId ||
-    (isAr ? 'مستشفى رعاية الرياض المعتمد' : 'Riyadh Care Accredited Hospital');
+    (isAr ? 'شبكة ألو الطبية المعتمدة' : 'ALO Accredited Network');
 
   // ── Patient Top Navigation Header ───────────────────────────────────────────
   if (isPatient) {

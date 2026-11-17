@@ -99,12 +99,14 @@ export const PatientDevice: React.FC<CockpitDeviceProps> = ({
             <div>
               <p style={{ fontSize: '12px', fontWeight: 700, color: '#0f172a', margin: 0 }}>
                 {activeCase.coordinatorForwardedToDoctor
-                  ? (isAr ? 'طبيبك المعالج د. فهد الحربي يراجع التقرير لاعتماده' : 'Dr. Fahad Al-Harbi is reviewing the report for sign-off')
+                  ? (isAr
+                      ? (activeCase.treatingDoctor?.name ? `طبيبك المعالج ${activeCase.treatingDoctor.name} يراجع التقرير لاعتماده` : 'طبيبك المعالج يراجع التقرير لاعتماده')
+                      : (activeCase.treatingDoctor?.name ? `${activeCase.treatingDoctor.name} is reviewing the report for sign-off` : 'Your treating physician is reviewing the report for sign-off'))
                   : (isAr ? 'فاتورة ضريبية مسددة (INV-2026-001)' : 'Paid Tax Invoice (INV-2026-001)')}
               </p>
               <p style={{ fontSize: '11px', color: '#166534', margin: '2px 0 0 0', lineHeight: 1.4 }}>
                 {activeCase.coordinatorForwardedToDoctor
-                  ? (isAr ? 'الملف الطبي المترجم وصل لطبيبك المعالج بمستشفى رعاية الرياض المعتمد. سيتاح التقرير لك فور اعتماده رسمياً.' : 'Bilingual dossier submitted to your treating doctor at Riyadh Care Medical Center. Download unlocks immediately upon physician sign-off.')
+                  ? (isAr ? 'الملف الطبي المترجم وصل لطبيبك المعالج في المستشفى المعتمد. سيتاح التقرير لك فور اعتماده رسمياً.' : 'Bilingual dossier submitted to your treating physician at the accredited hospital. Download unlocks immediately upon physician sign-off.')
                   : (isAr ? 'الاستشاري د. براديب كومار يراجع الأشعة 3D والأسئلة الثلاثة الآن في الهند.' : 'Dr. Pradeep Kumar is reviewing 3D DICOM & focus questions at Apollo Hospitals.')}
               </p>
             </div>
@@ -120,7 +122,7 @@ export const PatientDevice: React.FC<CockpitDeviceProps> = ({
             <span style={{ fontSize: '24px' }}>📄</span>
             <div>
               <p style={{ fontSize: '12px', fontWeight: 700, color: '#0f172a', margin: 0 }}>
-                {isAr ? 'معتمد رسمياً من د. فهد الحربي (مستشفى رعاية الرياض المعتمد)' : 'Officially endorsed by Dr. Fahad Al-Harbi (Riyadh Care Medical Center)'}
+                {isAr ? `معتمد رسمياً من ${activeCase.treatingDoctor?.name || 'الطبيب المعالج'} (${activeCase.treatingDoctor?.hospital || 'المستشفى المعتمد'})` : `Officially endorsed by ${activeCase.treatingDoctor?.name || 'the treating physician'} (${activeCase.treatingDoctor?.hospital || 'accredited hospital'})`}
               </p>
               <p style={{ fontSize: '11px', color: '#64748b', margin: '4px 0 0 0' }}>
                 ALO-2026-BILINGUAL-SECOND-OPINION.pdf

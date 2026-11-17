@@ -8,13 +8,8 @@ import {
   Persona,
   AdminCatalogsState,
 } from '../types';
-import { DEFAULT_TENANT_HOSPITALS, DEFAULT_STAFF_DIRECTORY } from '../data/accreditedStaffAndTenants';
 import { PERSONAS } from '../data/personas';
-import {
-  TENANTS_KEY,
-  PLATFORM_USERS_KEY,
-  AUDIT_LOGS_KEY,
-} from './workflowConstants';
+import { getPlatformConfig } from '../config/platformConfig';
 
 export const DEFAULT_ADMIN_CATALOGS: AdminCatalogsState = {
   specialties: [
@@ -44,70 +39,20 @@ export function useAdminGovernanceState(
   activePersona?: Persona,
   onSelectPersona?: (p: Persona) => void
 ) {
-  // 1. Tenants State
-  const [tenants, setTenants] = useState<TenantHospital[]>(() => {
-    try {
-      const saved = localStorage.getItem(TENANTS_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch {}
-    return DEFAULT_TENANT_HOSPITALS;
-  });
+  // 1. Tenants State — Postgres is the only source; no localStorage cache.
+  const [tenants, setTenants] = useState<TenantHospital[]>([]);
 
-  // 2. Staff Directory State
-  const [staffDirectory, setStaffDirectory] = useState<StaffAccountRecord[]>(() => {
-    try {
-      const saved = localStorage.getItem(PLATFORM_USERS_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch {}
-    return DEFAULT_STAFF_DIRECTORY;
-  });
+  // 2. Staff Directory State — Postgres is the only source.
+  const [staffDirectory, setStaffDirectory] = useState<StaffAccountRecord[]>([]);
 
   // 3. Catalogs State — read from platform config defaults (no localStorage cache)
   const [catalogs, setCatalogs] = useState<AdminCatalogsState>(() => {
-    try {
-      const { getPlatformConfig } = require('../config/platformConfig');
-      const cfg = getPlatformConfig();
-      if (cfg?.catalogs) return cfg.catalogs as AdminCatalogsState;
-    } catch {}
-    return DEFAULT_ADMIN_CATALOGS;
+    const cfg = getPlatformConfig();
+    return cfg?.catalogs ? (cfg.catalogs as AdminCatalogsState) : DEFAULT_ADMIN_CATALOGS;
   });
 
-  // 4. Audit Logs State
-  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>(() => {
-    try {
-      const saved = localStorage.getItem(AUDIT_LOGS_KEY);
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
-
-  // Persistence Effects
-  useEffect(() => {
-    try {
-      localStorage.setItem(TENANTS_KEY, JSON.stringify(tenants));
-    } catch {}
-  }, [tenants]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(PLATFORM_USERS_KEY, JSON.stringify(staffDirectory));
-    } catch {}
-  }, [staffDirectory]);
-
-  // Catalogs: persisted via settings API (PUT /api/settings), not localStorage.
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(AUDIT_LOGS_KEY, JSON.stringify(auditLogs));
-    } catch {}
-  }, [auditLogs]);
+  // 4. Audit Logs State — Postgres is the only source.
+  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
 
   // Initial backend fetch on mount & legacy cache auto-eviction
   useEffect(() => {
@@ -118,57 +63,57 @@ export function useAdminGovernanceState(
         'alo_cases_v3.0',
         'alo_platform_users_v2.0',
         'alo_tenants_v2.0',
+        // v4 caches are no longer read anywhere: a stale copy must never
+        // resurface a tenant/staff/audit row that Postgres deleted.
+        'alo_platform_users_v4.0_clean',
+        'alo_tenants_v4.0_clean',
+        'alo_audit_logs_v4.0_clean',
+        'alo_user_pins_v4.0_clean',
+        'alo_consultant_session_v4.0_clean',
       ].forEach((k) => localStorage.removeItem(k));
     } catch {}
 
-    apiClient.fetchTenants().then((fetched) => {
-      if (Array.isArray(fetched) && fetched.length > 0) setTenants(fetched);
-    });
-    apiClient.fetchUsers().then((fetched) => {
-      if (Array.isArray(fetched) && fetched.length > 0) setStaffDirectory(fetched);
-    });
-    apiClient.fetchAuditLogs().then((fetched) => {
-      if (Array.isArray(fetched) && fetched.length > 0) setAuditLogs(fetched);
-    });
+    apiClient.fetchTenants().then(setTenants).catch(() => {});
+    apiClient.fetchUsers().then(setStaffDirectory).catch(() => {});
+    apiClient.fetchAuditLogs().then(setAuditLogs).catch(() => {});
   }, []);
 
   // Logging Helper
   const appendAuditLog = useCallback((entry: Omit<AuditLogEntry, 'id' | 'timestamp'>) => {
-    const newLog: AuditLogEntry = {
-      ...entry,
-      id: `log-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-      timestamp: new Date().toISOString(),
-    };
-    setAuditLogs((prev) => [newLog, ...prev.slice(0, 99)]);
-    apiClient.appendAuditLog(newLog);
+    // Server assigns id/timestamp/actor; the local row is only an optimistic echo.
+    setAuditLogs((prev) => [
+      { ...entry, id: `log-${Date.now()}`, timestamp: new Date().toISOString() } as AuditLogEntry,
+      ...prev.slice(0, 99),
+    ]);
+    apiClient.appendAuditLog(entry as AuditLogEntry).catch(() => {});
   }, []);
 
   // Tenant Actions
   const createTenant = useCallback(
-    (data: Omit<TenantHospital, 'id' | 'createdAt'>) => {
-      const newTenant: TenantHospital = {
-        ...data,
-        id: `hosp-${data.nameEn.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${Date.now().toString().slice(-4)}`,
-        createdAt: new Date().toISOString(),
-      };
-      setTenants((prev) => [newTenant, ...prev]);
-      apiClient.createTenant(newTenant);
+    async (data: Omit<TenantHospital, 'id' | 'createdAt'>) => {
+      // The row must exist in Postgres before it appears in the UI.
+      const created = await apiClient.createTenant(data);
+      setTenants((prev) => [created, ...prev.filter((t) => t.id !== created.id)]);
       appendAuditLog({
         actorName: activePersona?.name || 'Super Admin',
         actorRole: activePersona?.code || 'AD',
         actionType: 'CREATE_TENANT',
-        target: newTenant.id,
-        details: `Created new hospital tenant ${newTenant.nameEn} in ${newTenant.city}`,
+        target: created.id,
+        details: `Created new hospital tenant ${created.nameEn} in ${created.city}`,
       });
-      return newTenant;
+      return created;
     },
     [activePersona, appendAuditLog]
   );
 
   const toggleTenantStatus = useCallback(
-    (id: string) => {
+    async (id: string) => {
+      const current = tenants.find((t) => t.id === id);
+      if (!current) return;
+      const nextStatus = current.status === 'active' ? 'suspended' : 'active';
+      await apiClient.updateTenantStatus(id, nextStatus);
       setTenants((prev) =>
-        prev.map((t) => (t.id === id ? { ...t, status: t.status === 'active' ? 'suspended' : 'active' } : t))
+        prev.map((t) => (t.id === id ? { ...t, status: nextStatus } : t))
       );
       appendAuditLog({
         actorName: activePersona?.name || 'Super Admin',
@@ -176,49 +121,96 @@ export function useAdminGovernanceState(
         hospitalId: id,
         actionType: 'TOGGLE_TENANT_STATUS',
         target: id,
-        details: `Toggled active status for hospital tenant ${id}`,
+        details: `Set hospital tenant ${id} to ${nextStatus}`,
       });
     },
-    [activePersona, appendAuditLog]
+    [activePersona, appendAuditLog, tenants]
   );
 
   // Staff Actions
   const createStaffMember = useCallback(
-    (data: Omit<StaffAccountRecord, 'id' | 'createdAt'>) => {
+    async (data: Omit<StaffAccountRecord, 'id' | 'createdAt'>) => {
+      const optimisticId = `staff-${Date.now().toString().slice(-6)}`;
       const newStaff: StaffAccountRecord = {
         ...data,
-        id: `staff-${Date.now().toString().slice(-6)}`,
+        id: optimisticId,
         createdAt: new Date().toISOString(),
       };
       setStaffDirectory((prev) => [newStaff, ...prev]);
-      apiClient.createUser(newStaff);
-      appendAuditLog({
-        actorName: activePersona?.name || 'Admin',
-        actorRole: activePersona?.code || 'AD',
-        hospitalId: data.hospitalId,
-        actionType: 'CREATE_STAFF_RECORD',
-        target: newStaff.staffCode,
-        details: `Enrolled staff ${newStaff.fullName} (${newStaff.roleCode})`,
-      });
-      return newStaff;
+
+      try {
+        // Persist first: an account that only exists in localStorage can never be
+        // routed by the auth gate (role_code is resolved from Postgres at login).
+        const saved: any = await apiClient.createUser(data);
+        const persisted: StaffAccountRecord = {
+          ...newStaff,
+          ...saved,
+          id: saved?.id || optimisticId,
+          roleCode: (saved?.roleCode || newStaff.roleCode) as RoleCode,
+          status: newStaff.status,
+        };
+        setStaffDirectory((prev) => prev.map((s) => (s.id === optimisticId ? persisted : s)));
+        appendAuditLog({
+          actorName: activePersona?.name || 'Admin',
+          actorRole: activePersona?.code || 'AD',
+          hospitalId: data.hospitalId,
+          actionType: 'CREATE_STAFF_RECORD',
+          target: newStaff.staffCode,
+          details: `Enrolled staff ${newStaff.fullName} (${newStaff.roleCode})`,
+        });
+        return persisted;
+      } catch (err) {
+        // Roll the optimistic row back — the account was NOT created.
+        setStaffDirectory((prev) => prev.filter((s) => s.id !== optimisticId));
+        appendAuditLog({
+          actorName: activePersona?.name || 'Admin',
+          actorRole: activePersona?.code || 'AD',
+          hospitalId: data.hospitalId,
+          actionType: 'CREATE_STAFF_FAILED',
+          target: newStaff.staffCode,
+          details: `Failed to persist staff ${newStaff.fullName} (${newStaff.roleCode}); account not created`,
+        });
+        throw err;
+      }
     },
     [activePersona, appendAuditLog]
   );
 
   const toggleStaffActive = useCallback(
-    (id: string) => {
+    async (id: string) => {
+      const current = staffDirectory.find((s) => s.id === id);
+      if (!current) return;
+      const nextStatus = current.status === 'active' ? 'inactive' : 'active';
       setStaffDirectory((prev) =>
-        prev.map((s) => (s.id === id ? { ...s, status: s.status === 'active' ? 'inactive' : 'active' } : s))
+        prev.map((s) => (s.id === id ? { ...s, status: nextStatus } : s))
       );
-      appendAuditLog({
-        actorName: activePersona?.name || 'Admin',
-        actorRole: activePersona?.code || 'AD',
-        actionType: 'TOGGLE_STAFF_STATUS',
-        target: id,
-        details: `Toggled active status for staff member ${id}`,
-      });
+      try {
+        // Persist first: login filters on platform_users.status, so a status that
+        // only lives in localStorage leaves the account able to sign in.
+        await apiClient.updateUserStatus(id, nextStatus);
+        appendAuditLog({
+          actorName: activePersona?.name || 'Admin',
+          actorRole: activePersona?.code || 'AD',
+          actionType: 'TOGGLE_STAFF_STATUS',
+          target: id,
+          details: `Staff member ${id} set to ${nextStatus} (persisted)`,
+        });
+      } catch (err) {
+        // The account was NOT updated: put the row back to its database state.
+        setStaffDirectory((prev) =>
+          prev.map((s) => (s.id === id ? { ...s, status: current.status } : s))
+        );
+        appendAuditLog({
+          actorName: activePersona?.name || 'Admin',
+          actorRole: activePersona?.code || 'AD',
+          actionType: 'TOGGLE_STAFF_STATUS_FAILED',
+          target: id,
+          details: `Failed to persist status change for staff member ${id}; UI reverted`,
+        });
+        throw err;
+      }
     },
-    [activePersona, appendAuditLog]
+    [activePersona, appendAuditLog, staffDirectory]
   );
 
   // Catalog Actions

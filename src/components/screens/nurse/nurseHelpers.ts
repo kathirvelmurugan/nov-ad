@@ -1,7 +1,13 @@
-import { StaffAccountRecord, TenantHospital, ClinicalCase } from '../../../types';
-import { INITIAL_MEDICAL_CENTER_DOCTORS } from '../../../data/medicalCenterDoctors';
-import { DEFAULT_TENANT_HOSPITALS, DEFAULT_STAFF_DIRECTORY } from '../../../data/accreditedStaffAndTenants';
-import { PLATFORM_USERS_KEY, TENANTS_KEY } from '../../../hooks/workflowConstants';
+import { TenantHospital, ClinicalCase } from '../../../types';
+
+export interface DirectoryDoctor {
+  id: string;
+  fullName: string;
+  fullNameAr?: string | null;
+  hospitalId?: string | null;
+  department?: string | null;
+  scfhsLicense?: string | null;
+}
 
 export function generateDefaultNotes(c?: ClinicalCase | null, isAr = true): string {
   if (!c) return '';
@@ -11,45 +17,23 @@ export function generateDefaultNotes(c?: ClinicalCase | null, isAr = true): stri
   return `Patient presents with ${c.diagnosis || 'clinical condition'} with complaint: (${c.symptomsEn || c.symptoms || 'under review'}). Diagnostic file is complete with laboratory panels, validated clinical reports, and medical imaging studies. PHI de-identified according to MOH & SDAIA standards; triaged as High Priority (24h SLA).`;
 }
 
-export function buildAvailableDoctors(liveStaff: StaffAccountRecord[] | null, liveHospitals: TenantHospital[] | null, isAr: boolean) {
-  let allStaff: StaffAccountRecord[] = liveStaff || DEFAULT_STAFF_DIRECTORY;
-  let allHospitals: TenantHospital[] = liveHospitals || DEFAULT_TENANT_HOSPITALS;
-  if (!liveStaff || !liveHospitals) {
-    try {
-      if (!liveStaff) {
-        const stored = localStorage.getItem(PLATFORM_USERS_KEY);
-        if (stored) { const p = JSON.parse(stored); if (Array.isArray(p)) allStaff = p; }
-      }
-      if (!liveHospitals) {
-        const storedH = localStorage.getItem(TENANTS_KEY);
-        if (storedH) { const pH = JSON.parse(storedH); if (Array.isArray(pH)) allHospitals = pH; }
-      }
-    } catch {}
-  }
-  const dynamicDoctors = allStaff
-    .filter((s) => s.roleCode === 'D' && s.status === 'active')
-    .map((s) => {
-      const hospital = allHospitals.find((h) => h.id === s.hospitalId);
-      return {
-        id: s.id,
-        name: isAr && s.fullNameAr ? s.fullNameAr : s.fullName,
-        nameEn: s.fullName,
-        specialty: s.department || 'استشاري أمراض القلب',
-        specialtyEn: s.department || 'Cardiology Consultant',
-        hospital: hospital ? (isAr ? hospital.nameAr : hospital.nameEn) : (isAr ? 'مستشفى رعاية الرياض المعتمد' : 'Riyadh Care Medical Center'),
-        hospitalEn: hospital ? hospital.nameEn : 'Riyadh Care Medical Center',
-        city: hospital ? hospital.city : 'الرياض',
-        license: s.scfhsLicense || 'SCFHS-CERTIFIED',
-        tier: 2 as const,
-        isOnDuty: true,
-      };
-    });
-
-  const combined = [...INITIAL_MEDICAL_CENTER_DOCTORS, ...dynamicDoctors];
-  const uniqueByPerson = new Map<string, typeof combined[0]>();
-  combined.forEach((doc) => {
-    const normalized = (doc.nameEn || doc.name).replace(/^(dr\.?|د\.?)\s*/i, '').trim().toLowerCase();
-    if (!uniqueByPerson.has(normalized)) uniqueByPerson.set(normalized, doc);
+export function buildAvailableDoctors(doctors: DirectoryDoctor[] | null, liveHospitals: TenantHospital[] | null, isAr: boolean) {
+  // Real enrolled doctors only (role D + active, resolved server-side). No bundled
+  // or cached fallback: an empty directory must surface as empty, not as fake names.
+  return (doctors || []).map((d) => {
+    const hospital = (liveHospitals || []).find((h) => h.id === d.hospitalId);
+    return {
+      id: d.id,
+      name: isAr && d.fullNameAr ? d.fullNameAr : d.fullName,
+      nameEn: d.fullName,
+      specialty: d.department || (isAr ? 'استشاري' : 'Consultant'),
+      specialtyEn: d.department || 'Consultant',
+      hospital: hospital ? (isAr ? hospital.nameAr : hospital.nameEn) : (d.hospitalId || '—'),
+      hospitalEn: hospital ? hospital.nameEn : (d.hospitalId || '—'),
+      city: hospital ? (isAr ? (hospital.cityAr || hospital.city) : hospital.city) : '',
+      license: d.scfhsLicense || '—',
+      tier: 2 as const,
+      isOnDuty: true,
+    };
   });
-  return Array.from(uniqueByPerson.values());
 }

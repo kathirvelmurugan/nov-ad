@@ -11,32 +11,16 @@ const __dirname = dirname(__filename);
 
 const router = Router();
 
-/** Read the canonical default config. */
+/** Read the canonical default config (used only when the stored row is absent). */
 function loadDefaults() {
   const p = join(__dirname, '../../config/platform.defaults.json');
   return JSON.parse(readFileSync(p, 'utf-8'));
 }
 
 /**
- * Seed the platform_settings row 1 on boot when absent.
- * Called once after DB init.
+ * NOTE: platform_settings is NOT seeded on boot. Row 1 is inserted once,
+ * intentionally, as data — never by application code on every restart.
  */
-export async function seedSettings() {
-  try {
-    const { rows } = await pool.query('SELECT version FROM platform_settings WHERE id = 1');
-    if (!rows.length) {
-      const defaults = loadDefaults();
-      await pool.query(
-        `INSERT INTO platform_settings (id, config, version, updated_at)
-         VALUES (1, $1, 1, NOW())`,
-        [JSON.stringify(defaults)]
-      );
-      console.log('✅ platform_settings seeded with defaults (version 1).');
-    }
-  } catch (err) {
-    console.warn('⚠️ settings seed failed (degraded — will serve defaults):', err.message);
-  }
-}
 
 /**
  * GET /api/settings/public
@@ -59,9 +43,7 @@ router.get('/public', async (_req, res) => {
     return res.json({ success: true, data: pub });
   } catch (err) {
     console.error('[settings/public] error:', err.message);
-    const defaults = loadDefaults();
-    const pub = { currency: defaults.currency, pricing: defaults.pricing, payment: defaults.payment, services: defaults.services };
-    return res.json({ success: true, data: pub, degraded: true });
+    return res.status(503).json({ success: false, error: 'SETTINGS_UNAVAILABLE', message: 'Platform settings could not be loaded' });
   }
 });
 
@@ -76,8 +58,7 @@ router.get('/', requireAuth, requireRole('AD'), async (req, res) => {
     return res.json({ success: true, data: { config: cfg, version } });
   } catch (err) {
     console.error('[settings] GET error:', err.message);
-    const defaults = loadDefaults();
-    return res.json({ success: true, data: { config: defaults, version: 1 }, degraded: true });
+    return res.status(503).json({ success: false, error: 'SETTINGS_UNAVAILABLE', message: 'Platform settings could not be loaded' });
   }
 });
 

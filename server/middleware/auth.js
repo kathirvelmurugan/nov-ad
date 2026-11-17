@@ -11,15 +11,20 @@ export async function issueSession(user) {
   const token = crypto.randomBytes(32).toString('hex');
   const expiresAt = new Date(Date.now() + SESSION_TTL_HOURS * 60 * 60 * 1000).toISOString();
 
-  try {
-    await pool.query(
-      `INSERT INTO sessions (token, user_id, role_code, hospital_id, issued_at, expires_at)
-       VALUES ($1, $2, $3, $4, NOW(), $5)`,
-      [token, user.id, user.roleCode || user.role_code, user.hospitalId || user.hospital_id || null, expiresAt]
-    );
-  } catch (err) {
-    console.warn('[auth] session insert failed (fallback — token still issued):', err.message);
-  }
+  // A token that is not persisted can never authenticate (requireAuth reads the
+  // sessions table). Fail loudly instead of handing the client a dead token.
+  await pool.query(
+    `INSERT INTO sessions (token, user_id, role_code, hospital_id, phone, issued_at, expires_at)
+     VALUES ($1, $2, $3, $4, $5, NOW(), $6)`,
+    [
+      token,
+      user.id,
+      user.roleCode || user.role_code,
+      user.hospitalId || user.hospital_id || null,
+      user.phone || null,
+      expiresAt,
+    ]
+  );
 
   return { token, expiresAt };
 }
@@ -38,8 +43,11 @@ export function requireAuth(req, res, next) {
   const token = parts[1];
 
   pool.query(
-    `SELECT user_id, role_code, hospital_id, expires_at, revoked_at
-     FROM sessions WHERE token = $1`,
+    `SELECT s.user_id, s.role_code, s.hospital_id, s.phone, s.expires_at, s.revoked_at,
+            u.id AS account_id, u.status AS account_status
+     FROM sessions s
+     LEFT JOIN platform_users u ON u.id = s.user_id
+     WHERE s.token = $1`,
     [token]
   )
     .then(({ rows }) => {
@@ -53,18 +61,31 @@ export function requireAuth(req, res, next) {
       if (new Date(sess.expires_at) < new Date()) {
         return res.status(401).json({ error: 'SESSION_EXPIRED', message: 'Session expired. Please log in again.' });
       }
+      // Consultant magic-link sessions are case-scoped guests: they have no
+      // platform_users row by design. Every other session must still map to a
+      // live, active account — a deleted or deactivated user loses access at
+      // that moment, not when the token happens to expire.
+      const isMagicGuest = String(sess.user_id).startsWith('magic-');
+      if (!isMagicGuest) {
+        if (!sess.account_id) {
+          return res.status(401).json({ error: 'UNAUTHORIZED', message: 'Account no longer exists' });
+        }
+        if (sess.account_status && sess.account_status !== 'active') {
+          return res.status(401).json({ error: 'UNAUTHORIZED', message: 'Account is not active' });
+        }
+      }
       req.auth = {
         userId: sess.user_id,
         role: sess.role_code,
         hospitalId: sess.hospital_id,
+        phone: sess.phone || null,
       };
       next();
     })
     .catch((err) => {
+      // Fail closed: a session store failure must never authenticate the request.
       console.error('[auth] session lookup failed:', err.message);
-      // DB down → allow with degraded flag; route handlers should check req.auth
-      req.auth = { userId: null, role: null, hospitalId: null, degraded: true };
-      next();
+      return res.status(401).json({ error: 'UNAUTHORIZED', message: 'Session validation failed' });
     });
 }
 

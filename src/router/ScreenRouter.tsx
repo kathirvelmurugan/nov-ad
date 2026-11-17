@@ -19,7 +19,6 @@ import { ConsultantMobileView }      from '../components/screens/ConsultantMobil
 import { OpinionTelehealthView }     from '../components/screens/OpinionTelehealthView';
 import { PartnerServicesView }       from '../components/screens/PartnerServicesView';
 import { FollowUpChatView }          from '../components/screens/FollowUpChatView';
-import { AdminSettingsView }         from '../components/screens/AdminSettingsView';
 import { SuperAdminPortalView }      from '../components/screens/SuperAdminPortalView';
 import { HospitalAdminPortalView }   from '../components/screens/HospitalAdminPortalView';
 import { CoordinatorPortalView }     from '../components/screens/CoordinatorPortalView';
@@ -104,7 +103,8 @@ export const ScreenRouter: React.FC<ScreenRouterProps> = ({
         if (queryCaseId && (c.id === queryCaseId || c.caseNumber === queryCaseId)) return true;
         const cDocName = (c.treatingDoctor?.name || '').replace(/^(د\.|dr\.)\s*/i, '').trim().toLowerCase();
         if (cleanName && cDocName && (cDocName.includes(cleanName) || cleanName.includes(cDocName))) return true;
-        if (cDocName.includes('fahad') || cleanName.includes('فهد') || cleanName.includes('fahad')) return true;
+        // Case ownership must come from real data only: matching a hardcoded
+        // physician name here made every case with that name stick to the doctor.
         if (!hospital) return true;
         const hospStr = (c.treatingDoctor?.hospital || '').toLowerCase();
         if (hospStr.includes(hospital.toLowerCase()) || hospStr.includes('riyadh') || hospStr.includes('الرياض')) return true;

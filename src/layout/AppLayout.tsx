@@ -22,6 +22,7 @@ import { StageProgressBar }        from '../components/StageProgressBar';
 import { NewCaseModal }            from '../components/NewCaseModal';
 import UnifiedAuthGate             from '../components/auth/UnifiedAuthGate';
 import ApiErrorModal               from '../components/common/ApiErrorModal';
+import CaseSaveFailureBanner       from '../components/common/CaseSaveFailureBanner';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 interface AppLayoutProps {
@@ -231,6 +232,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
 
       {/* 11. Global API Error Boundary Modal */}
       <ApiErrorModal />
+
+      {/* 12. Rejected case write (optimistic UI that Postgres did not accept) */}
+      <CaseSaveFailureBanner />
     </div>
   );
 };

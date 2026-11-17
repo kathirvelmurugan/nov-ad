@@ -4,9 +4,6 @@ import { ClinicalCase } from '../../types';
 import { UserSession } from '../../hooks/workflowConstants';
 import { clampAge, maskNationalId, validateNationalId } from '../../utils/phoneValidation';
 
-/** Placeholder identity of the logged-in account holder (verified at login, never retyped here). */
-const ACCOUNT_HOLDER_NATIONAL_ID = '1029384756';
-
 interface Props {
   activeCase: ClinicalCase;
   isAr: boolean;
@@ -37,14 +34,13 @@ export const IntakePatientBeneficiarySection: React.FC<Props> = ({
   const handleModeChange = (newMode: 'me' | 'family') => {
     setMode(newMode);
     if (newMode === 'me') {
-      const selfName = userSession?.fullName || 'سامي الحربي (Sami Al-Harbi)';
+      // Identity comes from the verified session/case only — never a fabricated profile.
+      const selfName = userSession?.fullName || activeCase.patientName || '';
       onUpdateCase({
         beneficiaryMode: 'me',
         patientName: selfName,
-        patientNameAr: isAr ? selfName : activeCase.patientNameAr,
-        patientNameEn: !isAr ? selfName : activeCase.patientNameEn,
-        age: 58,
-        gender: 'M',
+        patientNameAr: isAr ? (activeCase.patientNameAr || selfName) : activeCase.patientNameAr,
+        patientNameEn: !isAr ? (activeCase.patientNameEn || selfName) : activeCase.patientNameEn,
         caregiver: {
           isProxy: false,
           name: '',
@@ -64,7 +60,7 @@ export const IntakePatientBeneficiarySection: React.FC<Props> = ({
           isProxy: true,
           name: userSession?.fullName || 'المرافق المفوض',
           relationship: relationship,
-          nationalId: ACCOUNT_HOLDER_NATIONAL_ID,
+          nationalId: '',
           phone: userSession?.phone || activeCase.patientPhone,
           hasLegalConsent: proxyConsent,
         },
@@ -111,16 +107,16 @@ export const IntakePatientBeneficiarySection: React.FC<Props> = ({
         isProxy: true,
         name: userSession?.fullName || (isAr ? 'المرافق المفوض' : 'Caregiver Proxy'),
         relationship: nextRel,
-        nationalId: ACCOUNT_HOLDER_NATIONAL_ID,
+        nationalId: '',
         phone: userSession?.phone || activeCase.patientPhone,
         hasLegalConsent: nextConsent,
       },
     });
   };
 
-  const accountName = userSession?.fullName || (isAr ? 'سامي الحربي' : 'Sami Al-Harbi');
-  const accountPhone = userSession?.phone || activeCase.patientPhone || '+966 50 000 0099';
-  const accountId = ACCOUNT_HOLDER_NATIONAL_ID;
+  const accountName = userSession?.fullName || activeCase.patientName || (isAr ? 'صاحب الحساب' : 'Account Holder');
+  const accountPhone = userSession?.phone || activeCase.patientPhone || '';
+  const accountId = activeCase.nationalIdMasked || '';
   const idCheck = beneficiaryId ? validateNationalId(beneficiaryId) : null;
 
   return (
@@ -180,8 +176,22 @@ export const IntakePatientBeneficiarySection: React.FC<Props> = ({
                 <span>{isAr ? 'الملف الطبي مرتبط بحسابك الموثق مباشرة' : 'Linked to your verified health record'}</span>
               </div>
               <h2 className="text-xl font-black tracking-tight">{accountName}</h2>
-              <p className="text-slate-300 text-xs mt-1">
-                {isAr ? 'الهوية الوطنية / الإقامة:' : 'National ID:'} <span className="font-mono text-teal-300 font-bold">{accountId.slice(0, 2)}********</span> · {isAr ? 'العمر: 58' : 'Age: 58'} · {isAr ? 'الجنس: ذكر' : 'Gender: Male'} · {isAr ? 'الهاتف:' : 'Phone:'} <span className="font-mono text-teal-300 font-bold" dir="ltr">{accountPhone}</span>
+              <p className="text-slate-300 text-xs mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                {accountId && (
+                  <span>
+                    {isAr ? 'الهوية الوطنية / الإقامة:' : 'National ID:'}{' '}
+                    <span className="font-mono text-teal-300 font-bold">{accountId}</span>
+                  </span>
+                )}
+                {activeCase.age > 0 && (
+                  <span>{isAr ? `العمر: ${activeCase.age}` : `Age: ${activeCase.age}`}</span>
+                )}
+                {accountPhone && (
+                  <span>
+                    {isAr ? 'الهاتف:' : 'Phone:'}{' '}
+                    <span className="font-mono text-teal-300 font-bold" dir="ltr">{accountPhone}</span>
+                  </span>
+                )}
               </p>
             </div>
 
@@ -225,7 +235,7 @@ export const IntakePatientBeneficiarySection: React.FC<Props> = ({
                   <input
                     type="text"
                     value={beneficiaryName}
-                    placeholder={isAr ? 'مثال: فهد الحربي' : 'e.g. Fahad Al-Harbi'}
+                    placeholder={isAr ? 'مثال: محمد العتيبي' : 'e.g. Mohammed Al-Otaibi'}
                     onChange={(e) => handleUpdateBeneficiary({ name: e.target.value })}
                     className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-slate-100 font-bold outline-none focus:border-emerald-600 shadow-xs"
                   />

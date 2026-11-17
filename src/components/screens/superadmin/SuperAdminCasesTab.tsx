@@ -22,7 +22,7 @@ import { priceTierForType } from '../../../config/platformConfig';
 import { getStageBadgeMeta } from '../../common/PortalCaseTrackerPanel';
 import { CaseDetailsDrillDownModal } from '../../common/CaseDetailsDrillDownModal';
 import { apiClient } from '../../../services/apiClient';
-import { STORAGE_KEY, ACTIVE_CASE_KEY } from '../../../hooks/workflowConstants';
+import { ACTIVE_CASE_KEY } from '../../../hooks/workflowConstants';
 
 interface SuperAdminCasesTabProps {
   isRTL: boolean;
@@ -201,6 +201,20 @@ export const SuperAdminCasesTab: React.FC<SuperAdminCasesTabProps> = ({
   });
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Real enrolled doctors only — reassignment must never offer a fabricated name.
+  const [assignableDoctors, setAssignableDoctors] = useState<Array<{ id: string; name: string; hospital: string }>>([]);
+  React.useEffect(() => {
+    apiClient.fetchUsers()
+      .then((users) => {
+        setAssignableDoctors(
+          (users || [])
+            .filter((u) => u.roleCode === 'D' && (u.status === 'active' || !u.status))
+            .map((u) => ({ id: u.id, name: u.fullName, hospital: u.hospitalId || '' }))
+        );
+      })
+      .catch(() => {});
+  }, []);
+
   // Reassignment state
   const [reassignModal, setReassignModal] = useState<{
     open: boolean;
@@ -224,27 +238,25 @@ export const SuperAdminCasesTab: React.FC<SuperAdminCasesTabProps> = ({
         city: targetCase.treatingDoctor?.city || 'الرياض',
         focusQuestions: targetCase.treatingDoctor?.focusQuestions || ['سؤال سريري 1', 'سؤال سريري 2', 'سؤال سريري 3'],
         ...(targetCase.treatingDoctor || {}),
-        name: reassignModal.selectedDoctor || targetCase.treatingDoctor?.name || 'د. سارة العتيبي',
+        name: reassignModal.selectedDoctor || targetCase.treatingDoctor?.name || '',
       },
       consultant: {
-        center: targetCase.consultant?.center || 'Apollo Hospitals',
-        city: targetCase.consultant?.city || 'Bengaluru, India',
+        center: targetCase.consultant?.center || '',
+        city: targetCase.consultant?.city || '',
         ...(targetCase.consultant || {}),
-        name: reassignModal.selectedConsultant || targetCase.consultant?.name || 'Dr. Pradeep Kumar',
+        name: reassignModal.selectedConsultant || targetCase.consultant?.name || '',
       },
     };
 
-    setLocalCases((prev) => prev.map((c) => (c.id === targetCase.id ? updatedCase : c)));
+    // Persist first: a reassignment that only exists in the browser is invisible
+    // to the doctor and disappears on reload.
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const arr = JSON.parse(stored) as ClinicalCase[];
-        const updated = arr.map((x) => (x.id === targetCase.id ? updatedCase : x));
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-      }
-    } catch {}
-
-    await apiClient.saveCase(updatedCase).catch(() => {});
+      await apiClient.saveCase(updatedCase);
+    } catch (err) {
+      console.error('[SuperAdmin] Reassign failed:', err);
+      return;
+    }
+    setLocalCases((prev) => prev.map((c) => (c.id === targetCase.id ? updatedCase : c)));
     setReassignModal({ open: false, caseItem: null, selectedDoctor: '', selectedConsultant: '' });
   };
 
@@ -264,9 +276,8 @@ export const SuperAdminCasesTab: React.FC<SuperAdminCasesTabProps> = ({
       if (deleteModal.mode === 'purge-all') {
         // Backend delete all
         await apiClient.purgeAllCases();
-        // Clear localStorage
+        // Clear session-scoped browser state only; cases live in Postgres.
         try {
-          localStorage.removeItem(STORAGE_KEY);
           localStorage.removeItem(ACTIVE_CASE_KEY);
           localStorage.removeItem('alo_patient_subview_v3.0');
         } catch {}
@@ -274,19 +285,13 @@ export const SuperAdminCasesTab: React.FC<SuperAdminCasesTabProps> = ({
         onAllCasesDeleted?.();
       } else if (deleteModal.mode === 'single' && deleteModal.caseItem) {
         const caseId = deleteModal.caseItem.id;
-        // Backend delete single
+        // Backend delete single — the row disappears only if the server deleted it.
         try {
-          await fetch(`/api/cases/${encodeURIComponent(caseId)}`, { method: 'DELETE' });
-        } catch {}
-        // Remove from localStorage cases array
-        try {
-          const stored = localStorage.getItem(STORAGE_KEY);
-          if (stored) {
-            const arr = JSON.parse(stored) as ClinicalCase[];
-            const updated = arr.filter((x) => x.id !== caseId);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-          }
-        } catch {}
+          await apiClient.deleteSingleCase(caseId);
+        } catch (err) {
+          console.error('[SuperAdmin] Delete failed:', err);
+          return;
+        }
         setLocalCases((prev) => prev.filter((x) => x.id !== caseId));
         onCaseDeleted?.(caseId);
       }
@@ -618,10 +623,10 @@ export const SuperAdminCasesTab: React.FC<SuperAdminCasesTabProps> = ({
                 const rawHospital = c.treatingDoctor?.hospital;
                 const isLegacyAloCare = !rawHospital || rawHospital === 'Alo Care Specialist Medical Center' || rawHospital === 'مركز ألو كير الطبي التخصصي' || rawHospital === 'مجمع الرعاية الطبية' || rawHospital === 'المجمع الطبي الشريك' || rawHospital === 'Partner Medical Center';
                 const hospital = isLegacyAloCare
-                  ? (isRTL ? 'مستشفى رعاية الرياض المعتمد' : 'Riyadh Care Medical Center')
+                  ? (isRTL ? 'شبكة ألو الطبية المعتمدة' : 'ALO Accredited Network')
                   : rawHospital;
-                const doctorName = c.treatingDoctor?.name || (isRTL ? 'د. فهد الحربي' : 'Dr. Fahad Al-Harbi');
-                const consultantName = c.consultant?.name || 'Dr. Pradeep Kumar';
+                const doctorName = c.treatingDoctor?.name || (isRTL ? 'غير مُعيَّن' : 'Unassigned');
+                const consultantName = c.consultant?.name || (isRTL ? 'غير مُعيَّن' : 'Unassigned');
 
                 return (
                   <tr
@@ -781,9 +786,14 @@ export const SuperAdminCasesTab: React.FC<SuperAdminCasesTabProps> = ({
                   onChange={(e) => setReassignModal((prev) => ({ ...prev, selectedDoctor: e.target.value }))}
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-[#007B6E] outline-none text-xs font-medium"
                 >
-                  <option value="د. سارة العتيبي (استشاري أمراض القلب · الشميسي)">د. سارة العتيبي (استشاري أمراض القلب · الشميسي)</option>
-                  <option value="د. فهد الحربي (استشاري جراحة الأوعية الدموية · مدينة الملك فهد الطبية)">د. فهد الحربي (استشاري جراحة الأوعية الدموية · مدينة الملك فهد الطبية)</option>
-                  <option value="د. عبدالله الشمري (استشاري الجراحة العامة · مستشفى د. سليمان الحبيب)">د. عبدالله الشمري (استشاري الجراحة العامة · مستشفى د. سليمان الحبيب)</option>
+                  <option value="">
+                    {isRTL ? '— بانتظار تعيين طبيب —' : '— Awaiting doctor assignment —'}
+                  </option>
+                  {assignableDoctors.map((doc) => (
+                    <option key={doc.id} value={doc.name}>
+                      {doc.name}{doc.hospital ? ` · ${doc.hospital}` : ''}
+                    </option>
+                  ))}
                 </select>
               </div>
 

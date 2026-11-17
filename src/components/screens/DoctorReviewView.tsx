@@ -140,7 +140,7 @@ export const DoctorReviewView: React.FC<Props> = ({
     onUpdateCase({
       focusQuestions: arQs,
       treatingDoctor: {
-        ...(activeCase?.treatingDoctor || { name: 'د. عبد الله الشمري', hospital: 'مستشفى رعاية الرياض', city: 'الرياض' }),
+        ...(activeCase?.treatingDoctor || { name: '', hospital: '', city: '' }),
         focusQuestions: arQs, focusQuestionsEn: arQs,
       },
     });

@@ -216,7 +216,7 @@ export const DoctorBilingualEndorsementSection: React.FC<DoctorBilingualEndorsem
                   currentStage: 'PARTNER_SERVICES',
                   saudiEndorsement: {
                     status: 'endorsed',
-                    doctorName: activeCase.treatingDoctor?.name || 'د. فهد الحربي',
+                    doctorName: activeCase.treatingDoctor?.name || '',
                     scfhsLicense: 'SCFHS-2024-KSA-8821',
                     endorsementDate: new Date().toISOString(),
                     localClinicalNotes: localDirectives,

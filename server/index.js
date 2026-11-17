@@ -12,7 +12,7 @@ import adminRouter from './routes/admin.js';
 import auditRouter from './routes/audit.js';
 import storageRouter from './routes/storage.js';
 import livekitRouter from './routes/livekit.js';
-import settingsRouter, { seedSettings } from './routes/settings.js';
+import settingsRouter from './routes/settings.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -66,7 +66,7 @@ app.use((req, res) => {
 // Server Start
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 ALO DOCTOR Unified Backend Server running on port ${PORT}`);
-  initDatabase().then(() => seedSettings()).catch((e) => console.warn('Database init warning:', e.message));
+  initDatabase().catch((e) => console.error('❌ Database init failed — API routes will return errors until it is reachable:', e.message));
   initStorage().catch((e) => console.warn('Storage init warning:', e.message));
 });
 
